@@ -141,6 +141,39 @@ window.SEED = {
   ],
 
   // ---------------------------------------------------------------------------
+  // GYM BADGES — 8 badges the commissioner hands out through the weekend.
+  //   earn:  why/how a trainer earns it   power: the perk the holder gets
+  //   holder: attendee id ("" = unclaimed)   used: has the power been spent?
+  // Award / clear / mark-used live in the Badges page.
+  // ---------------------------------------------------------------------------
+  gymBadges: [
+    { id: "boulder", name: "Boulder Badge", emoji: "🥌", color: "#b0a06a",
+      earn: "First trainer up and cooking breakfast for the crew.",
+      power: "Veto one drink call made against you.", holder: "", used: false },
+    { id: "cascade", name: "Cascade Badge", emoji: "🌊", color: "#3aa0e6",
+      earn: "Biggest splash — best cannonball or gnarliest tube wipeout.",
+      power: "Override the wheel and choose the next Victory Road event.", holder: "", used: false },
+    { id: "thunder", name: "Thunder Badge", emoji: "⚡", color: "#f2c744",
+      earn: "Win a 1-on-1 chug-off.",
+      power: "Hand any trainer a 3-sip penalty, once.", holder: "", used: false },
+    { id: "rainbow", name: "Rainbow Badge", emoji: "🌈", color: "#f45f9c",
+      earn: "Owned the Zimmy's dance floor.",
+      power: "Aux-cord rights — queue 3 songs, no skips.", holder: "", used: false },
+    { id: "soul", name: "Soul Badge", emoji: "💜", color: "#7a5aa0",
+      earn: "MVP wingman — hauled water, snacks, and a buddy to bed.",
+      power: "Skip one PBR run.", holder: "", used: false },
+    { id: "marsh", name: "Marsh Badge", emoji: "🌿", color: "#5fbf6a",
+      earn: "Win a round of Jason Jeopardy.",
+      power: "+25 bonus points to your team, one time.", holder: "", used: false },
+    { id: "volcano", name: "Volcano Badge", emoji: "🔥", color: "#f5732f",
+      earn: "Biggest comeback or most competitive moment of the day.",
+      power: "Call one re-rack in beer pong.", holder: "", used: false },
+    { id: "earth", name: "Earth Badge", emoji: "🏅", color: "#c9a227",
+      earn: "Champion's Choice — the groom awards this for whatever he deems legendary.",
+      power: "Immunity from the Wild Card penalty.", holder: "", used: false },
+  ],
+
+  // ---------------------------------------------------------------------------
   // OAK'S TIP — the fun quote block. `image` optional (the Oak meme).
   // ---------------------------------------------------------------------------
   oakTip: {
