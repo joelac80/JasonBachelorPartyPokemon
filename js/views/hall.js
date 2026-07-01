@@ -4,7 +4,65 @@
 (function () {
   const { el, uid } = U;
 
+  // Inject the intro animation styles once.
+  function ensureIntroStyles() {
+    if (document.getElementById("hall-intro-style")) return;
+    const css =
+      ".hall-intro{position:fixed;inset:0;z-index:300;overflow:hidden;display:flex;align-items:center;" +
+      "justify-content:center;cursor:pointer;background:radial-gradient(circle at 50% 42%,#eafce6,#bfe6c1);" +
+      "animation:hallFade .5s ease 2.7s forwards;}" +
+      ".hall-intro .rain-sprite{position:absolute;top:-90px;image-rendering:pixelated;opacity:.9;" +
+      "animation:hallRain linear 1 forwards;}" +
+      ".hall-intro .rain-sprite.ball{border-radius:50%;border:2px solid #111;" +
+      "background:linear-gradient(#ee1515 0 46%,#111 46% 54%,#fff 54% 100%);}" +
+      "@keyframes hallRain{0%{transform:translateY(-90px) rotate(0)}100%{transform:translateY(116vh) rotate(380deg)}}" +
+      ".hall-intro-hero{position:relative;z-index:2;text-align:center;opacity:0;transform:scale(.3);" +
+      "animation:hallPop .7s cubic-bezier(.2,1.5,.4,1) .5s forwards;}" +
+      ".hall-intro-hero img{width:180px;height:180px;image-rendering:pixelated;filter:drop-shadow(0 10px 10px rgba(0,0,0,.3));}" +
+      ".hall-intro-title{font-family:var(--pixel,monospace);font-weight:700;text-transform:uppercase;" +
+      "font-size:clamp(28px,7vw,56px);color:#2e8b3d;margin-top:8px;" +
+      "text-shadow:3px 3px 0 #ffcb05,6px 6px 0 rgba(0,0,0,.15);}" +
+      "@keyframes hallFade{to{opacity:0;visibility:hidden;}}" +
+      "@keyframes hallPop{to{opacity:1;transform:scale(1);}}";
+    const style = el("style", { id: "hall-intro-style" });
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  // A shower of Bulbasaur sprites, then a big one + title. Tap to skip.
+  function playIntro() {
+    ensureIntroStyles();
+    const sprite = Store.sprite(1); // Bulbasaur (present if chosen as a favorite)
+    const overlay = el("div", { class: "hall-intro" });
+    overlay.addEventListener("click", () => overlay.remove());
+
+    for (let i = 0; i < 26; i++) {
+      const size = (38 + Math.random() * 42) | 0;
+      const node = sprite
+        ? el("img", { class: "rain-sprite", src: sprite, alt: "" })
+        : el("div", { class: "rain-sprite ball" });
+      node.style.left = (Math.random() * 96).toFixed(1) + "vw";
+      node.style.width = size + "px";
+      node.style.height = size + "px";
+      node.style.animationDuration = (2.1 + Math.random() * 1.9).toFixed(2) + "s";
+      node.style.animationDelay = (Math.random() * 1.7).toFixed(2) + "s";
+      overlay.appendChild(node);
+    }
+
+    overlay.appendChild(el("div", { class: "hall-intro-hero" }, [
+      sprite
+        ? el("img", { src: sprite, alt: "Bulbasaur" })
+        : el("div", { class: "tc-ball-fallback", style: { width: "150px", height: "150px", margin: "0 auto" } }),
+      el("div", { class: "hall-intro-title" }, "HALL OF BULBA!!"),
+    ]));
+
+    document.body.appendChild(overlay);
+    setTimeout(() => { if (overlay.isConnected) overlay.remove(); }, 3300);
+  }
+
   function view(root) {
+    playIntro();
+
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🌿 Hall of Bulbasaur"),
       el("p", { class: "page-sub" }, "The shrine. Add favorite cards, fan art, and legendary shots." ),
