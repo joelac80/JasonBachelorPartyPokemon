@@ -88,7 +88,7 @@ window.SEED = {
     { id: "sid",    name: "Sid Suresh",         nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "ghost",    favorite: "Mimikyu", favoriteId: 778, photo: "", catchphrase: "" },
     { id: "matt",   name: "Matt Spicer",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "flying",   favorite: "Tranquill", favoriteId: 520, photo: "", catchphrase: "" },
     { id: "tyler",  name: "Tyler Logan",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fighting", favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
-    { id: "brian",  name: "Brian Mallon",       nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "dark",     favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "brian",  name: "Brian Mallon",       nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "grass",    favorite: "Serperior", favoriteId: 497, photo: "", catchphrase: "" },
   ],
 
   // ---------------------------------------------------------------------------
