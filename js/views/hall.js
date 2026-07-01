@@ -60,6 +60,49 @@
     setTimeout(() => { if (overlay.isConnected) overlay.remove(); }, 3300);
   }
 
+  // A big look at one card (hi-res if available).
+  function openCard(c) {
+    const img = el("img", { class: "bulba-zoom-img", src: c.large || c.src, alt: c.set });
+    img.addEventListener("error", () => { img.src = c.src; });
+    const body = el("div", { class: "bulba-zoom" }, [
+      img,
+      el("div", { class: "bulba-zoom-meta" }, [
+        el("div", { class: "bulba-zoom-set" }, c.set),
+        el("div", { class: "bulba-zoom-sub" }, [
+          c.number ? ("No. " + c.number) : "", c.year ? (" · " + c.year) : "",
+          c.artist ? (" · Illus. " + c.artist) : "",
+        ].join("")),
+      ]),
+    ]);
+    Modal.open(c.set + " Bulbasaur", body, null, {});
+  }
+
+  // The curated collection (from data/bulba-cards.js). Images are online links
+  // and degrade to a Poké Ball placeholder if they can't load (e.g. offline).
+  function renderCollection() {
+    const cards = window.BULBA_CARDS || [];
+    if (!cards.length) return null;
+    return el("div", { class: "bulba-collection" }, cards.map((c) => {
+      const img = el("img", { class: "bulba-card-img", src: c.src, alt: c.set, loading: "lazy" });
+      img.addEventListener("error", function onErr() {
+        img.removeEventListener("error", onErr);
+        const holder = img.parentNode;
+        if (holder) holder.replaceChild(
+          el("div", { class: "bulba-card-fallback" }, [
+            el("div", { class: "tc-ball-fallback" }),
+            el("div", { class: "bulba-card-fallback-txt" }, "offline"),
+          ]), img);
+      });
+      return el("figure", { class: "bulba-card", title: "Tap to enlarge", onClick: () => openCard(c) }, [
+        el("div", { class: "bulba-card-frame" }, img),
+        el("figcaption", { class: "bulba-card-cap" }, [
+          el("div", { class: "bulba-card-set" }, c.set),
+          el("div", { class: "bulba-card-sub" }, (c.year || "") + (c.artist ? " · " + c.artist : "")),
+        ]),
+      ]);
+    }));
+  }
+
   function view(root) {
     playIntro();
 
@@ -67,6 +110,15 @@
       el("h1", {}, "🌿 Hall of Bulbasaur"),
       el("p", { class: "page-sub" }, "The shrine. Add favorite cards, fan art, and legendary shots." ),
     ]));
+
+    const collection = renderCollection();
+    if (collection) {
+      root.appendChild(el("h2", { class: "section-title" }, "🎴 Jason's Bulbasaur Collection"));
+      root.appendChild(el("p", { class: "hint", style: { marginTop: "-6px", marginBottom: "10px" } },
+        "Iconic Bulbasaur cards, 1999 → today. Tap any card to enlarge. (Images load online.)"));
+      root.appendChild(collection);
+      root.appendChild(el("h2", { class: "section-title" }, "📸 The Wall"));
+    }
 
     const gallery = el("div", { class: "meme-grid" });
     function renderGallery() {
