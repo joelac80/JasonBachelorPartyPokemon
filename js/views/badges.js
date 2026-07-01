@@ -85,6 +85,7 @@
         const x = s.gymBadges.find((g) => g.id === badgeId);
         x.holder = a.id; x.used = false;
       });
+      if (window.SFX) SFX.win();
       Router.render();
     });
   }

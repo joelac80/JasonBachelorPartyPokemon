@@ -18,14 +18,19 @@
   }
 
   const TILES = [
-    { route: "victoryroad", emoji: "🏆", title: "Victory Road", desc: "Beer Olympics scoreboard & events" },
-    { route: "draft",       emoji: "🎡", title: "Draft & Wheel", desc: "Spin to draft the teams" },
-    { route: "roster",      emoji: "🎴", title: "The Squad", desc: "Trainer cards + favorite Pokémon" },
-    { route: "activities",  emoji: "🗓️", title: "Game Plan", desc: "The weekend line-up" },
-    { route: "badges",      emoji: "🏅", title: "Gym Badges", desc: "Earn badges + powers" },
-    { route: "hall",        emoji: "🌿", title: "Hall of Bulbasaur", desc: "Cards, fan art & shots" },
-    { route: "memes",       emoji: "😂", title: "Meme Vault", desc: "The good stuff" },
-    { route: "settings",    emoji: "⚙️", title: "Settings", desc: "Data, backup & reset" },
+    { route: "victoryroad",  emoji: "🏆", title: "Victory Road", desc: "Beer Olympics scoreboard & events" },
+    { route: "draft",        emoji: "🎡", title: "Draft & Wheel", desc: "Spin to draft the teams" },
+    { route: "roster",       emoji: "🎴", title: "The Squad", desc: "Trainer cards + favorite Pokémon" },
+    { route: "activities",   emoji: "🗓️", title: "Game Plan", desc: "The weekend line-up" },
+    { route: "jeopardy",     emoji: "❓", title: "Jason Jeopardy", desc: "Trivia w/ Daily Bulbas" },
+    { route: "brackets",     emoji: "🥊", title: "Brackets", desc: "Single-elim tournaments" },
+    { route: "superlatives", emoji: "🗳️", title: "Superlatives", desc: "Vote the weekend awards" },
+    { route: "challenges",   emoji: "🎣", title: "Catch of the Day", desc: "Daily photo & dare challenges" },
+    { route: "badges",       emoji: "🏅", title: "Gym Badges", desc: "Earn badges + powers" },
+    { route: "hall",         emoji: "🌿", title: "Hall of Bulbasaur", desc: "Cards, fan art & shots" },
+    { route: "memes",        emoji: "😂", title: "Meme Vault", desc: "The good stuff" },
+    { route: "ceremony",     emoji: "👑", title: "Champion Ceremony", desc: "Crown the champs + confetti" },
+    { route: "settings",     emoji: "⚙️", title: "Settings", desc: "Data, backup & reset" },
   ];
 
   function fanBadges() {

@@ -58,7 +58,7 @@
       el("button", { class: "sc-btn plus", title: "Plus 5",
         onClick: () => setScore(cur() + 5) }, "+"),
       el("button", { class: "sc-award", title: "Award full " + ev.points + " pts",
-        onClick: () => setScore(cur() + ev.points) }, "+" + ev.points),
+        onClick: () => { if (window.SFX) SFX.coin(); setScore(cur() + ev.points); } }, "+" + ev.points),
     ]);
   }
 

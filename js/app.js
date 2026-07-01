@@ -6,9 +6,14 @@
     .add("draft", V.draft)
     .add("roster", V.roster)
     .add("activities", V.activities)
+    .add("jeopardy", V.jeopardy)
+    .add("brackets", V.brackets)
+    .add("superlatives", V.superlatives)
+    .add("challenges", V.challenges)
     .add("badges", V.badges)
     .add("hall", V.hall)
     .add("memes", V.memes)
+    .add("ceremony", V.ceremony)
     .add("settings", V.settings);
   Router.setNotFound(V.home);
 
@@ -21,6 +26,16 @@
   }
   Store.subscribe(syncTitle);
   syncTitle();
+
+  // Sound on/off toggle (retro SFX).
+  const sfxBtn = document.getElementById("sfx-toggle");
+  if (sfxBtn && window.SFX) {
+    const syncSfx = () => { sfxBtn.textContent = SFX.isMuted() ? "🔇" : "🔊"; };
+    syncSfx();
+    sfxBtn.addEventListener("click", () => { SFX.toggle(); syncSfx(); });
+  } else if (sfxBtn) {
+    sfxBtn.style.display = "none";
+  }
 
   // Mobile nav toggle.
   const toggle = document.getElementById("nav-toggle");
