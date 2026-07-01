@@ -7,6 +7,7 @@
     .add("roster", V.roster)
     .add("activities", V.activities)
     .add("badges", V.badges)
+    .add("hall", V.hall)
     .add("memes", V.memes)
     .add("settings", V.settings);
   Router.setNotFound(V.home);

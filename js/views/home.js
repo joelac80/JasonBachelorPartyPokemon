@@ -23,6 +23,7 @@
     { route: "roster",      emoji: "🎴", title: "The Squad", desc: "Trainer cards + favorite Pokémon" },
     { route: "activities",  emoji: "🗓️", title: "Game Plan", desc: "The weekend line-up" },
     { route: "badges",      emoji: "🏅", title: "Gym Badges", desc: "Earn badges + powers" },
+    { route: "hall",        emoji: "🌿", title: "Hall of Bulbasaur", desc: "Cards, fan art & shots" },
     { route: "memes",       emoji: "😂", title: "Meme Vault", desc: "The good stuff" },
     { route: "settings",    emoji: "⚙️", title: "Settings", desc: "Data, backup & reset" },
   ];
