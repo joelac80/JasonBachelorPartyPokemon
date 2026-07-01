@@ -2,6 +2,35 @@
 (function () {
   const { el, contrast } = U;
   const MEDALS = { 1: "🥇", 2: "🥈", 3: "🥉" };
+  const FORMAT_LABEL = {
+    bracket: "Head-to-head bracket", relay: "Team relay",
+    count: "Best score / streak", mystery: "Mystery format",
+  };
+
+  function showRules(ev) {
+    const body = el("div", { class: "rules-body" }, [
+      el("div", { class: "rules-top" }, [
+        el("span", { class: "rules-emoji" }, ev.emoji || "🎯"),
+        el("div", {}, [
+          el("div", { class: "rules-name" }, ev.name),
+          el("div", { class: "rules-meta" },
+            ev.points + " pts · " + (FORMAT_LABEL[ev.format] || "Custom")),
+        ]),
+      ]),
+      el("p", { class: "rules-text" }, ev.rules || ev.desc || "Rules TBD."),
+    ]);
+    Modal.open(ev.name + " — Rules", body, null, {});
+  }
+
+  // Highlight + scroll to an event row (used when the spinner lands on it).
+  function flashEventRow(evId) {
+    const row = document.querySelector('.sb-event[data-ev="' + evId + '"]');
+    if (!row) return;
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    row.classList.remove("hot");
+    void row.offsetWidth;
+    row.classList.add("hot");
+  }
 
   function scoreCell(ev, team) {
     const scores = Store.state.scores;
@@ -76,6 +105,17 @@
       el("p", { class: "page-sub" }, "The Beer Olympics. Award points and crown a champion."),
     ]));
 
+    // "What's next?" — spin to pick the next event to play.
+    if (events.length) {
+      root.appendChild(el("h2", { class: "section-title" }, "What's Next?"));
+      root.appendChild(Wheel.make({
+        items: events.map((e) => ({ label: e.name, ev: e })),
+        buttonLabel: "🎡 Spin the event",
+        hint: "Spin to pick the next event",
+        onPick: (item) => flashEventRow(item.ev.id),
+      }));
+    }
+
     // Live standings panel
     root.appendChild(el("h2", { class: "section-title" }, "Standings"));
     standingsHost = el("div", { class: "standings" });
@@ -107,11 +147,15 @@
 
     // event rows
     events.forEach((ev) => {
-      table.appendChild(el("div", { class: "sb-event" }, [
+      table.appendChild(el("div", {
+        class: "sb-event", dataset: { ev: ev.id }, title: "Tap for rules",
+        onClick: () => showRules(ev),
+      }, [
         el("span", { class: "sb-ev-emoji" }, ev.emoji || "🎯"),
         el("div", { class: "sb-ev-text" }, [
           el("div", { class: "sb-ev-name" }, ev.name),
           el("div", { class: "sb-ev-pts" }, ev.points + " pts • " + (ev.desc || "")),
+          el("div", { class: "sb-ev-rules" }, "ℹ︎ Rules"),
         ]),
       ]));
       teams.forEach((t) => table.appendChild(scoreCell(ev, t)));
