@@ -20,9 +20,9 @@ window.SEED = {
     guestOfHonor: "Jason Garza",
     title: "Jason Garza",
     subtitle: "Gotta Catch the Groom",
-    // The big weekend (local time).
-    startDate: "2026-07-07T17:00:00",
-    endDate: "2026-07-10T12:00:00",
+    // The big weekend (local time). Check in Thursday, leave Sunday.
+    startDate: "2026-07-09T17:00:00",
+    endDate: "2026-07-12T12:00:00",
     location: "Lake House · Bristol, Indiana",
     venue: "VRBO · 50567 E Indiana Lake Rd · Bristol, IN",
     // Optional hero banner image (e.g. the flyer art). Leave "" for the
@@ -187,13 +187,13 @@ window.SEED = {
   // array empty to hide the timeline and just show The Game Plan.
   // ---------------------------------------------------------------------------
   activities: [
-    { id: "a1", day: "Tuesday",   time: "5:00 PM",  title: "Arrival & Check-in", emoji: "🏡", desc: "Roll up to the lake house, claim beds, crack the first one." },
-    { id: "a2", day: "Tuesday",   time: "8:00 PM",  title: "Draft Night",         emoji: "📋", desc: "Spin the wheel. Draft the teams for Victory Road." },
-    { id: "a3", day: "Wednesday", time: "11:00 AM", title: "On the Water",        emoji: "🌊", desc: "Kayak, hot tub, football." },
-    { id: "a4", day: "Wednesday", time: "8:00 PM",  title: "Jason Jeopardy",      emoji: "❓", desc: "This-is-your-life trivia." },
-    { id: "a5", day: "Thursday",  time: "2:00 PM",  title: "Victory Road",        emoji: "🏆", desc: "The beer olympics. Let the games begin." },
-    { id: "a6", day: "Thursday",  time: "9:00 PM",  title: "Zimmy's",             emoji: "🍹", desc: "Margaritaville night — frozen drinks + live music." },
-    { id: "a7", day: "Friday",    time: "11:00 AM", title: "Recovery Brunch",     emoji: "🍳", desc: "Breakfast of champions before the road home." },
+    { id: "a1", day: "Thursday",  time: "5:00 PM",  title: "Arrival & Check-in", emoji: "🏡", desc: "Roll up to the lake house, claim beds, crack the first one." },
+    { id: "a2", day: "Thursday",  time: "8:00 PM",  title: "Draft Night",         emoji: "📋", desc: "Spin the wheel. Draft the teams for Victory Road." },
+    { id: "a3", day: "Friday",    time: "11:00 AM", title: "On the Water",        emoji: "🌊", desc: "Kayak, hot tub, football." },
+    { id: "a4", day: "Friday",    time: "8:00 PM",  title: "Jason Jeopardy",      emoji: "❓", desc: "This-is-your-life trivia." },
+    { id: "a5", day: "Saturday",  time: "2:00 PM",  title: "Victory Road",        emoji: "🏆", desc: "The beer olympics. Let the games begin." },
+    { id: "a6", day: "Saturday",  time: "9:00 PM",  title: "Zimmy's",             emoji: "🍹", desc: "Margaritaville night — frozen drinks + live music." },
+    { id: "a7", day: "Sunday",    time: "11:00 AM", title: "Recovery Brunch",     emoji: "🍳", desc: "Breakfast of champions before the road home." },
   ],
 
   // ---------------------------------------------------------------------------
@@ -224,12 +224,12 @@ window.SEED = {
   // moment and bragging rights. `points` optional (a suggested bounty).
   // ---------------------------------------------------------------------------
   challenges: [
-    { id: "c1", day: "Tuesday",   emoji: "📸", title: "Squad Selfie",       desc: "Get the whole crew in one photo before the first PBR is gone.", points: 25 },
-    { id: "c2", day: "Tuesday",   emoji: "🎣", title: "First Cast",         desc: "Land a catch (fish OR a Bobby Quinn) off the dock.", points: 25 },
-    { id: "c3", day: "Wednesday", emoji: "🌊", title: "Cannonball King",    desc: "Biggest splash off the dock — filmed for proof.", points: 50 },
-    { id: "c4", day: "Wednesday", emoji: "🏈", title: "Fernando Tribute",   desc: "Recreate a Fernando Mendoza touchdown celebration.", points: 25 },
-    { id: "c5", day: "Thursday",  emoji: "🌿", title: "Wild Bulbasaur",     desc: "Find/make a Bulbasaur in the wild (drawn, built, or spotted).", points: 50 },
-    { id: "c6", day: "Thursday",  emoji: "🍹", title: "Zimmy's Cheers",     desc: "Full-squad frozen-drink toast to the groom.", points: 50 },
+    { id: "c1", day: "Thursday",  emoji: "📸", title: "Squad Selfie",       desc: "Get the whole crew in one photo before the first PBR is gone.", points: 25 },
+    { id: "c2", day: "Thursday",  emoji: "🎣", title: "First Cast",         desc: "Land a catch (fish OR a Bobby Quinn) off the dock.", points: 25 },
+    { id: "c3", day: "Friday",    emoji: "🌊", title: "Cannonball King",    desc: "Biggest splash off the dock — filmed for proof.", points: 50 },
+    { id: "c4", day: "Friday",    emoji: "🏈", title: "Fernando Tribute",   desc: "Recreate a Fernando Mendoza touchdown celebration.", points: 25 },
+    { id: "c5", day: "Saturday",  emoji: "🌿", title: "Wild Bulbasaur",     desc: "Find/make a Bulbasaur in the wild (drawn, built, or spotted).", points: 50 },
+    { id: "c6", day: "Saturday",  emoji: "🍹", title: "Zimmy's Cheers",     desc: "Full-squad frozen-drink toast to the groom.", points: 50 },
     { id: "c7", day: "Any",       emoji: "🤝", title: "Groom's Wingman",    desc: "Get Jason a fresh drink before he asks. Every time counts.", points: 10 },
     { id: "c8", day: "Any",       emoji: "🎤", title: "Karaoke Courage",    desc: "Sing the Pokémon theme, full send, no notes.", points: 25 },
   ],
