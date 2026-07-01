@@ -387,3 +387,48 @@ body {
   .draft-layout { grid-template-columns: 1fr; }
   .oak-tip { flex-direction: column; text-align: center; }
 }
+
+/* ---------------- Draft board (captains + sprites) ---------------- */
+.draft-cols { align-items: start; }
+.draft-col { display: flex; flex-direction: column; }
+.draft-captain-slot { padding: 8px; border-bottom: 2px dashed var(--line); }
+.set-captain { width: 100%; }
+.draft-members { padding: 8px; display: flex; flex-direction: column; gap: 6px; min-height: 20px; }
+.draft-member { display: flex; align-items: center; gap: 8px; background: var(--paper); border-radius: 8px; padding: 5px 8px; }
+.draft-member.captain { background: #fff7d6; border: 2px solid var(--pokeyellow); }
+.draft-member-main { flex: 1; display: flex; flex-direction: column; line-height: 1.15; }
+.draft-member-name { font-weight: 700; font-size: 14px; }
+.captain-tag { font-family: var(--pixel); font-size: 8px; color: var(--gold); }
+.draft-member .x { background: none; border: none; color: var(--danger); font-size: 18px; cursor: pointer; }
+.draft-thumb { width: 34px; height: 34px; image-rendering: pixelated; flex: none; }
+.draft-thumb-ball { width: 26px; height: 26px; border-radius: 50%; flex: none;
+  background: linear-gradient(#ee1515 0 46%, #111 46% 54%, #fff 54% 100%); border: 2px solid #111; }
+.draft-add { margin: 8px; }
+.pool-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.pool-chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 2px solid var(--line);
+  border-radius: 999px; padding: 4px 12px 4px 4px; font-weight: 600; }
+
+/* draft picker modal */
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.pick-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;
+  background: var(--paper); border: 2px solid var(--line); border-radius: 12px; padding: 12px 8px; }
+.pick-item:hover { border-color: var(--pokered); background: #fff; }
+.pick-item .draft-thumb, .pick-item .draft-thumb-ball { width: 48px; height: 48px; }
+.pick-name { font-weight: 800; font-size: 13px; text-align: center; }
+.pick-fav { font-size: 11px; color: var(--ink-dim); }
+
+/* ---------------- Victory Road: event rules + spinner ---------------- */
+.sb-event { cursor: pointer; }
+.sb-event:hover { border-color: var(--pokered); }
+.sb-ev-rules { font-size: 11px; font-weight: 800; color: var(--pokeblue); margin-top: 2px; }
+.sb-event.hot { animation: hotrow 1.4s ease; }
+@keyframes hotrow {
+  0%, 100% { box-shadow: none; }
+  30% { box-shadow: 0 0 0 3px var(--pokeyellow); background: #fffbe6; }
+}
+.rules-body { display: flex; flex-direction: column; gap: 12px; }
+.rules-top { display: flex; align-items: center; gap: 12px; }
+.rules-emoji { font-size: 34px; }
+.rules-name { font-weight: 900; font-size: 18px; }
+.rules-meta { font-family: var(--pixel); font-size: 11px; color: var(--pokered); }
+.rules-text { margin: 0; font-size: 15px; line-height: 1.5; }
