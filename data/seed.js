@@ -94,15 +94,26 @@ window.SEED = {
   // ---------------------------------------------------------------------------
   // VICTORY ROAD — the beer olympics events. Each event is worth points.
   // ---------------------------------------------------------------------------
+  //   points: awarded to the winning team; `rules` explains how it's played
+  //   and scored (format: "bracket" = head-to-head match, "count" = best
+  //   score/streak wins, "relay" = first team done wins).
   events: [
-    { id: "beerpong",  name: "Beer Pong",   emoji: "🏓", points: 100, desc: "Classic cups. Elbows behind the table." },
-    { id: "flipcup",   name: "Flip Cup",    emoji: "🥤", points: 75,  desc: "Team relay. Drink, flip, repeat." },
-    { id: "cornhole",  name: "Cornhole",    emoji: "🌽", points: 75,  desc: "Bags in the hole. 21 to win." },
-    { id: "kanjam",    name: "Kan Jam",     emoji: "🥏", points: 50,  desc: "Frisbee + can. Deflect and dunk." },
-    { id: "diceroll",  name: "Beer Die",    emoji: "🎲", points: 50,  desc: "Bounce the die off the table." },
-    { id: "boatrace",  name: "Boat Race",   emoji: "🚣", points: 100, desc: "Line up. Chug in sequence. Anchor drinks last." },
-    { id: "football",  name: "Football Toss", emoji: "🏈", points: 50, desc: "Keep pounding. Dial in the spiral." },
-    { id: "wildcard",  name: "Wild Card",   emoji: "⭐", points: 150, desc: "The commissioner's mystery event." },
+    { id: "beerpong",  name: "Beer Pong",   emoji: "🏓", points: 100, format: "bracket", desc: "Classic cups, elbows behind the table.",
+      rules: "10-cup racks, standard house rules (re-rack on request). Bracket play — win your match to take the 100. Sink the final two cups and the loser owes a lap of the dock." },
+    { id: "flipcup",   name: "Flip Cup",    emoji: "🥤", points: 75,  format: "relay", desc: "Full-team relay. Drink, flip, repeat.",
+      rules: "Line up the whole team. Drink, set the cup on the edge, flip it upright, next person goes. First team with every cup flipped wins the 75." },
+    { id: "cornhole",  name: "Cornhole",    emoji: "🌽", points: 75,  format: "bracket", desc: "Bags in the hole. 2v2.",
+      rules: "2v2, play to 21 (cancellation scoring, must win by 1). Bracket — win your match for the 75." },
+    { id: "kanjam",    name: "Kan Jam",     emoji: "🥏", points: 50,  format: "bracket", desc: "Frisbee + can. Deflect and dunk.",
+      rules: "2v2 to 21. A clean throw straight into the slot is an instant win. Bracket winner scores the 50." },
+    { id: "diceroll",  name: "Beer Die",    emoji: "🎲", points: 50,  format: "bracket", desc: "Bounce the die off the table.",
+      rules: "2v2. Lob the die so it arcs above eye level and lands on the opponents' side; they try to catch it one-handed with a full cup. First to 11, win by 2. Bracket winner takes the 50." },
+    { id: "boatrace",  name: "Boat Race",   emoji: "🚣", points: 100, format: "relay", desc: "Chug relay. Anchor drinks last.",
+      rules: "Whole team in a line, drink in sequence — you can't start until the person before you finishes and flips. Anchor goes last. First team fully done wins the 100." },
+    { id: "football",  name: "Football Toss", emoji: "🏈", points: 50, format: "count", desc: "Catch streak with a beer in hand.",
+      rules: "Not a bracket — a count. Partner up and see how many catches in a row you can make while each of you holds a full beer. Every dropped ball = 3 sips each and the streak resets. Highest streak of the weekend wins the 50." },
+    { id: "wildcard",  name: "Wild Card",   emoji: "⭐", points: 150, format: "mystery", desc: "The commissioner's mystery event.",
+      rules: "Announced day-of by the commissioner (that's the groom's call, or best man's). Worth the most points — scoring format revealed at kickoff." },
   ],
 
   // ---------------------------------------------------------------------------
