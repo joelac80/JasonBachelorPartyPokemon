@@ -24,6 +24,7 @@
       gymBadges: clone(seed.gymBadges || []),
       oakTip: clone(seed.oakTip || {}),
       memes: clone(seed.memes || []),
+      hall: clone(seed.hall || []),
       // scores[eventId][teamId] = points awarded
       scores: {},
       // draft metadata
