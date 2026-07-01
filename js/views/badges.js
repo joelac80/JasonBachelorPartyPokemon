@@ -53,9 +53,16 @@
           el("button", { class: "btn primary sm", onClick: () => award(b.id) }, "🏅 Award badge"),
         ]);
 
+    // Icon precedence: user-supplied file (b.icon) > built-in SVG > emoji disc.
+    const icon = b.icon || (window.BADGE_ICONS && window.BADGE_ICONS[b.id]) || "";
+    const disc = icon
+      ? el("div", { class: "gym-badge-disc has-img" },
+          el("img", { class: "gym-badge-img", src: icon, alt: b.name }))
+      : el("div", { class: "gym-badge-disc", style: { background: b.color, color: fg } }, b.emoji || "🏅");
+
     return el("div", { class: "gym-badge" + (holder ? " claimed" : "") }, [
       el("div", { class: "gym-badge-top" }, [
-        el("div", { class: "gym-badge-disc", style: { background: b.color, color: fg } }, b.emoji || "🏅"),
+        disc,
         el("div", { class: "gym-badge-name" }, b.name),
       ]),
       el("div", { class: "gym-badge-row" }, [
