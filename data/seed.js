@@ -41,7 +41,7 @@ window.SEED = {
     { id: "grass",  name: "Team Bulbasaur", emoji: "🌿", color: "#5fbf6a", captain: "" },
     { id: "fire",   name: "Team Charizard", emoji: "🔥", color: "#f5732f", captain: "" },
     { id: "water",  name: "Team Squirtle",  emoji: "💧", color: "#3aa0e6", captain: "" },
-    { id: "normal", name: "Team Persian",   emoji: "🐾", color: "#c9a227", captain: "" },
+    { id: "normal", name: "Team Pikachu",   emoji: "⚡", color: "#f2c744", captain: "" },
   ],
 
   // ---------------------------------------------------------------------------
