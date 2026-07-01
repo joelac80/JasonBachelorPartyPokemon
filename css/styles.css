@@ -446,6 +446,8 @@ body {
   display: flex; align-items: center; justify-content: center; font-size: 26px;
   border: 3px solid var(--ink); box-shadow: var(--shadow);
 }
+.gym-badge-disc.has-img { background: transparent; border: none; box-shadow: none; }
+.gym-badge-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25)); }
 .gym-badge-name { font-family: var(--pixel); font-size: 14px; }
 .gym-badge-row { display: flex; flex-direction: column; gap: 2px; }
 .gym-badge-row.power { background: #fff7d6; border-radius: 8px; padding: 6px 8px; }
