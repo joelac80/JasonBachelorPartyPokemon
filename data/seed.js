@@ -81,7 +81,7 @@ window.SEED = {
     },
     { id: "joe",    name: "Joe Memmolo Jr #26", nickname: "", rank: "Elite Four", role: "Best Man",  team: "", type: "water",    favorite: "Totodile", favoriteId: 158, photo: "", catchphrase: "" },
     { id: "chris",  name: "Chris Davies",       nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "water",    favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
-    { id: "jeremy", name: "Jeremy Warren",      nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "electric", favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "jeremy", name: "Jeremy Warren",      nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "bug",      favorite: "Beedrill", favoriteId: 15, photo: "", catchphrase: "" },
     { id: "jamie",  name: "Jamie Fujinaka",     nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "fairy",    favorite: "Tinkaton", favoriteId: 959, photo: "", catchphrase: "" },
     { id: "dan",    name: "Dan Kania",          nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fire",     favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
     { id: "joseph", name: "Joseph Thomas",      nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fire",     favorite: "Vulpix", favoriteId: 37, photo: "", catchphrase: "" },
