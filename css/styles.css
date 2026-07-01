@@ -432,3 +432,31 @@ body {
 .rules-name { font-weight: 900; font-size: 18px; }
 .rules-meta { font-family: var(--pixel); font-size: 11px; color: var(--pokered); }
 .rules-text { margin: 0; font-size: 15px; line-height: 1.5; }
+
+/* ---------------- Gym Badges ---------------- */
+.gym-badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 10px; }
+.gym-badge {
+  display: flex; flex-direction: column; gap: 10px; background: var(--panel);
+  border: 3px solid var(--line); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+}
+.gym-badge.claimed { border-color: var(--pokeyellow); }
+.gym-badge-top { display: flex; align-items: center; gap: 10px; }
+.gym-badge-disc {
+  width: 48px; height: 48px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center; font-size: 26px;
+  border: 3px solid var(--ink); box-shadow: var(--shadow);
+}
+.gym-badge-name { font-family: var(--pixel); font-size: 14px; }
+.gym-badge-row { display: flex; flex-direction: column; gap: 2px; }
+.gym-badge-row.power { background: #fff7d6; border-radius: 8px; padding: 6px 8px; }
+.gym-badge-label { font-family: var(--pixel); font-size: 9px; color: var(--ink-dim); letter-spacing: 1px; }
+.gym-badge-text { font-size: 14px; }
+.badge-holder { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line); min-height: 44px; }
+.badge-holder.held { background: var(--paper); border-radius: 8px; padding: 6px 8px; border-top: none; }
+.badge-holder.used { opacity: .7; }
+.badge-holder-main { display: flex; flex-direction: column; line-height: 1.15; }
+.badge-holder-name { font-weight: 800; }
+.badge-holder-status { font-size: 11px; color: var(--ink-dim); font-weight: 700; }
+.badge-holder.used .badge-holder-status { color: var(--danger); }
+.badge-unclaimed { color: var(--ink-dim); font-style: italic; }
+.badge-actions { display: flex; gap: 6px; flex-wrap: wrap; }
