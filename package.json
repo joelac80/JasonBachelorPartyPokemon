@@ -1,0 +1,16 @@
+{
+  "name": "jason-bachelor-party-hq",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local Pokemon-themed bachelor party hub (Victory Road, draft wheel, trainer cards).",
+  "scripts": {
+    "start": "serve -l 3000 .",
+    "dev": "serve -l 3000 ."
+  },
+  "dependencies": {
+    "serve": "14.2.4"
+  },
+  "stackblitz": {
+    "startCommand": "npm start"
+  }
+}
