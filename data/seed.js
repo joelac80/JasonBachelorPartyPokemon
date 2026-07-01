@@ -4,33 +4,38 @@
  * This is the ONE file you edit to plug in real info.
  * It defines a global `SEED` object (no build step, no imports needed).
  *
- * When you get the real list of attendees / activities, edit the arrays
- * below. The app copies this into browser storage on first load. To force
- * a reset after editing, open the app and use Settings ▸ "Reset to defaults"
- * (or clear the browser's local storage for this page).
+ * After editing, open the app and use Settings ▸ "Reset to defaults" to
+ * reload this fresh data (that wipes in-app edits/scores, so do it before
+ * the party). You can also just edit everything live in the app.
+ *
+ * Custom art slots: drop image files into /assets and point the matching
+ * field at them (e.g. hero.image, attendees[].photo, card.art, badges[].img).
+ * Any field left "" falls back to a nice built-in placeholder.
  */
 window.SEED = {
   // ---------------------------------------------------------------------------
   // PARTY BASICS
   // ---------------------------------------------------------------------------
   party: {
-    guestOfHonor: "Jason",
-    title: "Jason's Bachelor Party",
-    subtitle: "Gotta Party 'Em All",
-    // The big weekend. Edit to the real date/time (local time).
-    startDate: "2026-07-10T17:00:00",
-    endDate: "2026-07-13T12:00:00",
-    location: "The Lake House",
-    // Short blurb shown on the home page.
+    guestOfHonor: "Jason Garza",
+    title: "Jason Garza",
+    subtitle: "Gotta Catch the Groom",
+    // The big weekend (local time).
+    startDate: "2026-07-07T17:00:00",
+    endDate: "2026-07-10T12:00:00",
+    location: "Lake House · Bristol, Indiana",
+    venue: "VRBO · 50567 E Indiana Lake Rd · Bristol, IN",
+    // Optional hero banner image (e.g. the flyer art). Leave "" for the
+    // built-in Bulbasaur/sunburst banner.
+    heroImage: "",
     blurb:
       "One trainer. One last quest before the big day. Bulbasaur energy, " +
-      "Hoosier pride, Panthers grit, and pure lake house vibes.",
+      "Hoosier pride, Carolina Persians grit, and pure lake house vibes.",
   },
 
   // ---------------------------------------------------------------------------
-  // TEAMS — used by Victory Road (beer olympics) + the Draft Board
-  // Pokemon-themed, tied to the party's motifs. Add/remove freely.
-  // `color` drives the team's accent color across the app.
+  // TEAMS — used by Victory Road (beer olympics) + the Draft Board.
+  // These are the teams the squad gets DRAFTED into at the party.
   // ---------------------------------------------------------------------------
   teams: [
     { id: "grass",  name: "Team Bulbasaur", emoji: "🌿", color: "#5fbf6a", captain: "" },
@@ -40,55 +45,117 @@ window.SEED = {
   ],
 
   // ---------------------------------------------------------------------------
-  // ATTENDEES — "Trainers". These are placeholders — swap in real names.
-  // `team` can be "" (undrafted) or a team id from the list above.
-  // `type` is a Pokemon type used for the trainer card flavor/color.
+  // THE SQUAD — the real crew (from the flyer).
+  //   rank:  "Champion" | "Elite Four" | "Gym Leader"  (drives the roster grouping)
+  //   role:  free text shown on the card (Groom / Best Man / Groomsman / The Squad)
+  //   team:  "" (undrafted) or a team id above
+  //   photo: "" or a path like "assets/photos/joe.jpg"
+  //   card:  optional full trainer-card detail (see Jason for the shape)
   // ---------------------------------------------------------------------------
   attendees: [
-    { id: "jason",  name: "Jason",   nickname: "The Champion", team: "", type: "grass",    role: "Groom",   catchphrase: "Bulbasaur, I choose you." },
-    { id: "p2",     name: "Trainer 2", nickname: "", team: "", type: "fire",     role: "Best Man", catchphrase: "" },
-    { id: "p3",     name: "Trainer 3", nickname: "", team: "", type: "water",    role: "Groomsman", catchphrase: "" },
-    { id: "p4",     name: "Trainer 4", nickname: "", team: "", type: "electric", role: "Groomsman", catchphrase: "" },
-    { id: "p5",     name: "Trainer 5", nickname: "", team: "", type: "normal",   role: "Attendee", catchphrase: "" },
-    { id: "p6",     name: "Trainer 6", nickname: "", team: "", type: "fighting", role: "Attendee", catchphrase: "" },
-    { id: "p7",     name: "Trainer 7", nickname: "", team: "", type: "psychic",  role: "Attendee", catchphrase: "" },
-    { id: "p8",     name: "Trainer 8", nickname: "", team: "", type: "water",    role: "Attendee", catchphrase: "" },
+    {
+      id: "jason", name: "Jason Garza", nickname: "Bulbasaur Fiend",
+      rank: "Champion", role: "The Groom", team: "", type: "grass",
+      level: 100, photo: "",
+      favorite: "Bulbasaur", favoriteId: 1,
+      catchphrase: "Bulbasaur, I choose you.",
+      card: {
+        dex: "No.001", number: "001/034", stage: "Basic Pokémon",
+        hp: 100, type: "grass", holo: true, illus: "The Squad",
+        art: "", // drop the Bulbasaur card art here, e.g. "assets/cards/jason.png"
+        flavor: "The Groom Pokémon. Height: 5'10\". Weight: Taken by Bob.",
+        attacks: [
+          { name: "Hoosier Daddy", cost: 1, dmg: "20",
+            text: "Fernando on loop + a pic of Fernando Mendoza." },
+          { name: "Solar Beam", cost: 3, dmg: "90",
+            text: "Soaks up the sun to power up anything the weekend throws." },
+          { name: "Take Down", cost: 4, dmg: "100",
+            text: "Full send to the finish — recoil lands the next morning." },
+        ],
+        power: { name: "Keep Pounding",
+          text: "Once each day, throw the football and pound a PBR for no reason at all." },
+        weakness: "Bobby Quinn ×2",
+        resistance: "Hangover −30",
+        retreat: 3,
+      },
+    },
+    { id: "joe",    name: "Joe Memmolo Jr #26", nickname: "", rank: "Elite Four", role: "Best Man",  team: "", type: "water",    favorite: "Totodile", favoriteId: 158, photo: "", catchphrase: "" },
+    { id: "chris",  name: "Chris Davies",       nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "water",    favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "jeremy", name: "Jeremy Warren",      nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "electric", favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "jamie",  name: "Jamie Fujinaka",     nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "psychic",  favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "dan",    name: "Dan Kania",          nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fire",     favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "joseph", name: "Joseph Thomas",      nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "rock",     favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "sid",    name: "Sid Suresh",         nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "ground",   favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "matt",   name: "Matt Spicer",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fire",     favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "tyler",  name: "Tyler Logan",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fighting", favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "brian",  name: "Brian Mallon",       nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "dark",     favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
   ],
 
   // ---------------------------------------------------------------------------
   // VICTORY ROAD — the beer olympics events. Each event is worth points.
-  // The scoreboard lets you award points per team per event.
   // ---------------------------------------------------------------------------
   events: [
-    { id: "beerpong",  name: "Beer Pong",     emoji: "🏓", points: 100, desc: "Classic cups. Elbows behind the table." },
-    { id: "flipcup",   name: "Flip Cup",      emoji: "🥤", points: 75,  desc: "Team relay. Drink, flip, repeat." },
-    { id: "cornhole",  name: "Cornhole",      emoji: "🌽", points: 75,  desc: "Bags in the hole. 21 to win." },
-    { id: "kanjam",    name: "Kan Jam",       emoji: "🥏", points: 50,  desc: "Frisbee + can. Deflect and dunk." },
-    { id: "diceroll",  name: "Beer Die",      emoji: "🎲", points: 50,  desc: "Bounce the die off the table." },
-    { id: "boatrace",  name: "Boat Race",     emoji: "🚣", points: 100, desc: "Line up. Chug in sequence. Anchor drinks last." },
-    { id: "laddergolf",name: "Ladder Golf",   emoji: "🪜", points: 50,  desc: "Toss the bolas. Wrap the rungs." },
-    { id: "wildcard",  name: "Wild Card",     emoji: "⭐", points: 150, desc: "The commissioner's mystery event." },
+    { id: "beerpong",  name: "Beer Pong",   emoji: "🏓", points: 100, desc: "Classic cups. Elbows behind the table." },
+    { id: "flipcup",   name: "Flip Cup",    emoji: "🥤", points: 75,  desc: "Team relay. Drink, flip, repeat." },
+    { id: "cornhole",  name: "Cornhole",    emoji: "🌽", points: 75,  desc: "Bags in the hole. 21 to win." },
+    { id: "kanjam",    name: "Kan Jam",     emoji: "🥏", points: 50,  desc: "Frisbee + can. Deflect and dunk." },
+    { id: "diceroll",  name: "Beer Die",    emoji: "🎲", points: 50,  desc: "Bounce the die off the table." },
+    { id: "boatrace",  name: "Boat Race",   emoji: "🚣", points: 100, desc: "Line up. Chug in sequence. Anchor drinks last." },
+    { id: "football",  name: "Football Toss", emoji: "🏈", points: 50, desc: "Keep pounding. Dial in the spiral." },
+    { id: "wildcard",  name: "Wild Card",   emoji: "⭐", points: 150, desc: "The commissioner's mystery event." },
   ],
 
   // ---------------------------------------------------------------------------
-  // ACTIVITIES / ITINERARY — the weekend schedule + fun stuff.
-  // `day` groups them; `time` is free text.
+  // THE GAME PLAN — the weekend activities (from the flyer). `wildcard: true`
+  // gets the special highlighted treatment (Zimmy's).
+  // ---------------------------------------------------------------------------
+  gamePlan: [
+    { id: "g1", name: "Mario Kart & Smash", emoji: "🎮", note: "Switch 2 throwdowns" },
+    { id: "g2", name: "Nintendo Party",     emoji: "🍄", note: "Mario Party & co." },
+    { id: "g3", name: "Jason Jeopardy",     emoji: "❓", note: "this-is-your-life trivia" },
+    { id: "g4", name: "Master Trainer",     emoji: "🎲", note: "board game, but you drink" },
+    { id: "g5", name: "On the Water",       emoji: "🌊", note: "kayak · hot tub · football" },
+    { id: "g6", name: "PBR Runs",           emoji: "🍺", note: "keep the cooler stocked" },
+    { id: "gw", name: "Zimmy's",            emoji: "🍹", note: "Margaritaville-themed · frozen drinks · live music", wildcard: true },
+  ],
+
+  // ---------------------------------------------------------------------------
+  // FAN BADGES — the allegiances. Drop logo files in /assets/badges or leave
+  // img "" for a styled text badge.
+  // ---------------------------------------------------------------------------
+  badges: [
+    { id: "iu",       name: "Indiana Hoosiers",  color: "#a3122b", img: "" },
+    { id: "persians", name: "Carolina Persians", color: "#0085ca", img: "" },
+    { id: "pbr",      name: "Pabst Blue Ribbon", color: "#1f3a93", img: "" },
+  ],
+
+  // ---------------------------------------------------------------------------
+  // OAK'S TIP — the fun quote block. `image` optional (the Oak meme).
+  // ---------------------------------------------------------------------------
+  oakTip: {
+    quote: "The early bird gets the worm, or in this case, the Bobby Quinn.",
+    attribution: "Professor Oak, dispensing questionable wisdom since Episode 1",
+    image: "",
+  },
+
+  // ---------------------------------------------------------------------------
+  // ITINERARY — optional scheduled version of the weekend (by day). Leave the
+  // array empty to hide the timeline and just show The Game Plan.
   // ---------------------------------------------------------------------------
   activities: [
-    { id: "a1", day: "Friday",   time: "5:00 PM", title: "Arrival & Check-in", emoji: "🏡", desc: "Roll up to the lake house, claim beds, crack the first one." },
-    { id: "a2", day: "Friday",   time: "7:00 PM", title: "Welcome Grill-out",   emoji: "🍔", desc: "Burgers, brats, and the opening ceremony toast." },
-    { id: "a3", day: "Friday",   time: "9:00 PM", title: "Draft Night",         emoji: "📋", desc: "Spin the wheel. Draft the teams for Victory Road." },
-    { id: "a4", day: "Saturday", time: "10:00 AM",title: "Lake Day",            emoji: "🌊", desc: "Boats, tubing, and floating with a cold one." },
-    { id: "a5", day: "Saturday", time: "2:00 PM", title: "Victory Road Begins", emoji: "🏆", desc: "The beer olympics. Let the games begin." },
-    { id: "a6", day: "Saturday", time: "8:00 PM", title: "Bonfire & Awards",    emoji: "🔥", desc: "Crown the champions. Roast the groom." },
-    { id: "a7", day: "Sunday",   time: "11:00 AM",title: "Recovery Brunch",     emoji: "🍳", desc: "Breakfast of champions before the road home." },
+    { id: "a1", day: "Tuesday",   time: "5:00 PM",  title: "Arrival & Check-in", emoji: "🏡", desc: "Roll up to the lake house, claim beds, crack the first one." },
+    { id: "a2", day: "Tuesday",   time: "8:00 PM",  title: "Draft Night",         emoji: "📋", desc: "Spin the wheel. Draft the teams for Victory Road." },
+    { id: "a3", day: "Wednesday", time: "11:00 AM", title: "On the Water",        emoji: "🌊", desc: "Kayak, hot tub, football." },
+    { id: "a4", day: "Wednesday", time: "8:00 PM",  title: "Jason Jeopardy",      emoji: "❓", desc: "This-is-your-life trivia." },
+    { id: "a5", day: "Thursday",  time: "2:00 PM",  title: "Victory Road",        emoji: "🏆", desc: "The beer olympics. Let the games begin." },
+    { id: "a6", day: "Thursday",  time: "9:00 PM",  title: "Zimmy's",             emoji: "🍹", desc: "Margaritaville night — frozen drinks + live music." },
+    { id: "a7", day: "Friday",    time: "11:00 AM", title: "Recovery Brunch",     emoji: "🍳", desc: "Breakfast of champions before the road home." },
   ],
 
   // ---------------------------------------------------------------------------
-  // MEMES — local image files in /assets/memes (or paste image URLs).
-  // Start empty; add your own. `src` can be a path or a data URL.
+  // MEMES — add in-app, or seed paths here (e.g. the Oak's Tip screenshot).
   // ---------------------------------------------------------------------------
   memes: [
-    // { id: "m1", caption: "When Jason says one more round", src: "assets/memes/example.jpg" },
+    // { id: "m1", caption: "Oak's questionable wisdom", src: "assets/memes/oak.png" },
   ],
 };
