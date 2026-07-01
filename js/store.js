@@ -21,6 +21,7 @@
       activities: clone(seed.activities || []),
       gamePlan: clone(seed.gamePlan || []),
       badges: clone(seed.badges || []),
+      gymBadges: clone(seed.gymBadges || []),
       oakTip: clone(seed.oakTip || {}),
       memes: clone(seed.memes || []),
       // scores[eventId][teamId] = points awarded
