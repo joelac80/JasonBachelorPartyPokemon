@@ -599,3 +599,26 @@ body {
 .cer-award-emoji { font-size: 24px; }
 .cer-award-label { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); text-transform: uppercase; }
 .cer-award-winner { font-weight: 800; }
+
+/* ---------------- Hall: Bulbasaur card collection ---------------- */
+.bulba-collection { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.bulba-card {
+  margin: 0; background: var(--panel); border: 2px solid var(--line); border-radius: 12px;
+  overflow: hidden; cursor: pointer; box-shadow: var(--shadow); transition: transform .12s, box-shadow .12s;
+}
+.bulba-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.bulba-card-frame {
+  background: radial-gradient(circle at 50% 35%, #eafce6, #cfe8bf); padding: 10px;
+  display: flex; align-items: center; justify-content: center; min-height: 180px;
+}
+.bulba-card-img { width: 100%; border-radius: 6px; display: block; }
+.bulba-card-fallback { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 30px 0; }
+.bulba-card-fallback-txt { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); text-transform: uppercase; }
+.bulba-card-cap { padding: 8px 10px; }
+.bulba-card-set { font-weight: 800; font-size: 13px; line-height: 1.2; }
+.bulba-card-sub { color: var(--ink-dim); font-size: 11px; margin-top: 2px; }
+.bulba-zoom { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.bulba-zoom-img { max-width: 100%; max-height: 62vh; border-radius: 10px; box-shadow: var(--shadow-lg); }
+.bulba-zoom-meta { text-align: center; }
+.bulba-zoom-set { font-family: var(--pixel); font-size: 14px; }
+.bulba-zoom-sub { color: var(--ink-dim); font-size: 12px; margin-top: 4px; }
