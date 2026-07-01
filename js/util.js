@@ -20,7 +20,14 @@
         const v = attrs[k];
         if (v == null || v === false) continue;
         if (k === "class") node.className = v;
-        else if (k === "style" && typeof v === "object") Object.assign(node.style, v);
+        else if (k === "style" && typeof v === "object") {
+          // Assign each property; use setProperty for CSS custom props (--x),
+          // which are silently ignored by Object.assign / bracket assignment.
+          for (const sk in v) {
+            if (sk.charAt(0) === "-" && sk.charAt(1) === "-") node.style.setProperty(sk, v[sk]);
+            else node.style[sk] = v[sk];
+          }
+        }
         else if (k.startsWith("on") && typeof v === "function") {
           node.addEventListener(k.slice(2).toLowerCase(), v);
         } else if (k === "dataset") {

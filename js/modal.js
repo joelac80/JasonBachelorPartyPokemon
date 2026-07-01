@@ -16,7 +16,7 @@
           : null,
       ]);
 
-      const dialog = el("div", { class: "modal" }, [
+      const dialog = el("div", { class: "modal" + (opts.wide ? " wide" : "") }, [
         el("div", { class: "modal-head" }, [
           el("h3", {}, title),
           el("button", { class: "modal-x", onClick: close }, "×"),

@@ -3,7 +3,7 @@
  * Exposes a global `Store`. No frameworks, no build step.
  */
 (function () {
-  const KEY = "jasonBachHub.v1";
+  const KEY = "jasonBachHub.v2";
 
   // Deep clone helper (structuredClone with a JSON fallback for old browsers).
   function clone(obj) {
@@ -19,6 +19,9 @@
       attendees: clone(seed.attendees || []),
       events: clone(seed.events || []),
       activities: clone(seed.activities || []),
+      gamePlan: clone(seed.gamePlan || []),
+      badges: clone(seed.badges || []),
+      oakTip: clone(seed.oakTip || {}),
       memes: clone(seed.memes || []),
       // scores[eventId][teamId] = points awarded
       scores: {},
@@ -80,6 +83,9 @@
     // ---- Convenience selectors -------------------------------------------
     team(id) { return this.state.teams.find((t) => t.id === id) || null; },
     attendee(id) { return this.state.attendees.find((a) => a.id === id) || null; },
+
+    // Offline Pokemon sprite (base64 data URI) for a National Dex id, or "".
+    sprite(id) { return (window.SPRITES && window.SPRITES[id]) || ""; },
 
     // Total score for a team across all events.
     teamTotal(teamId) {
