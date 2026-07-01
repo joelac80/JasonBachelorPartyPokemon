@@ -202,4 +202,102 @@ window.SEED = {
   memes: [
     // { id: "m1", caption: "Oak's questionable wisdom", src: "assets/memes/oak.png" },
   ],
+
+  // ---------------------------------------------------------------------------
+  // SUPERLATIVES — end-of-weekend award categories the crew votes on live.
+  // Votes are cast in-app (one tap per vote); the leader wins the trophy at
+  // the Champion Ceremony. Add/remove categories freely.
+  // ---------------------------------------------------------------------------
+  superlatives: [
+    { id: "mvp",       emoji: "🏆", title: "Weekend MVP",           desc: "Carried the vibes start to finish." },
+    { id: "sips",      emoji: "🍺", title: "Most Sips Taken",        desc: "The human keg. Never not holding one." },
+    { id: "drop",      emoji: "🤦", title: "Best Drop / Fumble",     desc: "The clumsiest moment of the trip." },
+    { id: "firstbed",  emoji: "😴", title: "First to Bed",           desc: "Tapped out before the anthem." },
+    { id: "catchgroom",emoji: "💍", title: "Most Likely to Catch the Groom", desc: "Stuck to Jason like a Poké Ball." },
+    { id: "chef",      emoji: "🍳", title: "Lake House Chef",        desc: "Fed the squad when it mattered." },
+    { id: "hypeman",   emoji: "📣", title: "Ultimate Hype Man",      desc: "Loudest, proudest, most contagious energy." },
+    { id: "wildcard",  emoji: "🃏", title: "Wild Card Legend",       desc: "Did the thing nobody saw coming." },
+  ],
+
+  // ---------------------------------------------------------------------------
+  // CATCH OF THE DAY — daily photo/dare challenges. Complete one for a badge
+  // moment and bragging rights. `points` optional (a suggested bounty).
+  // ---------------------------------------------------------------------------
+  challenges: [
+    { id: "c1", day: "Tuesday",   emoji: "📸", title: "Squad Selfie",       desc: "Get the whole crew in one photo before the first PBR is gone.", points: 25 },
+    { id: "c2", day: "Tuesday",   emoji: "🎣", title: "First Cast",         desc: "Land a catch (fish OR a Bobby Quinn) off the dock.", points: 25 },
+    { id: "c3", day: "Wednesday", emoji: "🌊", title: "Cannonball King",    desc: "Biggest splash off the dock — filmed for proof.", points: 50 },
+    { id: "c4", day: "Wednesday", emoji: "🏈", title: "Fernando Tribute",   desc: "Recreate a Fernando Mendoza touchdown celebration.", points: 25 },
+    { id: "c5", day: "Thursday",  emoji: "🌿", title: "Wild Bulbasaur",     desc: "Find/make a Bulbasaur in the wild (drawn, built, or spotted).", points: 50 },
+    { id: "c6", day: "Thursday",  emoji: "🍹", title: "Zimmy's Cheers",     desc: "Full-squad frozen-drink toast to the groom.", points: 50 },
+    { id: "c7", day: "Any",       emoji: "🤝", title: "Groom's Wingman",    desc: "Get Jason a fresh drink before he asks. Every time counts.", points: 10 },
+    { id: "c8", day: "Any",       emoji: "🎤", title: "Karaoke Courage",    desc: "Sing the Pokémon theme, full send, no notes.", points: 25 },
+  ],
+
+  // ---------------------------------------------------------------------------
+  // JASON JEOPARDY — the trivia board. Bulbasaur-themed, with "Daily Bulba"
+  // squares (our Daily Double). Real clues/answers come from Bob (the fiancé) —
+  // these are the FRAMEWORK. Edit any clue live in the app (tap ✎ on a clue).
+  //   Each category has 5 clues worth 100..500.
+  //   dailyBulba: true marks a hidden wager square.
+  // ---------------------------------------------------------------------------
+  jeopardyBoard: {
+    categories: [
+      {
+        name: "All About Jason",
+        clues: [
+          { value: 100, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 200, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 300, clue: "Clue coming from Bob…", answer: "TBD", dailyBulba: true },
+          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
+        ],
+      },
+      {
+        name: "Bulba-Trivia",
+        clues: [
+          { value: 100, clue: "This Grass/Poison starter is #001 in the Kanto Pokédex.", answer: "Who is Bulbasaur?" },
+          { value: 200, clue: "Bulbasaur evolves into this Pokémon at level 16.", answer: "What is Ivysaur?" },
+          { value: 300, clue: "The seed on Bulbasaur's back is said to grow using this from the sun.", answer: "What is (sun)light / nutrients?" },
+          { value: 400, clue: "This signature Grass move fires a beam after absorbing sunlight.", answer: "What is Solar Beam?" },
+          { value: 500, clue: "Bulbasaur's final evolution is this Pokémon.", answer: "What is Venusaur?", dailyBulba: true },
+        ],
+      },
+      {
+        name: "Indiana Hoosiers",
+        clues: [
+          { value: 100, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 200, clue: "This QB — a big theme of the weekend — goes by 'Fernando'.", answer: "Who is Fernando Mendoza?" },
+          { value: 300, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
+        ],
+      },
+      {
+        name: "Carolina / Persians",
+        clues: [
+          { value: 100, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 200, clue: "Clue coming from Bob…", answer: "TBD", dailyBulba: true },
+          { value: 300, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
+        ],
+      },
+      {
+        name: "Lake House Lore",
+        clues: [
+          { value: 100, clue: "The party HQ sits on this lake road in Bristol, Indiana.", answer: "What is E Indiana Lake Rd?" },
+          { value: 200, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 300, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
+          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
+        ],
+      },
+    ],
+    final: {
+      category: "The Groom's Future",
+      clue: "Clue coming from Bob — the big Final Jeopardy question about Jason & the wedding.",
+      answer: "TBD",
+    },
+  },
 };

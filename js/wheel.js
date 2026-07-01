@@ -61,6 +61,7 @@
 
     btn.addEventListener("click", () => {
       if (spinning || !items.length) return;
+      if (window.SFX) SFX.spin();
       spinning = true; btn.disabled = true;
       const slice = (Math.PI * 2) / items.length;
       const startA = angle;
@@ -78,6 +79,7 @@
         const idx = Math.floor(pointer / slice) % items.length;
         result.innerHTML = "";
         result.appendChild(el("span", { class: "picked-name" }, "🎯 " + items[idx].label));
+        if (window.SFX) SFX.win();
         if (opts.onPick) opts.onPick(items[idx], idx);
       }
       requestAnimationFrame(frame);

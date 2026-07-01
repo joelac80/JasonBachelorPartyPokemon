@@ -25,10 +25,25 @@
       oakTip: clone(seed.oakTip || {}),
       memes: clone(seed.memes || []),
       hall: clone(seed.hall || []),
+      superlatives: clone(seed.superlatives || []),
+      challenges: clone(seed.challenges || []),
       // scores[eventId][teamId] = points awarded
       scores: {},
       // draft metadata
       draft: { order: [], picks: [], started: false },
+      // superlativeVotes[categoryId][attendeeId] = vote count
+      superlativeVotes: {},
+      // challengeDone[challengeId] = { done, by, note }
+      challengeDone: {},
+      // Live Jeopardy state — the board is cloned so clues can be edited in-app.
+      jeopardy: {
+        board: clone(seed.jeopardyBoard || { categories: [], final: {} }),
+        used: {},          // used["cat-clue"] = true
+        scores: {},        // scores[teamId] = running total
+        finalDone: false,
+      },
+      // brackets = [ { id, title, participants:[], rounds:[[{a,b,winner}]] } ]
+      brackets: [],
       meta: { version: 1 },
     };
   }
@@ -44,6 +59,10 @@
       return Object.assign(base, parsed, {
         scores: parsed.scores || {},
         draft: Object.assign(base.draft, parsed.draft || {}),
+        superlativeVotes: parsed.superlativeVotes || {},
+        challengeDone: parsed.challengeDone || {},
+        jeopardy: Object.assign(base.jeopardy, parsed.jeopardy || {}),
+        brackets: parsed.brackets || [],
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {
