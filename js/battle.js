@@ -42,16 +42,24 @@
     return wrap;
   }
 
-  function hpBox(label, side) {
-    const fill = el("div", { class: "battle-hp-fill" });
-    const box = el("div", { class: "battle-hpbox " + side }, [
-      el("div", { class: "battle-hp-name" }, label),
-      el("div", { class: "battle-hp-row" }, [
-        el("span", { class: "battle-hp-lbl" }, "HP"),
-        el("div", { class: "battle-hp-track" }, [fill]),
-      ]),
-    ]);
-    return { box: box, fill: fill };
+  // One HP box per side, with a separate name + bar for each member (so 2v2
+  // shows both names in full instead of a truncated combined label).
+  function hpBox(names, side) {
+    const list = (names && names.length ? names : ["?"]).slice(0, 2);
+    const fills = [];
+    const rows = list.map((nm) => {
+      const fill = el("div", { class: "battle-hp-fill" });
+      fills.push(fill);
+      return el("div", { class: "battle-hp-mem" }, [
+        el("div", { class: "battle-hp-name" }, nm),
+        el("div", { class: "battle-hp-row" }, [
+          el("span", { class: "battle-hp-lbl" }, "HP"),
+          el("div", { class: "battle-hp-track" }, [fill]),
+        ]),
+      ]);
+    });
+    const box = el("div", { class: "battle-hpbox " + side + (list.length > 1 ? " doubles" : "") }, rows);
+    return { box: box, fills: fills };
   }
 
   function start(opts) {
@@ -63,8 +71,10 @@
     if (!aMembers.length) aMembers.push(resolveMember(a.label));
     if (!bMembers.length) bMembers.push(resolveMember(b.label));
 
+    const aLabels = (a.names && a.names.length ? a.names : [a.label]).slice(0, 2);
+    const bLabels = (b.names && b.names.length ? b.names : [b.label]).slice(0, 2);
     const youSprite = sideSprites(aMembers, "you"), foeSprite = sideSprites(bMembers, "foe");
-    const youHp = hpBox(a.label, "you"), foeHp = hpBox(b.label, "foe");
+    const youHp = hpBox(aLabels, "you"), foeHp = hpBox(bLabels, "foe");
     const msg = el("div", { class: "battle-msg" },
       (opts.title ? opts.title + " — " : "") + a.label + " VS " + b.label + "!");
     const menu = el("div", { class: "battle-menu" });
@@ -84,16 +94,16 @@
       menu.innerHTML = "";
       const winIsA = winnerKey === "a";
       const W = { label: a.label, members: aMembers, sprite: youSprite };
-      const L = { label: b.label, sprite: foeSprite, fill: foeHp.fill };
+      const L = { label: b.label, sprite: foeSprite, fills: foeHp.fills };
       if (!winIsA) {
         W.label = b.label; W.members = bMembers; W.sprite = foeSprite;
-        L.label = a.label; L.sprite = youSprite; L.fill = youHp.fill;
+        L.label = a.label; L.sprite = youSprite; L.fills = youHp.fills;
       }
       const move = W.members[0].move;
       msg.textContent = W.label + " used " + move + "!";
       sfx("select");
       W.sprite.classList.add("attack");
-      setTimeout(() => { L.sprite.classList.add("hurt"); L.fill.style.width = "0%"; sfx("coin"); }, 420);
+      setTimeout(() => { L.sprite.classList.add("hurt"); L.fills.forEach(function (f) { f.style.width = "0%"; }); sfx("coin"); }, 420);
       setTimeout(() => {
         L.sprite.classList.remove("hurt"); L.sprite.classList.add("fainted");
         msg.textContent = L.label + " fainted!"; sfx("error");
