@@ -687,6 +687,20 @@ body {
 }
 .evo-anim-cap.show { animation: evoCap .4s ease forwards; }
 @keyframes evoCap { to { opacity: 1; transform: translateY(0); } }
+/* Energy-symbol fireworks after the reveal */
+.evo-burst { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
+.evo-burst-ico {
+  position: absolute; top: 46%; left: 50%;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,.85));
+  transform: translate(-50%, -50%) scale(0);
+  animation-name: evoBurst; animation-timing-function: cubic-bezier(.15,.7,.3,1); animation-fill-mode: forwards;
+}
+@keyframes evoBurst {
+  0%   { transform: translate(-50%, -50%) scale(0) rotate(0); opacity: 0; }
+  12%  { opacity: 1; }
+  70%  { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1) rotate(var(--rot)); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx) * 1.18), calc(-50% + var(--ty) * 1.18)) scale(.85) rotate(var(--rot)); opacity: 0; }
+}
 
 /* Card glow when a trainer is in their Mega form */
 .trainer-card.mega { border-color: #b06bff; box-shadow: 0 0 0 2px rgba(176,107,255,0.5), 0 0 22px rgba(176,107,255,0.55), var(--shadow); }
