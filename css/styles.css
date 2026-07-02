@@ -648,6 +648,39 @@ body {
   background-size: 200% 100%; -webkit-background-clip: text; background-clip: text;
   animation: megaBtn 2.4s linear infinite;
 }
+/* Evolution animation overlay — dark silhouettes flicker, then color reveal */
+.evo-anim {
+  position: fixed; inset: 0; z-index: 400; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  background: radial-gradient(circle at 50% 44%, #ffffff, #e3ecf7 66%, #b9c9de);
+  animation: evoIn .25s ease;
+}
+.evo-anim.out { animation: evoOut .38s ease forwards; }
+@keyframes evoIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes evoOut { to { opacity: 0; } }
+.evo-anim-stage { position: relative; width: 260px; height: 260px; }
+.evo-anim-sprite {
+  position: absolute; top: 50%; left: 50%; width: 190px; height: 190px;
+  image-rendering: pixelated; transform: translate(-50%, -50%) scale(var(--s, 1));
+}
+.evo-anim-sprite.sil { filter: brightness(0); }        /* dark silhouette */
+.evo-anim-sprite.hidden { visibility: hidden; }
+.evo-anim-sprite.reveal { filter: drop-shadow(0 8px 10px rgba(0,0,0,.25)); animation: evoPop .55s cubic-bezier(.2,1.5,.4,1); }
+.evo-anim-sprite.reveal.mega { filter: drop-shadow(0 0 16px #b06bff) drop-shadow(0 0 28px #f45f9c); }
+@keyframes evoPop {
+  0% { transform: translate(-50%,-50%) scale(calc(var(--s,1) * .35)); }
+  100% { transform: translate(-50%,-50%) scale(var(--s,1)); }
+}
+.evo-anim-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.evo-anim-flash.go { animation: evoFlash .5s ease; }
+@keyframes evoFlash { 0% { opacity: 0; } 45% { opacity: .96; } 100% { opacity: 0; } }
+.evo-anim-cap {
+  font-family: var(--pixel); font-weight: 800; text-align: center; padding: 0 20px;
+  font-size: clamp(15px, 3.6vw, 22px); color: var(--ink); opacity: 0; transform: translateY(8px);
+}
+.evo-anim-cap.show { animation: evoCap .4s ease forwards; }
+@keyframes evoCap { to { opacity: 1; transform: translateY(0); } }
+
 /* Card glow when a trainer is in their Mega form */
 .trainer-card.mega { border-color: #b06bff; box-shadow: 0 0 0 2px rgba(176,107,255,0.5), 0 0 22px rgba(176,107,255,0.55), var(--shadow); }
 .trainer-card.mega .tc-portrait::after {

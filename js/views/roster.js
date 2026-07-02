@@ -18,27 +18,73 @@
     return el("div", { class: "tc-ball-fallback" });
   }
 
-  // ---- a quick toast (uses the .toast styles) -----------------------------
-  function toast(msg) {
-    const t = el("div", { class: "toast" }, msg);
-    document.body.appendChild(t);
-    requestAnimationFrame(() => t.classList.add("show"));
-    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 300); }, 2400);
+  // Replace one trainer card in place (no full re-render → no scroll jump).
+  function refreshCard(id) {
+    const node = document.querySelector('.trainer-card[data-aid="' + id + '"]');
+    const a = Store.attendee(id);
+    if (node && a) node.replaceWith(card(a));
+  }
+
+  // The classic evolution animation: dark silhouettes flicker old↔new,
+  // accelerating, then a white flash and the new form reveals in full color.
+  function playEvolution(before, after, onComplete) {
+    let done = false;
+    const finish = () => { if (done) return; done = true; onComplete && onComplete(); };
+    const isMega = !!after.mega;
+
+    const imgOld = el("img", { class: "evo-anim-sprite sil", src: before.id ? Store.sprite(before.id) : "", alt: "" });
+    const imgNew = el("img", { class: "evo-anim-sprite sil hidden", src: after.id ? Store.sprite(after.id) : "", alt: "" });
+    if (after.scale && after.scale !== 1) imgNew.style.setProperty("--s", after.scale);
+    const flash = el("div", { class: "evo-anim-flash" });
+    const cap = el("div", { class: "evo-anim-cap" });
+    const overlay = el("div", { class: "evo-anim" }, [
+      el("div", { class: "evo-anim-stage" }, [imgOld, imgNew]), flash, cap,
+    ]);
+
+    function close() { overlay.classList.add("out"); setTimeout(() => overlay.remove(), 380); finish(); }
+    overlay.addEventListener("click", close);
+    document.body.appendChild(overlay);
+
+    if (window.SFX && SFX.evolve) SFX.evolve();
+
+    const intervals = [300, 280, 250, 220, 190, 165, 145, 125, 110, 95, 85, 78, 72];
+    let i = 0, showNew = false;
+    function toggle() {
+      if (done) return;
+      showNew = !showNew;
+      imgOld.classList.toggle("hidden", showNew);
+      imgNew.classList.toggle("hidden", !showNew);
+      if (i < intervals.length) setTimeout(toggle, intervals[i++]);
+      else reveal();
+    }
+    setTimeout(toggle, 380);
+
+    function reveal() {
+      if (done) return;
+      imgOld.classList.add("hidden");
+      imgNew.classList.remove("hidden");
+      flash.classList.add("go");
+      if (window.SFX) (isMega ? (SFX.fanfare && SFX.fanfare()) : (SFX.win && SFX.win()));
+      setTimeout(() => {
+        imgNew.classList.remove("sil");
+        imgNew.classList.add("reveal");
+        if (isMega) imgNew.classList.add("mega");
+        const verb = isMega ? "Mega Evolved into" : (before.mode === "grow" ? "grew into" : "evolved into");
+        cap.textContent = (isMega ? "⚡ " : "✨ ") + before.name + " " + verb + " " + after.name + "!";
+        cap.classList.add("show");
+      }, 200);
+      setTimeout(close, isMega ? 2300 : 1800);
+    }
   }
 
   function doEvolve(a) {
     const before = Store.currentForm(a);
-    if (!Store.evolve(a.id)) return;
-    const after = Store.currentForm(a);
-    if (after.mega) {
-      if (window.SFX) (SFX.fanfare ? SFX.fanfare() : SFX.win());
-      toast("⚡ MEGA EVOLUTION! " + before.name + " → " + after.name + "!");
-    } else {
-      if (window.SFX) (SFX.evolve ? SFX.evolve() : SFX.win());
-      const verb = before.mode === "grow" ? "grew into" : "evolved into";
-      toast("✨ " + before.name + " " + verb + " " + after.name + "!");
-    }
-    Router.render();
+    if (!before.next) return;
+    const after = {
+      name: before.next.name, id: before.next.id, scale: before.next.scale || 1,
+      mega: !!before.next.mega, mode: before.mode,
+    };
+    playEvolution(before, after, () => { Store.evolve(a.id); refreshCard(a.id); });
   }
 
   // ---- evolution strip on a trainer card ----------------------------------
@@ -76,6 +122,7 @@
 
     return el("div", {
       class: "trainer-card" + (megaNow ? " mega" : ""), style: { "--type": color },
+      dataset: { aid: a.id },
       onClick: (e) => { if (!e.target.closest(".tc-edit")) openCard(a.id); },
     }, [
       el("div", { class: "tc-top" }, [
