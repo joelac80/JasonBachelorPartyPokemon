@@ -156,6 +156,14 @@
       setTimeout(() => {
         msg.textContent = "🏆 " + W.label + " wins" + (opts.title ? " " + opts.title : "") + "!";
         sfx(opts.isFinal ? "fanfare" : "win");
+        try {
+          Store.update((s) => {
+            s.battles = s.battles || { log: [] }; s.battles.log = s.battles.log || [];
+            s.battles.log.unshift({ title: opts.title || "Battle", winner: W.label, loser: L.label,
+              ts: (function () { try { return Date.now(); } catch (_) { return 0; } })() });
+            if (s.battles.log.length > 60) s.battles.log.length = 60;
+          });
+        } catch (_) {}
       }, 2050 + extra);
       setTimeout(() => { close(); if (opts.onResult) opts.onResult(winnerKey); }, 3300 + extra);
     }
