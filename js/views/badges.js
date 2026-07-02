@@ -103,7 +103,26 @@
     }
 
     const claimed = list.filter((b) => b.holder).length;
-    root.appendChild(el("p", { class: "hint" }, claimed + " of " + list.length + " awarded"));
+
+    // Glossy badge case (Trainer Card style) — earned badges lit + shining.
+    root.appendChild(el("div", { class: "badge-case" }, [
+      el("div", { class: "badge-case-title" }, "Badge Case · " + claimed + " / " + list.length),
+      el("div", { class: "badge-case-grid" }, list.map((b) => {
+        const icon = b.icon || (window.BADGE_ICONS && window.BADGE_ICONS[b.id]) || "";
+        const earned = !!b.holder;
+        return el("div", { class: "case-slot" + (earned ? " earned" : ""), title: b.name },
+          [
+            el("div", { class: "case-disc", style: { "--bc": b.color || "#888" } }, [
+              icon ? el("img", { class: "case-img", src: icon, alt: b.name })
+                   : el("span", { class: "case-emoji" }, b.emoji || "🏅"),
+              earned ? el("span", { class: "case-shine" }) : null,
+            ]),
+            earned ? null : el("div", { class: "case-lock" }, "🔒"),
+          ]);
+      })),
+    ]));
+
+    root.appendChild(el("h2", { class: "section-title" }, "Award & Powers"));
     root.appendChild(el("div", { class: "gym-badge-grid" }, list.map(badgeCard)));
 
     root.appendChild(el("div", { class: "toolbar" }, [

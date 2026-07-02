@@ -8,6 +8,35 @@
   const { el, energyIcon } = U;
   function sfx(name) { if (window.SFX && SFX[name]) SFX[name](); }
 
+  // Simplified type-effectiveness chart (attacker → defenders).
+  const TYPE_CHART = {
+    normal: { nve: ["rock", "steel"], no: ["ghost"] },
+    fire: { se: ["grass", "ice", "bug", "steel"], nve: ["fire", "water", "rock", "dragon"] },
+    water: { se: ["fire", "ground", "rock"], nve: ["water", "grass", "dragon"] },
+    electric: { se: ["water", "flying"], nve: ["electric", "grass", "dragon"], no: ["ground"] },
+    grass: { se: ["water", "ground", "rock"], nve: ["fire", "grass", "poison", "flying", "bug", "dragon", "steel"] },
+    ice: { se: ["grass", "ground", "flying", "dragon"], nve: ["fire", "water", "ice", "steel"] },
+    fighting: { se: ["normal", "ice", "rock", "dark", "steel"], nve: ["poison", "flying", "psychic", "bug", "fairy"], no: ["ghost"] },
+    poison: { se: ["grass", "fairy"], nve: ["poison", "ground", "rock", "ghost"], no: ["steel"] },
+    ground: { se: ["fire", "electric", "poison", "rock", "steel"], nve: ["grass", "bug"], no: ["flying"] },
+    flying: { se: ["grass", "fighting", "bug"], nve: ["electric", "rock", "steel"] },
+    psychic: { se: ["fighting", "poison"], nve: ["psychic", "steel"], no: ["dark"] },
+    bug: { se: ["grass", "psychic", "dark"], nve: ["fire", "fighting", "poison", "flying", "ghost", "steel", "fairy"] },
+    rock: { se: ["fire", "ice", "flying", "bug"], nve: ["fighting", "ground", "steel"] },
+    ghost: { se: ["psychic", "ghost"], nve: ["dark"], no: ["normal"] },
+    dragon: { se: ["dragon"], nve: ["steel"], no: ["fairy"] },
+    dark: { se: ["psychic", "ghost"], nve: ["fighting", "dark", "fairy"] },
+    steel: { se: ["ice", "rock", "fairy"], nve: ["fire", "water", "electric", "steel"] },
+    fairy: { se: ["fighting", "dragon", "dark"], nve: ["fire", "poison", "steel"] },
+  };
+  function effectiveness(atk, def) {
+    const c = TYPE_CHART[atk]; if (!c) return 1;
+    if (c.no && c.no.indexOf(def) >= 0) return 0.5;   // treat immunity as "resisted" flavor
+    if (c.se && c.se.indexOf(def) >= 0) return 2;
+    if (c.nve && c.nve.indexOf(def) >= 0) return 0.5;
+    return 1;
+  }
+
   // Resolve one entrant name to battle visuals.
   function resolveMember(name) {
     name = (name || "").trim();
@@ -94,25 +123,35 @@
       menu.innerHTML = "";
       const winIsA = winnerKey === "a";
       const W = { label: a.label, members: aMembers, sprite: youSprite };
-      const L = { label: b.label, sprite: foeSprite, fills: foeHp.fills };
+      const L = { label: b.label, members: bMembers, sprite: foeSprite, fills: foeHp.fills };
       if (!winIsA) {
         W.label = b.label; W.members = bMembers; W.sprite = foeSprite;
-        L.label = a.label; L.sprite = youSprite; L.fills = youHp.fills;
+        L.label = a.label; L.members = aMembers; L.sprite = youSprite; L.fills = youHp.fills;
       }
+      const eff = effectiveness(W.members[0].type, L.members[0].type);
       const move = W.members[0].move;
+      const extra = eff !== 1 ? 250 : 0;
       msg.textContent = W.label + " used " + move + "!";
       sfx("select");
       W.sprite.classList.add("attack");
-      setTimeout(() => { L.sprite.classList.add("hurt"); L.fills.forEach(function (f) { f.style.width = "0%"; }); sfx("coin"); }, 420);
       setTimeout(() => {
-        L.sprite.classList.remove("hurt"); L.sprite.classList.add("fainted");
+        L.sprite.classList.add("hurt");
+        if (eff === 2) L.sprite.classList.add("crit");
+        L.fills.forEach(function (f) { f.style.width = "0%"; }); sfx("coin");
+      }, 420);
+      if (eff !== 1) setTimeout(() => {
+        msg.textContent = eff === 2 ? "💥 It's super effective!" : "…It's not very effective.";
+        if (eff === 2) sfx("correct");
+      }, 820);
+      setTimeout(() => {
+        L.sprite.classList.remove("hurt", "crit"); L.sprite.classList.add("fainted");
         msg.textContent = L.label + " fainted!"; sfx("error");
-      }, 1250);
+      }, 1250 + extra);
       setTimeout(() => {
         msg.textContent = "🏆 " + W.label + " wins" + (opts.title ? " " + opts.title : "") + "!";
         sfx(opts.isFinal ? "fanfare" : "win");
-      }, 2050);
-      setTimeout(() => { close(); if (opts.onResult) opts.onResult(winnerKey); }, 3300);
+      }, 2050 + extra);
+      setTimeout(() => { close(); if (opts.onResult) opts.onResult(winnerKey); }, 3300 + extra);
     }
 
     menu.appendChild(el("div", { class: "battle-menu-q" }, "Who takes it?"));
@@ -125,9 +164,29 @@
       el("button", { class: "btn subtle sm", onClick: () => { if (!done) close(); } }, "Cancel"),
     ]));
 
+    // VS intro: two panels clash, then reveal the arena.
+    function vsPanel(cls, labels, members) {
+      const mons = el("div", { class: "vs-mons" }, members.map((mn) =>
+        mn.sprite ? el("img", { class: "vs-mon", src: mn.sprite, alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" })));
+      return el("div", { class: "vs-panel " + cls }, [mons, el("div", { class: "vs-name" }, labels.join(" & "))]);
+    }
+    const vs = el("div", { class: "battle-vs" }, [
+      vsPanel("a", aLabels, aMembers),
+      el("div", { class: "vs-badge" }, "VS"),
+      vsPanel("b", bLabels, bMembers),
+    ]);
+
     document.body.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add("go"));
+    overlay.appendChild(vs);
     sfx("blip");
+    requestAnimationFrame(() => vs.classList.add("go"));
+    setTimeout(() => sfx("select"), 300);
+    setTimeout(() => {
+      vs.classList.add("out");
+      setTimeout(() => vs.remove(), 400);
+      overlay.classList.add("go", "ready");
+      sfx("blip");
+    }, 1700);
   }
 
   window.Battle = { start: start, resolveMember: resolveMember };

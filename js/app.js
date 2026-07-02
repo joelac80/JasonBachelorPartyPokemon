@@ -39,6 +39,16 @@
     sfxBtn.style.display = "none";
   }
 
+  // Music on/off toggle (background chiptune).
+  const musicBtn = document.getElementById("music-toggle");
+  if (musicBtn && window.SFX && SFX.toggleMusic) {
+    const syncMusic = () => { musicBtn.classList.toggle("off", !SFX.isMusicOn()); };
+    syncMusic();
+    musicBtn.addEventListener("click", () => { SFX.toggleMusic(); syncMusic(); });
+  } else if (musicBtn) {
+    musicBtn.style.display = "none";
+  }
+
   // Mobile nav toggle.
   const toggle = document.getElementById("nav-toggle");
   const nav = document.getElementById("nav");
