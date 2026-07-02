@@ -8,6 +8,7 @@
     .add("activities", V.activities)
     .add("jeopardy", V.jeopardy)
     .add("brackets", V.brackets)
+    .add("battle", V.battle)
     .add("superlatives", V.superlatives)
     .add("challenges", V.challenges)
     .add("badges", V.badges)

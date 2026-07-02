@@ -3,23 +3,11 @@
    squad, or custom names; tap a name to advance the winner. Champions feed
    your bragging rights. Stored in Store.state.brackets. */
 (function () {
-  const { el, uid, contrast, energyIcon } = U;
+  const { el, uid, contrast } = U;
   function sfx(name) { if (window.SFX && SFX[name]) SFX[name](); }
 
-  // Resolve a bracket entrant name to battle visuals. Squad members fight as
-  // their favorite Pokémon; teams/custom names fight as a Poké Ball.
-  function fighter(name) {
-    const at = Store.state.attendees.find((a) => a.name === name);
-    if (at) {
-      const f = Store.currentForm(at);
-      const card = at.card || (window.SEED && window.SEED.cards && window.SEED.cards[at.id]) || {};
-      const move = (card.attacks && card.attacks[0] && card.attacks[0].name) || "Tackle";
-      return { label: name, sprite: f.id ? Store.sprite(f.id) : "", scale: f.scale || 1, type: at.type, move: move, hp: card.hp || 100 };
-    }
-    const tm = Store.state.teams.find((t) => t.name && name.indexOf(t.name) >= 0);
-    if (tm) return { label: name, ball: true, type: tm.id, move: "Team Rush", hp: 100 };
-    return { label: name, ball: true, type: "normal", move: "Tackle", hp: 100 };
-  }
+  // Split an entrant name into up to two members ("Jason & Joe" → doubles).
+  function membersOf(name) { return (name || "").split(/\s*[&+/]\s*/).filter(Boolean).slice(0, 2); }
 
   // Round r has size/2^(r+1) matches. Slot names derive from prior winners.
   function slotsFor(b, r, m) {
@@ -72,7 +60,8 @@
     const titleIn = el("input", { class: "in", placeholder: "e.g. Beer Pong Championship" });
     const names = [];
     const list = el("div", { class: "brk-names" });
-    const nameIn = el("input", { class: "in grow", placeholder: "Add a player / team…" });
+    const nameIn = el("input", { class: "in grow", placeholder: "Add a player / team… (use “A & B” for 2v2)" });
+    const doublesIn = el("input", { type: "checkbox" });
 
     function renderNames() {
       list.innerHTML = "";
@@ -92,10 +81,15 @@
           Store.state.teams.forEach((t) => names.push((t.emoji || "") + " " + t.name)); renderNames();
         } }, "＋ Add all teams"),
         el("button", { class: "btn subtle sm", onClick: () => {
-          Store.state.attendees.forEach((a) => names.push(a.name)); renderNames();
+          const list = Store.state.attendees;
+          if (doublesIn.checked) {
+            for (let i = 0; i < list.length; i += 2) names.push(list[i].name + (list[i + 1] ? " & " + list[i + 1].name : ""));
+          } else list.forEach((a) => names.push(a.name));
+          renderNames();
         } }, "＋ Add whole squad"),
         el("button", { class: "btn subtle sm", onClick: () => { names.length = 0; renderNames(); } }, "Clear"),
       ]),
+      el("label", { class: "jp-check" }, [doublesIn, " Doubles (2v2) — pair up the squad"]),
       el("label", { class: "field" }, ["Entrants", el("div", { class: "brk-add-row" }, [
         nameIn, el("button", { class: "btn sm", onClick: () => { addName(nameIn.value); nameIn.value = ""; } }, "Add"),
       ])]),
@@ -111,98 +105,22 @@
     }, { saveLabel: "Create bracket", wide: false });
   }
 
-  // ---- Retro battle screen --------------------------------------------------
-  function fighterSprite(f, side) {
-    let inner;
-    if (f.sprite) {
-      inner = el("img", { class: "battle-sprite-img", src: f.sprite, alt: f.label,
-        style: { transform: "scaleX(" + (side === "you" ? -1 : 1) + ") scale(" + (f.scale || 1) + ")" } });
-    } else {
-      inner = el("div", { class: "battle-ball-inner" });
-      const ico = energyIcon(f.type === "normal" ? "electric" : f.type);
-      if (ico) inner.appendChild(el("img", { class: "battle-ball-ico", src: ico, alt: "" }));
-    }
-    return el("div", { class: "battle-sprite " + side }, [inner]);
-  }
-
-  function hpBox(f, side) {
-    const fill = el("div", { class: "battle-hp-fill" });
-    const box = el("div", { class: "battle-hpbox " + side }, [
-      el("div", { class: "battle-hp-name" }, f.label),
-      el("div", { class: "battle-hp-row" }, [
-        el("span", { class: "battle-hp-lbl" }, "HP"),
-        el("div", { class: "battle-hp-track" }, [fill]),
-      ]),
-    ]);
-    return { box: box, fill: fill };
-  }
-
+  // ---- Battle button → shared Battle engine ---------------------------------
   function openBattle(bid, r, m, aName, bName, total, onChange) {
-    const A = fighter(aName), B = fighter(bName);   // A = you (bottom), B = foe (top)
-    const youSprite = fighterSprite(A, "you"), foeSprite = fighterSprite(B, "foe");
-    const youHp = hpBox(A, "you"), foeHp = hpBox(B, "foe");
-    const msg = el("div", { class: "battle-msg" }, "Wild match! " + A.label + " VS " + B.label + "!");
-    const menu = el("div", { class: "battle-menu" });
-    let done = false;
-
-    const overlay = el("div", { class: "battle" }, [
-      el("div", { class: "battle-arena" }, [
-        el("div", { class: "battle-platform foe" }), el("div", { class: "battle-platform you" }),
-        foeHp.box, foeSprite, youSprite, youHp.box,
-      ]),
-      msg, menu,
-    ]);
-
-    function close() { overlay.classList.add("out"); setTimeout(() => overlay.remove(), 350); }
-
-    function fight(winner) {
-      if (done) return; done = true;
-      menu.innerHTML = "";
-      const winIsA = winner === aName;
-      const W = winIsA ? A : B, L = winIsA ? B : A;
-      const wSprite = winIsA ? youSprite : foeSprite, lSprite = winIsA ? foeSprite : youSprite;
-      const lFill = winIsA ? foeHp.fill : youHp.fill;
-
-      msg.textContent = W.label + " used " + W.move + "!";
-      sfx("select");
-      wSprite.classList.add("attack");
-      setTimeout(() => {
-        lSprite.classList.add("hurt");
-        lFill.style.width = "0%";
-        sfx("coin");
-      }, 420);
-      setTimeout(() => {
-        lSprite.classList.remove("hurt"); lSprite.classList.add("fainted");
-        msg.textContent = L.label + " fainted!";
-        sfx("error");
-      }, 1250);
-      setTimeout(() => {
-        msg.textContent = "🏆 " + W.label + " wins the match!";
-        sfx(r === total - 1 ? "fanfare" : "win");
-      }, 2050);
-      setTimeout(() => {
+    Battle.start({
+      title: "the Match",
+      a: { label: aName, names: membersOf(aName) },
+      b: { label: bName, names: membersOf(bName) },
+      isFinal: r === total - 1,
+      onResult: (winnerKey) => {
+        const winner = winnerKey === "a" ? aName : bName;
         Store.update((s) => {
           const bx = s.brackets.find((x) => x.id === bid);
           if (bx) { bx.winners[r][m] = winner; normalize(bx); }
         });
-        close(); onChange();
-      }, 3300);
-    }
-
-    menu.appendChild(el("div", { class: "battle-menu-q" }, "Who takes it?"));
-    menu.appendChild(el("div", { class: "battle-menu-row" }, [
-      el("button", { class: "btn primary", onClick: () => fight(aName) }, "👊 " + A.label),
-      el("button", { class: "btn primary", onClick: () => fight(bName) }, "👊 " + B.label),
-    ]));
-    menu.appendChild(el("div", { class: "battle-menu-row" }, [
-      el("button", { class: "btn subtle sm", onClick: () => fight(Math.random() < 0.5 ? aName : bName) }, "🎲 Random KO"),
-      el("button", { class: "btn subtle sm", onClick: () => { if (!done) close(); } }, "Cancel"),
-    ]));
-
-    document.body.appendChild(overlay);
-    // Slide the fighters in.
-    requestAnimationFrame(() => overlay.classList.add("go"));
-    sfx("blip");
+        onChange();
+      },
+    });
   }
 
   // ---- Render one bracket ---------------------------------------------------
