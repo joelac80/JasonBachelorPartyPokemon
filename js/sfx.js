@@ -93,6 +93,11 @@
       seq([[523, 0.07], [659, 0.07], [784, 0.07], [1046, 0.07], [1318, 0.2]], "triangle", 0.12);
     },
 
+    // Evolution jingle — the classic rising "you evolved!" flourish.
+    evolve() {
+      seq([[392, 0.1], [523, 0.1], [659, 0.1], [784, 0.1], [1046, 0.22]], "triangle", 0.12);
+    },
+
     // Big victory fanfare for the Champion Ceremony.
     fanfare() {
       seq([

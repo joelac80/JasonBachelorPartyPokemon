@@ -80,16 +80,76 @@ window.SEED = {
       },
     },
     { id: "joe",    name: "Joe Memmolo Jr #26", nickname: "", rank: "Elite Four", role: "Best Man",  team: "", type: "water",    favorite: "Totodile", favoriteId: 158, photo: "", catchphrase: "" },
-    { id: "chris",  name: "Chris Davies",       nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "water",    favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "chris",  name: "Chris Davies",       nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "fire",     favorite: "Charmander", favoriteId: 4, photo: "", catchphrase: "" },
     { id: "jeremy", name: "Jeremy Warren",      nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "bug",      favorite: "Beedrill", favoriteId: 15, photo: "", catchphrase: "" },
     { id: "jamie",  name: "Jamie Fujinaka",     nickname: "", rank: "Elite Four", role: "Groomsman", team: "", type: "fairy",    favorite: "Tinkaton", favoriteId: 959, photo: "", catchphrase: "" },
     { id: "dan",    name: "Dan Kania",          nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "dark",     favorite: "Bisharp", favoriteId: 625, photo: "", catchphrase: "" },
     { id: "joseph", name: "Joseph Thomas",      nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fire",     favorite: "Vulpix", favoriteId: 37, photo: "", catchphrase: "" },
     { id: "sid",    name: "Sid Suresh",         nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "ghost",    favorite: "Mimikyu", favoriteId: 778, photo: "", catchphrase: "" },
     { id: "matt",   name: "Matt Spicer",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "flying",   favorite: "Tranquill", favoriteId: 520, photo: "", catchphrase: "" },
-    { id: "tyler",  name: "Tyler Logan",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fighting", favorite: "", favoriteId: 0, photo: "", catchphrase: "" },
+    { id: "tyler",  name: "Tyler Logan",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "water",    favorite: "Feraligatr", favoriteId: 160, photo: "", catchphrase: "" },
     { id: "brian",  name: "Brian Mallon",       nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "grass",    favorite: "Serperior", favoriteId: 497, photo: "", catchphrase: "" },
   ],
+
+  // ---------------------------------------------------------------------------
+  // EVOLUTIONS — each trainer's favorite can "evolve" as they earn it, keyed by
+  // attendee id. Two modes:
+  //   "evolve" — the sprite becomes the next real evolution (id changes).
+  //   "grow"   — the SAME Pokémon just gets bigger (id stays, scale grows).
+  // Jason (Bulbasaur) and Joe (Totodile) GROW on purpose; final-stage / no-evo
+  // Pokémon (Beedrill, Tinkaton, Mimikyu, Serperior) grow too so nobody's left
+  // out. Each stage past the first has a `req` — how you earn that evolution.
+  // Stage 0 is the starting form. Advance/rewind live on the Squad page.
+  // ---------------------------------------------------------------------------
+  evolutions: {
+    jason:  { mode: "grow", stages: [
+      { name: "Bulbasaur", id: 1, scale: 1 },
+      { name: "Big Bulbasaur", id: 1, scale: 1.2, req: "Keep Pounding — throw the football & pound a PBR." },
+      { name: "MEGA BULBA", id: 1, scale: 1.4, req: "Reign as Victory Road Champion (or just for being the groom)." },
+    ] },
+    joe:    { mode: "grow", stages: [
+      { name: "Totodile", id: 158, scale: 1 },
+      { name: "Big Totodile", id: 158, scale: 1.2, req: "Win a Victory Road event as Best Man." },
+      { name: "MEGA TOTO", id: 158, scale: 1.4, req: "Deliver the Best Man speech, full send." },
+    ] },
+    chris:  { mode: "evolve", stages: [
+      { name: "Charmander", id: 4, scale: 1 },
+      { name: "Charmeleon", id: 5, scale: 1, req: "Win a 1-on-1 (beer pong or a chug-off)." },
+      { name: "Charizard", id: 6, scale: 1.12, req: "Win a Victory Road bracket outright." },
+    ] },
+    jeremy: { mode: "grow", stages: [
+      { name: "Beedrill", id: 15, scale: 1 },
+      { name: "Big Beedrill", id: 15, scale: 1.3, req: "Beedrill's already final — so grow. Earn a gym badge." },
+    ] },
+    jamie:  { mode: "grow", stages: [
+      { name: "Tinkaton", id: 959, scale: 1 },
+      { name: "Big Tinkaton", id: 959, scale: 1.3, req: "Tinkaton's a final form — grow instead. Land a hammer blow (win an event)." },
+    ] },
+    dan:    { mode: "evolve", stages: [
+      { name: "Bisharp", id: 625, scale: 1 },
+      { name: "Kingambit", id: 983, scale: 1.15, req: "Lead your team to a Victory Road event win." },
+    ] },
+    joseph: { mode: "evolve", stages: [
+      { name: "Vulpix", id: 37, scale: 1 },
+      { name: "Ninetales", id: 38, scale: 1.08, req: "Earn a gym badge (use a Fire Stone)." },
+    ] },
+    sid:    { mode: "grow", stages: [
+      { name: "Mimikyu", id: 778, scale: 1 },
+      { name: "Big Mimikyu", id: 778, scale: 1.3, req: "Mimikyu never evolves — so grow. Pull off the spookiest play of the night." },
+    ] },
+    matt:   { mode: "evolve", stages: [
+      { name: "Tranquill", id: 520, scale: 1 },
+      { name: "Unfezant", id: 521, scale: 1.12, req: "Win an event to take flight." },
+    ] },
+    brian:  { mode: "grow", stages: [
+      { name: "Serperior", id: 497, scale: 1 },
+      { name: "Big Serperior", id: 497, scale: 1.3, req: "Serperior's a final form — grow instead. Win a Victory Road event." },
+    ] },
+    tyler:  { mode: "grow", stages: [
+      { name: "Feraligatr", id: 160, scale: 1 },
+      { name: "Big Feraligatr", id: 160, scale: 1.3, req: "Feraligatr's a final form — grow instead. Win a Victory Road event." },
+    ] },
+  },
 
   // ---------------------------------------------------------------------------
   // VICTORY ROAD — the beer olympics events. Each event is worth points.
