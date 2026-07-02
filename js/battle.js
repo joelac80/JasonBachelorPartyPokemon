@@ -45,7 +45,8 @@
       const f = Store.currentForm(at);
       const card = at.card || (window.SEED && window.SEED.cards && window.SEED.cards[at.id]) || {};
       const move = (card.attacks && card.attacks[0] && card.attacks[0].name) || "Tackle";
-      return { sprite: f.id ? Store.sprite(f.id) : "", scale: f.scale || 1, type: at.type, move: move };
+      const back = (window.SPRITES_BACK && window.SPRITES_BACK[f.id]) || "";
+      return { sprite: f.id ? Store.sprite(f.id) : "", back: back, scale: f.scale || 1, type: at.type, move: move };
     }
     const tm = Store.state.teams.find((t) => t.name && name.indexOf(t.name) >= 0);
     if (tm) return { ball: true, type: tm.id, move: "Team Rush" };
@@ -54,9 +55,14 @@
 
   function monEl(mn, side) {
     let inner;
-    if (mn.sprite) {
-      inner = el("img", { class: "battle-sprite-img", src: mn.sprite, alt: "",
-        style: { transform: "scaleX(" + (side === "you" ? -1 : 1) + ") scale(" + (mn.scale || 1) + ")" } });
+    // Player side shows the rear-view (back) sprite when we have it — like the
+    // real games. Otherwise fall back to a mirrored front sprite.
+    const useBack = side === "you" && mn.back;
+    const src = useBack ? mn.back : mn.sprite;
+    if (src) {
+      const flip = (side === "you" && !useBack) ? -1 : 1;
+      inner = el("img", { class: "battle-sprite-img", src: src, alt: "",
+        style: { transform: "scaleX(" + flip + ") scale(" + (mn.scale || 1) + ")" } });
     } else {
       inner = el("div", { class: "battle-ball-inner" });
       const ico = energyIcon(mn.type === "normal" ? "electric" : mn.type);
