@@ -61,8 +61,9 @@
     { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 84, y: 33 },
     { r: "ceremony",     e: "👑", t: "Champion",  x: 86, y: 15 },
     { r: "settings",     e: "⚙️", t: "Settings",  x: 10, y: 14 },
+    { r: "safari",       e: "🔴", t: "Safari",    x: 49, y: 11 },
   ];
-  const MAP_PATHS = [[0,1],[1,4],[4,6],[6,8],[8,11],[11,12],[1,2],[2,3],[4,5],[6,7],[8,9],[7,10],[10,11],[0,13]];
+  const MAP_PATHS = [[0,1],[1,4],[4,6],[6,8],[8,11],[11,12],[1,2],[2,3],[4,5],[6,7],[8,9],[7,10],[10,11],[0,13],[3,14],[5,14]];
 
   function overworld() {
     const idx = {}; MAP.forEach((n) => (idx[n.r] = n));

@@ -47,6 +47,8 @@
       },
       // brackets = [ { id, title, participants:[], rounds:[[{a,b,winner}]] } ]
       brackets: [],
+      // Safari / Pokédex game: caught[id]={count}, team=[ids], drink tallies.
+      pokedex: { caught: {}, team: [], given: 0, taken: 0 },
       meta: { version: 1 },
     };
   }
@@ -67,6 +69,7 @@
         evoStage: parsed.evoStage || {},
         jeopardy: Object.assign(base.jeopardy, parsed.jeopardy || {}),
         brackets: parsed.brackets || [],
+        pokedex: Object.assign(base.pokedex, parsed.pokedex || {}),
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {

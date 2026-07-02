@@ -376,6 +376,64 @@ body {
 .edit-row { display: flex; gap: 8px; align-items: center; }
 .in.swatch { padding: 2px; width: 44px; height: 38px; }
 
+/* ---------------- Pokédex Safari ---------------- */
+.safari-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.safari-stat { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; box-shadow: var(--shadow); }
+.safari-stat-v { font-family: var(--pixel); font-size: 18px; }
+.safari-stat-l { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 1px; }
+.safari-enc { margin-bottom: 8px; }
+.safari-idle { text-align: center; background: linear-gradient(#bfe3ff 0 55%, #a6d88f 55%); border: 3px solid var(--ink); border-radius: var(--radius); padding: 26px 16px; box-shadow: var(--shadow); }
+.safari-grass { font-size: 30px; letter-spacing: 6px; margin-bottom: 14px; }
+.safari-card { background: linear-gradient(#bfe3ff 0 55%, #a6d88f 55%); border: 3px solid var(--ink); border-radius: var(--radius); padding: 18px 16px; text-align: center; box-shadow: var(--shadow); }
+.safari-appeared { font-family: var(--pixel); font-size: 14px; margin-bottom: 6px; }
+.safari-stage { position: relative; height: 150px; display: flex; align-items: center; justify-content: center; }
+.safari-wild { width: 130px; height: 130px; image-rendering: pixelated; filter: drop-shadow(0 8px 6px rgba(0,0,0,.25)); }
+.safari-wild.caught-anim { animation: safariShrink 1.6s ease forwards; }
+@keyframes safariShrink { 0%{transform:scale(1);opacity:1;} 25%{transform:scale(.2) translateY(-10px);opacity:.2;} 30%{opacity:0;} 100%{opacity:0;transform:scale(.2);} }
+.safari-wild.pop { animation: evoPop .5s cubic-bezier(.2,1.5,.4,1); }
+.safari-wild.fled { animation: safariFled .6s ease forwards; }
+@keyframes safariFled { to { transform: translateX(60px) scale(.7); opacity: 0; } }
+.safari-ball-throw { position: absolute; bottom: 10px; left: 50%; width: 30px; height: 30px; border-radius: 50%; opacity: 0;
+  background: linear-gradient(#ee1515 0 46%,#111 46% 54%,#fff 54% 100%); border: 3px solid #111; }
+.safari-ball-throw.go { animation: safariThrow 1.7s ease forwards; }
+@keyframes safariThrow {
+  0% { opacity: 1; transform: translate(-50%, 60px) scale(.7); }
+  22% { transform: translate(-50%, -70px) scale(1); }
+  30% { transform: translate(-50%, -20px) scale(1); }
+  33%,44%,55% { transform: translate(-50%, -20px) rotate(-24deg); }
+  38%,49%,60% { transform: translate(-50%, -20px) rotate(24deg); }
+  62%,100% { transform: translate(-50%, -20px) rotate(0); opacity: 1; }
+}
+.safari-wild-meta { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+.safari-tier { font-family: var(--pixel); font-size: 10px; color: #fff; padding: 2px 8px; border-radius: 999px; }
+.safari-wild-name { font-weight: 800; }
+.safari-owned { font-size: 12px; color: #2e8b3d; font-weight: 700; }
+.safari-odds { font-size: 13px; color: var(--ink-dim); margin-bottom: 10px; }
+.safari-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.safari-result-msg { font-family: var(--pixel); font-size: 15px; margin: 8px 0; }
+.safari-payout { font-weight: 900; font-size: 18px; color: #b06a00; background: #fff7d6; border-radius: 10px; padding: 10px; margin-bottom: 12px; }
+.safari-payout.miss { color: var(--danger); background: #fdeaea; }
+/* team */
+.safari-team { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.safari-team-slot { aspect-ratio: 1; border-radius: 12px; border: 2px dashed var(--line); background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; padding: 4px; }
+.safari-team-slot.empty { color: var(--ink-dim); font-size: 22px; cursor: default; }
+.safari-team-slot.filled { border-style: solid; border-color: var(--pokeyellow); background: #fff7d6; }
+.safari-team-slot.filled img { width: 100%; max-width: 54px; image-rendering: pixelated; }
+.safari-team-slot.filled span { font-size: 9px; font-weight: 700; text-align: center; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.safari-ash { display: flex; align-items: center; gap: 12px; background: var(--panel); border: 3px solid var(--pokeyellow); border-radius: var(--radius); padding: 12px 14px; margin-top: 12px; box-shadow: var(--shadow); }
+.safari-ash-cap { font-size: 30px; }
+.safari-ash-title { font-family: var(--pixel); font-size: 13px; }
+.safari-ash-sub { font-size: 12px; color: var(--ink-dim); }
+.safari-ash-score { margin-left: auto; font-family: var(--pixel); font-size: 26px; color: var(--gold); }
+/* dex grid */
+.safari-dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; }
+.safari-dex-cell { position: relative; aspect-ratio: 1; background: var(--paper); border: 2px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.safari-dex-cell img { width: 100%; image-rendering: pixelated; }
+.safari-dex-cell:not(.got) img { filter: brightness(0) opacity(0.4); }
+.safari-dex-cell.got { cursor: pointer; background: #fff; border-color: #cfe0c0; }
+.safari-dex-cell.team { border-color: var(--pokeyellow); box-shadow: 0 0 0 2px var(--pokeyellow) inset; }
+.safari-dex-num { position: absolute; bottom: 1px; right: 3px; font-size: 8px; color: var(--ink-dim); font-family: var(--pixel); }
+
 /* ---------------- Modal ---------------- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(20,24,40,0.55); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
 .modal { background: var(--panel); border: 3px solid var(--ink); border-radius: var(--radius); width: 100%; max-width: 460px; box-shadow: var(--shadow-lg); }
