@@ -182,6 +182,15 @@ body {
 .tile-title { font-family: var(--pixel); font-size: 15px; margin-top: 8px; }
 .tile-desc { color: var(--ink-dim); font-size: 14px; margin-top: 2px; }
 
+/* overworld region map (home) */
+.overworld { border: 3px solid var(--ink); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); background: #a6d88f; margin-top: 4px; }
+.ow-svg { width: 100%; height: auto; display: block; }
+.ow-node { cursor: pointer; }
+.ow-node circle { transition: fill .12s, stroke-width .12s; }
+.ow-node:hover circle { fill: var(--pokeyellow); stroke: var(--pokered); stroke-width: 1.4; }
+.ow-node text { pointer-events: none; }
+.ow-label { font-family: var(--pixel); font-weight: 700; fill: #1c3a1c; paint-order: stroke; stroke: rgba(255,255,255,0.85); stroke-width: 0.7; }
+
 /* fan badges */
 .badge-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 8px 0; }
 .badge {
