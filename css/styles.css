@@ -708,13 +708,14 @@ body {
 .battle-menu { background: #2c2c2c; padding: 12px; display: flex; flex-direction: column; gap: 9px; align-items: center; }
 .battle-menu-q { color: #fff; font-family: var(--pixel); font-size: 12px; }
 .battle-menu-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-/* doubles (2v2): two mons per side, staggered */
+/* doubles (2v2): two mons per side, staggered, kept to their own half so
+   they never overlap the opposite-corner HP box */
 .battle-mon { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; }
-.battle-sprite.doubles { width: 200px; }
-.battle-sprite.you.doubles { width: 224px; }
-.battle-sprite.doubles .battle-mon { inset: auto; width: 64%; height: 84%; }
-.battle-sprite.doubles .mon0 { left: 0; bottom: 16%; opacity: .96; }
-.battle-sprite.doubles .mon1 { left: 38%; bottom: 0; }
+.battle-sprite.you.doubles { width: 45%; left: 4%; right: auto; }
+.battle-sprite.foe.doubles { width: 43%; right: 4%; left: auto; }
+.battle-sprite.doubles .battle-mon { inset: auto; width: 54%; height: 84%; }
+.battle-sprite.doubles .mon0 { left: 0; bottom: 15%; }
+.battle-sprite.doubles .mon1 { left: 46%; bottom: 0; }
 @media (max-width: 820px) {
   .battle-sprite.foe { top: 9%; right: 8%; } .battle-sprite.you { bottom: 14%; left: 8%; }
   .battle-hpbox { min-width: 150px; }
