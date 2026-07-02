@@ -51,7 +51,7 @@
 
     return el("div", { class: "evo-strip", onClick: (e) => e.stopPropagation() }, [
       el("div", { class: "evo-line" }, [
-        el("span", { class: "evo-stage-label" }, (form.mode === "grow" ? "GROWTH" : "EVOLUTION")),
+        el("span", { class: "evo-stage-label" }, "EVOLUTION"),
         pips,
       ]),
       form.next ? el("div", { class: "evo-req" }, "▸ " + (form.next.req || "")) : null,
@@ -63,7 +63,7 @@
         form.next
           ? el("button", { class: "evo-btn go" + (form.next.mega ? " mega" : ""), title: "Requirement: " + (form.next.req || ""),
               onClick: (e) => { e.stopPropagation(); doEvolve(a); } },
-              (form.next.mega ? "⚡ Mega Evolve" : (form.mode === "grow" ? "Grow ▸" : "Evolve ▸")))
+              (form.next.mega ? "⚡ Mega Evolve" : "Evolve ▸"))
           : el("span", { class: "evo-max" + (form.mega ? " mega" : "") }, form.mega ? "⚡ MEGA FORM" : "★ FINAL FORM"),
       ]),
     ]);
