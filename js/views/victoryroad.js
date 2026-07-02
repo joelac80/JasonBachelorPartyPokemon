@@ -82,7 +82,7 @@
         el("div", { class: "stand-row" }, [
           el("div", { class: "stand-rank" }, MEDALS[r.rank] || ("#" + r.rank)),
           el("div", { class: "stand-name", style: { color: r.team.color } },
-            (r.team.emoji || "") + " " + r.team.name),
+            [U.teamIcon(r.team), " " + r.team.name]),
           el("div", { class: "stand-bar-wrap" }, [
             el("div", {
               class: "stand-bar",
@@ -140,7 +140,7 @@
       table.appendChild(el("div", {
         class: "sb-team", style: { background: t.color, color: contrast(t.color) },
       }, [
-        el("span", { class: "sb-team-emoji" }, t.emoji || "🎽"),
+        el("span", { class: "sb-team-emoji" }, U.teamIcon(t)),
         el("span", {}, t.name),
       ]));
     });

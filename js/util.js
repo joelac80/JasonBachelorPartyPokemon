@@ -87,5 +87,20 @@
     return E[t] || E.normal || "";
   }
 
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon };
+  // Energy symbol for a team (team id doubles as a type; Pikachu → electric).
+  function teamEnergyIcon(team) {
+    if (!team) return "";
+    const map = { normal: "electric" };
+    return energyIcon(map[team.id] || team.id);
+  }
+
+  // A team's icon as a DOM node: energy symbol if we have one, else its emoji.
+  function teamIcon(team) {
+    const src = teamEnergyIcon(team);
+    return src
+      ? el("img", { class: "energy-ico team", src: src, alt: (team && team.id) || "" })
+      : el("span", {}, (team && team.emoji) || "🎽");
+  }
+
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon };
 })();

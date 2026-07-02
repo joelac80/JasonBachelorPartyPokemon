@@ -45,7 +45,7 @@
       wrap.appendChild(el("div", { class: "cer-podium-slot rank-" + r.rank, style: { "--tc": r.team.color } }, [
         el("div", { class: "cer-medal" }, MEDALS[r.rank] || ("#" + r.rank)),
         el("div", { class: "cer-podium-team", style: { background: r.team.color, color: contrast(r.team.color) } },
-          (r.team.emoji || "") + " " + r.team.name),
+          [U.teamIcon(r.team), " " + r.team.name]),
         el("div", { class: "cer-podium-pts" }, r.total + " pts"),
       ]));
     });
@@ -123,7 +123,7 @@
       stage.appendChild(el("div", { class: "cer-champ-card cer-crown-pop", style: { background: top.team.color, color: fg } }, [
         el("div", { class: "cer-champ-crown" }, "👑"),
         el("div", { class: "cer-champ-label" }, "VICTORY ROAD CHAMPION"),
-        el("div", { class: "cer-champ-name" }, (top.team.emoji || "") + " " + top.team.name),
+        el("div", { class: "cer-champ-name" }, [U.teamIcon(top.team), " " + top.team.name]),
         el("div", { class: "cer-champ-pts" }, top.total + " points"),
       ]));
       stage.appendChild(el("button", { class: "btn subtle sm", onClick: () => { confetti(); sfx("win"); } }, "🎊 More confetti"));

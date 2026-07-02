@@ -306,6 +306,8 @@ body {
 .energy-ico.sm { width: 15px; height: 15px; }
 .energy-ico.hp { width: 20px; height: 20px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
 .tcg-move-energy .energy-ico { width: 17px; height: 17px; margin-right: 1px; }
+.energy-ico.team { width: 18px; height: 18px; }
+.sb-team-emoji .energy-ico.team { width: 20px; height: 20px; }
 .tc-team { font-weight: 800; font-size: 13px; }
 .tc-team.undr { color: var(--ink-dim); font-style: italic; }
 .tc-nick { color: var(--ink-dim); font-style: italic; font-size: 12px; }

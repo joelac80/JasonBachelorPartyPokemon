@@ -27,7 +27,7 @@
     }
     teams.forEach((t) => {
       host.appendChild(el("div", { class: "jp-score", style: { "--tc": t.color } }, [
-        el("div", { class: "jp-score-name" }, (t.emoji || "") + " " + t.name),
+        el("div", { class: "jp-score-name" }, [U.teamIcon(t), " " + t.name]),
         el("div", { class: "jp-score-val" }, String(teamScore(t.id))),
         el("div", { class: "jp-score-btns" }, teams.length ? [
           el("button", { class: "jp-mini", title: "−100", onClick: () => { addToTeam(t.id, -100); renderScores(host); } }, "−"),
@@ -66,7 +66,7 @@
           el("button", {
             class: "jp-award-btn", style: { background: t.color, color: contrast(t.color) },
             onClick: () => { addToTeam(t.id, clue.value); sfx("correct"); finish(); },
-          }, "✓ " + (t.emoji || "") + " " + t.name),
+          }, ["✓ ", U.teamIcon(t), " " + t.name]),
           el("button", {
             class: "jp-award-btn wrong", title: "Wrong — deduct",
             onClick: () => { addToTeam(t.id, -clue.value); sfx("error"); },
