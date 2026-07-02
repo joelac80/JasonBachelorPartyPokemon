@@ -81,8 +81,36 @@
           result.innerHTML = "";
           result.appendChild(el("div", { class: "arena-result" },
             "🏆 " + label + " won" + (eventLabel ? " " + eventLabel : "") + "!"));
+          renderLog();
         },
       });
+    }
+
+    function renderLog() {
+      logHost.innerHTML = "";
+      const log = (Store.state.battles && Store.state.battles.log) || [];
+      logHost.appendChild(el("h2", { class: "section-title" }, "🏆 Battle Leaderboard"));
+      if (!log.length) { logHost.appendChild(el("p", { class: "hint" }, "No battles yet — run one above.")); return; }
+      const wins = {};
+      log.forEach((bt) => { wins[bt.winner] = (wins[bt.winner] || 0) + 1; });
+      const ranked = Object.keys(wins).map((k) => ({ k: k, n: wins[k] })).sort((a, b) => b.n - a.n);
+      logHost.appendChild(el("div", { class: "safari-board" }, ranked.map((r, i) =>
+        el("div", { class: "safari-board-row" + (i === 0 ? " lead" : "") }, [
+          el("span", { class: "safari-board-rank" }, i === 0 ? "🏆" : "#" + (i + 1)),
+          el("span", { class: "safari-board-name" }, r.k),
+          el("span", { class: "safari-board-n" }, r.n + " win" + (r.n > 1 ? "s" : "")),
+        ]))));
+      logHost.appendChild(el("h2", { class: "section-title" }, "Recent Battles"));
+      logHost.appendChild(el("div", { class: "battle-log" }, log.slice(0, 12).map((bt) =>
+        el("div", { class: "battle-log-row" }, [
+          el("span", { class: "battle-log-win" }, "🏆 " + bt.winner),
+          el("span", { class: "battle-log-vs" }, " beat "),
+          el("span", { class: "battle-log-lose" }, bt.loser),
+          bt.title ? el("span", { class: "battle-log-ev" }, " · " + bt.title) : null,
+        ]))));
+      logHost.appendChild(el("div", { class: "toolbar" }, [
+        el("button", { class: "btn subtle sm", onClick: () => { if (confirm("Clear the battle log?")) { Store.update((s) => { s.battles = { log: [] }; }); renderLog(); } } }, "Clear battle log"),
+      ]));
     }
 
     function redraw() {
@@ -97,6 +125,10 @@
       el("button", { class: "btn spin-btn", onClick: start }, "⚔ START BATTLE"),
       el("button", { class: "btn subtle", onClick: () => { sideA.length = 0; sideB.length = 0; result.innerHTML = ""; redraw(); } }, "Clear"),
     ]));
+
+    const logHost = el("div", {});
+    root.appendChild(logHost);
+    renderLog();
   }
 
   window.Views = window.Views || {};

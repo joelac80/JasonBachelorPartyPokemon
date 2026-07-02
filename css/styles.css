@@ -433,6 +433,33 @@ body {
 .safari-dex-cell.got { cursor: pointer; background: #fff; border-color: #cfe0c0; }
 .safari-dex-cell.team { border-color: var(--pokeyellow); box-shadow: 0 0 0 2px var(--pokeyellow) inset; }
 .safari-dex-num { position: absolute; bottom: 1px; right: 3px; font-size: 8px; color: var(--ink-dim); font-family: var(--pixel); }
+/* trainer picker + challenge + leaderboard */
+.safari-trainer { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.safari-trainer-lbl { font-family: var(--pixel); font-size: 12px; color: var(--ink-dim); white-space: nowrap; }
+.safari-trainer select { flex: 1; }
+.safari-odds-big { font-family: var(--pixel); font-size: 18px; color: var(--pokered); margin-right: 4px; }
+.safari-challenge { background: #fff7ec; border: 2px dashed #f0b46a; border-radius: 10px; padding: 10px; margin: 4px 0 10px; display: flex; flex-direction: column; gap: 8px; }
+.safari-challenge-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.safari-challenge-lbl { font-family: var(--pixel); font-size: 10px; color: #c07a1a; }
+.safari-pips { display: flex; gap: 5px; }
+.safari-pip { width: 12px; height: 12px; border-radius: 3px; background: #eadfce; border: 1.5px solid #d8c3a0; }
+.safari-pip.on { background: #f5732f; border-color: #f5732f; }
+.safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
+.safari-suspense { font-family: var(--pixel); font-size: 14px; color: var(--pokeblue); min-height: 20px; text-align: center; margin: 4px 0; }
+.safari-board { display: flex; flex-direction: column; gap: 6px; }
+.safari-board-row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 10px; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.safari-board-row.lead { border-color: var(--pokeyellow); background: #fff7d6; }
+.safari-board-rank { font-family: var(--pixel); font-size: 16px; text-align: center; }
+.safari-board-name { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.safari-board-n { font-family: var(--pixel); font-size: 13px; color: var(--ink-dim); }
+/* battle log */
+.battle-log { display: flex; flex-direction: column; gap: 6px; }
+.battle-log-row { background: var(--panel); border: 2px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.battle-log-win { font-weight: 800; color: #2e8b3d; }
+.battle-log-vs { color: var(--ink-dim); }
+.battle-log-lose { font-weight: 700; }
+.battle-log-ev { color: var(--ink-dim); font-style: italic; }
 
 /* ---------------- Modal ---------------- */
 .modal-overlay { position: fixed; inset: 0; background: rgba(20,24,40,0.55); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; }
