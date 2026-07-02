@@ -51,8 +51,50 @@
     });
   }
 
+  // ---- background chiptune loop (independent of the SFX mute) --------------
+  let musicOn = false;
+  try { musicOn = localStorage.getItem("jasonBachHub.music") === "1"; } catch (_) {}
+  let mTimer = null, mNext = 0, mStep = 0;
+  const LEAD = [523, 659, 784, 659, 587, 698, 880, 698, 659, 831, 988, 831, 587, 494, 440, 494];
+  const BASS = [131, 0, 196, 0, 175, 0, 196, 0, 165, 0, 208, 0, 175, 0, 147, 0];
+  const MSTEP = 0.17;
+  function noteAt(freq, t0, dur, type, gain) {
+    const a = ac(); if (!a) return;
+    const osc = a.createOscillator(), g = a.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g); g.connect(a.destination); osc.start(t0); osc.stop(t0 + dur + 0.03);
+  }
+  function musicTick() {
+    const a = ac(); if (!a || !musicOn) return;
+    while (mNext < a.currentTime + 0.25) {
+      const i = mStep % LEAD.length;
+      if (LEAD[i]) noteAt(LEAD[i], mNext, MSTEP * 0.9, "square", 0.04);
+      if (BASS[i]) noteAt(BASS[i], mNext, MSTEP * 0.95, "triangle", 0.05);
+      mNext += MSTEP; mStep++;
+    }
+    mTimer = setTimeout(musicTick, 45);
+  }
+  function startMusicInternal() {
+    const a = ac(); if (!a) return;
+    if (a.state === "suspended") a.resume();
+    mNext = a.currentTime + 0.1; mStep = 0;
+    clearTimeout(mTimer); musicTick();
+  }
+  function stopMusicInternal() { clearTimeout(mTimer); mTimer = null; }
+
   const SFX = {
     isMuted() { return muted; },
+
+    isMusicOn() { return musicOn; },
+    toggleMusic() {
+      musicOn = !musicOn;
+      try { localStorage.setItem("jasonBachHub.music", musicOn ? "1" : "0"); } catch (_) {}
+      if (musicOn) startMusicInternal(); else stopMusicInternal();
+      return musicOn;
+    },
 
     setMuted(v) {
       muted = !!v;
@@ -109,9 +151,11 @@
 
   window.SFX = SFX;
 
-  // Resume the audio context on the first user interaction (autoplay policy).
+  // Resume the audio context on the first user interaction (autoplay policy),
+  // and resume the soundtrack if it was left on.
   document.addEventListener("pointerdown", function once() {
     SFX.resume();
+    if (musicOn) startMusicInternal();
     document.removeEventListener("pointerdown", once);
   });
 })();
