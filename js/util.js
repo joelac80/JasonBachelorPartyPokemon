@@ -81,5 +81,11 @@
   };
   function typeColor(t) { return TYPE_COLORS[t] || TYPE_COLORS.normal; }
 
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS };
+  // TCG-style energy/type symbol (data URI) for a type, or "".
+  function energyIcon(t) {
+    const E = window.ENERGY_ICONS || {};
+    return E[t] || E.normal || "";
+  }
+
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon };
 })();

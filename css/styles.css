@@ -301,6 +301,11 @@ body {
 .tc-role { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); }
 .tc-type-line { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--ink-dim); }
 .tc-type-dot { width: 12px; height: 12px; border-radius: 50%; }
+/* TCG-style energy/type symbols */
+.energy-ico { width: 16px; height: 16px; vertical-align: middle; flex: none; }
+.energy-ico.sm { width: 15px; height: 15px; }
+.energy-ico.hp { width: 20px; height: 20px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.35)); }
+.tcg-move-energy .energy-ico { width: 17px; height: 17px; margin-right: 1px; }
 .tc-team { font-weight: 800; font-size: 13px; }
 .tc-team.undr { color: var(--ink-dim); font-style: italic; }
 .tc-nick { color: var(--ink-dim); font-style: italic; font-size: 12px; }
