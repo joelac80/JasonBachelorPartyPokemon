@@ -125,7 +125,7 @@ window.SEED = {
     ] },
     jamie:  { mode: "grow", stages: [
       { name: "Tinkaton", id: 959, scale: 1 },
-      { name: "Big Tinkaton", id: 959, scale: 1.3, req: "Tinkaton's a final form — grow instead. Land a hammer blow (win an event)." },
+      { name: "Big Tinkaton", id: 959, scale: 1.3, req: "Land a hammer blow — win a Victory Road event." },
     ] },
     dan:    { mode: "evolve", stages: [
       { name: "Bisharp", id: 625, scale: 1 },
@@ -137,7 +137,7 @@ window.SEED = {
     ] },
     sid:    { mode: "grow", stages: [
       { name: "Mimikyu", id: 778, scale: 1 },
-      { name: "Big Mimikyu", id: 778, scale: 1.3, req: "Mimikyu never evolves — so grow. Pull off the spookiest play of the night." },
+      { name: "Big Mimikyu", id: 778, scale: 1.3, req: "Pull off the spookiest play of the night." },
     ] },
     matt:   { mode: "evolve", stages: [
       { name: "Tranquill", id: 520, scale: 1 },
@@ -145,11 +145,12 @@ window.SEED = {
     ] },
     brian:  { mode: "grow", stages: [
       { name: "Serperior", id: 497, scale: 1 },
-      { name: "Big Serperior", id: 497, scale: 1.3, req: "Serperior's a final form — grow instead. Win a Victory Road event." },
+      { name: "Big Serperior", id: 497, scale: 1.3, req: "Win a Victory Road event." },
     ] },
-    tyler:  { mode: "grow", stages: [
+    tyler:  { mode: "evolve", stages: [
       { name: "Feraligatr", id: 160, scale: 1 },
-      { name: "Big Feraligatr", id: 160, scale: 1.3, req: "Feraligatr's a final form — grow instead. Win a Victory Road event." },
+      // Mega Feraligatr — introduced in Pokémon Legends: Z-A (2025).
+      { name: "Mega Feraligatr", id: 10283, scale: 1.22, mega: true, req: "MEGA (Legends: Z-A) — win a Victory Road event." },
     ] },
   },
 
