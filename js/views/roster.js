@@ -1,7 +1,7 @@
 /* roster.js — The Squad: trainer cards grouped by rank, with favorite
    Pokemon sprites and a full TCG-style card on tap. */
 (function () {
-  const { el, typeColor, contrast, uid } = U;
+  const { el, typeColor, contrast, uid, energyIcon } = U;
 
   const RANK_ORDER = ["Champion", "Elite Four", "Gym Leader"];
   const RANK_LABEL = { "Champion": "★ Champion", "Elite Four": "Elite Four", "Gym Leader": "Gym Leaders" };
@@ -140,7 +140,9 @@
       el("div", { class: "tc-body" }, [
         el("div", { class: "tc-role" }, (a.role || "").toUpperCase()),
         el("div", { class: "tc-type-line" }, [
-          el("span", { class: "tc-type-dot", style: { background: color } }),
+          energyIcon(a.type)
+            ? el("img", { class: "energy-ico sm", src: energyIcon(a.type), alt: a.type })
+            : el("span", { class: "tc-type-dot", style: { background: color } }),
           (a.type || "normal").toUpperCase() + " TYPE",
         ]),
         team
@@ -154,12 +156,13 @@
   }
 
   // ---- full TCG-style card (shown in a modal) -----------------------------
-  function energy(cost, color) {
+  function energy(cost, type) {
     const row = el("span", { class: "tcg-move-energy" });
+    const ico = energyIcon(type);
     for (let i = 0; i < (cost || 0); i++) {
-      row.appendChild(el("span", {
-        style: { color, fontSize: "15px", marginRight: "1px" },
-      }, "●"));
+      row.appendChild(ico
+        ? el("img", { class: "energy-ico", src: ico, alt: type })
+        : el("span", { style: { color: typeColor(type), fontSize: "15px", marginRight: "1px" } }, "●"));
     }
     return row;
   }
@@ -167,6 +170,7 @@
   function tcgCard(a) {
     const color = typeColor(a.type);
     const c = a.card || {};
+    const cardType = c.type || a.type || "normal";
     const hp = c.hp || (a.rank === "Champion" ? 100 : 80);
     const form = Store.currentForm(a);
     const sprite = form.id ? Store.sprite(form.id) : "";
@@ -193,7 +197,9 @@
         el("div", { class: "tcg-hp" }, [
           el("span", { class: "tcg-stage" }, "HP"),
           el("b", {}, String(hp)),
-          el("span", { class: "tc-type-dot", style: { background: color, width: "18px", height: "18px", border: "2px solid #1c2b16" } }),
+          energyIcon(cardType)
+            ? el("img", { class: "energy-ico hp", src: energyIcon(cardType), alt: cardType })
+            : el("span", { class: "tc-type-dot", style: { background: color, width: "18px", height: "18px", border: "2px solid #1c2b16" } }),
         ]),
       ]),
       el("div", { class: "tcg-frame" }, frameKids),
@@ -201,7 +207,7 @@
         c.flavor || (a.favorite ? ("The " + (a.role || "Trainer") + ". Favorite: " + a.favorite + ".") : (a.role || "The Squad"))),
       el("div", { class: "tcg-moves" }, attacks.map((m) =>
         el("div", { class: "tcg-move" }, [
-          energy(m.cost, color),
+          energy(m.cost, cardType),
           el("div", { class: "tcg-move-main" }, [
             el("span", { class: "tcg-move-name" }, m.name),
             m.text ? el("div", { class: "tcg-move-text" }, m.text) : null,
