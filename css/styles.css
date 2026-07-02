@@ -637,4 +637,21 @@ body {
 .evo-btn.go:hover { filter: brightness(1.08); }
 .evo-btn.go:active { transform: translateY(1px); }
 .evo-btn.devo { background: #9aa2b8; }
+.evo-btn.go.mega {
+  background: linear-gradient(90deg, #7a2ff2, #f45f9c, #ffcb05); background-size: 200% 100%;
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.35); animation: megaBtn 2.4s linear infinite;
+}
+@keyframes megaBtn { to { background-position: 200% 0; } }
 .evo-max { font-family: var(--pixel); font-size: 10px; color: var(--gold); font-weight: 800; }
+.evo-max.mega {
+  color: transparent; background: linear-gradient(90deg, #7a2ff2, #f45f9c, #ffcb05);
+  background-size: 200% 100%; -webkit-background-clip: text; background-clip: text;
+  animation: megaBtn 2.4s linear infinite;
+}
+/* Card glow when a trainer is in their Mega form */
+.trainer-card.mega { border-color: #b06bff; box-shadow: 0 0 0 2px rgba(176,107,255,0.5), 0 0 22px rgba(176,107,255,0.55), var(--shadow); }
+.trainer-card.mega .tc-portrait::after {
+  content: "⚡ MEGA"; position: absolute; top: 6px; left: 6px; font-family: var(--pixel);
+  font-size: 9px; font-weight: 800; color: #fff; background: linear-gradient(90deg, #7a2ff2, #f45f9c);
+  padding: 2px 6px; border-radius: 6px; letter-spacing: 1px;
+}

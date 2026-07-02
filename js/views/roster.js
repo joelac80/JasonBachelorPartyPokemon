@@ -30,9 +30,14 @@
     const before = Store.currentForm(a);
     if (!Store.evolve(a.id)) return;
     const after = Store.currentForm(a);
-    if (window.SFX) (SFX.evolve ? SFX.evolve() : SFX.win());
-    const verb = before.mode === "grow" ? "grew into" : "evolved into";
-    toast("✨ " + before.name + " " + verb + " " + after.name + "!");
+    if (after.mega) {
+      if (window.SFX) (SFX.fanfare ? SFX.fanfare() : SFX.win());
+      toast("⚡ MEGA EVOLUTION! " + before.name + " → " + after.name + "!");
+    } else {
+      if (window.SFX) (SFX.evolve ? SFX.evolve() : SFX.win());
+      const verb = before.mode === "grow" ? "grew into" : "evolved into";
+      toast("✨ " + before.name + " " + verb + " " + after.name + "!");
+    }
     Router.render();
   }
 
@@ -56,10 +61,10 @@
               onClick: (e) => { e.stopPropagation(); Store.devolve(a.id); Router.render(); } }, "◂")
           : null,
         form.next
-          ? el("button", { class: "evo-btn go", title: "Requirement: " + (form.next.req || ""),
+          ? el("button", { class: "evo-btn go" + (form.next.mega ? " mega" : ""), title: "Requirement: " + (form.next.req || ""),
               onClick: (e) => { e.stopPropagation(); doEvolve(a); } },
-              (form.mode === "grow" ? "Grow ▸" : "Evolve ▸"))
-          : el("span", { class: "evo-max" }, "★ FINAL FORM"),
+              (form.next.mega ? "⚡ Mega Evolve" : (form.mode === "grow" ? "Grow ▸" : "Evolve ▸")))
+          : el("span", { class: "evo-max" + (form.mega ? " mega" : "") }, form.mega ? "⚡ MEGA FORM" : "★ FINAL FORM"),
       ]),
     ]);
   }
@@ -67,9 +72,10 @@
   function card(a) {
     const color = typeColor(a.type);
     const team = a.team ? Store.team(a.team) : null;
+    const megaNow = Store.currentForm(a).mega;
 
     return el("div", {
-      class: "trainer-card", style: { "--type": color },
+      class: "trainer-card" + (megaNow ? " mega" : ""), style: { "--type": color },
       onClick: (e) => { if (!e.target.closest(".tc-edit")) openCard(a.id); },
     }, [
       el("div", { class: "tc-top" }, [

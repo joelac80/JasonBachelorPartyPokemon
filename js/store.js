@@ -130,7 +130,7 @@
       if (i >= cfg.stages.length) i = cfg.stages.length - 1;
       const st = cfg.stages[i];
       return {
-        name: st.name, id: st.id, scale: st.scale || 1,
+        name: st.name, id: st.id, scale: st.scale || 1, mega: !!st.mega,
         stage: i, total: cfg.stages.length, mode: cfg.mode,
         next: cfg.stages[i + 1] || null,
       };
