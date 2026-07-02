@@ -116,10 +116,12 @@ window.SEED = {
       { name: "Charmander", id: 4, scale: 1 },
       { name: "Charmeleon", id: 5, scale: 1, req: "Win a 1-on-1 (beer pong or a chug-off)." },
       { name: "Charizard", id: 6, scale: 1.12, req: "Win a Victory Road bracket outright." },
+      // Mega Evolution — swap id to 10035 for Mega Charizard Y instead of X.
+      { name: "Mega Charizard X", id: 10034, scale: 1.2, mega: true, req: "MEGA: be on the Victory Road Champion team." },
     ] },
-    jeremy: { mode: "grow", stages: [
+    jeremy: { mode: "evolve", stages: [
       { name: "Beedrill", id: 15, scale: 1 },
-      { name: "Big Beedrill", id: 15, scale: 1.3, req: "Beedrill's already final — so grow. Earn a gym badge." },
+      { name: "Mega Beedrill", id: 10090, scale: 1.22, mega: true, req: "MEGA: earn a gym badge AND win a 1-on-1." },
     ] },
     jamie:  { mode: "grow", stages: [
       { name: "Tinkaton", id: 959, scale: 1 },
