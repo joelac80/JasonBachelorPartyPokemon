@@ -72,7 +72,7 @@
 
         const col = el("div", { class: "board-team draft-col", style: { borderColor: t.color } }, [
           el("div", { class: "board-team-head", style: { background: t.color, color: contrast(t.color) } },
-            (t.emoji || "") + " " + t.name + " (" + members.length + ")"),
+            [U.teamIcon(t), " " + t.name + " (" + members.length + ")"]),
           el("div", { class: "draft-captain-slot" },
             captain
               ? memberRow(captain, true)

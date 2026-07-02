@@ -169,7 +169,7 @@
 
   function tcgCard(a) {
     const color = typeColor(a.type);
-    const c = a.card || {};
+    const c = a.card || (window.SEED && window.SEED.cards && window.SEED.cards[a.id]) || {};
     const cardType = c.type || a.type || "normal";
     const hp = c.hp || (a.rank === "Champion" ? 100 : 80);
     const form = Store.currentForm(a);

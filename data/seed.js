@@ -155,6 +155,115 @@ window.SEED = {
   },
 
   // ---------------------------------------------------------------------------
+  // TCG CARDS — the funny full trainer cards, keyed by attendee id. Jason's
+  // lives on his attendee record; everyone else's is here. Each card riffs on
+  // the trainer's favorite Pokémon + real crew lore. Two attacks each, plus a
+  // flavor line and a power. Fields match Jason's `card` shape.
+  // ---------------------------------------------------------------------------
+  cards: {
+    joe: {
+      dex: "No.158", number: "26/034", stage: "Basic Pokémon", hp: 90, type: "water", holo: true, illus: "The Squad",
+      flavor: "The Best Man Pokémon. Bites first, toasts later — roommates with the groom in college and long after.",
+      attacks: [
+        { name: "Best Man Toast", cost: 2, dmg: "40", text: "Raises a glass so heartfelt the whole table has to drink with him." },
+        { name: "Roommate Recall", cost: 3, dmg: "70", text: "A decade of living with Jason = infinite blackmail. Double damage to the groom." },
+      ],
+      power: { name: "Patrick's Volleyball Team", text: "Bump, set, spike — once a game, call a do-over on any missed drink." },
+      weakness: "Last Call ×2", resistance: "Peer Pressure −20", retreat: 2,
+    },
+    chris: {
+      dex: "No.004", number: "04/034", stage: "Basic Pokémon", hp: 80, type: "fire", holo: false, illus: "The Squad",
+      flavor: "The Groomsman Pokémon. Small flame, huge serve — a founding member of Patrick's Volleyball Team.",
+      attacks: [
+        { name: "Ember Serve", cost: 1, dmg: "30", text: "A serve that lands like a fireball. Shank it and take two sips." },
+        { name: "Flare Spike", cost: 2, dmg: "50", text: "Sets, jumps, and spikes with Charmander heat." },
+      ],
+      power: { name: "Tail Flame", text: "As long as his cup isn't empty, the party keeps burning." },
+      weakness: "Cold Pool ×2", resistance: "Hangover −10", retreat: 1,
+    },
+    jeremy: {
+      dex: "No.015", number: "15/034", stage: "Basic Pokémon", hp: 80, type: "bug", holo: false, illus: "The Squad",
+      flavor: "The Groomsman Pokémon. Buzzes the net all game — Patrick's Volleyball Team's most relentless server.",
+      attacks: [
+        { name: "Twin Serve", cost: 2, dmg: "40", text: "Two stingers, two aces. The other team drinks for each." },
+        { name: "Swarm Rush", cost: 3, dmg: "70", text: "Rushes the net so hard the opponents scatter." },
+      ],
+      power: { name: "Mega Overdrive", text: "When he Mega Evolves, his team's next round is on the house." },
+      weakness: "Fly Swatter ×2", resistance: "Chill −20", retreat: 1,
+    },
+    jamie: {
+      dex: "No.959", number: "20/034", stage: "Basic Pokémon", hp: 90, type: "fairy", holo: false, illus: "The Squad",
+      flavor: "The Groomsman Pokémon. Looks harmless — carries a hammer bigger than the keg.",
+      attacks: [
+        { name: "Hammer Drop", cost: 2, dmg: "50", text: "Swings a comically huge mallet. Somebody's full cup goes flying." },
+        { name: "Pixie Prank", cost: 1, dmg: "20", text: "A fairy trick nobody sees coming until it's too late." },
+      ],
+      power: { name: "Tinker Toughness", text: "Immune to the first drink call made against her each round." },
+      weakness: "Steel Toe ×2", resistance: "Small Talk −10", retreat: 3,
+    },
+    dan: {
+      dex: "No.625", number: "18/034", stage: "Basic Pokémon", hp: 90, type: "dark", holo: false, illus: "The Squad",
+      flavor: "The Squad Pokémon. All blades and strategy — and, reportedly, a Patrick's Volleyball Team ringer.",
+      attacks: [
+        { name: "Blade Block", cost: 2, dmg: "40", text: "Stuffs a spike at the net. The attacker drinks." },
+        { name: "Command the Court", cost: 3, dmg: "60", text: "Directs the whole squad like a Kingambit-in-waiting." },
+      ],
+      power: { name: "Sharp Edge", text: "First to call the play, last to lose his cool." },
+      weakness: "Fire Pit ×2", resistance: "Doubt −20", retreat: 2,
+    },
+    joseph: {
+      dex: "No.037", number: "37/034", stage: "Basic Pokémon", hp: 80, type: "fire", holo: false, illus: "The Squad",
+      flavor: "The Squad Pokémon. Warm as six tails by the fire, sly as Ninetales after midnight.",
+      attacks: [
+        { name: "Ember Cozy", cost: 1, dmg: "20", text: "Keeps the lake house fire — and the vibes — going all night." },
+        { name: "Nine-Tail Flick", cost: 3, dmg: "60", text: "Nine tails, nine reasons you now owe a sip." },
+      ],
+      power: { name: "Fire Stone", text: "One drink away from evolving into something far more dangerous." },
+      weakness: "Water Balloon ×2", resistance: "Cold Feet −20", retreat: 1,
+    },
+    sid: {
+      dex: "No.778", number: "10/034", stage: "Basic Pokémon", hp: 80, type: "ghost", holo: true, illus: "The Squad",
+      flavor: "The Squad Pokémon. Wears the disguise, keeps the secrets — roommates with the groom in college and after.",
+      attacks: [
+        { name: "Disguise", cost: 1, dmg: "20", text: "Takes one hit for the crew, no questions asked. Then quietly plots." },
+        { name: "Roommate Blackmail", cost: 3, dmg: "60", text: "Ten years of stories on Jason. Super effective on the groom." },
+      ],
+      power: { name: "Spookiest Play", text: "Once a night, appear out of nowhere and reverse a drink call." },
+      weakness: "Daylight ×2", resistance: "Awkward Silence −30", retreat: 1,
+    },
+    matt: {
+      dex: "No.520", number: "22/034", stage: "Basic Pokémon", hp: 80, type: "flying", holo: false, illus: "The Squad",
+      flavor: "The Squad Pokémon. Unbothered and migratory — always finds his way back to the cooler.",
+      attacks: [
+        { name: "Homing Return", cost: 1, dmg: "20", text: "No matter how far the night goes, always lands back at the lake house." },
+        { name: "Air Slash", cost: 3, dmg: "60", text: "Takes flight as Unfezant and rains it down from above." },
+      ],
+      power: { name: "Tailwind", text: "Skips one PBR run — the wind's always at his back." },
+      weakness: "Ground Game ×2", resistance: "Stress −20", retreat: 1,
+    },
+    tyler: {
+      dex: "No.160", number: "16/034", stage: "Basic Pokémon", hp: 100, type: "water", holo: false, illus: "The Squad",
+      flavor: "The Squad Pokémon. Big jaws, bigger pours — Mega Evolves the moment the party peaks.",
+      attacks: [
+        { name: "Chomp Chug", cost: 2, dmg: "40", text: "One bite, one beer, gone." },
+        { name: "Aqua Tail Slam", cost: 3, dmg: "70", text: "A Mega-sized tail swing that clears the whole table." },
+      ],
+      power: { name: "Torrent", text: "The lower the cooler gets, the harder he goes." },
+      weakness: "Electric Eel ×2", resistance: "Cold Water −20", retreat: 3,
+    },
+    brian: {
+      dex: "No.497", number: "12/034", stage: "Basic Pokémon", hp: 90, type: "grass", holo: false, illus: "The Squad",
+      flavor: "The Squad Pokémon. Regal, unbothered, and 100% certain he's the most refined trainer at the lake house.",
+      attacks: [
+        { name: "Regal Glare", cost: 1, dmg: "20", text: "One disdainful look and you're already drinking." },
+        { name: "Leaf Storm", cost: 3, dmg: "60", text: "Coils up and unleashes an elegant green tempest." },
+      ],
+      power: { name: "Contrary", text: "Insult him and he only gets stronger." },
+      weakness: "Bug Spray ×2", resistance: "Riff-Raff −20", retreat: 2,
+    },
+  },
+
+  // ---------------------------------------------------------------------------
   // VICTORY ROAD — the beer olympics events. Each event is worth points.
   // ---------------------------------------------------------------------------
   //   points: awarded to the winning team; `rules` explains how it's played
