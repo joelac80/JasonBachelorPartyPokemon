@@ -25,9 +25,32 @@
     if (node && a) node.replaceWith(card(a));
   }
 
+  // A firework burst of the type's energy symbol, radiating from the center.
+  function energyBurst(overlay, type) {
+    const src = energyIcon(type);
+    if (!src) return;
+    const layer = el("div", { class: "evo-burst" });
+    const N = 28;
+    for (let i = 0; i < N; i++) {
+      const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+      const dist = 120 + Math.random() * 190;
+      const size = (18 + Math.random() * 24) | 0;
+      const p = el("img", { class: "evo-burst-ico", src: src, alt: "" });
+      p.style.setProperty("--tx", (Math.cos(ang) * dist).toFixed(0) + "px");
+      p.style.setProperty("--ty", (Math.sin(ang) * dist).toFixed(0) + "px");
+      p.style.setProperty("--rot", ((Math.random() * 720 - 360) | 0) + "deg");
+      p.style.width = size + "px"; p.style.height = size + "px";
+      p.style.animationDuration = (0.9 + Math.random() * 0.7).toFixed(2) + "s";
+      p.style.animationDelay = (Math.random() * 0.12).toFixed(2) + "s";
+      layer.appendChild(p);
+    }
+    overlay.appendChild(layer);
+    setTimeout(() => layer.remove(), 2100);
+  }
+
   // The classic evolution animation: dark silhouettes flicker old↔new,
   // accelerating, then a white flash and the new form reveals in full color.
-  function playEvolution(before, after, onComplete) {
+  function playEvolution(before, after, type, onComplete) {
     let done = false;
     const finish = () => { if (done) return; done = true; onComplete && onComplete(); };
     const isMega = !!after.mega;
@@ -72,8 +95,12 @@
         const verb = isMega ? "Mega Evolved into" : (before.mode === "grow" ? "grew into" : "evolved into");
         cap.textContent = (isMega ? "⚡ " : "✨ ") + before.name + " " + verb + " " + after.name + "!";
         cap.classList.add("show");
+        // Fireworks of the type's energy symbol, after the official reveal.
+        energyBurst(overlay, type);
+        setTimeout(() => energyBurst(overlay, type), 550);
+        if (isMega) setTimeout(() => energyBurst(overlay, type), 1050);
       }, 200);
-      setTimeout(close, isMega ? 2300 : 1800);
+      setTimeout(close, isMega ? 2800 : 2300);
     }
   }
 
@@ -84,7 +111,7 @@
       name: before.next.name, id: before.next.id, scale: before.next.scale || 1,
       mega: !!before.next.mega, mode: before.mode,
     };
-    playEvolution(before, after, () => { Store.evolve(a.id); refreshCard(a.id); });
+    playEvolution(before, after, a.type, () => { Store.evolve(a.id); refreshCard(a.id); });
   }
 
   // ---- evolution strip on a trainer card ----------------------------------
