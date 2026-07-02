@@ -69,8 +69,6 @@ window.SEED = {
             text: "Fernando on loop + a pic of Fernando Mendoza." },
           { name: "Solar Beam", cost: 3, dmg: "90",
             text: "Soaks up the sun to power up anything the weekend throws." },
-          { name: "Take Down", cost: 4, dmg: "100",
-            text: "Full send to the finish — recoil lands the next morning." },
         ],
         power: { name: "Keep Pounding",
           text: "Once each day, throw the football and pound a PBR for no reason at all." },
