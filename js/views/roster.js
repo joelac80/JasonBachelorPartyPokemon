@@ -6,12 +6,62 @@
   const RANK_ORDER = ["Champion", "Elite Four", "Gym Leader"];
   const RANK_LABEL = { "Champion": "★ Champion", "Elite Four": "Elite Four", "Gym Leader": "Gym Leaders" };
 
-  // ---- portrait: photo > favorite sprite > poke ball ----------------------
+  // ---- portrait: photo > current-form sprite (scaled) > poke ball ---------
   function portrait(a) {
     if (a.photo) return el("img", { class: "tc-photo", src: a.photo, alt: a.name });
-    const sprite = a.favoriteId ? Store.sprite(a.favoriteId) : "";
-    if (sprite) return el("img", { class: "tc-sprite", src: sprite, alt: a.favorite || "" });
+    const form = Store.currentForm(a);
+    const sprite = form.id ? Store.sprite(form.id) : "";
+    if (sprite) return el("img", {
+      class: "tc-sprite", src: sprite, alt: form.name || a.favorite || "",
+      style: form.scale && form.scale !== 1 ? { transform: "scale(" + form.scale + ")" } : null,
+    });
     return el("div", { class: "tc-ball-fallback" });
+  }
+
+  // ---- a quick toast (uses the .toast styles) -----------------------------
+  function toast(msg) {
+    const t = el("div", { class: "toast" }, msg);
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 300); }, 2400);
+  }
+
+  function doEvolve(a) {
+    const before = Store.currentForm(a);
+    if (!Store.evolve(a.id)) return;
+    const after = Store.currentForm(a);
+    if (window.SFX) (SFX.evolve ? SFX.evolve() : SFX.win());
+    const verb = before.mode === "grow" ? "grew into" : "evolved into";
+    toast("✨ " + before.name + " " + verb + " " + after.name + "!");
+    Router.render();
+  }
+
+  // ---- evolution strip on a trainer card ----------------------------------
+  function evoStrip(a) {
+    const cfg = Store.evoConfig(a.id);
+    if (!cfg || !cfg.stages || cfg.stages.length < 2) return null;
+    const form = Store.currentForm(a);
+    const pips = el("div", { class: "evo-pips" }, cfg.stages.map((st, i) =>
+      el("span", { class: "evo-pip" + (i <= form.stage ? " on" : "") })));
+
+    return el("div", { class: "evo-strip", onClick: (e) => e.stopPropagation() }, [
+      el("div", { class: "evo-line" }, [
+        el("span", { class: "evo-stage-label" }, (form.mode === "grow" ? "GROWTH" : "EVOLUTION")),
+        pips,
+      ]),
+      form.next ? el("div", { class: "evo-req" }, "▸ " + (form.next.req || "")) : null,
+      el("div", { class: "evo-controls" }, [
+        form.stage > 0
+          ? el("button", { class: "evo-btn devo", title: "Revert one stage",
+              onClick: (e) => { e.stopPropagation(); Store.devolve(a.id); Router.render(); } }, "◂")
+          : null,
+        form.next
+          ? el("button", { class: "evo-btn go", title: "Requirement: " + (form.next.req || ""),
+              onClick: (e) => { e.stopPropagation(); doEvolve(a); } },
+              (form.mode === "grow" ? "Grow ▸" : "Evolve ▸"))
+          : el("span", { class: "evo-max" }, "★ FINAL FORM"),
+      ]),
+    ]);
   }
 
   function card(a) {
@@ -28,7 +78,11 @@
       ]),
       el("div", { class: "tc-portrait" }, [
         portrait(a),
-        a.favorite ? el("div", { class: "tc-fav" }, "♥ " + a.favorite) : null,
+        (function () {
+          const form = Store.currentForm(a);
+          const label = form.name || a.favorite;
+          return label ? el("div", { class: "tc-fav" }, "♥ " + label) : null;
+        })(),
       ]),
       el("div", { class: "tc-body" }, [
         el("div", { class: "tc-role" }, (a.role || "").toUpperCase()),
@@ -40,6 +94,7 @@
           ? el("div", { class: "tc-team", style: { color: team.color } }, (team.emoji || "") + " " + team.name)
           : el("div", { class: "tc-team undr" }, "Free Agent"),
         a.nickname ? el("div", { class: "tc-nick" }, "“" + a.nickname + "”") : null,
+        evoStrip(a),
       ]),
       el("button", { class: "tc-edit", title: "Edit", onClick: () => editCard(a.id) }, "✎"),
     ]);
@@ -60,7 +115,8 @@
     const color = typeColor(a.type);
     const c = a.card || {};
     const hp = c.hp || (a.rank === "Champion" ? 100 : 80);
-    const sprite = a.favoriteId ? Store.sprite(a.favoriteId) : "";
+    const form = Store.currentForm(a);
+    const sprite = form.id ? Store.sprite(form.id) : "";
 
     const attacks = (c.attacks && c.attacks.length) ? c.attacks : [
       { name: "Tackle", cost: 1, dmg: "30", text: "A dependable hit." },
@@ -70,13 +126,15 @@
     if (c.dex) frameKids.push(el("span", { class: "tcg-dex" }, c.dex));
     if (c.art) frameKids.push(el("img", { class: "art", src: c.art, alt: a.name }));
     else if (a.photo) frameKids.push(el("img", { class: "art", src: a.photo, alt: a.name }));
-    else if (sprite) frameKids.push(el("img", { class: "sprite", src: sprite, alt: a.favorite || "" }));
+    else if (sprite) frameKids.push(el("img", { class: "sprite", src: sprite, alt: form.name || a.favorite || "",
+      style: form.scale && form.scale !== 1 ? { transform: "scale(" + form.scale + ")" } : null }));
     else frameKids.push(el("div", { class: "tc-ball-fallback" }));
 
     return el("div", { class: "tcg" + (c.holo ? " holo" : "") }, [
       el("div", { class: "tcg-head" }, [
         el("div", {}, [
-          el("div", { class: "tcg-stage" }, c.stage || "Basic Pokémon"),
+          el("div", { class: "tcg-stage" },
+            form.total ? (form.name + " · Stage " + (form.stage + 1) + "/" + form.total) : (c.stage || "Basic Pokémon")),
           el("div", { class: "tcg-name" }, a.name),
         ]),
         el("div", { class: "tcg-hp" }, [

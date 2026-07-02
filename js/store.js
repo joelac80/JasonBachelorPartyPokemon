@@ -27,6 +27,9 @@
       hall: clone(seed.hall || []),
       superlatives: clone(seed.superlatives || []),
       challenges: clone(seed.challenges || []),
+      evolutions: clone(seed.evolutions || {}),
+      // evoStage[attendeeId] = current evolution stage index (0 = base)
+      evoStage: {},
       // scores[eventId][teamId] = points awarded
       scores: {},
       // draft metadata
@@ -61,6 +64,7 @@
         draft: Object.assign(base.draft, parsed.draft || {}),
         superlativeVotes: parsed.superlativeVotes || {},
         challengeDone: parsed.challengeDone || {},
+        evoStage: parsed.evoStage || {},
         jeopardy: Object.assign(base.jeopardy, parsed.jeopardy || {}),
         brackets: parsed.brackets || [],
         meta: Object.assign(base.meta, parsed.meta || {}),
@@ -107,6 +111,45 @@
 
     // Offline Pokemon sprite (base64 data URI) for a National Dex id, or "".
     sprite(id) { return (window.SPRITES && window.SPRITES[id]) || ""; },
+
+    // ---- Evolution -------------------------------------------------------
+    evoConfig(attId) {
+      return (this.state.evolutions && this.state.evolutions[attId]) ||
+             (window.SEED && window.SEED.evolutions && window.SEED.evolutions[attId]) || null;
+    },
+    evoIndex(attId) { return (this.state.evoStage && this.state.evoStage[attId]) || 0; },
+
+    // The form (name/sprite id/scale) an attendee is currently showing, plus
+    // stage info. Falls back to the raw favorite when there's no evo config.
+    currentForm(a) {
+      const cfg = this.evoConfig(a.id);
+      if (!cfg || !cfg.stages || !cfg.stages.length) {
+        return { name: a.favorite || "", id: a.favoriteId || 0, scale: 1, stage: 0, total: 0, mode: null, next: null };
+      }
+      let i = this.evoIndex(a.id);
+      if (i >= cfg.stages.length) i = cfg.stages.length - 1;
+      const st = cfg.stages[i];
+      return {
+        name: st.name, id: st.id, scale: st.scale || 1,
+        stage: i, total: cfg.stages.length, mode: cfg.mode,
+        next: cfg.stages[i + 1] || null,
+      };
+    },
+
+    evolve(attId) {
+      const cfg = this.evoConfig(attId);
+      if (!cfg) return false;
+      const cur = this.evoIndex(attId);
+      if (cur >= cfg.stages.length - 1) return false;
+      this.update((s) => { s.evoStage[attId] = cur + 1; });
+      return true;
+    },
+    devolve(attId) {
+      const cur = this.evoIndex(attId);
+      if (cur <= 0) return false;
+      this.update((s) => { s.evoStage[attId] = cur - 1; });
+      return true;
+    },
 
     // Total score for a team across all events.
     teamTotal(teamId) {
