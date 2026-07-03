@@ -84,6 +84,7 @@
       Store.update((s) => {
         const x = s.gymBadges.find((g) => g.id === badgeId);
         x.holder = a.id; x.used = false;
+        if (Store.chron) Store.chron(s, "🏅", a.name + " earned the " + (b ? b.name : "badge") + "!");
       });
       if (window.SFX) SFX.win();
       Router.render();

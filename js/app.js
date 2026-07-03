@@ -10,11 +10,13 @@
     .add("brackets", V.brackets)
     .add("battle", V.battle)
     .add("safari", V.safari)
+    .add("drinks", V.drinks)
     .add("superlatives", V.superlatives)
     .add("challenges", V.challenges)
     .add("badges", V.badges)
     .add("hall", V.hall)
     .add("ceremony", V.ceremony)
+    .add("poster", V.poster)
     .add("settings", V.settings)
     .add("help", V.help);
   Router.setNotFound(V.home);

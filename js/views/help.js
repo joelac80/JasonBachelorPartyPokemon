@@ -25,6 +25,7 @@
       title: "🎯 Games to play",
       items: [
         { r: "safari", e: "🔴", t: "Pokédex Safari", d: "Pick a catcher, then earn boosts by doing dares/berries/rallies (chicken out = drink, and it might bolt!). Add a helper for a 2v2, or nail the Master Ball dare for a guaranteed catch." },
+        { r: "drinks", e: "🍺", t: "Drink Tracker", d: "Log every round by trainer, type, and day. First Sip, Thirstiest, and a champion for each drink kind all earn badges." },
         { r: "battle", e: "⚔️", t: "Battle Arena", d: "Set any 1v1 or 2v2, tag the event (e.g. Beer Pong), and fight. The winner’s team scores." },
         { r: "brackets", e: "🥊", t: "Brackets", d: "Run a tournament bracket — each matchup can launch the battle screen." },
         { r: "jeopardy", e: "❓", t: "Jeopardy", d: "Bulbasaur-themed trivia with Daily Bulbas. Award (or dock) clue values to teams." },
@@ -48,6 +49,7 @@
         { r: "challenges", e: "🎣", t: "Catch of the Day", d: "Daily photo / dare challenges — check them off as you go." },
         { r: "hall", e: "🌿", t: "Hall of Bulbasaur", d: "Your gallery wall — add photos and art from the weekend." },
         { r: "ceremony", e: "👑", t: "Champion Ceremony", d: "The grand finale. Crowns the champion from the standings, plus superlative & badge winners." },
+        { r: "poster", e: "🖼️", t: "Weekend Poster", d: "The whole trip on one board — every trainer with their Pokémon and badges, the awards wall, and a move-by-move timeline. Print it or save a PDF keepsake." },
       ],
     },
     {
