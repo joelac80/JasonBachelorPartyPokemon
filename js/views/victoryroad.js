@@ -105,6 +105,12 @@
       el("p", { class: "page-sub" }, "The Beer Olympics. Award points and crown a champion."),
     ]));
 
+    // Setup shortcuts — Draft and the Game Plan live here now, not on the map.
+    root.appendChild(el("div", { class: "vr-setup" }, [
+      el("a", { class: "btn subtle sm", href: "#/draft" }, "🎡 Draft teams"),
+      el("a", { class: "btn subtle sm", href: "#/activities" }, "🗓️ Game Plan"),
+    ]));
+
     // "What's next?" — spin to pick the next event to play.
     if (events.length) {
       root.appendChild(el("h2", { class: "section-title" }, "What's Next?"));

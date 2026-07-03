@@ -47,23 +47,26 @@
   // ---- Overworld region map (replaces the tile grid) ----------------------
   // Locations placed in a 100 x 64 viewBox; the SVG scales to fit any width.
   const MAP = [
-    { r: "roster",       e: "🎴", t: "Squad",     x: 12, y: 51 },
-    { r: "draft",        e: "🎡", t: "Draft",     x: 26, y: 43 },
-    { r: "activities",   e: "🗓️", t: "Game Plan", x: 14, y: 30 },
-    { r: "challenges",   e: "🎣", t: "The Dock",  x: 32, y: 25 },
-    { r: "battle",       e: "⚔️", t: "Battle",    x: 43, y: 44 },
-    { r: "brackets",     e: "🥊", t: "Brackets",  x: 45, y: 24 },
-    { r: "jeopardy",     e: "❓", t: "Jeopardy",  x: 57, y: 34 },
-    { r: "superlatives", e: "🗳️", t: "Awards",    x: 58, y: 52 },
-    { r: "badges",       e: "🏅", t: "Badges",    x: 70, y: 43 },
-    { r: "hall",         e: "🌿", t: "Hall",      x: 71, y: 24 },
-    { r: "memes",        e: "😂", t: "Memes",     x: 84, y: 52 },
-    { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 84, y: 33 },
-    { r: "ceremony",     e: "👑", t: "Champion",  x: 86, y: 15 },
-    { r: "settings",     e: "⚙️", t: "Settings",  x: 10, y: 14 },
+    { r: "roster",       e: "🎴", t: "Squad",     x: 12, y: 50 },
+    { r: "challenges",   e: "🎣", t: "The Dock",  x: 30, y: 26 },
+    { r: "battle",       e: "⚔️", t: "Battle",    x: 40, y: 46 },
     { r: "safari",       e: "🔴", t: "Safari",    x: 49, y: 11 },
+    { r: "brackets",     e: "🥊", t: "Brackets",  x: 47, y: 25 },
+    { r: "jeopardy",     e: "❓", t: "Jeopardy",  x: 58, y: 38 },
+    { r: "superlatives", e: "🗳️", t: "Awards",    x: 58, y: 55 },
+    { r: "badges",       e: "🏅", t: "Badges",    x: 71, y: 44 },
+    { r: "hall",         e: "🌿", t: "Hall",      x: 72, y: 24 },
+    { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 85, y: 34 },
+    { r: "ceremony",     e: "👑", t: "Champion",  x: 87, y: 15 },
+    { r: "settings",     e: "⚙️", t: "Settings",  x: 10, y: 14 },
   ];
-  const MAP_PATHS = [[0,1],[1,4],[4,6],[6,8],[8,11],[11,12],[1,2],[2,3],[4,5],[6,7],[8,9],[7,10],[10,11],[0,13],[3,14],[5,14]];
+  // Routes between locations, keyed by route name so the list survives edits.
+  const MAP_PATHS = [
+    ["settings", "roster"], ["roster", "challenges"], ["roster", "battle"],
+    ["battle", "safari"], ["battle", "brackets"], ["brackets", "jeopardy"],
+    ["jeopardy", "superlatives"], ["jeopardy", "badges"], ["badges", "hall"],
+    ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"],
+  ];
 
   function overworld() {
     const idx = {}; MAP.forEach((n) => (idx[n.r] = n));
@@ -73,7 +76,8 @@
     [[5,40],[19,58],[52,60],[66,57],[81,20],[38,9],[97,44]].forEach((t) =>
       { s += '<circle cx="' + t[0] + '" cy="' + t[1] + '" r="2.1" fill="#5aa85a"/>'; });
     MAP_PATHS.forEach((pr) => {
-      const p = MAP[pr[0]], q = MAP[pr[1]];
+      const p = idx[pr[0]], q = idx[pr[1]];
+      if (!p || !q) return;
       s += '<line x1="' + p.x + '" y1="' + p.y + '" x2="' + q.x + '" y2="' + q.y +
         '" stroke="#efe1ac" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 3.2"/>';
     });
