@@ -62,5 +62,46 @@
   Router.start();
 
   // Optional live sync — connects only if a room was configured + enabled.
-  if (window.Sync && Sync.init) Sync.init();
+  if (window.Sync && Sync.init) {
+    const dot = document.getElementById("sync-dot");
+    if (dot) {
+      const COLOR = { live: "#2ec96b", connecting: "#e6a100", error: "#e6352f", off: "#888" };
+      const TITLE = { live: "Live — synced with the room", connecting: "Connecting to the room…", error: "Sync error — tap for Settings", off: "Sync off" };
+      Sync.onStatus((state, msg) => {
+        dot.style.display = state === "off" ? "none" : "inline-block";
+        dot.dataset.state = state;
+        dot.style.setProperty("--dot", COLOR[state] || "#888");
+        dot.title = (state === "live" && msg && msg !== "Synced") ? "Live — " + msg : (TITLE[state] || "Live sync");
+      });
+    }
+    Sync.init();
+
+    // Incoming battle challenge → prompt to accept anywhere in the app.
+    const el = U.el;
+    Sync.onChallengeIncoming((ch) => {
+      if (!window.Modal) return;
+      if (window.SFX && SFX.select) SFX.select();
+      let ctrl;
+      const body = el("div", { class: "chal-modal" }, [
+        el("div", { class: "chal-line" }, "⚔ " + (ch.fromName || "Someone") + " challenges you to a battle!"),
+        ch.event ? el("div", { class: "chal-ev" }, "Event: " + ch.event) : null,
+        el("div", { class: "toolbar" }, [
+          el("button", { class: "btn primary", onClick: () => { Sync.respondChallenge(ch, true); if (ctrl) ctrl.close(); } }, "✅ Accept & battle"),
+          el("button", { class: "btn subtle", onClick: () => { Sync.respondChallenge(ch, false); if (ctrl) ctrl.close(); } }, "Decline"),
+        ]),
+      ]);
+      ctrl = Modal.open("Battle challenge!", body, null, {});
+    });
+
+    // Both phones launch the battle screen when a challenge is accepted.
+    Sync.onChallengeAccepted((ch) => {
+      if (window.Battle && Battle.start) {
+        Battle.start({
+          title: ch.event || "Challenge",
+          a: { label: ch.fromName || "Challenger", names: [ch.fromName] },
+          b: { label: ch.toName || "Opponent", names: [ch.toName] },
+        });
+      }
+    });
+  }
 })();

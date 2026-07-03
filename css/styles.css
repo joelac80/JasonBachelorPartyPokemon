@@ -557,6 +557,22 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .sync-help { margin-top: 8px; }
 .sync-help summary { cursor: pointer; font-weight: 700; }
 .sync-steps { margin: 8px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink-dim); display: flex; flex-direction: column; gap: 4px; }
+/* top-bar live-sync Poké Ball — green when synced. Hidden when sync is off. */
+.sync-dot { display: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #111;
+  background: linear-gradient(var(--dot, #888) 0 46%, #111 46% 54%, #fff 54% 100%);
+  position: relative; flex: none; text-decoration: none; }
+.sync-dot::after { content: ""; position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
+  border-radius: 50%; background: #fff; border: 1.5px solid #111; transform: translate(-50%, -50%); }
+.sync-dot[data-state="live"] { animation: syncPulse 1.6s ease-in-out infinite; }
+@keyframes syncPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(46,201,107,0.6); } 50% { box-shadow: 0 0 0 5px rgba(46,201,107,0); } }
+/* who's here now + challenges */
+.here-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.here-card { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--panel); border: 2px solid #a7e0ba; border-radius: 12px; padding: 10px 8px; }
+.here-sprite { width: 56px; height: 56px; image-rendering: pixelated; }
+.here-name { font-weight: 800; font-size: 13px; text-align: center; }
+.chal-modal { display: flex; flex-direction: column; gap: 10px; }
+.chal-line { font-weight: 800; font-size: 16px; }
+.chal-ev { color: var(--ink-dim); }
 .safari-penalty { font-family: var(--pixel); font-size: 11px; color: #b02a2a; background: #fdeaea; border: 1.5px solid #f3b4b4; border-radius: 8px; padding: 6px 8px; text-align: center; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
