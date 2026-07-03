@@ -75,5 +75,33 @@
       });
     }
     Sync.init();
+
+    // Incoming battle challenge → prompt to accept anywhere in the app.
+    const el = U.el;
+    Sync.onChallengeIncoming((ch) => {
+      if (!window.Modal) return;
+      if (window.SFX && SFX.select) SFX.select();
+      let ctrl;
+      const body = el("div", { class: "chal-modal" }, [
+        el("div", { class: "chal-line" }, "⚔ " + (ch.fromName || "Someone") + " challenges you to a battle!"),
+        ch.event ? el("div", { class: "chal-ev" }, "Event: " + ch.event) : null,
+        el("div", { class: "toolbar" }, [
+          el("button", { class: "btn primary", onClick: () => { Sync.respondChallenge(ch, true); if (ctrl) ctrl.close(); } }, "✅ Accept & battle"),
+          el("button", { class: "btn subtle", onClick: () => { Sync.respondChallenge(ch, false); if (ctrl) ctrl.close(); } }, "Decline"),
+        ]),
+      ]);
+      ctrl = Modal.open("Battle challenge!", body, null, {});
+    });
+
+    // Both phones launch the battle screen when a challenge is accepted.
+    Sync.onChallengeAccepted((ch) => {
+      if (window.Battle && Battle.start) {
+        Battle.start({
+          title: ch.event || "Challenge",
+          a: { label: ch.fromName || "Challenger", names: [ch.fromName] },
+          b: { label: ch.toName || "Opponent", names: [ch.toName] },
+        });
+      }
+    });
   }
 })();

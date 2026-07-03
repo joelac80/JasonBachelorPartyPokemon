@@ -565,6 +565,14 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
   border-radius: 50%; background: #fff; border: 1.5px solid #111; transform: translate(-50%, -50%); }
 .sync-dot[data-state="live"] { animation: syncPulse 1.6s ease-in-out infinite; }
 @keyframes syncPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(46,201,107,0.6); } 50% { box-shadow: 0 0 0 5px rgba(46,201,107,0); } }
+/* who's here now + challenges */
+.here-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.here-card { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--panel); border: 2px solid #a7e0ba; border-radius: 12px; padding: 10px 8px; }
+.here-sprite { width: 56px; height: 56px; image-rendering: pixelated; }
+.here-name { font-weight: 800; font-size: 13px; text-align: center; }
+.chal-modal { display: flex; flex-direction: column; gap: 10px; }
+.chal-line { font-weight: 800; font-size: 16px; }
+.chal-ev { color: var(--ink-dim); }
 .safari-penalty { font-family: var(--pixel); font-size: 11px; color: #b02a2a; background: #fdeaea; border: 1.5px solid #f3b4b4; border-radius: 8px; padding: 6px 8px; text-align: center; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }

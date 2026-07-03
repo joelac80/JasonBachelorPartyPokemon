@@ -162,6 +162,11 @@
     const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. jason2026)", value: c.room });
     const nameIn = el("input", { class: "in", placeholder: "Your name (shown on updates)", value: c.name });
 
+    // Sign in as your trainer on this device — powers "who's here" + challenges.
+    const meSel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick your trainer —")].concat(
+      Store.state.attendees.map((a) => el("option", { value: a.id, selected: c.me === a.id ? "true" : null }, a.name))));
+    meSel.addEventListener("change", () => { const nm = Sync.setMe(meSel.value); if (nm) nameIn.value = nm; });
+
     const statusEl = el("div", { class: "sync-status" });
     Sync.onStatus((state, msg) => {
       statusEl.className = "sync-status " + state;
@@ -200,6 +205,7 @@
       el("label", { class: "field" }, [el("span", {}, "Firebase config"), cfgIn]),
       el("div", { class: "settings-grid" }, [
         el("label", { class: "field" }, [el("span", {}, "Room code (shared by all)"), roomIn]),
+        el("label", { class: "field" }, [el("span", {}, "You are (your trainer)"), meSel]),
         el("label", { class: "field" }, [el("span", {}, "Your name"), nameIn]),
       ]),
       el("div", { class: "toolbar" }, [enableBtn, saveBtn]),

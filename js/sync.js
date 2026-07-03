@@ -13,12 +13,20 @@
     "https://www.gstatic.com/firebasejs/" + SDK_VER + "/firebase-firestore-compat.js",
   ];
 
-  let conf = load();                 // { config, room, name, enabled }
+  let conf = load();                 // { config, room, name, me, enabled }
   let app = null, db = null, ref = null, unsub = null;
   let applying = false;              // suppress echo while applying a remote doc
   let pushTimer = null, rev = 0;
   let statusState = "off", statusMsg = "";
   const statusSubs = [];
+
+  // ---- presence + challenges (live multiplayer) ----
+  let presRef = null, chalRef = null, myPresRef = null;
+  let hbTimer = null, presUnsub = null, chalUnsub = null;
+  let presenceList = [];
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [];
+  const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
+  const PRESENCE_TTL = 60000, HEARTBEAT = 25000;
 
   const clientId = (function () {
     let id = null;
@@ -28,9 +36,11 @@
   })();
 
   function load() {
-    try { const raw = localStorage.getItem(SKEY); if (raw) return JSON.parse(raw); } catch (_) {}
-    return { config: null, room: "", name: "", enabled: false };
+    try { const raw = localStorage.getItem(SKEY); if (raw) { const o = JSON.parse(raw); if (!("me" in o)) o.me = ""; return o; } } catch (_) {}
+    return { config: null, room: "", name: "", me: "", enabled: false };
   }
+  function nowMs() { try { return Date.now(); } catch (_) { return 0; } }
+  function newId(p) { return p + Math.random().toString(36).slice(2) + nowMs().toString(36); }
   function persist() { try { localStorage.setItem(SKEY, JSON.stringify(conf)); } catch (_) {} }
 
   function setStatus(state, msg) {
@@ -78,15 +88,69 @@
       unsub = ref.onSnapshot(onSnap, (err) => {
         setStatus("error", /permission/i.test(err.message) ? "Permission denied — check Firestore rules." : err.message);
       });
+      startPresence(room);
     } catch (e) {
       setStatus("error", (e && e.message) || "Connection failed.");
     }
   }
 
   function disconnect() {
+    stopPresence();
     if (unsub) { unsub(); unsub = null; }
     ref = null;
     setStatus("off", "");
+  }
+
+  // ---- presence: heartbeat my doc, watch who else is here ----
+  function startPresence(room) {
+    presRef = db.collection("rooms").doc(room).collection("presence");
+    chalRef = db.collection("rooms").doc(room).collection("challenges");
+    myPresRef = presRef.doc(clientId);
+    writePresence();
+    clearInterval(hbTimer);
+    hbTimer = setInterval(writePresence, HEARTBEAT);
+    if (presUnsub) presUnsub();
+    presUnsub = presRef.onSnapshot((snap) => {
+      const now = nowMs(), list = [];
+      snap.forEach((d) => { const x = d.data(); if (x && x.t && (now - x.t) < PRESENCE_TTL) list.push(x); });
+      presenceList = list;
+      presenceSubs.forEach((f) => { try { f(list); } catch (_) {} });
+    }, function () {});
+    if (chalUnsub) chalUnsub();
+    chalUnsub = chalRef.onSnapshot(handleChallenges, function () {});
+    try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
+  }
+  function writePresence() {
+    if (!myPresRef) return;
+    myPresRef.set({ clientId: clientId, attId: conf.me || "", name: conf.name || "", t: nowMs() }).catch(function () {});
+  }
+  function removePresence() { if (myPresRef) myPresRef.delete().catch(function () {}); }
+  function stopPresence() {
+    clearInterval(hbTimer); hbTimer = null;
+    if (presUnsub) { presUnsub(); presUnsub = null; }
+    if (chalUnsub) { chalUnsub(); chalUnsub = null; }
+    removePresence();
+    presRef = chalRef = myPresRef = null; presenceList = [];
+    presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
+  }
+
+  // ---- challenges: fire incoming + accepted to whoever's involved ----
+  function handleChallenges(snap) {
+    const now = nowMs();
+    snap.forEach((d) => {
+      const c = d.data(); if (!c || !c.id) return;
+      if (c.t && now - c.t > 120000) return;   // ignore stale (2 min)
+      if (c.state === "pending" && c.toClient === clientId && !handledInc[c.id]) {
+        handledInc[c.id] = 1;
+        chIncSubs.forEach((f) => { try { f(c); } catch (_) {} });
+      }
+      if (c.state === "accepted" && (c.fromClient === clientId || c.toClient === clientId) && !handledAcc[c.id]) {
+        handledAcc[c.id] = 1;
+        chAccSubs.forEach((f) => { try { f(c); } catch (_) {} });
+        // the challenger tidies up the doc a few seconds later
+        if (c.fromClient === clientId && chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
+      }
+    });
   }
 
   function onSnap(doc) {
@@ -135,5 +199,37 @@
     disable() { conf.enabled = false; persist(); disconnect(); },
     status() { return { state: statusState, msg: statusMsg }; },
     onStatus(fn) { statusSubs.push(fn); fn(statusState, statusMsg); return () => { const i = statusSubs.indexOf(fn); if (i >= 0) statusSubs.splice(i, 1); }; },
+
+    // ---- presence + challenges ----
+    // Sign in as your trainer on THIS device (also used as your display name).
+    getMe() { return conf.me || ""; },
+    setMe(attId) {
+      conf.me = attId || "";
+      const a = window.Store && Store.attendee(attId);
+      if (a) conf.name = a.name;
+      persist();
+      writePresence();
+      return conf.name;
+    },
+    presence() { return presenceList.slice(); },
+    onPresence(fn) { presenceSubs.push(fn); fn(presenceList.slice()); return () => { const i = presenceSubs.indexOf(fn); if (i >= 0) presenceSubs.splice(i, 1); }; },
+    isLive() { return statusState === "live" || statusState === "connecting"; },
+    myClientId() { return clientId; },
+    // Challenge a present device (by its clientId) to a battle.
+    sendChallenge(toClient, toAtt, toName, event) {
+      if (!chalRef) return null;
+      const id = newId("ch");
+      chalRef.doc(id).set({
+        id: id, fromClient: clientId, fromAtt: conf.me || "", fromName: conf.name || "You",
+        toClient: toClient, toAtt: toAtt || "", toName: toName || "", event: event || "", state: "pending", t: nowMs(),
+      }).catch(function () {});
+      return id;
+    },
+    respondChallenge(ch, accept) {
+      if (!chalRef || !ch || !ch.id) return;
+      chalRef.doc(ch.id).set({ state: accept ? "accepted" : "declined", t: nowMs() }, { merge: true }).catch(function () {});
+    },
+    onChallengeIncoming(fn) { chIncSubs.push(fn); return () => { const i = chIncSubs.indexOf(fn); if (i >= 0) chIncSubs.splice(i, 1); }; },
+    onChallengeAccepted(fn) { chAccSubs.push(fn); return () => { const i = chAccSubs.indexOf(fn); if (i >= 0) chAccSubs.splice(i, 1); }; },
   };
 })();

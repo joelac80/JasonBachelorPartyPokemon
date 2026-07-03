@@ -54,6 +54,39 @@
       el("p", { class: "page-sub" }, "Set any matchup — 1v1 or 2v2 — tag the event, and battle. Winner's bragging rights only."),
     ]));
 
+    // ---- Who's here now (live sync): challenge a present trainer's phone ----
+    if (window.Sync) {
+      const hereHost = el("div", {});
+      root.appendChild(hereHost);
+      const renderHere = function (list) {
+        hereHost.innerHTML = "";
+        if (!Sync.isLive()) return;                       // only when a room is joined
+        const me = Sync.myClientId();
+        const others = (list || []).filter((p) => p.clientId !== me && p.attId);
+        hereHost.appendChild(el("h2", { class: "section-title" }, "🟢 Trainers here now"));
+        if (!others.length) {
+          hereHost.appendChild(el("p", { class: "hint" }, "No one else is signed in yet — get the crew to open the app, join the room, and pick their trainer in Settings."));
+          return;
+        }
+        hereHost.appendChild(el("div", { class: "here-grid" }, others.map((p) => {
+          const a = Store.attendee(p.attId);
+          const src = a ? Store.sprite(Store.currentForm(a).id) : "";
+          const btn = el("button", { class: "btn primary sm" }, "⚔ Challenge");
+          btn.addEventListener("click", () => {
+            Sync.sendChallenge(p.clientId, p.attId, p.name || (a && a.name) || "Trainer", (eventLabel || "").trim());
+            btn.disabled = true; btn.textContent = "Waiting…";
+            setTimeout(() => { if (btn.isConnected) { btn.disabled = false; btn.textContent = "⚔ Challenge"; } }, 8000);
+          });
+          return el("div", { class: "here-card" }, [
+            src ? el("img", { class: "here-sprite", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
+            el("div", { class: "here-name" }, p.name || (a && a.name) || "Trainer"),
+            btn,
+          ]);
+        })));
+      };
+      Sync.onPresence(renderHere);
+    }
+
     // Event label + quick picks from Victory Road events.
     const evIn = el("input", { class: "in", placeholder: "Event (e.g. Beer Pong)", value: "" });
     evIn.addEventListener("input", () => { eventLabel = evIn.value; });
