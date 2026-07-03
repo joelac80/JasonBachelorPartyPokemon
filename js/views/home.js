@@ -75,6 +75,7 @@
     { r: "hall",         e: "🌿", t: "Hall",      x: 72, y: 24 },
     { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 85, y: 34 },
     { r: "ceremony",     e: "👑", t: "Champion",  x: 87, y: 15 },
+    { r: "poster",       e: "🖼️", t: "Poster",    x: 70, y: 57 },
     { r: "settings",     e: "⚙️", t: "Settings",  x: 10, y: 14 },
   ];
   // Routes between locations, keyed by route name so the list survives edits.
@@ -83,6 +84,7 @@
     ["battle", "safari"], ["battle", "brackets"], ["brackets", "jeopardy"],
     ["jeopardy", "superlatives"], ["jeopardy", "badges"], ["badges", "hall"],
     ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"],
+    ["superlatives", "poster"], ["poster", "badges"],
   ];
 
   function overworld() {
