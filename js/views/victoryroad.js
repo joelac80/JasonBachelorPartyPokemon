@@ -167,6 +167,17 @@
       teams.forEach((t) => table.appendChild(scoreCell(ev, t)));
     });
 
+    // Read-only mini-games row — points auto-fed from Safari, Battle & Jeopardy.
+    table.appendChild(el("div", { class: "sb-event mini", title: "Auto-scored from the mini-games" }, [
+      el("span", { class: "sb-ev-emoji" }, "🎮"),
+      el("div", { class: "sb-ev-text" }, [
+        el("div", { class: "sb-ev-name" }, "Mini-games"),
+        el("div", { class: "sb-ev-pts" }, "Safari · Battle · Jeopardy — auto-scored"),
+      ]),
+    ]));
+    teams.forEach((t) => table.appendChild(el("div", { class: "sc-cell mini" },
+      el("span", { class: "sc-val" }, String(Store.miniGamePoints(t.id))))));
+
     root.appendChild(table);
 
     // Reset scores control

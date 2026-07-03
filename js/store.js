@@ -190,6 +190,27 @@
       return this.state.attendees.filter((a) => (a.team || "") === teamId);
     },
 
+    // The team id an attendee belongs to (or "" if undrafted).
+    teamOf(attId) { const a = this.attendee(attId); return (a && a.team) || ""; },
+
+    // Award mini-game points into a named bucket. Call INSIDE an existing
+    // update(s) so it shares the transaction. teamTotal() sums every bucket,
+    // so these flow straight into Victory Road standings + the Ceremony.
+    grantPoints(s, bucket, teamId, n) {
+      if (!teamId || !n) return;
+      s.scores = s.scores || {};
+      s.scores[bucket] = s.scores[bucket] || {};
+      s.scores[bucket][teamId] = (s.scores[bucket][teamId] || 0) + n;
+    },
+
+    // Points a team has earned from the mini-game buckets only.
+    miniGamePoints(teamId) {
+      const s = this.state.scores || {};
+      let n = 0;
+      ["safari", "battle", "jeopardy"].forEach((b) => { if (s[b] && s[b][teamId]) n += s[b][teamId]; });
+      return n;
+    },
+
     // ---- Import / Export --------------------------------------------------
     exportJSON() {
       return JSON.stringify(this.state, null, 2);

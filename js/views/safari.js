@@ -412,10 +412,15 @@
             h.assistSips = (h.assistSips || 0) + helperSips;
           }
           s.pokedex.given = (s.pokedex.given || 0) + nfo.sips + helperSips;
+          // Feed the championship: a catch scores its sip-value for the
+          // catcher's team; the helper's team banks their share too.
+          Store.grantPoints(s, "safari", Store.teamOf(tid), nfo.sips);
+          if (helperId) Store.grantPoints(s, "safari", Store.teamOf(helperId), helperSips);
           s.pokedex.log = s.pokedex.log || [];
           s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
         });
+        const catcherTeam = Store.team(Store.teamOf(tid));
         sfx("win");
         const nextBonus = Math.min(0.25, 0.05 * newCombo);
         enc.innerHTML = "";
@@ -424,6 +429,7 @@
           el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + nfo.name + "!"),
           el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
           el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + "!"),
+          catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + nfo.sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
           helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
           newCombo > 1 ? el("div", { class: "safari-combo-note" }, "🔥 Catch combo ×" + newCombo + " — +" + Math.round(nextBonus * 100) + "% on your next throw!") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
