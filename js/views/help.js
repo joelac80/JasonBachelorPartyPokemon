@@ -31,6 +31,16 @@
       ],
     },
     {
+      title: "🔗 Play together (Live Sync)",
+      items: [
+        { r: "settings", e: "🔗", t: "Turn on Live Sync", d: "Optional. Settings → Live Sync: paste your Firebase config, pick a shared room code, and sign in as your trainer. Now everyone’s phones share one live scoreboard. Off = fully local. (Setup steps are in SYNC.md.)" },
+        { r: null, e: "🟢", t: "Green Poké Ball", d: "The Poké Ball in the top bar glows green when your phone is live-synced to the room (grey/hidden when local)." },
+        { r: "battle", e: "🥊", t: "Trainers here now", d: "Once synced, the Battle Arena shows who else is signed in — tap ⚔ Challenge to battle their phone." },
+        { r: null, e: "👀", t: "Challenge & spectate", d: "Get challenged → accept → both battle. Everyone else gets a “Watch” alert to spectate, and a LIVE banner on Home lets latecomers jump in." },
+        { r: null, e: "🔔", t: "Phone alerts", d: "Allow notifications (and Add to Home Screen) and your phone pings you when you’re challenged or a battle starts — even in your pocket." },
+      ],
+    },
+    {
       title: "🏅 Honors & finale",
       items: [
         { r: "superlatives", e: "🗳️", t: "Superlatives", d: "The crew votes on end-of-weekend awards. One tap = one vote." },
@@ -74,7 +84,8 @@
     root.appendChild(el("div", { class: "help-callout" }, [
       el("div", { class: "help-callout-t" }, "📱 One device runs the show" ),
       el("p", {}, "This app is 100% local — like a save file on a single Game Boy. Everything you tap is stored in THIS browser only, so two phones = two separate save files that don’t see each other."),
-      el("p", {}, "Simplest way to run the weekend: pick one “host” phone for the scoreboard and pass it around (or screen-share). To move the save to another device, use Settings → Export on the host, then Settings → Import on the other phone. There’s no live sync."),
+      el("p", {}, "Simplest way to run the weekend: pick one “host” phone for the scoreboard and pass it around (or screen-share). To move the save to another device, use Settings → Export on the host, then Settings → Import on the other phone."),
+      el("p", {}, "Want everyone’s phones sharing ONE live scoreboard instead? Turn on Live Sync (see “Play together” below) — it’s optional and off by default."),
       el("a", { class: "btn subtle sm", href: "#/settings" }, "⚙️ Export / Import in Settings"),
     ]));
 
