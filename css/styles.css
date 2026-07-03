@@ -484,6 +484,10 @@ body {
 .safari-boost-chip.rally { color: #1f6fb0; border-color: #a7cef2; background: #e6f2ff; }
 .safari-boost-chip.combo { color: #c0500a; border-color: #f5b276; background: #fff0e0; }
 .safari-boost-chip.helper { color: #2e7d46; border-color: #a7e0ba; background: #e7f7ec; }
+.safari-boost-chip.master { color: #fff; border-color: #7a2ff2; background: #7a2ff2; }
+.safari-master-btn { border-color: #7a2ff2 !important; color: #7a2ff2 !important; font-weight: 800; }
+.safari-dare.master { background: #f3ecff; border: 2px solid #7a2ff2; border-radius: 12px; padding: 10px; }
+.safari-dare-tag { font-family: var(--pixel); font-size: 10px; color: #7a2ff2; text-align: center; margin-bottom: 4px; }
 .safari-combo-note { font-family: var(--pixel); font-size: 12px; color: #c0500a; margin-top: 4px; text-align: center; }
 .safari-combo-note.broke { color: #b02a2a; }
 .safari-assist-note { font-family: var(--pixel); font-size: 12px; color: #2e7d46; margin-top: 4px; text-align: center; }
