@@ -170,7 +170,8 @@
       setTimeout(() => {
         msg.textContent = "🏆 " + W.label + " wins" + (opts.title ? " " + opts.title : "") + "!";
         sfx(opts.isFinal ? "fanfare" : "win");
-        try {
+        // Only the "real" (non-spectator) screen records the result.
+        if (!opts.spectator) try {
           const winNames = winIsA ? (a.names || []) : (b.names || []);
           const winTeams = teamsForNames(winNames, W.label);
           Store.update((s) => {
@@ -186,15 +187,28 @@
       setTimeout(() => { close(); if (opts.onResult) opts.onResult(winnerKey); }, 3300 + extra);
     }
 
-    menu.appendChild(el("div", { class: "battle-menu-q" }, "Who takes it?"));
-    menu.appendChild(el("div", { class: "battle-menu-row" }, [
-      el("button", { class: "btn primary", onClick: () => fight("a") }, "👊 " + a.label),
-      el("button", { class: "btn primary", onClick: () => fight("b") }, "👊 " + b.label),
-    ]));
-    menu.appendChild(el("div", { class: "battle-menu-row" }, [
-      el("button", { class: "btn subtle sm", onClick: () => fight(Math.random() < 0.5 ? "a" : "b") }, "🎲 Random KO"),
-      el("button", { class: "btn subtle sm", onClick: () => { if (!done) close(); } }, "Cancel"),
-    ]));
+    // Map a winner (side key, label, or a member name) to "a" / "b".
+    function resolveKey(w) {
+      if (w === "a" || w === "b") return w;
+      const nm = String(w || "");
+      if (a.label === nm || (a.names || []).indexOf(nm) >= 0) return "a";
+      if (b.label === nm || (b.names || []).indexOf(nm) >= 0) return "b";
+      return "a";
+    }
+
+    if (opts.spectator) {
+      menu.appendChild(el("div", { class: "battle-menu-q" }, "👀 Spectating — waiting for the winner…"));
+    } else {
+      menu.appendChild(el("div", { class: "battle-menu-q" }, "Who takes it?"));
+      menu.appendChild(el("div", { class: "battle-menu-row" }, [
+        el("button", { class: "btn primary", onClick: () => fight("a") }, "👊 " + a.label),
+        el("button", { class: "btn primary", onClick: () => fight("b") }, "👊 " + b.label),
+      ]));
+      menu.appendChild(el("div", { class: "battle-menu-row" }, [
+        el("button", { class: "btn subtle sm", onClick: () => fight(Math.random() < 0.5 ? "a" : "b") }, "🎲 Random KO"),
+        el("button", { class: "btn subtle sm", onClick: () => { if (!done) close(); } }, "Cancel"),
+      ]));
+    }
 
     // VS intro: two panels clash, then reveal the arena.
     function vsPanel(cls, labels, members) {
@@ -219,7 +233,15 @@
       overlay.classList.add("go", "ready");
       sfx("blip");
     }, 1700);
+
+    // Handle for remote control (spectator screens resolve when the referee
+    // reports the winner).
+    return { finish: function (w) { if (!done) fight(resolveKey(w)); }, close: close };
   }
 
-  window.Battle = { start: start, resolveMember: resolveMember };
+  // View-only screen for spectators; returns a handle whose .finish(winner)
+  // plays the KO once the referee's result arrives.
+  function spectate(opts) { return start(Object.assign({}, opts || {}, { spectator: true })); }
+
+  window.Battle = { start: start, spectate: spectate, resolveMember: resolveMember };
 })();

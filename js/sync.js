@@ -21,10 +21,10 @@
   const statusSubs = [];
 
   // ---- presence + challenges (live multiplayer) ----
-  let presRef = null, chalRef = null, myPresRef = null;
-  let hbTimer = null, presUnsub = null, chalUnsub = null;
+  let presRef = null, chalRef = null, myPresRef = null, liveRef = null;
+  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null;
   let presenceList = [];
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [];
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   const PRESENCE_TTL = 60000, HEARTBEAT = 25000;
 
@@ -118,6 +118,12 @@
     }, function () {});
     if (chalUnsub) chalUnsub();
     chalUnsub = chalRef.onSnapshot(handleChallenges, function () {});
+    liveRef = db.collection("rooms").doc(room).collection("live").doc("current");
+    if (liveUnsub) liveUnsub();
+    liveUnsub = liveRef.onSnapshot((d) => {
+      const data = d.exists ? d.data() : null;
+      liveSubs.forEach((f) => { try { f(data); } catch (_) {} });
+    }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
   }
   function writePresence() {
@@ -129,8 +135,9 @@
     clearInterval(hbTimer); hbTimer = null;
     if (presUnsub) { presUnsub(); presUnsub = null; }
     if (chalUnsub) { chalUnsub(); chalUnsub = null; }
+    if (liveUnsub) { liveUnsub(); liveUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = null; presenceList = [];
+    presRef = chalRef = myPresRef = liveRef = null; presenceList = [];
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
 
@@ -231,5 +238,20 @@
     },
     onChallengeIncoming(fn) { chIncSubs.push(fn); return () => { const i = chIncSubs.indexOf(fn); if (i >= 0) chIncSubs.splice(i, 1); }; },
     onChallengeAccepted(fn) { chAccSubs.push(fn); return () => { const i = chAccSubs.indexOf(fn); if (i >= 0) chAccSubs.splice(i, 1); }; },
+
+    // ---- live battle (broadcast so the whole room can watch) ----
+    startLiveBattle(info) {
+      if (!liveRef || !info) return;
+      liveRef.set({
+        id: newId("lb"), aName: info.aName || "", bName: info.bName || "",
+        aClient: info.aClient || "", bClient: info.bClient || "", event: info.event || "",
+        state: "live", winner: "", t: nowMs(),
+      }).catch(function () {});
+    },
+    finishLiveBattle(winner) {
+      if (!liveRef) return;
+      liveRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
+    },
+    onLiveBattle(fn) { liveSubs.push(fn); return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); }; },
   };
 })();

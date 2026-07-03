@@ -76,10 +76,20 @@
     }
     Sync.init();
 
+    // Phone notification (works best when the app is added to the home screen).
+    function notify(title, body) {
+      try {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        if (document.visibilityState === "visible") return;   // don't double up with the in-app modal
+        new Notification(title, { body: body, icon: "assets/favicon.svg", tag: "bachhub-battle" });
+      } catch (_) {}
+    }
+
     // Incoming battle challenge → prompt to accept anywhere in the app.
     const el = U.el;
     Sync.onChallengeIncoming((ch) => {
       if (!window.Modal) return;
+      notify("⚔ You've been challenged!", (ch.fromName || "Someone") + " wants to battle" + (ch.event ? " · " + ch.event : ""));
       if (window.SFX && SFX.select) SFX.select();
       let ctrl;
       const body = el("div", { class: "chal-modal" }, [
@@ -93,14 +103,63 @@
       ctrl = Modal.open("Battle challenge!", body, null, {});
     });
 
-    // Both phones launch the battle screen when a challenge is accepted.
+    // On accept, the challenger broadcasts a live battle for the whole room.
     Sync.onChallengeAccepted((ch) => {
-      if (window.Battle && Battle.start) {
-        Battle.start({
-          title: ch.event || "Challenge",
-          a: { label: ch.fromName || "Challenger", names: [ch.fromName] },
-          b: { label: ch.toName || "Opponent", names: [ch.toName] },
-        });
+      if (ch.fromClient === Sync.myClientId()) {
+        Sync.startLiveBattle({ aName: ch.fromName, bName: ch.toName, event: ch.event, aClient: ch.fromClient, bClient: ch.toClient });
+      }
+    });
+
+    // A live battle → the challenger referees (interactive), the opponent
+    // auto-watches, and everyone else gets a "Watch" alert. Spectator screens
+    // resolve when the referee reports the winner.
+    const handledLive = {};
+    let specHandle = null, latestLive = null;
+    function openSpectator(data) {
+      if (!window.Battle || !Battle.spectate) return;
+      specHandle = Battle.spectate({
+        title: data.event || "Challenge",
+        a: { label: data.aName, names: [data.aName] },
+        b: { label: data.bName, names: [data.bName] },
+      });
+      if (latestLive && latestLive.id === data.id && latestLive.state === "done") {
+        setTimeout(() => { if (specHandle) { specHandle.finish(latestLive.winner || data.aName); specHandle = null; } }, 1900);
+      }
+    }
+    Sync.onLiveBattle((data) => {
+      latestLive = data;
+      if (!data || !data.id) return;
+      const me = Sync.myClientId();
+      if (data.state === "live" && !handledLive[data.id]) {
+        handledLive[data.id] = 1;
+        if (me === data.aClient) {                    // referee — plays + reports
+          Battle.start({
+            title: data.event || "Challenge",
+            a: { label: data.aName, names: [data.aName] },
+            b: { label: data.bName, names: [data.bName] },
+            onResult: (winnerKey) => Sync.finishLiveBattle(winnerKey === "a" ? data.aName : data.bName),
+          });
+        } else if (me === data.bClient) {             // the opponent — auto-watch
+          notify("⚔ Your battle is on!", "vs " + data.aName + (data.event ? " · " + data.event : ""));
+          openSpectator(data);
+        } else {                                       // everyone else — offer to watch
+          notify("⚔ Battle starting!", data.aName + " vs " + data.bName + (data.event ? " · " + data.event : ""));
+          if (window.SFX && SFX.blip) SFX.blip();
+          let ctrl;
+          const body = el("div", { class: "chal-modal" }, [
+            el("div", { class: "chal-line" }, "⚔ " + data.aName + " vs " + data.bName + " — the battle is on!"),
+            data.event ? el("div", { class: "chal-ev" }, "Event: " + data.event) : null,
+            el("div", { class: "toolbar" }, [
+              el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); openSpectator(data); } }, "👀 Watch"),
+              el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Dismiss"),
+            ]),
+          ]);
+          ctrl = Modal.open("Battle starting!", body, null, {});
+        }
+      }
+      if (data.state === "done" && specHandle) {
+        specHandle.finish(data.winner || data.aName);
+        specHandle = null;
       }
     });
   }

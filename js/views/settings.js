@@ -186,6 +186,8 @@
         const r = Sync.save(cfgIn.value, roomIn.value, nameIn.value);
         if (!r.ok) { alert(r.error); return; }
         if (!roomIn.value.trim()) { alert("Pick a room code first (everyone joins the same one)."); return; }
+        // Ask for phone-notification permission on this user gesture.
+        try { if (window.Notification && Notification.requestPermission) Notification.requestPermission(); } catch (_) {}
         Sync.enable();
       }
       paintBtn();
