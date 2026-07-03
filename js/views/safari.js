@@ -92,12 +92,19 @@
   }
 
   // The ball reflects your odds: Poké → Great → Ultra → Master (100% = sure catch).
+  const BALLS = {
+    poke: { key: "poke", name: "Poké Ball", top: "#ee1515" },
+    great: { key: "great", name: "Great Ball", top: "#2a75bb" },
+    ultra: { key: "ultra", name: "Ultra Ball", top: "#e6a100" },
+    master: { key: "master", name: "Master Ball", top: "#7a2ff2" },
+  };
   function ballTier(chance) {
-    if (chance >= 1) return { key: "master", name: "Master Ball", top: "#7a2ff2" };
-    if (chance >= 0.75) return { key: "ultra", name: "Ultra Ball", top: "#e6a100" };
-    if (chance >= 0.55) return { key: "great", name: "Great Ball", top: "#2a75bb" };
-    return { key: "poke", name: "Poké Ball", top: "#ee1515" };
+    if (chance >= 1) return BALLS.master;
+    if (chance >= 0.75) return BALLS.ultra;
+    if (chance >= 0.55) return BALLS.great;
+    return BALLS.poke;
   }
+  function ballByKey(k) { return BALLS[k] || BALLS.poke; }
   function ballIcon(tier) { return el("span", { class: "ball-ico " + tier.key, style: { "--ball-top": tier.top } }); }
 
   // Catch combo (Let's Go-style hot streak): +5% per consecutive catch, cap +25%.
@@ -360,6 +367,8 @@
       if (busy || !current || pending) return;
       busy = true;
       const chance = chanceFor(nfo);
+      const ballUsed = ballTier(chance).key;              // record what we threw
+      const viaMaster = masterDone;                       // earned via the epic dare?
       const flee = berryDone ? nfo.flee / 2 : nfo.flee;   // a berry calms it — less likely to bolt
       const outcome = Math.random() < chance ? "catch" : (Math.random() < flee ? "flee" : "break");
       const wild = enc.querySelector(".safari-wild-scene");
@@ -372,10 +381,10 @@
       sfx("select");
       const beats = ["The ball shakes…", "…and shakes…", "…and shakes…"];
       beats.forEach((t, i) => setTimeout(() => { if (suspense) suspense.textContent = t; sfx("blip"); }, 500 + i * 400));
-      setTimeout(() => resolveThrow(outcome, nfo), 1900);
+      setTimeout(() => resolveThrow(outcome, nfo, ballUsed, viaMaster), 1900);
     }
 
-    function resolveThrow(outcome, nfo) {
+    function resolveThrow(outcome, nfo, ballUsed, viaMaster) {
       const id = current, tid = active();
       if (outcome === "break") {
         status = "So close! " + nfo.name + " broke free — throw again!";
@@ -391,10 +400,12 @@
         Store.update((s) => {
           const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
           const prev = t.caught[id];
-          t.caught[id] = { count: (prev ? prev.count : 0) + 1 };
+          // Keep the ball that first landed it (best-catch keepsake).
+          t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed };
           t.catches = Object.keys(t.caught).length;
           t.combo = (t.combo || 0) + 1;               // extend the catch combo
           newCombo = t.combo;
+          if (viaMaster) t.masterCatches = (t.masterCatches || 0) + 1;   // 🟣 Master Catcher
           if (helperId) {                              // credit the helper's assist + payout
             const h = s.pokedex.trainers[helperId] = s.pokedex.trainers[helperId] || { caught: {}, team: [], catches: 0 };
             h.helps = (h.helps || 0) + 1;
@@ -402,7 +413,7 @@
           }
           s.pokedex.given = (s.pokedex.given || 0) + nfo.sips + helperSips;
           s.pokedex.log = s.pokedex.log || [];
-          s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, helper: helperId || undefined, ts: now() });
+          s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
         });
         sfx("win");
@@ -411,6 +422,7 @@
         enc.appendChild(el("div", { class: "safari-card result win" }, [
           el("img", { class: "safari-wild pop", src: SP[id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + nfo.name + "!"),
+          el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
           el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + "!"),
           helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
           newCombo > 1 ? el("div", { class: "safari-combo-note" }, "🔥 Catch combo ×" + newCombo + " — +" + Math.round(nextBonus * 100) + "% on your next throw!") : null,
@@ -470,9 +482,26 @@
           ]))));
         boardHost.appendChild(el("p", { class: "hint" }, "🤝 = Best Helper — most assists on catches wins the badge."));
       }
+
+      // ---- Master Catchers (landed via the epic Master Ball dare) ----
+      const masters = Store.state.attendees
+        .map((a) => ({ a, n: masterCatchesOf(a.id) }))
+        .filter((r) => r.n > 0)
+        .sort((x, y) => y.n - x.n);
+      if (masters.length) {
+        boardHost.appendChild(el("h2", { class: "section-title" }, "🟣 Master Catchers"));
+        boardHost.appendChild(el("div", { class: "safari-board" }, masters.map((r, i) =>
+          el("div", { class: "safari-board-row master" + (i === 0 ? " lead" : "") }, [
+            el("span", { class: "safari-board-rank" }, i === 0 ? "🟣" : "#" + (i + 1)),
+            el("span", { class: "safari-board-name" }, r.a.name),
+            el("span", { class: "safari-board-n" }, r.n + " master catch" + (r.n > 1 ? "es" : "")),
+          ]))));
+        boardHost.appendChild(el("p", { class: "hint" }, "🟣 = Master Catcher — most Pokémon caught via the epic Master Ball dare."));
+      }
     }
     function helpsOf(id) { return rec(id).helps || 0; }
     function assistSipsOf(id) { return rec(id).assistSips || 0; }
+    function masterCatchesOf(id) { return rec(id).masterCatches || 0; }
 
     // ---- team of 6 (active trainer) ----
     function inTeam(id) { return (rec(active()).team || []).indexOf(id) >= 0; }
@@ -512,11 +541,13 @@
       const grid = el("div", { class: "safari-dex" });
       IDS.forEach((id) => {
         const got = !!caught[id];
+        const ballKey = got && caught[id].ball;
         grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : ""),
-          title: got ? DEX[id].n + " — tap for team" : "#" + id + " — not caught",
+          title: got ? DEX[id].n + (ballKey ? " — caught with a " + ballByKey(ballKey).name : "") + " — tap for team" : "#" + id + " — not caught",
           onClick: got ? () => toggleTeam(id) : null }, [
           SP[id] ? el("img", { src: SP[id], alt: got ? DEX[id].n : "", loading: "lazy" }) : null,
           el("span", { class: "safari-dex-num" }, "#" + id),
+          ballKey ? el("span", { class: "safari-dex-ball" }, ballIcon(ballByKey(ballKey))) : null,
         ]));
       });
       dexHost.appendChild(grid);
