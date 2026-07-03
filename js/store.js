@@ -73,8 +73,11 @@
       drinks: [],
       // Photo log — downscaled photo moments. NOT sent in the sync state doc
       //   (too big); shared via a separate Firestore photos channel instead.
-      //   [{ id, ts, img, caption, by }]
+      //   [{ id, ts, img, caption, by, reactions:[], comments:[], rev }]
       photos: [],
+      // Predictions / Oracle — call outcomes, score correct callers.
+      //   [{ id, q, options:[{id,text}], votes:{attId:optId}, closed, answer, by, ts }]
+      predictions: [],
       meta: { version: 1 },
     };
   }
@@ -100,6 +103,7 @@
         chronicle: parsed.chronicle || [],
         drinks: parsed.drinks || [],
         photos: parsed.photos || [],
+        predictions: parsed.predictions || [],
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {
@@ -231,7 +235,7 @@
     miniGamePoints(teamId) {
       const s = this.state.scores || {};
       let n = 0;
-      ["safari", "battle", "jeopardy"].forEach((b) => { if (s[b] && s[b][teamId]) n += s[b][teamId]; });
+      ["safari", "battle", "jeopardy", "oracle"].forEach((b) => { if (s[b] && s[b][teamId]) n += s[b][teamId]; });
       return n;
     },
 
@@ -262,6 +266,8 @@
         const top = Object.keys(w).sort((x, y) => w[y] - w[x])[0];
         if (top) out.push({ emoji: "⚔️", title: "Battle Champ", holder: top, sub: w[top] + " win" + (w[top] > 1 ? "s" : "") });
       }
+      const oracle = this._topAttendee((id) => this.oracleScore(id));
+      if (oracle) out.push({ emoji: "🔮", title: "Oracle", holder: oracle.a.name, sub: oracle.n + " correct call" + (oracle.n > 1 ? "s" : "") });
       const first = this.firstDrink();
       if (first) { const a = this.attendee(first.trainer); if (a) out.push({ emoji: "🍾", title: "First Sip", holder: a.name, sub: "first drink of the weekend" }); }
       const thirst = this._topAttendee((id) => this.drinkCount(id));
@@ -302,21 +308,91 @@
       return Object.keys(by).map((k) => by[k]).sort((a, b) => b.n - a.n);
     },
 
+    // ---- Predictions / Oracle --------------------------------------------
+    addPrediction(q, options, byName) {
+      q = (q || "").trim();
+      const opts = (options || []).map((t) => ({ id: "o" + Math.random().toString(36).slice(2), text: (t || "").trim() })).filter((o) => o.text);
+      if (!q || opts.length < 2) return false;
+      const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
+      this.update((s) => {
+        s.predictions = s.predictions || [];
+        s.predictions.unshift({ id: "pr" + Math.random().toString(36).slice(2), q: q, options: opts, votes: {}, closed: false, answer: "", by: byName || "", ts: stamp() });
+        this.chron(s, "🔮", "New prediction: " + q);
+      });
+      return true;
+    },
+    votePrediction(predId, attId, optionId) {
+      if (!attId) return;
+      this.update((s) => {
+        const p = (s.predictions || []).find((x) => x.id === predId);
+        if (!p || p.closed) return;
+        p.votes = p.votes || {}; p.votes[attId] = optionId;
+      });
+    },
+    resolvePrediction(predId, optionId) {
+      this.update((s) => {
+        const p = (s.predictions || []).find((x) => x.id === predId);
+        if (!p || p.closed) return;
+        p.closed = true; p.answer = optionId;
+        const opt = p.options.find((o) => o.id === optionId);
+        const winners = Object.keys(p.votes || {}).filter((a) => p.votes[a] === optionId);
+        winners.forEach((a) => { this.grantPoints(s, "oracle", this.teamOf(a), 2); });
+        const names = winners.map((a) => { const at = this.attendee(a); return at ? at.name : a; });
+        this.chron(s, "🔮", "Prediction resolved — “" + p.q + "” → " + (opt ? opt.text : "?") + (names.length ? " (" + names.join(", ") + " called it!)" : " (nobody got it)"));
+      });
+    },
+    oracleScore(attId) {
+      let n = 0;
+      (this.state.predictions || []).forEach((p) => { if (p.closed && p.votes && p.votes[attId] === p.answer) n++; });
+      return n;
+    },
+
     // ---- Photo log --------------------------------------------------------
     addPhoto(entry) {
       if (!entry || !entry.id) return;
       this.update((s) => { s.photos = s.photos || []; s.photos.unshift(entry); if (s.photos.length > 150) s.photos.length = 150; });
     },
-    // Merge in photos that arrived from a sync peer (dedup by id).
+    // Upsert photos from a sync peer: add new ones, and replace an existing
+    // one when the incoming has a newer rev (so reactions/comments propagate).
     mergePhotos(list) {
       if (!list || !list.length) return;
       this.update((s) => {
         s.photos = s.photos || [];
-        const have = {}; s.photos.forEach((p) => { have[p.id] = 1; });
-        list.forEach((p) => { if (p && p.id && !have[p.id]) s.photos.push(p); });
+        const idx = {}; s.photos.forEach((p, i) => { idx[p.id] = i; });
+        list.forEach((p) => {
+          if (!p || !p.id) return;
+          if (idx[p.id] === undefined) { s.photos.push(p); idx[p.id] = s.photos.length - 1; }
+          else if ((p.rev || 0) >= (s.photos[idx[p.id]].rev || 0)) s.photos[idx[p.id]] = p;
+        });
         s.photos.sort((a, b) => b.ts - a.ts);
         if (s.photos.length > 250) s.photos.length = 250;
       });
+    },
+    _photo(id) { return (this.state.photos || []).find((p) => p.id === id) || null; },
+    // Toggle a reaction on a photo for one reactor (one per emoji per person).
+    reactPhoto(photoId, emoji, byId, byName) {
+      this.update((s) => {
+        const p = (s.photos || []).find((x) => x.id === photoId); if (!p) return;
+        p.reactions = p.reactions || [];
+        const i = p.reactions.findIndex((r) => r.by === byId && r.emoji === emoji);
+        if (i >= 0) p.reactions.splice(i, 1);
+        else p.reactions.push({ by: byId, name: byName || "", emoji: emoji });
+        p.rev = (p.rev || 0) + 1;
+      });
+      const p = this._photo(photoId);
+      if (p && window.Sync && Sync.sharePhoto) Sync.sharePhoto(p);
+    },
+    commentPhoto(photoId, text, byId, byName) {
+      text = (text || "").trim(); if (!text) return;
+      const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
+      this.update((s) => {
+        const p = (s.photos || []).find((x) => x.id === photoId); if (!p) return;
+        p.comments = p.comments || [];
+        p.comments.push({ by: byId, name: byName || "", text: text, ts: stamp() });
+        p.rev = (p.rev || 0) + 1;
+      });
+      const p = this._photo(photoId);
+      if (p && window.Sync && Sync.sharePhoto) Sync.sharePhoto(p);
     },
 
     drinkTypes() { return DRINKS.slice(); },

@@ -29,6 +29,7 @@
         { r: "battle", e: "⚔️", t: "Battle Arena", d: "Set any 1v1 or 2v2, tag the event (e.g. Beer Pong), and fight. The winner’s team scores." },
         { r: "brackets", e: "🥊", t: "Brackets", d: "Run a tournament bracket — each matchup can launch the battle screen." },
         { r: "jeopardy", e: "❓", t: "Jeopardy", d: "Bulbasaur-themed trivia with Daily Bulbas. Award (or dock) clue values to teams." },
+        { r: "predictions", e: "🔮", t: "Predictions (Oracle)", d: "Call outcomes before they happen — who wins, how many drinks, will the groom cry. Nail your calls to climb the Oracle board; right calls score for your team." },
       ],
     },
     {

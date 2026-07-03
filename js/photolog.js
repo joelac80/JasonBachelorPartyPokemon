@@ -72,5 +72,50 @@
     input.click();
   }
 
-  window.PhotoLog = { capture: capture };
+  // ---- reactions + comments on a photo ----
+  const REACTIONS = ["❤️", "😂", "🔥", "👏", "🥳"];
+  function reactorId() {
+    let id = window.Sync && Sync.myClientId && Sync.myClientId();
+    if (id) return id;
+    try { id = localStorage.getItem("jasonBachHub.reactor"); if (!id) { id = "r" + Math.random().toString(36).slice(2); localStorage.setItem("jasonBachHub.reactor", id); } }
+    catch (_) { id = "r0"; }
+    return id;
+  }
+  function reactorName() { const me = window.Sync && Sync.getMe && Sync.getMe(); const a = me && Store.attendee(me); return a ? a.name : "Someone"; }
+
+  function openDetail(photoId, onChange) {
+    const rid = reactorId(), rname = reactorName();
+    const host = el("div", {});
+    let ctrl;
+    function build() {
+      const p = Store._photo(photoId);
+      if (!p) { if (ctrl) ctrl.close(); return el("div"); }
+      const counts = {}; (p.reactions || []).forEach((r) => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+      const reactRow = el("div", { class: "photo-react-row" }, REACTIONS.map((em) => {
+        const mine = (p.reactions || []).some((r) => r.by === rid && r.emoji === em);
+        return el("button", { class: "photo-react" + (mine ? " on" : ""),
+          onClick: () => { Store.reactPhoto(photoId, em, rid, rname); refresh(); if (onChange) onChange(); } },
+          [em, counts[em] ? el("span", { class: "photo-react-n" }, String(counts[em])) : null]);
+      }));
+      const comments = el("div", { class: "photo-comments" }, (p.comments || []).map((c) =>
+        el("div", { class: "photo-comment" }, [el("b", {}, (c.name || "Someone") + ": "), c.text])));
+      const cin = el("input", { class: "in", placeholder: "Add a caption / comment…" });
+      const cadd = el("button", { class: "btn primary sm", onClick: () => {
+        if (cin.value.trim()) { Store.commentPhoto(photoId, cin.value, rid, rname); cin.value = ""; refresh(); if (onChange) onChange(); }
+      } }, "Post");
+      return el("div", { class: "photo-detail" }, [
+        el("img", { class: "photo-detail-img", src: p.img, alt: p.caption || "" }),
+        (p.caption || p.by) ? el("div", { class: "photo-detail-cap" }, (p.caption || "") + (p.by ? " — " + p.by : "")) : null,
+        reactRow,
+        el("div", { class: "section-title" }, "Comments"),
+        (p.comments && p.comments.length) ? comments : el("p", { class: "hint" }, "No comments yet — add the first caption."),
+        el("div", { class: "photo-add-row" }, [cin, cadd]),
+      ]);
+    }
+    function refresh() { host.innerHTML = ""; host.appendChild(build()); }
+    refresh();
+    ctrl = Modal.open("Photo moment", host, null, {});
+  }
+
+  window.PhotoLog = { capture: capture, openDetail: openDetail };
 })();
