@@ -58,9 +58,14 @@
       title: "⭐ Trophies & profiles",
       items: [
         { r: null, e: "🧢", t: "Ash Ketchum", d: "Most Pokémon caught in the Safari." },
-        { r: null, e: "🟣", t: "Master Catcher", d: "Most catches landed via the epic Master Ball dare." },
+        { r: null, e: "🟣", t: "Master Catcher", d: "Most catches via the epic Master Ball dare." },
         { r: null, e: "🤝", t: "Best Helper", d: "Most assists helping others catch." },
-        { r: null, e: "⚔️", t: "Battle Champ", d: "Most Battle Arena wins. All four show on the Home hub + each trainer’s profile." },
+        { r: null, e: "⚔️", t: "Battle Champ", d: "Most Battle Arena wins." },
+        { r: null, e: "🔮", t: "Oracle", d: "Most correct predictions on the Oracle board." },
+        { r: null, e: "👑💩", t: "Best & Worst President", d: "Most times President — and most times stuck as the Asshole — at the Card Table." },
+        { r: null, e: "♠️", t: "Euchre Champ", d: "Most Euchre wins." },
+        { r: null, e: "🍾🍺", t: "Drink awards", d: "First Sip, Thirstiest, and a champion for each drink kind — from the Drink Tracker." },
+        { r: "roster", e: "👤", t: "Trainer profiles", d: "Tap ⓘ on a Squad card (or any leaderboard name) for anyone’s full profile — their Pokémon, team standing, badges and stats. Every trophy above shows on the Home hub, the Badges case, and the Poster." },
       ],
     },
   ];
