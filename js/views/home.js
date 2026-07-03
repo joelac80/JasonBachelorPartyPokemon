@@ -135,6 +135,21 @@
       });
     }
 
+    // Quick actions for the signed-in trainer — log your own drink or a photo
+    // straight from the home screen (no navigating).
+    const meId = window.Sync && Sync.getMe && Sync.getMe();
+    if (meId && Store.attendee(meId)) {
+      const me = Store.attendee(meId);
+      root.appendChild(el("h2", { class: "section-title" }, "⚡ Quick log — " + me.name));
+      root.appendChild(el("div", { class: "drink-btns" }, Store.drinkTypes().map((d) =>
+        el("button", { class: "drink-btn", onClick: () => { Store.logDrink(meId, d.type); if (window.SFX) SFX.coin(); } }, [
+          el("span", { class: "drink-e" }, d.emoji), el("span", {}, d.type),
+        ]))));
+      root.appendChild(el("div", { class: "toolbar" }, [
+        el("button", { class: "btn subtle", onClick: () => { if (window.PhotoLog) PhotoLog.capture(); } }, "📸 Add a photo moment"),
+      ]));
+    }
+
     const hero = el("section", { class: "hero" }, [
       p.heroImage
         ? el("img", { class: "hero-img", src: p.heroImage, alt: p.title })

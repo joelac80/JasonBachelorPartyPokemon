@@ -27,14 +27,7 @@
 
     function logDrink(type) {
       if (!active) return;
-      const a = Store.attendee(active), nm = a ? a.name : active;
-      Store.update((s) => {
-        const firstEver = !(s.drinks && s.drinks.length);
-        s.drinks = s.drinks || [];
-        s.drinks.push({ id: uid(), trainer: active, type: type, ts: now() });
-        Store.chron(s, Store.drinkEmoji(type), nm + " logged a " + type + " " + Store.drinkEmoji(type));
-        if (firstEver) Store.chron(s, "🍾", "First drink of the weekend — " + nm + " grabs First Sip!");
-      });
+      Store.logDrink(active, type);
       sfx("coin");
       renderAll();
     }

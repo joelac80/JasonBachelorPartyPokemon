@@ -21,8 +21,8 @@
   const statusSubs = [];
 
   // ---- presence + challenges (live multiplayer) ----
-  let presRef = null, chalRef = null, myPresRef = null, liveRef = null;
-  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null;
+  let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null;
+  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null;
   let presenceList = [];
   const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
@@ -124,6 +124,15 @@
       const data = d.exists ? d.data() : null;
       liveSubs.forEach((f) => { try { f(data); } catch (_) {} });
     }, function () {});
+    // Photo log channel — one small doc per downscaled photo.
+    photosRef = db.collection("rooms").doc(room).collection("photos");
+    if (photosUnsub) photosUnsub();
+    photosUnsub = photosRef.onSnapshot((snap) => {
+      const list = []; snap.forEach((d) => { const x = d.data(); if (x && x.id) list.push(x); });
+      const have = {}; (Store.state.photos || []).forEach((p) => { have[p.id] = 1; });
+      const fresh = list.filter((p) => !have[p.id]);
+      if (fresh.length) { applying = true; try { Store.mergePhotos(fresh); } finally { applying = false; } }
+    }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
   }
   function writePresence() {
@@ -136,8 +145,9 @@
     if (presUnsub) { presUnsub(); presUnsub = null; }
     if (chalUnsub) { chalUnsub(); chalUnsub = null; }
     if (liveUnsub) { liveUnsub(); liveUnsub = null; }
+    if (photosUnsub) { photosUnsub(); photosUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = liveRef = null; presenceList = [];
+    presRef = chalRef = myPresRef = liveRef = photosRef = null; presenceList = [];
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
 
@@ -179,7 +189,9 @@
   }
   function push() {
     if (!ref) return;
-    let json; try { json = JSON.stringify(Store.state); } catch (_) { return; }
+    // Photos are shared over their own channel — keep them out of the state
+    // doc so it never approaches Firestore's 1 MiB limit.
+    let json; try { const snap = Object.assign({}, Store.state); delete snap.photos; json = JSON.stringify(snap); } catch (_) { return; }
     ref.set({
       stateJson: json, writer: clientId, by: conf.name || "", rev: ++rev,
       ts: firebase.firestore.FieldValue.serverTimestamp(),
@@ -253,5 +265,8 @@
       liveRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
     onLiveBattle(fn) { liveSubs.push(fn); return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); }; },
+
+    // Share a photo moment to the room (its own doc — keeps the state doc lean).
+    sharePhoto(entry) { if (photosRef && entry && entry.id) photosRef.doc(entry.id).set(entry).catch(function () {}); },
   };
 })();
