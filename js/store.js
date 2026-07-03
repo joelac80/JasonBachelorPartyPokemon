@@ -78,6 +78,10 @@
       // Predictions / Oracle — call outcomes, score correct callers.
       //   [{ id, q, options:[{id,text}], votes:{attId:optId}, closed, answer, by, ts }]
       predictions: [],
+      // Card games — one round per entry. `ranking` is best→worst (President)
+      //   or the winners (Euchre) or the spotlight player (Kings/Ride the Bus).
+      //   [{ id, game, ranking:[attId], note, by, ts }]
+      cardGames: [],
       meta: { version: 1 },
     };
   }
@@ -104,6 +108,7 @@
         drinks: parsed.drinks || [],
         photos: parsed.photos || [],
         predictions: parsed.predictions || [],
+        cardGames: parsed.cardGames || [],
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {
@@ -235,7 +240,7 @@
     miniGamePoints(teamId) {
       const s = this.state.scores || {};
       let n = 0;
-      ["safari", "battle", "jeopardy", "oracle"].forEach((b) => { if (s[b] && s[b][teamId]) n += s[b][teamId]; });
+      ["safari", "battle", "jeopardy", "oracle", "cards"].forEach((b) => { if (s[b] && s[b][teamId]) n += s[b][teamId]; });
       return n;
     },
 
@@ -268,6 +273,12 @@
       }
       const oracle = this._topAttendee((id) => this.oracleScore(id));
       if (oracle) out.push({ emoji: "🔮", title: "Oracle", holder: oracle.a.name, sub: oracle.n + " correct call" + (oracle.n > 1 ? "s" : "") });
+      const pres = this._topAttendee((id) => this.presidencies(id));
+      if (pres) out.push({ emoji: "👑", title: "Best President", holder: pres.a.name, sub: pres.n + " presidenc" + (pres.n > 1 ? "ies" : "y") });
+      const ass = this._topAttendee((id) => this.assholeries(id));
+      if (ass) out.push({ emoji: "💩", title: "Worst President", holder: ass.a.name, sub: ass.n + " time" + (ass.n > 1 ? "s" : "") + " the Asshole" });
+      const euch = this._topAttendee((id) => this.euchreWins(id));
+      if (euch) out.push({ emoji: "♠️", title: "Euchre Champ", holder: euch.a.name, sub: euch.n + " win" + (euch.n > 1 ? "s" : "") });
       const first = this.firstDrink();
       if (first) { const a = this.attendee(first.trainer); if (a) out.push({ emoji: "🍾", title: "First Sip", holder: a.name, sub: "first drink of the weekend" }); }
       const thirst = this._topAttendee((id) => this.drinkCount(id));
@@ -346,6 +357,36 @@
       (this.state.predictions || []).forEach((p) => { if (p.closed && p.votes && p.votes[attId] === p.answer) n++; });
       return n;
     },
+
+    // ---- Card games -------------------------------------------------------
+    logCardRound(game, ranking, note, byName) {
+      ranking = (ranking || []).filter(Boolean);
+      note = (note || "").trim();
+      if (!game || (!ranking.length && !note)) return false;
+      const nm = (id) => { const a = this.attendee(id); return a ? a.name : id; };
+      const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
+      this.update((s) => {
+        s.cardGames = s.cardGames || [];
+        s.cardGames.unshift({ id: "cg" + Math.random().toString(36).slice(2), game: game, ranking: ranking.slice(), note: note || undefined, by: byName || "", ts: stamp() });
+        if (game === "president" && ranking.length >= 2) {
+          this.chron(s, "🃏", "President round — 👑 " + nm(ranking[0]) + " President, 💩 " + nm(ranking[ranking.length - 1]) + " the Asshole!");
+          this.grantPoints(s, "cards", this.teamOf(ranking[0]), 2);
+        } else if (game === "euchre" && ranking.length) {
+          this.chron(s, "♠️", "Euchre — " + ranking.map(nm).join(" & ") + " take it!");
+          ranking.forEach((a) => this.grantPoints(s, "cards", this.teamOf(a), 2));
+        } else if (ranking.length) {
+          const who = nm(ranking[0]);
+          const head = game === "ridebus" ? "🚌 " + who + " rode the bus" : (game === "kings" ? "👑 " + who : who);
+          this.chron(s, "🃏", head + (note ? " — " + note : ""));
+        } else {
+          this.chron(s, "🃏", note);
+        }
+      });
+      return true;
+    },
+    presidencies(att) { let n = 0; (this.state.cardGames || []).forEach((r) => { if (r.game === "president" && r.ranking && r.ranking[0] === att) n++; }); return n; },
+    assholeries(att) { let n = 0; (this.state.cardGames || []).forEach((r) => { if (r.game === "president" && r.ranking && r.ranking.length >= 2 && r.ranking[r.ranking.length - 1] === att) n++; }); return n; },
+    euchreWins(att) { let n = 0; (this.state.cardGames || []).forEach((r) => { if (r.game === "euchre" && r.ranking && r.ranking.indexOf(att) >= 0) n++; }); return n; },
 
     // ---- Photo log --------------------------------------------------------
     addPhoto(entry) {

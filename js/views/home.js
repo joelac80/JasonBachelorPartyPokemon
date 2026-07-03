@@ -65,6 +65,7 @@
   const MAP = [
     { r: "roster",       e: "🎴", t: "Squad",     x: 12, y: 50 },
     { r: "drinks",       e: "🍺", t: "Drinks",    x: 24, y: 38 },
+    { r: "cards",        e: "🃏", t: "Card Table",x: 20, y: 22 },
     { r: "challenges",   e: "🎣", t: "The Dock",  x: 30, y: 26 },
     { r: "battle",       e: "⚔️", t: "Battle",    x: 40, y: 46 },
     { r: "safari",       e: "🔴", t: "Safari",    x: 49, y: 11 },
@@ -81,7 +82,7 @@
   ];
   // Routes between locations, keyed by route name so the list survives edits.
   const MAP_PATHS = [
-    ["settings", "roster"], ["roster", "drinks"], ["drinks", "challenges"], ["roster", "battle"],
+    ["settings", "roster"], ["roster", "drinks"], ["drinks", "cards"], ["drinks", "challenges"], ["roster", "battle"],
     ["battle", "safari"], ["battle", "brackets"], ["brackets", "jeopardy"], ["jeopardy", "predictions"],
     ["jeopardy", "superlatives"], ["jeopardy", "badges"], ["badges", "hall"],
     ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"],
