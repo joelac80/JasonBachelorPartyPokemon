@@ -4,6 +4,8 @@
      • Dares      up to 3 × +20%   (one-off, this encounter)
      • Berry      +15%             (one-off; also halves flee chance)
      • Squad rally +10%            (one-off, this encounter)
+     • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
+                        payout — half the sips, or the full haul on a legendary)
      • Catch combo +5%/link, cap +25% — carries between encounters, a flee breaks it
    Then throw. Catches go into that trainer's own Pokédex. Leaderboard +
    Ash Ketchum cap for the top catcher. State in Store.pokedex. */
@@ -82,7 +84,7 @@
       const grid = el("div", { class: "sl-vote-grid" }, others.map((a) =>
         el("button", { class: "sl-vote-pick", onClick: () => { helper = a.id; sfx("select"); ref.close(); renderEncounter(); } },
           el("span", { class: "sl-vote-name" }, a.name))));
-      const body = el("div", { class: "modal-form" }, [el("div", { class: "field" }, [el("span", {}, "Who's teaming up? (+15% — earns them an assist)"), grid])]);
+      const body = el("div", { class: "modal-form" }, [el("div", { class: "field" }, [el("span", {}, "Who's teaming up? (+15% — earns them an assist + a share of the sips)"), grid])]);
       const ref = Modal.open("🤝 Double-battle catch", body, null, {});
     }
 
@@ -259,6 +261,9 @@
         let newCombo = 0;
         const helperId = helper && helper !== tid ? helper : "";
         const helperName = helperId ? attendeeName(helperId) : "";
+        // Helper shares the reward: half the sips on a normal catch, the full
+        // haul when the assist lands a legendary.
+        const helperSips = helperId ? (nfo.leg ? nfo.sips : Math.max(1, Math.round(nfo.sips / 2))) : 0;
         Store.update((s) => {
           const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
           const prev = t.caught[id];
@@ -266,11 +271,12 @@
           t.catches = Object.keys(t.caught).length;
           t.combo = (t.combo || 0) + 1;               // extend the catch combo
           newCombo = t.combo;
-          if (helperId) {                              // credit the helper's assist
+          if (helperId) {                              // credit the helper's assist + payout
             const h = s.pokedex.trainers[helperId] = s.pokedex.trainers[helperId] || { caught: {}, team: [], catches: 0 };
             h.helps = (h.helps || 0) + 1;
+            h.assistSips = (h.assistSips || 0) + helperSips;
           }
-          s.pokedex.given = (s.pokedex.given || 0) + nfo.sips;
+          s.pokedex.given = (s.pokedex.given || 0) + nfo.sips + helperSips;
           s.pokedex.log = s.pokedex.log || [];
           s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, helper: helperId || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
@@ -281,8 +287,8 @@
         enc.appendChild(el("div", { class: "safari-card result win" }, [
           el("img", { class: "safari-wild pop", src: SP[id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + nfo.name + "!"),
-          helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + "!") : null,
           el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + "!"),
+          helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
           newCombo > 1 ? el("div", { class: "safari-combo-note" }, "🔥 Catch combo ×" + newCombo + " — +" + Math.round(nextBonus * 100) + "% on your next throw!") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
@@ -336,12 +342,13 @@
           el("div", { class: "safari-board-row" + (i === 0 ? " lead" : "") }, [
             el("span", { class: "safari-board-rank" }, i === 0 ? "🤝" : "#" + (i + 1)),
             el("span", { class: "safari-board-name" }, r.a.name),
-            el("span", { class: "safari-board-n" }, r.n + " assist" + (r.n > 1 ? "s" : "")),
+            el("span", { class: "safari-board-n" }, r.n + " assist" + (r.n > 1 ? "s" : "") + (assistSipsOf(r.a.id) ? " · 🍺 " + assistSipsOf(r.a.id) : "")),
           ]))));
         boardHost.appendChild(el("p", { class: "hint" }, "🤝 = Best Helper — most assists on catches wins the badge."));
       }
     }
     function helpsOf(id) { return rec(id).helps || 0; }
+    function assistSipsOf(id) { return rec(id).assistSips || 0; }
 
     // ---- team of 6 (active trainer) ----
     function inTeam(id) { return (rec(active()).team || []).indexOf(id) >= 0; }
