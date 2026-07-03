@@ -9,6 +9,7 @@
      • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
                         payout — half the sips, or the full haul on a legendary)
      • Catch combo +5%/link, cap +25% — carries between encounters, a flee breaks it
+     • Master Ball dare — one EPIC challenge = a guaranteed catch outright
    Then throw. Catches go into that trainer's own Pokédex. Leaderboard +
    Ash Ketchum cap for the top catcher. State in Store.pokedex. */
 (function () {
@@ -48,13 +49,36 @@
     "Run a group 3… 2… 1… THROW countdown 🔢",
     "Whole squad does a Pokéball hand-motion 🙌",
   ];
+  // Master Ball dare = one epic, way-tougher challenge for a GUARANTEED catch.
+  const MASTER_ACTS = [
+    "Down your entire drink in one go 🍺",
+    "Do 20 push-ups right now 💪",
+    "Serenade the groom with a full verse 🎤",
+    "Hold a 60-second plank 🧘",
+    "Eat a spoonful of the hottest sauce in the house 🌶️",
+    "Let the group draw on your face 🖊️",
+    "Do the worm across the floor 🪱",
+    "Call a family member and declare your love of Pokémon 📞",
+    "Take three shots, back to back 🥃",
+    "Dead-hang / wall-sit for a full minute 🧗",
+  ];
   function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
   // Each boost is an action you must actually perform; bail and there's a price.
+  // `master` short-circuits the odds to a guaranteed catch when completed.
   const BOOSTS = {
     dare: { pct: 0.20, pool: DARES, verb: "dare", emoji: "🔥" },
     berry: { pct: 0.15, pool: BERRY_ACTS, verb: "berry", emoji: "🍓" },
     rally: { pct: 0.10, pool: RALLY_ACTS, verb: "rally", emoji: "📣" },
+    master: { pct: 1, pool: MASTER_ACTS, verb: "Master Ball dare", emoji: "🟣" },
   };
+
+  // Harder/rarer Pokémon are far more skittish — bailing an action near them
+  // is a bigger gamble. ~20% for commons, ~37% for elites, up to 50% legendary.
+  function spookChance(nfo) {
+    let s = 0.15 + (nfo.x || 60) / 900;
+    if (nfo.leg) s += 0.15;
+    return Math.max(0.15, Math.min(0.5, s));
+  }
 
   // Base catch is low (very low for cool Pokémon); each challenge level +20%.
   function info(id) {
@@ -97,18 +121,20 @@
 
   function view(root) {
     let current = null, busy = false, status = "", level = 0, helper = "";
-    let berryDone = false, rallyDone = false;             // boost earned (action done)
-    let dareLocked = false, berryLost = false, rallyLost = false;  // chickened out
+    let berryDone = false, rallyDone = false, masterDone = false;   // boost earned
+    let dareLocked = false, berryLost = false, rallyLost = false, masterLost = false;  // bailed
     let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
 
     // Wipe all this-encounter boost state (called on new find / trainer swap / run).
     function clearBoosts() {
-      level = 0; berryDone = false; rallyDone = false; helper = "";
-      dareLocked = false; berryLost = false; rallyLost = false; pending = null; penaltyMsg = "";
+      level = 0; berryDone = false; rallyDone = false; masterDone = false; helper = "";
+      dareLocked = false; berryLost = false; rallyLost = false; masterLost = false; pending = null; penaltyMsg = "";
     }
 
     // Effective catch chance = base + all active boosts (capped at 100%).
+    // A completed Master Ball dare is an outright guaranteed catch.
     function chanceFor(nfo) {
+      if (masterDone) return 1;
       return Math.min(1, nfo.base + 0.2 * level + (berryDone ? 0.15 : 0) + (rallyDone ? 0.10 : 0) + (helper ? 0.15 : 0) + comboBonus(active()));
     }
 
@@ -117,8 +143,9 @@
     function doAction() {
       if (!pending) return;
       const k = pending.kind;
-      if (k === "dare") level++; else if (k === "berry") berryDone = true; else if (k === "rally") rallyDone = true;
-      sfx(k === "rally" ? "blip" : "coin");
+      if (k === "dare") level++; else if (k === "berry") berryDone = true;
+      else if (k === "rally") rallyDone = true; else if (k === "master") masterDone = true;
+      sfx(k === "master" ? "fanfare" : (k === "rally" ? "blip" : "coin"));
       pending = null; renderEncounter();
     }
     function chickenOut() {
@@ -126,16 +153,21 @@
       const k = pending.kind, verb = BOOSTS[k].verb;
       Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });   // the price: a sip
       pending = null;
-      // Hesitating might spook the wild one into bolting (~20%) — encounter over.
-      if (current && Math.random() < 0.20) {
-        const id = current, nfo = info(current), lost = comboOf(active());
-        wildEscaped(id, nfo, nfo.name + " spooked and bolted!",
-          "😳 You hesitated on the " + verb + " — take a sip, and it's gone!",
-          lost > 1 ? "💔 Catch combo of " + lost + " broken!" : null);
-        return;
+      // Hesitating might spook the wild one into bolting — odds scale with how
+      // hard/rare it is (commons ~20%, legendaries up to 50%). Encounter over.
+      if (current) {
+        const nfo0 = info(current);
+        if (Math.random() < spookChance(nfo0)) {
+          const id = current, lost = comboOf(active());
+          wildEscaped(id, nfo0, nfo0.name + " spooked and bolted!",
+            "😳 You hesitated on the " + verb + " — take a sip, and it's gone!",
+            lost > 1 ? "💔 Catch combo of " + lost + " broken!" : null);
+          return;
+        }
       }
-      if (k === "dare") dareLocked = true; else if (k === "berry") berryLost = true; else if (k === "rally") rallyLost = true;
-      penaltyMsg = "😳 Chickened out of the " + verb + " — take a sip! No more " + verb + " boosts this catch.";
+      if (k === "dare") dareLocked = true; else if (k === "berry") berryLost = true;
+      else if (k === "rally") rallyLost = true; else if (k === "master") masterLost = true;
+      penaltyMsg = "😳 Chickened out of the " + verb + " — take a sip! No more " + verb + " this catch.";
       sfx("error"); renderEncounter();
     }
 
@@ -238,13 +270,18 @@
         owned ? el("span", { class: "safari-owned" }, "✓ already in dex") : null,
       ]);
       // Human-readable breakdown of every active boost.
-      const parts = [];
-      if (level) parts.push(level + " dare" + (level > 1 ? "s" : ""));
-      if (berryDone) parts.push("berry");
-      if (rallyDone) parts.push("rally");
-      if (helper) parts.push("helper");
-      if (combo) parts.push("combo ×" + combo);
-      const breakdown = parts.length ? " (base " + Math.round(nfo.base * 100) + "% + " + parts.join(" + ") + ")" : "";
+      let breakdown;
+      if (masterDone) {
+        breakdown = " (🟣 Master Ball dare!)";
+      } else {
+        const parts = [];
+        if (level) parts.push(level + " dare" + (level > 1 ? "s" : ""));
+        if (berryDone) parts.push("berry");
+        if (rallyDone) parts.push("rally");
+        if (helper) parts.push("helper");
+        if (combo) parts.push("combo ×" + combo);
+        breakdown = parts.length ? " (base " + Math.round(nfo.base * 100) + "% + " + parts.join(" + ") + ")" : "";
+      }
       const odds = el("div", { class: "safari-odds" }, [
         el("span", { class: "safari-odds-big" }, Math.round(chance * 100) + "%"),
         el("span", {}, " catch chance" + breakdown + " · catch deals " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "")),
@@ -254,6 +291,7 @@
 
       // Active-boost chips (berry / rally / combo) shown alongside the dare pips.
       const activeChips = [];
+      if (masterDone) activeChips.push(el("span", { class: "safari-boost-chip master" }, "🟣 Master Ball dare"));
       if (berryDone) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓 Berry +15%"));
       if (rallyDone) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "📣 Rally +10%"));
       if (helper) activeChips.push(el("span", { class: "safari-boost-chip helper" }, "🤝 " + attendeeName(helper) + " +15%"));
@@ -262,13 +300,17 @@
       let challengeArea;
       if (pending) {
         // An action is on the table — do it for the boost, or bail and pay up.
-        challengeArea = el("div", { class: "safari-dare" }, [
+        const isMaster = pending.kind === "master";
+        challengeArea = el("div", { class: "safari-dare" + (isMaster ? " master" : "") }, [
+          isMaster ? el("div", { class: "safari-dare-tag" }, "🟣 MASTER BALL DARE — pull it off for a guaranteed catch") : null,
           el("div", { class: "safari-dare-txt" }, BOOSTS[pending.kind].emoji + " " + pending.prompt),
           el("div", { class: "safari-actions" }, [
-            el("button", { class: "btn primary sm", onClick: doAction }, "✓ Did it (+" + Math.round(pending.pct * 100) + "%)"),
+            el("button", { class: "btn primary sm", onClick: doAction }, isMaster ? "✓ Nailed it — Master Ball!" : "✓ Did it (+" + Math.round(pending.pct * 100) + "%)"),
             el("button", { class: "btn subtle sm", onClick: chickenOut }, "😳 Chicken out — take a sip"),
           ]),
         ]);
+      } else if (masterDone) {
+        challengeArea = el("div", { class: "hint" }, "🟣 Master Ball earned — throw for the guaranteed catch!");
       } else {
         const btns = [];
         if (level < 3 && !dareLocked) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("dare") }, "🔥 Take a dare (+20%)"));
@@ -277,6 +319,7 @@
         btns.push(helper
           ? el("button", { class: "btn subtle sm", onClick: () => { helper = ""; renderEncounter(); } }, "🤝 Remove helper")
           : el("button", { class: "btn subtle sm", onClick: pickHelper }, "🤝 Add a helper (+15%)"));
+        if (!masterLost) btns.push(el("button", { class: "btn subtle sm safari-master-btn", onClick: () => startAction("master") }, "🟣 Master Ball dare — sure catch"));
         challengeArea = el("div", { class: "safari-actions safari-boosts" }, btns);
       }
       const suspense = el("div", { class: "safari-suspense" });
