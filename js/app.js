@@ -116,7 +116,7 @@
     const handledLive = {};
     let specHandle = null, latestLive = null;
     function openSpectator(data) {
-      if (!window.Battle || !Battle.spectate) return;
+      if (!window.Battle || !Battle.spectate || specHandle || !data) return;
       specHandle = Battle.spectate({
         title: data.event || "Challenge",
         a: { label: data.aName, names: [data.aName] },
@@ -126,6 +126,8 @@
         setTimeout(() => { if (specHandle) { specHandle.finish(latestLive.winner || data.aName); specHandle = null; } }, 1900);
       }
     }
+    // Let the Home "Live now" banner open the spectator screen.
+    window.watchLiveBattle = openSpectator;
     Sync.onLiveBattle((data) => {
       latestLive = data;
       if (!data || !data.id) return;
