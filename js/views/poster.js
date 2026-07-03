@@ -63,7 +63,7 @@
   function timeline() {
     // Merge text moments (chronicle) + photo moments into one time-ordered story.
     const moments = (Store.state.chronicle || []).map((c) => ({ ts: c.ts, icon: c.icon, text: c.text }));
-    const photos = (Store.state.photos || []).map((p) => ({ ts: p.ts, img: p.img, text: p.caption, by: p.by }));
+    const photos = (Store.state.photos || []).map((p) => ({ ts: p.ts, img: p.img, text: p.caption, by: p.by, id: p.id, reactions: p.reactions, comments: p.comments }));
     const all = moments.concat(photos);
     if (!all.length) return el("p", { class: "hint" }, "No moments yet — add photos and play games; they'll fill in here.");
     all.sort((a, b) => a.ts - b.ts);   // oldest → newest, a story
@@ -77,12 +77,17 @@
     return el("div", { class: "poster-timeline" }, byDay.map((d) =>
       el("div", { class: "poster-day" }, [
         el("div", { class: "poster-day-h" }, d.label),
-        el("div", { class: "poster-feed" }, d.items.map((c) => c.img
-          ? el("figure", { class: "poster-photo" }, [
-              el("img", { src: c.img, alt: c.text || "", loading: "lazy" }),
-              (c.text || c.by) ? el("figcaption", {}, (c.text || "") + (c.by ? " — " + c.by : "")) : null,
-            ])
-          : el("div", { class: "poster-moment" }, [el("span", { class: "poster-moment-e" }, c.icon || "•"), el("span", {}, c.text)]))),
+        el("div", { class: "poster-feed" }, d.items.map((c) => {
+          if (!c.img) return el("div", { class: "poster-moment" }, [el("span", { class: "poster-moment-e" }, c.icon || "•"), el("span", {}, c.text)]);
+          const counts = {}; (c.reactions || []).forEach((r) => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+          const summary = Object.keys(counts).map((e) => e + counts[e]).join("  ");
+          const nComments = (c.comments || []).length;
+          return el("figure", { class: "poster-photo", onClick: () => window.PhotoLog && PhotoLog.openDetail(c.id, () => Router.render()) }, [
+            el("img", { src: c.img, alt: c.text || "", loading: "lazy" }),
+            (c.text || c.by) ? el("figcaption", {}, (c.text || "") + (c.by ? " — " + c.by : "")) : null,
+            el("div", { class: "poster-photo-react" }, summary + (nComments ? "  💬 " + nComments : "") || "💬 tap to react"),
+          ]);
+        })),
       ])));
   }
 

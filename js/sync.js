@@ -129,9 +129,7 @@
     if (photosUnsub) photosUnsub();
     photosUnsub = photosRef.onSnapshot((snap) => {
       const list = []; snap.forEach((d) => { const x = d.data(); if (x && x.id) list.push(x); });
-      const have = {}; (Store.state.photos || []).forEach((p) => { have[p.id] = 1; });
-      const fresh = list.filter((p) => !have[p.id]);
-      if (fresh.length) { applying = true; try { Store.mergePhotos(fresh); } finally { applying = false; } }
+      if (list.length) { applying = true; try { Store.mergePhotos(list); } finally { applying = false; } }   // upsert (adds + reaction/comment updates)
     }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
   }
