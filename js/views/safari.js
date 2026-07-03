@@ -465,7 +465,8 @@
       boardHost.appendChild(el("h2", { class: "section-title" }, "🏆 Catch Leaderboard"));
       if (!rows.length) { boardHost.appendChild(el("p", { class: "hint" }, "No catches yet. Be the first!")); return; }
       const list = el("div", { class: "safari-board" }, rows.map((r, i) =>
-        el("div", { class: "safari-board-row" + (i === 0 ? " lead" : "") }, [
+        el("div", { class: "safari-board-row clickable" + (i === 0 ? " lead" : ""), title: "View profile",
+          onClick: () => window.Profile && Profile.open(r.a.id) }, [
           el("span", { class: "safari-board-rank" }, i === 0 ? "🧢" : "#" + (i + 1)),
           el("span", { class: "safari-board-name" }, r.a.name),
           el("span", { class: "safari-board-n" }, r.n + " caught"),
@@ -481,7 +482,8 @@
       if (helpers.length) {
         boardHost.appendChild(el("h2", { class: "section-title" }, "🤝 Top Helpers"));
         boardHost.appendChild(el("div", { class: "safari-board" }, helpers.map((r, i) =>
-          el("div", { class: "safari-board-row" + (i === 0 ? " lead" : "") }, [
+          el("div", { class: "safari-board-row clickable" + (i === 0 ? " lead" : ""), title: "View profile",
+            onClick: () => window.Profile && Profile.open(r.a.id) }, [
             el("span", { class: "safari-board-rank" }, i === 0 ? "🤝" : "#" + (i + 1)),
             el("span", { class: "safari-board-name" }, r.a.name),
             el("span", { class: "safari-board-n" }, r.n + " assist" + (r.n > 1 ? "s" : "") + (assistSipsOf(r.a.id) ? " · 🍺 " + assistSipsOf(r.a.id) : "")),
@@ -497,7 +499,8 @@
       if (masters.length) {
         boardHost.appendChild(el("h2", { class: "section-title" }, "🟣 Master Catchers"));
         boardHost.appendChild(el("div", { class: "safari-board" }, masters.map((r, i) =>
-          el("div", { class: "safari-board-row master" + (i === 0 ? " lead" : "") }, [
+          el("div", { class: "safari-board-row master clickable" + (i === 0 ? " lead" : ""), title: "View profile",
+            onClick: () => window.Profile && Profile.open(r.a.id) }, [
             el("span", { class: "safari-board-rank" }, i === 0 ? "🟣" : "#" + (i + 1)),
             el("span", { class: "safari-board-name" }, r.a.name),
             el("span", { class: "safari-board-n" }, r.n + " master catch" + (r.n > 1 ? "es" : "")),

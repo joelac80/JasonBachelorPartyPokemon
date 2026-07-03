@@ -179,6 +179,8 @@
         evoStrip(a),
       ]),
       el("button", { class: "tc-edit", title: "Edit", onClick: () => editCard(a.id) }, "✎"),
+      el("button", { class: "tc-profile", title: "Trainer profile",
+        onClick: (e) => { e.stopPropagation(); if (window.Profile) Profile.open(a.id); } }, "ⓘ"),
     ]);
   }
 
