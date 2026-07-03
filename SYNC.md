@@ -31,12 +31,17 @@ a Firestore document so multiple phones can share one live scoreboard.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // The shared state document.
     match /rooms/{room} {
-      // Any signed-in (anonymous) device can read/write a room.
-      // Cap the doc so a runaway write can't blow past Firestore's 1 MiB limit.
       allow read: if request.auth != null;
+      // Cap the doc so a runaway write can't blow past Firestore's 1 MiB limit.
       allow write: if request.auth != null
-                   && request.resource.data.stateJson.size() < 900000;
+                   && request.resource.data.stateJson.size() < 950000;
+    }
+    // Sub-channels: presence, challenges, the live battle, and photo moments.
+    // (These are separate so heartbeats/photos never touch the state doc.)
+    match /rooms/{room}/{sub}/{docId} {
+      allow read, write: if request.auth != null;
     }
   }
 }
@@ -52,9 +57,8 @@ after the party.
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /rooms/{room} {
-      allow read, write: if true;
-    }
+    match /rooms/{room} { allow read, write: if true; }
+    match /rooms/{room}/{sub}/{docId} { allow read, write: if true; }
   }
 }
 ```
@@ -65,5 +69,8 @@ service cloud.firestore {
   comes from the rules above. It's kept out of this repo and pasted per-device on
   purpose, since the repo is public.
 - Turning sync **off** (Disconnect) drops back to pure local mode instantly.
-- Blaze plan: this uses tiny reads/writes (one small doc), so a weekend of a dozen
+- Sub-channels (`presence`, `challenges`, `live`, `photos`) are separate
+  subcollections so heartbeats, live battles, and photos never bloat the state
+  doc. Photos are downscaled (~512px JPEG) client-side before upload.
+- Blaze plan: this uses tiny reads/writes (small docs), so a weekend of a dozen
   people is effectively free-tier-sized usage.

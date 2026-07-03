@@ -49,7 +49,7 @@
         { r: "challenges", e: "🎣", t: "Catch of the Day", d: "Daily photo / dare challenges — check them off as you go." },
         { r: "hall", e: "🌿", t: "Hall of Bulbasaur", d: "Your gallery wall — add photos and art from the weekend." },
         { r: "ceremony", e: "👑", t: "Champion Ceremony", d: "The grand finale. Crowns the champion from the standings, plus superlative & badge winners." },
-        { r: "poster", e: "🖼️", t: "Weekend Poster", d: "The whole trip on one board — every trainer with their Pokémon and badges, the awards wall, and a move-by-move timeline. Print it or save a PDF keepsake." },
+        { r: "poster", e: "🖼️", t: "Weekend Poster", d: "The whole trip on one board — every trainer with their Pokémon and badges, the awards wall, and a photo + move-by-move timeline. Add photo moments (they’re downscaled and shared to the room), then print or save a PDF keepsake." },
       ],
     },
     {

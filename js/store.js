@@ -71,6 +71,10 @@
       // Drink tracker — one entry per logged drink.
       //   [{ id, trainer, type, ts }]
       drinks: [],
+      // Photo log — downscaled photo moments. NOT sent in the sync state doc
+      //   (too big); shared via a separate Firestore photos channel instead.
+      //   [{ id, ts, img, caption, by }]
+      photos: [],
       meta: { version: 1 },
     };
   }
@@ -95,6 +99,7 @@
         battles: Object.assign(base.battles, parsed.battles || {}),
         chronicle: parsed.chronicle || [],
         drinks: parsed.drinks || [],
+        photos: parsed.photos || [],
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {
@@ -274,6 +279,37 @@
     // One-off chronicle entry from a view.
     logEvent(icon, text) { this.update((s) => { this.chron(s, icon, text); }); },
 
+    // Log a drink for a trainer (used by the Drinks page + the Home quick-log).
+    logDrink(trainerId, type) {
+      if (!trainerId || !type) return;
+      const a = this.attendee(trainerId), nm = a ? a.name : trainerId;
+      const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
+      this.update((s) => {
+        const firstEver = !(s.drinks && s.drinks.length);
+        s.drinks = s.drinks || [];
+        s.drinks.push({ id: "dk" + Math.random().toString(36).slice(2) + stamp().toString(36), trainer: trainerId, type: type, ts: stamp() });
+        this.chron(s, this.drinkEmoji(type), nm + " logged a " + type + " " + this.drinkEmoji(type));
+        if (firstEver) this.chron(s, "🍾", "First drink of the weekend — " + nm + " grabs First Sip!");
+      });
+    },
+
+    // ---- Photo log --------------------------------------------------------
+    addPhoto(entry) {
+      if (!entry || !entry.id) return;
+      this.update((s) => { s.photos = s.photos || []; s.photos.unshift(entry); if (s.photos.length > 150) s.photos.length = 150; });
+    },
+    // Merge in photos that arrived from a sync peer (dedup by id).
+    mergePhotos(list) {
+      if (!list || !list.length) return;
+      this.update((s) => {
+        s.photos = s.photos || [];
+        const have = {}; s.photos.forEach((p) => { have[p.id] = 1; });
+        list.forEach((p) => { if (p && p.id && !have[p.id]) s.photos.push(p); });
+        s.photos.sort((a, b) => b.ts - a.ts);
+        if (s.photos.length > 250) s.photos.length = 250;
+      });
+    },
+
     drinkTypes() { return DRINKS.slice(); },
     drinkEmoji: drinkEmoji,
     drinkCount(trainerId, type) {
@@ -320,7 +356,9 @@
     // doesn't echo back to the room).
     applyRemote(obj) {
       if (!obj || typeof obj !== "object") return;
+      const keepPhotos = this.state.photos || [];   // photos aren't in the synced doc
       this.state = Object.assign(freshState(), obj);
+      if (!obj.photos || !obj.photos.length) this.state.photos = keepPhotos;
       this.persist();
       this._subs.forEach((fn) => fn(this.state));
     },
