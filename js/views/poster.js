@@ -135,6 +135,14 @@
       poster.appendChild(el("div", { class: "trophy-strip" }, cards));
     }
 
+    // ---- what we drank ----
+    const labels = Store.drinkLabels();
+    if (labels.length) {
+      poster.appendChild(el("h2", { class: "poster-section" }, "What We Drank"));
+      poster.appendChild(el("div", { class: "chip-row" }, labels.map((x) =>
+        el("span", { class: "drink-chip" }, Store.drinkEmoji(x.type) + " " + x.label + " ×" + x.n))));
+    }
+
     // ---- the story ----
     poster.appendChild(el("h2", { class: "poster-section" }, "The Weekend, Move by Move"));
     poster.appendChild(timeline());

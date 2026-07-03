@@ -22,12 +22,14 @@
     sel.addEventListener("change", () => { active = sel.value; renderAll(); });
     root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Logging for:"), sel]));
 
-    const logRow = el("div", {}), statHost = el("div", {}), boardHost = el("div", {}), awardHost = el("div", {}), recentHost = el("div", {});
-    [logRow, statHost, boardHost, awardHost, recentHost].forEach((h) => root.appendChild(h));
+    const whichIn = el("input", { class: "in", placeholder: "Which one? (optional — e.g. Bud Light, Old Fashioned)" });
+    const logRow = el("div", {}), statHost = el("div", {}), favesHost = el("div", {}), boardHost = el("div", {}), awardHost = el("div", {}), recentHost = el("div", {});
+    [logRow, statHost, favesHost, boardHost, awardHost, recentHost].forEach((h) => root.appendChild(h));
 
     function logDrink(type) {
       if (!active) return;
-      Store.logDrink(active, type);
+      Store.logDrink(active, type, whichIn.value);
+      whichIn.value = "";
       sfx("coin");
       renderAll();
     }
@@ -35,10 +37,20 @@
     function renderLog() {
       logRow.innerHTML = "";
       logRow.appendChild(el("h2", { class: "section-title" }, "Log a round"));
+      logRow.appendChild(whichIn);           // optional name feeds the next tap
       logRow.appendChild(el("div", { class: "drink-btns" }, Store.drinkTypes().map((d) =>
         el("button", { class: "drink-btn", onClick: () => logDrink(d.type) }, [
           el("span", { class: "drink-e" }, d.emoji), el("span", {}, d.type),
         ]))));
+    }
+
+    function renderFaves() {
+      favesHost.innerHTML = "";
+      const list = Store.drinkLabels();
+      if (!list.length) return;
+      favesHost.appendChild(el("h2", { class: "section-title" }, "🍹 What we drank"));
+      favesHost.appendChild(el("div", { class: "chip-row" }, list.map((x) =>
+        el("span", { class: "drink-chip" }, Store.drinkEmoji(x.type) + " " + x.label + " ×" + x.n))));
     }
 
     function renderStats() {
@@ -101,13 +113,13 @@
       recentHost.appendChild(el("div", { class: "battle-log" }, recent.map((d) => {
         const a = Store.attendee(d.trainer);
         return el("div", { class: "battle-log-row drink-recent" }, [
-          el("span", {}, Store.drinkEmoji(d.type) + " " + (a ? a.name : d.trainer) + " — " + d.type),
+          el("span", {}, Store.drinkEmoji(d.type) + " " + (a ? a.name : d.trainer) + " — " + d.type + (d.label ? " (" + d.label + ")" : "")),
           el("button", { class: "x", title: "Undo this one", onClick: () => { Store.update((s) => { s.drinks = (s.drinks || []).filter((x) => x.id !== d.id); }); renderAll(); } }, "×"),
         ]);
       })));
     }
 
-    function renderAll() { renderLog(); renderStats(); renderBoard(); renderAwards(); renderRecent(); }
+    function renderAll() { renderLog(); renderStats(); renderFaves(); renderBoard(); renderAwards(); renderRecent(); }
     renderAll();
   }
 

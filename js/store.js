@@ -280,17 +280,26 @@
     logEvent(icon, text) { this.update((s) => { this.chron(s, icon, text); }); },
 
     // Log a drink for a trainer (used by the Drinks page + the Home quick-log).
-    logDrink(trainerId, type) {
+    // `label` optionally names the specific drink (e.g. "Bud Light", "Old Fashioned").
+    logDrink(trainerId, type, label) {
       if (!trainerId || !type) return;
       const a = this.attendee(trainerId), nm = a ? a.name : trainerId;
+      label = (label || "").trim();
       const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
       this.update((s) => {
         const firstEver = !(s.drinks && s.drinks.length);
         s.drinks = s.drinks || [];
-        s.drinks.push({ id: "dk" + Math.random().toString(36).slice(2) + stamp().toString(36), trainer: trainerId, type: type, ts: stamp() });
-        this.chron(s, this.drinkEmoji(type), nm + " logged a " + type + " " + this.drinkEmoji(type));
+        s.drinks.push({ id: "dk" + Math.random().toString(36).slice(2) + stamp().toString(36), trainer: trainerId, type: type, label: label || undefined, ts: stamp() });
+        this.chron(s, this.drinkEmoji(type), nm + " logged a " + type + (label ? " (" + label + ")" : "") + " " + this.drinkEmoji(type));
         if (firstEver) this.chron(s, "🍾", "First drink of the weekend — " + nm + " grabs First Sip!");
       });
+    },
+
+    // Distinct named drinks logged, with counts (for the "what we drank" list).
+    drinkLabels() {
+      const by = {};
+      (this.state.drinks || []).forEach((d) => { if (d.label) { const k = d.type + "|" + d.label; (by[k] = by[k] || { type: d.type, label: d.label, n: 0 }).n++; } });
+      return Object.keys(by).map((k) => by[k]).sort((a, b) => b.n - a.n);
     },
 
     // ---- Photo log --------------------------------------------------------
