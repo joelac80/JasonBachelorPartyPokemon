@@ -10,6 +10,7 @@
     .add("brackets", V.brackets)
     .add("battle", V.battle)
     .add("safari", V.safari)
+    .add("drinks", V.drinks)
     .add("superlatives", V.superlatives)
     .add("challenges", V.challenges)
     .add("badges", V.badges)

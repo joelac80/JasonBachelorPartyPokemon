@@ -419,6 +419,7 @@
           s.pokedex.log = s.pokedex.log || [];
           s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
+          Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
         });
         const catcherTeam = Store.team(Store.teamOf(tid));
         sfx("win");

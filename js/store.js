@@ -5,6 +5,17 @@
 (function () {
   const KEY = "jasonBachHub.v2";
 
+  // Drink types for the tracker (single source of truth for buttons + awards).
+  const DRINKS = [
+    { type: "Beer", emoji: "🍺" },
+    { type: "Seltzer", emoji: "🥤" },
+    { type: "Shot", emoji: "🥃" },
+    { type: "Cocktail", emoji: "🍸" },
+    { type: "Wine", emoji: "🍷" },
+    { type: "Water", emoji: "💧" },
+  ];
+  function drinkEmoji(type) { const d = DRINKS.find((x) => x.type === type); return d ? d.emoji : "🥂"; }
+
   // Deep clone helper (structuredClone with a JSON fallback for old browsers).
   function clone(obj) {
     try { return structuredClone(obj); }
@@ -54,6 +65,12 @@
       pokedex: { active: "", trainers: {}, log: [], given: 0, taken: 0 },
       // Battle history: log = [{ title, winner, loser, ts }]
       battles: { log: [] },
+      // Weekend chronicle — a running feed of notable moments.
+      //   [{ ts, icon, text }]
+      chronicle: [],
+      // Drink tracker — one entry per logged drink.
+      //   [{ id, trainer, type, ts }]
+      drinks: [],
       meta: { version: 1 },
     };
   }
@@ -76,6 +93,8 @@
         brackets: parsed.brackets || [],
         pokedex: Object.assign(base.pokedex, parsed.pokedex || {}),
         battles: Object.assign(base.battles, parsed.battles || {}),
+        chronicle: parsed.chronicle || [],
+        drinks: parsed.drinks || [],
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {
@@ -238,6 +257,50 @@
         const top = Object.keys(w).sort((x, y) => w[y] - w[x])[0];
         if (top) out.push({ emoji: "⚔️", title: "Battle Champ", holder: top, sub: w[top] + " win" + (w[top] > 1 ? "s" : "") });
       }
+      const first = this.firstDrink();
+      if (first) { const a = this.attendee(first.trainer); if (a) out.push({ emoji: "🍾", title: "First Sip", holder: a.name, sub: "first drink of the weekend" }); }
+      const thirst = this._topAttendee((id) => this.drinkCount(id));
+      if (thirst) out.push({ emoji: "🍺", title: "Thirstiest", holder: thirst.a.name, sub: thirst.n + " drinks" });
+      return out;
+    },
+
+    // ---- Chronicle + Drinks ----------------------------------------------
+    // Push a chronicle moment INSIDE an existing update(s). Newest first.
+    chron(s, icon, text) {
+      s.chronicle = s.chronicle || [];
+      s.chronicle.unshift({ ts: (function () { try { return Date.now(); } catch (_) { return 0; } })(), icon: icon, text: text });
+      if (s.chronicle.length > 500) s.chronicle.length = 500;
+    },
+    // One-off chronicle entry from a view.
+    logEvent(icon, text) { this.update((s) => { this.chron(s, icon, text); }); },
+
+    drinkTypes() { return DRINKS.slice(); },
+    drinkEmoji: drinkEmoji,
+    drinkCount(trainerId, type) {
+      return (this.state.drinks || []).filter((d) => d.trainer === trainerId && (!type || d.type === type)).length;
+    },
+    firstDrink() {
+      const ds = (this.state.drinks || []).slice().sort((a, b) => a.ts - b.ts);
+      return ds[0] || null;
+    },
+    dayKey(ts) { const d = new Date(ts); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); },
+    dayLabel(ts) { try { return new Date(ts).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); } catch (_) { return ""; } },
+    // Distinct drink types actually logged (in DRINKS order).
+    drinkTypesPresent() {
+      const seen = {}; (this.state.drinks || []).forEach((d) => { if (d.type) seen[d.type] = 1; });
+      return DRINKS.map((x) => x.type).filter((t) => seen[t]);
+    },
+    // First Sip + Thirstiest + a champion for each kind (for the Drinks page + Poster).
+    drinkAwards() {
+      const out = [];
+      const first = this.firstDrink();
+      if (first) { const a = this.attendee(first.trainer); out.push({ emoji: "🍾", title: "First Sip", holder: a ? a.name : first.trainer, sub: "logged the weekend’s first drink" }); }
+      const total = this._topAttendee((id) => this.drinkCount(id));
+      if (total) out.push({ emoji: "🍺", title: "Thirstiest Trainer", holder: total.a.name, sub: total.n + " drinks total" });
+      this.drinkTypesPresent().forEach((type) => {
+        const top = this._topAttendee((id) => this.drinkCount(id, type));
+        if (top) out.push({ emoji: drinkEmoji(type), title: "Most " + type, holder: top.a.name, sub: top.n + " " + type.toLowerCase() + (top.n > 1 ? "s" : "") });
+      });
       return out;
     },
 

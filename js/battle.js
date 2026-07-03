@@ -181,6 +181,7 @@
             if (s.battles.log.length > 60) s.battles.log.length = 60;
             // A battle win scores for the winner's team(s) toward Victory Road.
             winTeams.forEach((tid) => Store.grantPoints(s, "battle", tid, 4));
+            if (Store.chron) Store.chron(s, "⚔️", W.label + " beat " + L.label + (opts.title ? " at " + opts.title : "") + "!");
           });
         } catch (_) {}
       }, 2050 + extra);
