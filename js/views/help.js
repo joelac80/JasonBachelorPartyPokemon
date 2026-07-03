@@ -26,6 +26,7 @@
       items: [
         { r: "safari", e: "🔴", t: "Pokédex Safari", d: "Pick a catcher, then earn boosts by doing dares/berries/rallies (chicken out = drink, and it might bolt!). Add a helper for a 2v2, or nail the Master Ball dare for a guaranteed catch." },
         { r: "drinks", e: "🍺", t: "Drink Tracker", d: "Log every round by trainer, type, and day. First Sip, Thirstiest, and a champion for each drink kind all earn badges." },
+        { r: "cards", e: "🃏", t: "Card Table", d: "Track President/Asshole (finishing order → Best & Worst President), Euchre, King's Cup and Ride the Bus. Winners score team points; the awards land on the poster." },
         { r: "battle", e: "⚔️", t: "Battle Arena", d: "Set any 1v1 or 2v2, tag the event (e.g. Beer Pong), and fight. The winner’s team scores." },
         { r: "brackets", e: "🥊", t: "Brackets", d: "Run a tournament bracket — each matchup can launch the battle screen." },
         { r: "jeopardy", e: "❓", t: "Jeopardy", d: "Bulbasaur-themed trivia with Daily Bulbas. Award (or dock) clue values to teams." },

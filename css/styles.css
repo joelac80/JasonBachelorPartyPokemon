@@ -649,6 +649,18 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .pred-settle { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-top: 1px dashed var(--line); padding-top: 8px; }
 .pred-settle-l { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); }
 .pred-result { font-family: var(--pixel); font-size: 12px; color: #226b30; }
+/* card table */
+.card-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.card-tab { padding: 8px 12px; border: 2px solid var(--line); border-radius: 999px; background: var(--panel); font-weight: 700; cursor: pointer; }
+.card-tab.on { border-color: var(--pokered); background: #fdeaea; color: var(--pokered); }
+.card-form { display: flex; flex-direction: column; gap: 10px; }
+.card-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+.card-pick { display: flex; align-items: center; gap: 6px; padding: 9px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--paper); font-weight: 700; cursor: pointer; text-align: left; }
+.card-pick.on { border-color: var(--pokeblue); background: #e6f2ff; }
+.card-pick-rank { font-family: var(--pixel); font-size: 12px; min-width: 20px; }
+.card-order { display: flex; flex-direction: column; gap: 4px; background: var(--paper); border-radius: 10px; padding: 8px; }
+.card-order-row { display: flex; gap: 10px; align-items: center; }
+.card-order-pos { font-family: var(--pixel); font-size: 11px; min-width: 96px; color: var(--ink-dim); }
 @media print {
   .topbar, .footer, .nav, .toolbar, .page-head { display: none !important; }
   body, .view { background: #fff !important; }

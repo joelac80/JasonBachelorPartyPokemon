@@ -12,6 +12,7 @@
     .add("safari", V.safari)
     .add("drinks", V.drinks)
     .add("predictions", V.predictions)
+    .add("cards", V.cards)
     .add("superlatives", V.superlatives)
     .add("challenges", V.challenges)
     .add("badges", V.badges)
