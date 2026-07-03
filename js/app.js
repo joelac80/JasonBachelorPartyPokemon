@@ -15,7 +15,8 @@
     .add("badges", V.badges)
     .add("hall", V.hall)
     .add("ceremony", V.ceremony)
-    .add("settings", V.settings);
+    .add("settings", V.settings)
+    .add("help", V.help);
   Router.setNotFound(V.home);
 
   // Reflect party title into the header + document title.

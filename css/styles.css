@@ -532,6 +532,21 @@ body {
 .pf-gym { width: 30px; height: 30px; }
 .pf-gym-e { font-size: 24px; }
 .pf-links { display: flex; gap: 8px; flex-wrap: wrap; }
+/* help / field guide */
+a#help-toggle { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-weight: 800; }
+.help-callout { background: #fff7ec; border: 2px solid #f0b46a; border-radius: 14px; padding: 14px; margin: 6px 0 4px; display: flex; flex-direction: column; gap: 8px; }
+.help-callout-t { font-family: var(--pixel); font-size: 13px; color: #c07a1a; }
+.help-callout p { margin: 0; font-size: 14px; }
+.help-callout .btn { align-self: flex-start; }
+.help-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+@media (min-width: 560px) { .help-grid { grid-template-columns: 1fr 1fr; } }
+.help-card { display: flex; gap: 10px; align-items: flex-start; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; text-decoration: none; color: inherit; }
+.help-card.link:hover { border-color: var(--pokered); }
+.help-card-e { font-size: 24px; line-height: 1; flex: none; }
+.help-card-t { font-weight: 800; }
+.help-card.link .help-card-t::after { content: " →"; color: var(--ink-dim); font-weight: 400; }
+.help-card-d { font-size: 13px; color: var(--ink-dim); }
+.help-foot { display: flex; justify-content: center; margin: 16px 0 4px; }
 .safari-penalty { font-family: var(--pixel); font-size: 11px; color: #b02a2a; background: #fdeaea; border: 1.5px solid #f3b4b4; border-radius: 8px; padding: 6px 8px; text-align: center; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
