@@ -86,26 +86,33 @@
       stats.appendChild(stat(Store.state.pokedex.log ? Store.state.pokedex.log.length : 0, "Catches logged"));
     }
 
-    // ---- encounter ----
+    // ---- encounter (wild-battle scene with a silhouette that focuses in) ----
+    let revealId = null;
     function renderEncounter() {
       enc.innerHTML = "";
       if (!active()) { enc.appendChild(el("div", { class: "safari-idle" }, el("p", { class: "empty" }, "👆 Pick a trainer to start catching."))); return; }
       if (!current) {
         enc.appendChild(el("div", { class: "safari-idle" }, [
           el("div", { class: "safari-grass" }, "🌿🌿🌿"),
-          el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find a Pokémon"),
+          el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Walk in the grass"),
         ]));
         return;
       }
       const nfo = info(current);
       const chance = withLevels(nfo.base, level);
       const owned = !!rec(active()).caught[current];
-      const sprite = SP[current];
+      const firstShow = revealId !== current && !status;
 
-      const stage = el("div", { class: "safari-stage" }, [
-        sprite ? el("img", { class: "safari-wild", src: sprite, alt: nfo.name }) : el("div", { class: "tc-ball-fallback" }),
-        el("div", { class: "safari-ball-throw" }),
+      // ---- battle scene ----
+      const wild = SP[current]
+        ? el("img", { class: "safari-wild-scene" + (firstShow ? " revealing" : ""), src: SP[current], alt: nfo.name })
+        : el("div", { class: "tc-ball-fallback" });
+      const grass = el("div", { class: "safari-scene-grass" }, ["🌿", "🌿", "🌿", "🌿", "🌿"].map((g) => el("span", {}, g)));
+      const scene = el("div", { class: "safari-scene" + (firstShow ? " rustle" : "") }, [
+        el("div", { class: "safari-scene-platform" }), wild, el("div", { class: "safari-ball-throw" }), grass,
       ]);
+
+      // ---- controls (name/odds/etc. hidden until the silhouette focuses in) ----
       const meta = el("div", { class: "safari-wild-meta" }, [
         el("span", { class: "safari-tier", style: { background: nfo.color } }, nfo.tier),
         el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
@@ -115,8 +122,6 @@
         el("span", { class: "safari-odds-big" }, Math.round(chance * 100) + "%"),
         el("span", {}, " catch chance" + (level ? " (base " + Math.round(nfo.base * 100) + "% + " + level + " challenge" + (level > 1 ? "s" : "") + ")" : "") + " · catch deals " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "")),
       ]);
-
-      // challenge controls
       const pips = el("div", { class: "safari-pips" }, [0, 1, 2].map((i) => el("span", { class: "safari-pip" + (i < level ? " on" : "") })));
       let challengeArea;
       if (pendingDare) {
@@ -134,32 +139,43 @@
       } else {
         challengeArea = el("div", { class: "hint" }, "Max boost! Go get it.");
       }
-
       const suspense = el("div", { class: "safari-suspense" });
-      const throwRow = el("div", { class: "safari-actions" }, [
+      const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
         el("button", { class: "btn primary", onClick: () => throwBall(nfo), disabled: pendingDare ? "true" : null }, "🔴 Throw Poké Ball"),
         el("button", { class: "btn subtle", onClick: () => { current = null; level = 0; pendingDare = ""; status = ""; renderEncounter(); } }, "Run"),
       ]);
-
-      enc.appendChild(el("div", { class: "safari-card" }, [
-        el("div", { class: "safari-appeared" }, status || ("A wild " + nfo.name + " appeared!")),
-        stage, meta, odds,
+      const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [
+        meta, odds,
         el("div", { class: "safari-challenge" }, [el("div", { class: "safari-challenge-row" }, [el("span", { class: "safari-challenge-lbl" }, "Boost"), pips]), challengeArea]),
         suspense, throwRow,
-      ]));
+      ]);
+      const appeared = el("div", { class: "safari-appeared" }, status || (firstShow ? "The tall grass rustles…" : ("A wild " + nfo.name + " appeared!")));
+
+      enc.appendChild(el("div", { class: "safari-battlebox" }, [scene, el("div", { class: "safari-controls" }, [appeared, post])]));
+
+      if (firstShow) {
+        revealId = current;
+        sfx("select");
+        setTimeout(() => {
+          if (revealId !== current) return;
+          appeared.textContent = "A wild " + nfo.name + " appeared!";
+          post.classList.remove("hidden");
+          sfx("win");
+        }, 1200);
+      }
     }
 
-    function findOne() { current = randomEncounter(); busy = false; status = ""; level = 0; pendingDare = ""; sfx("blip"); renderEncounter(); }
+    function findOne() { current = null; revealId = null; busy = false; status = ""; level = 0; pendingDare = ""; current = randomEncounter(); sfx("blip"); renderEncounter(); }
 
     function throwBall(nfo) {
       if (busy || !current || pendingDare) return;
       busy = true;
       const chance = withLevels(nfo.base, level);
       const outcome = Math.random() < chance ? "catch" : (Math.random() < nfo.flee ? "flee" : "break");
-      const wild = enc.querySelector(".safari-wild");
+      const wild = enc.querySelector(".safari-wild-scene");
       const ball = enc.querySelector(".safari-ball-throw");
       const suspense = enc.querySelector(".safari-suspense");
-      const throwRow = enc.querySelector(".safari-actions:last-of-type");
+      const throwRow = enc.querySelector(".safari-throw-row");
       if (throwRow) throwRow.style.visibility = "hidden";
       if (ball) ball.classList.add("go");
       if (wild && outcome !== "break") wild.classList.add("caught-anim");
