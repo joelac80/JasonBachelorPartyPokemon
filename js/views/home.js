@@ -140,9 +140,11 @@
     const meId = window.Sync && Sync.getMe && Sync.getMe();
     if (meId && Store.attendee(meId)) {
       const me = Store.attendee(meId);
+      const whichIn = el("input", { class: "in", placeholder: "Which one? (optional — e.g. Bud Light)" });
       root.appendChild(el("h2", { class: "section-title" }, "⚡ Quick log — " + me.name));
+      root.appendChild(whichIn);
       root.appendChild(el("div", { class: "drink-btns" }, Store.drinkTypes().map((d) =>
-        el("button", { class: "drink-btn", onClick: () => { Store.logDrink(meId, d.type); if (window.SFX) SFX.coin(); } }, [
+        el("button", { class: "drink-btn", onClick: () => { Store.logDrink(meId, d.type, whichIn.value); whichIn.value = ""; if (window.SFX) SFX.coin(); } }, [
           el("span", { class: "drink-e" }, d.emoji), el("span", {}, d.type),
         ]))));
       root.appendChild(el("div", { class: "toolbar" }, [
