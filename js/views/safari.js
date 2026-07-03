@@ -1,7 +1,8 @@
 /* safari.js — Pokédex Safari drinking game (per-trainer competition).
    Pick who's catching, find a wild Pokémon (cool ones show up more but are
    very hard to catch), then earn boosts by DOING things — each is a random
-   action you must perform; chicken out and you take a sip + forfeit that boost:
+   action you must perform; chicken out and you take a sip + forfeit that boost,
+   and ~20% of the time the wild one spooks and bolts (encounter over):
      • Dares      up to 3 × +20%
      • Berry      +15%   (also halves flee chance)
      • Squad rally +10%
@@ -124,9 +125,35 @@
       if (!pending) return;
       const k = pending.kind, verb = BOOSTS[k].verb;
       Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });   // the price: a sip
+      pending = null;
+      // Hesitating might spook the wild one into bolting (~20%) — encounter over.
+      if (current && Math.random() < 0.20) {
+        const id = current, nfo = info(current), lost = comboOf(active());
+        wildEscaped(id, nfo, nfo.name + " spooked and bolted!",
+          "😳 You hesitated on the " + verb + " — take a sip, and it's gone!",
+          lost > 1 ? "💔 Catch combo of " + lost + " broken!" : null);
+        return;
+      }
       if (k === "dare") dareLocked = true; else if (k === "berry") berryLost = true; else if (k === "rally") rallyLost = true;
       penaltyMsg = "😳 Chickened out of the " + verb + " — take a sip! No more " + verb + " boosts this catch.";
-      pending = null; sfx("error"); renderEncounter();
+      sfx("error"); renderEncounter();
+    }
+
+    // Wild one leaves for good (a flee, or a spook from hesitating). Breaks combo.
+    function wildEscaped(id, nfo, headline, sub, note) {
+      const tid = active();
+      Store.update((s) => { const t = s.pokedex.trainers[tid]; if (t) t.combo = 0; });
+      sfx("error");
+      enc.innerHTML = "";
+      enc.appendChild(el("div", { class: "safari-card result miss" }, [
+        el("img", { class: "safari-wild fled", src: SP[id], alt: nfo.name }),
+        el("div", { class: "safari-result-msg" }, headline),
+        el("div", { class: "safari-payout miss" }, sub),
+        note ? el("div", { class: "safari-combo-note broke" }, note) : null,
+        el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+      ]));
+      current = null; busy = false; status = ""; clearBoosts();
+      renderStats(); renderBoard(); renderTeam(); renderDex();
     }
 
     // A helper is a second trainer teaming up (a "double-battle" catch): +15%,
@@ -142,7 +169,7 @@
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔴 Pokédex Safari"),
-      el("p", { class: "page-sub" }, "Pick your trainer, find a wild one, then earn boosts by pulling off dares, berries and rallies — chicken out and you drink. Then throw."),
+      el("p", { class: "page-sub" }, "Pick your trainer, find a wild one, then earn boosts by pulling off dares, berries and rallies — chicken out and you drink (and it might bolt!). Then throw."),
     ]));
 
     // ---- trainer selector ----
