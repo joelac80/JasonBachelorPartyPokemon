@@ -251,6 +251,16 @@
       this.persist();
       this._subs.forEach((fn) => fn(this.state));
     },
+
+    // Apply a full state object received from a sync peer. Notifies subscribers
+    // (Sync guards its own outgoing push with an "applying" flag, so this
+    // doesn't echo back to the room).
+    applyRemote(obj) {
+      if (!obj || typeof obj !== "object") return;
+      this.state = Object.assign(freshState(), obj);
+      this.persist();
+      this._subs.forEach((fn) => fn(this.state));
+    },
   };
 
   window.Store = Store;

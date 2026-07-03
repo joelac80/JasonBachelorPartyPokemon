@@ -547,6 +547,16 @@ a#help-toggle { display: inline-flex; align-items: center; justify-content: cent
 .help-card.link .help-card-t::after { content: " →"; color: var(--ink-dim); font-weight: 400; }
 .help-card-d { font-size: 13px; color: var(--ink-dim); }
 .help-foot { display: flex; justify-content: center; margin: 16px 0 4px; }
+/* live sync */
+textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; width: 100%; resize: vertical; }
+.sync-status { font-family: var(--pixel); font-size: 12px; padding: 6px 10px; border-radius: 8px; margin: 4px 0 8px; background: var(--panel); border: 2px solid var(--line); }
+.sync-status.off { color: var(--ink-dim); }
+.sync-status.connecting { color: #c07a1a; border-color: #f0b46a; background: #fff7ec; }
+.sync-status.live { color: #2e7d46; border-color: #a7e0ba; background: #e7f7ec; }
+.sync-status.error { color: #b02a2a; border-color: #f3b4b4; background: #fdeaea; }
+.sync-help { margin-top: 8px; }
+.sync-help summary { cursor: pointer; font-weight: 700; }
+.sync-steps { margin: 8px 0 0; padding-left: 20px; font-size: 13px; color: var(--ink-dim); display: flex; flex-direction: column; gap: 4px; }
 .safari-penalty { font-family: var(--pixel); font-size: 11px; color: #b02a2a; background: #fdeaea; border: 1.5px solid #f3b4b4; border-radius: 8px; padding: 6px 8px; text-align: center; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
