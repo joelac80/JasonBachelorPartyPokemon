@@ -384,6 +384,11 @@
       });
       return true;
     },
+    // The player set from the most recent round of a game (for "same table" reuse).
+    lastCardTable(game) {
+      const r = (this.state.cardGames || []).find((x) => x.game === game && x.ranking && x.ranking.length);
+      return r ? r.ranking.slice() : [];
+    },
     presidencies(att) { let n = 0; (this.state.cardGames || []).forEach((r) => { if (r.game === "president" && r.ranking && r.ranking[0] === att) n++; }); return n; },
     assholeries(att) { let n = 0; (this.state.cardGames || []).forEach((r) => { if (r.game === "president" && r.ranking && r.ranking.length >= 2 && r.ranking[r.ranking.length - 1] === att) n++; }); return n; },
     euchreWins(att) { let n = 0; (this.state.cardGames || []).forEach((r) => { if (r.game === "euchre" && r.ranking && r.ranking.indexOf(att) >= 0) n++; }); return n; },

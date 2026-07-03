@@ -17,6 +17,8 @@
   function view(root) {
     let game = "president";
     let picks = [];                 // ordered ids (order/winners) or single (spotlight)
+    let tableSet = Store.lastCardTable(game);   // remembered players at the table
+    let showAll = false;
     let byName = (window.Sync && Sync.getMe && Sync.getMe() && Store.attendee(Sync.getMe())) ? Store.attendee(Sync.getMe()).name : "";
 
     root.appendChild(el("div", { class: "page-head" }, [
@@ -30,7 +32,7 @@
     function renderTabs() {
       tabHost.innerHTML = "";
       tabHost.appendChild(el("div", { class: "card-tabs" }, GAMES.map((g) =>
-        el("button", { class: "card-tab" + (g.key === game ? " on" : ""), onClick: () => { game = g.key; picks = []; renderAll(); } }, g.emoji + " " + g.name))));
+        el("button", { class: "card-tab" + (g.key === game ? " on" : ""), onClick: () => { game = g.key; picks = []; tableSet = Store.lastCardTable(g.key); showAll = false; renderAll(); } }, g.emoji + " " + g.name))));
     }
 
     function chip(a, label) {
@@ -64,7 +66,22 @@
       else if (g.mode === "winners") { prompt = "Tap the winning pair (up to 2)."; }
       else { prompt = "Who's in the spotlight?"; }
 
-      const grid = el("div", { class: "card-picks" }, Store.state.attendees.map((a) => chip(a, label)));
+      // "Same table" — show just the remembered players (fast re-ordering each
+      // hand), with a way to add someone or reset to everyone.
+      const tableIds = tableSet.filter((id) => Store.attendee(id));
+      const useTable = tableIds.length && !showAll;
+      const players = useTable ? tableIds.map((id) => Store.attendee(id)) : Store.state.attendees;
+      const tableCtl = el("div", { class: "card-table-ctl" }, tableIds.length
+        ? [
+            el("span", { class: "hint" }, "🔁 Same table — " + tableIds.length + " players"),
+            el("button", { class: "btn subtle sm", onClick: () => { showAll = !showAll; renderForm(); } }, showAll ? "Show table only" : "＋ Add someone"),
+            el("button", { class: "btn subtle sm", onClick: () => { tableSet = []; showAll = false; renderForm(); } }, "Reset table"),
+          ]
+        : (Store.lastCardTable(game).length
+            ? [el("button", { class: "btn subtle sm", onClick: () => { tableSet = Store.lastCardTable(game); showAll = false; renderForm(); } }, "🔁 Same table as last round")]
+            : [el("span", { class: "hint" }, "Tap players to start — they'll be remembered as the table.")]));
+
+      const grid = el("div", { class: "card-picks" }, players.map((a) => chip(a, label)));
 
       // finishing-order preview for President
       let preview = null;
@@ -79,12 +96,14 @@
       const canLog = picks.length >= (g.mode === "order" ? 2 : 1);
       const logBtn = el("button", { class: "btn primary", disabled: canLog ? null : "true", onClick: () => {
         if (!Store.logCardRound(game, picks, noteIn.value, byName)) { alert("Pick the players for this round first."); return; }
-        picks = []; sfx("win"); renderAll();
+        tableSet = picks.slice();   // remember who's at the table for the next hand
+        picks = []; showAll = false; sfx("win"); renderAll();
       } }, "Log " + g.name + " round");
       const clearBtn = el("button", { class: "btn subtle", onClick: () => { picks = []; renderForm(); } }, "Clear");
 
       formHost.appendChild(el("div", { class: "card-form" }, [
         el("p", { class: "hint" }, prompt),
+        tableCtl,
         grid,
         preview,
         noteIn,
