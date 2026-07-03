@@ -62,5 +62,18 @@
   Router.start();
 
   // Optional live sync — connects only if a room was configured + enabled.
-  if (window.Sync && Sync.init) Sync.init();
+  if (window.Sync && Sync.init) {
+    const dot = document.getElementById("sync-dot");
+    if (dot) {
+      const COLOR = { live: "#2ec96b", connecting: "#e6a100", error: "#e6352f", off: "#888" };
+      const TITLE = { live: "Live — synced with the room", connecting: "Connecting to the room…", error: "Sync error — tap for Settings", off: "Sync off" };
+      Sync.onStatus((state, msg) => {
+        dot.style.display = state === "off" ? "none" : "inline-block";
+        dot.dataset.state = state;
+        dot.style.setProperty("--dot", COLOR[state] || "#888");
+        dot.title = (state === "live" && msg && msg !== "Synced") ? "Live — " + msg : (TITLE[state] || "Live sync");
+      });
+    }
+    Sync.init();
+  }
 })();
