@@ -211,6 +211,36 @@
       return n;
     },
 
+    // Attendee with the highest fn(id) (>0), as { a, n }, or null.
+    _topAttendee(fn) {
+      let best = null;
+      this.state.attendees.forEach((a) => { const n = fn(a.id); if (n > 0 && (!best || n > best.n)) best = { a: a, n: n }; });
+      return best;
+    },
+
+    // Live cross-feature trophies, computed from current state so they follow
+    // the holder onto the home hub and the Gym Badges case.
+    liveTrophies() {
+      const tr = (this.state.pokedex && this.state.pokedex.trainers) || {};
+      const cc = (id) => (tr[id] ? Object.keys(tr[id].caught || {}).length : 0);
+      const mc = (id) => (tr[id] && tr[id].masterCatches) || 0;
+      const hp = (id) => (tr[id] && tr[id].helps) || 0;
+      const out = [];
+      const ash = this._topAttendee(cc);
+      if (ash) out.push({ emoji: "🧢", title: "Ash Ketchum", holder: ash.a.name, sub: ash.n + " caught" });
+      const mas = this._topAttendee(mc);
+      if (mas) out.push({ emoji: "🟣", title: "Master Catcher", holder: mas.a.name, sub: mas.n + " master catch" + (mas.n > 1 ? "es" : "") });
+      const help = this._topAttendee(hp);
+      if (help) out.push({ emoji: "🤝", title: "Best Helper", holder: help.a.name, sub: help.n + " assist" + (help.n > 1 ? "s" : "") });
+      const log = (this.state.battles && this.state.battles.log) || [];
+      if (log.length) {
+        const w = {}; log.forEach((b) => { w[b.winner] = (w[b.winner] || 0) + 1; });
+        const top = Object.keys(w).sort((x, y) => w[y] - w[x])[0];
+        if (top) out.push({ emoji: "⚔️", title: "Battle Champ", holder: top, sub: w[top] + " win" + (w[top] > 1 ? "s" : "") });
+      }
+      return out;
+    },
+
     // ---- Import / Export --------------------------------------------------
     exportJSON() {
       return JSON.stringify(this.state, null, 2);

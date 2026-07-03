@@ -30,6 +30,22 @@
     ));
   }
 
+  // Live cross-feature trophies (Ash Ketchum, Master Catcher, Best Helper,
+  // Battle Champ) — earned in the mini-games, surfaced on the front door.
+  function liveTrophies() {
+    const trophies = Store.liveTrophies();
+    if (!trophies.length) return null;
+    return el("div", { class: "trophy-strip" }, trophies.map((t) =>
+      el("div", { class: "trophy" }, [
+        el("span", { class: "trophy-emoji" }, t.emoji),
+        el("div", { class: "trophy-txt" }, [
+          el("div", { class: "trophy-title" }, t.title),
+          el("div", { class: "trophy-holder" }, t.holder),
+          el("div", { class: "trophy-sub" }, t.sub),
+        ]),
+      ])));
+  }
+
   function oakTip() {
     const o = Store.state.oakTip || {};
     if (!o.quote) return null;
@@ -136,6 +152,8 @@
     root.appendChild(cd);
     const badges = fanBadges();
     if (badges) { root.appendChild(el("h2", { class: "section-title" }, "Fan Badges Earned")); root.appendChild(badges); }
+    const trophies = liveTrophies();
+    if (trophies) { root.appendChild(el("h2", { class: "section-title" }, "🏅 Live Trophies")); root.appendChild(trophies); }
     const oak = oakTip();
     if (oak) { root.appendChild(el("h2", { class: "section-title" }, "Oak's Tip")); root.appendChild(oak); }
     root.appendChild(el("h2", { class: "section-title" }, "Explore the Region"));

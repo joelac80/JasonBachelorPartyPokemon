@@ -122,6 +122,22 @@
       })),
     ]));
 
+    // Live Trophies — auto-earned in the mini-games (Safari, Battle).
+    const trophies = Store.liveTrophies();
+    if (trophies.length) {
+      root.appendChild(el("h2", { class: "section-title" }, "🏅 Live Trophies"));
+      root.appendChild(el("p", { class: "hint" }, "Earned automatically in the games — no need to hand these out."));
+      root.appendChild(el("div", { class: "trophy-strip" }, trophies.map((t) =>
+        el("div", { class: "trophy" }, [
+          el("span", { class: "trophy-emoji" }, t.emoji),
+          el("div", { class: "trophy-txt" }, [
+            el("div", { class: "trophy-title" }, t.title),
+            el("div", { class: "trophy-holder" }, t.holder),
+            el("div", { class: "trophy-sub" }, t.sub),
+          ]),
+        ]))));
+    }
+
     root.appendChild(el("h2", { class: "section-title" }, "Award & Powers"));
     root.appendChild(el("div", { class: "gym-badge-grid" }, list.map(badgeCard)));
 

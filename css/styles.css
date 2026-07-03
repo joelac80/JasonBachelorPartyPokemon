@@ -501,6 +501,12 @@ body {
 .sb-event.mini { background: #eef4ff; }
 .sc-cell.mini { display: flex; align-items: center; justify-content: center; background: #eef4ff; font-family: var(--pixel); }
 .sc-cell.mini .sc-val { font-size: 15px; color: var(--pokeblue); }
+.trophy-strip { display: flex; flex-wrap: wrap; gap: 10px; }
+.trophy { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 8px 12px; min-width: 150px; }
+.trophy-emoji { font-size: 26px; line-height: 1; }
+.trophy-title { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); }
+.trophy-holder { font-weight: 800; font-size: 14px; }
+.trophy-sub { font-size: 11px; color: var(--ink-dim); }
 .safari-penalty { font-family: var(--pixel); font-size: 11px; color: #b02a2a; background: #fdeaea; border: 1.5px solid #f3b4b4; border-radius: 8px; padding: 6px 8px; text-align: center; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
