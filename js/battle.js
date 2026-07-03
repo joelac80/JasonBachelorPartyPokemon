@@ -53,6 +53,20 @@
     return { ball: true, type: "normal", move: "Tackle" };
   }
 
+  // Distinct team ids represented by a winning side (attendee's team, or a
+  // team fighting directly). Used to award Victory Road points on a win.
+  function teamsForNames(names, label) {
+    const ids = [];
+    const list = names && names.length ? names : [label];
+    list.forEach((nm) => {
+      const at = Store.state.attendees.find((a) => a.name === nm);
+      if (at && at.team) { if (ids.indexOf(at.team) < 0) ids.push(at.team); return; }
+      const tm = Store.state.teams.find((t) => t.name && String(nm).indexOf(t.name) >= 0);
+      if (tm && ids.indexOf(tm.id) < 0) ids.push(tm.id);
+    });
+    return ids;
+  }
+
   function monEl(mn, side) {
     let inner;
     // Player side shows the rear-view (back) sprite when we have it — like the
@@ -157,11 +171,15 @@
         msg.textContent = "🏆 " + W.label + " wins" + (opts.title ? " " + opts.title : "") + "!";
         sfx(opts.isFinal ? "fanfare" : "win");
         try {
+          const winNames = winIsA ? (a.names || []) : (b.names || []);
+          const winTeams = teamsForNames(winNames, W.label);
           Store.update((s) => {
             s.battles = s.battles || { log: [] }; s.battles.log = s.battles.log || [];
             s.battles.log.unshift({ title: opts.title || "Battle", winner: W.label, loser: L.label,
               ts: (function () { try { return Date.now(); } catch (_) { return 0; } })() });
             if (s.battles.log.length > 60) s.battles.log.length = 60;
+            // A battle win scores for the winner's team(s) toward Victory Road.
+            winTeams.forEach((tid) => Store.grantPoints(s, "battle", tid, 4));
           });
         } catch (_) {}
       }, 2050 + extra);

@@ -14,7 +14,6 @@
     .add("challenges", V.challenges)
     .add("badges", V.badges)
     .add("hall", V.hall)
-    .add("memes", V.memes)
     .add("ceremony", V.ceremony)
     .add("settings", V.settings);
   Router.setNotFound(V.home);

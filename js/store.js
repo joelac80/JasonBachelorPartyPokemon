@@ -190,6 +190,57 @@
       return this.state.attendees.filter((a) => (a.team || "") === teamId);
     },
 
+    // The team id an attendee belongs to (or "" if undrafted).
+    teamOf(attId) { const a = this.attendee(attId); return (a && a.team) || ""; },
+
+    // Award mini-game points into a named bucket. Call INSIDE an existing
+    // update(s) so it shares the transaction. teamTotal() sums every bucket,
+    // so these flow straight into Victory Road standings + the Ceremony.
+    grantPoints(s, bucket, teamId, n) {
+      if (!teamId || !n) return;
+      s.scores = s.scores || {};
+      s.scores[bucket] = s.scores[bucket] || {};
+      s.scores[bucket][teamId] = (s.scores[bucket][teamId] || 0) + n;
+    },
+
+    // Points a team has earned from the mini-game buckets only.
+    miniGamePoints(teamId) {
+      const s = this.state.scores || {};
+      let n = 0;
+      ["safari", "battle", "jeopardy"].forEach((b) => { if (s[b] && s[b][teamId]) n += s[b][teamId]; });
+      return n;
+    },
+
+    // Attendee with the highest fn(id) (>0), as { a, n }, or null.
+    _topAttendee(fn) {
+      let best = null;
+      this.state.attendees.forEach((a) => { const n = fn(a.id); if (n > 0 && (!best || n > best.n)) best = { a: a, n: n }; });
+      return best;
+    },
+
+    // Live cross-feature trophies, computed from current state so they follow
+    // the holder onto the home hub and the Gym Badges case.
+    liveTrophies() {
+      const tr = (this.state.pokedex && this.state.pokedex.trainers) || {};
+      const cc = (id) => (tr[id] ? Object.keys(tr[id].caught || {}).length : 0);
+      const mc = (id) => (tr[id] && tr[id].masterCatches) || 0;
+      const hp = (id) => (tr[id] && tr[id].helps) || 0;
+      const out = [];
+      const ash = this._topAttendee(cc);
+      if (ash) out.push({ emoji: "🧢", title: "Ash Ketchum", holder: ash.a.name, sub: ash.n + " caught" });
+      const mas = this._topAttendee(mc);
+      if (mas) out.push({ emoji: "🟣", title: "Master Catcher", holder: mas.a.name, sub: mas.n + " master catch" + (mas.n > 1 ? "es" : "") });
+      const help = this._topAttendee(hp);
+      if (help) out.push({ emoji: "🤝", title: "Best Helper", holder: help.a.name, sub: help.n + " assist" + (help.n > 1 ? "s" : "") });
+      const log = (this.state.battles && this.state.battles.log) || [];
+      if (log.length) {
+        const w = {}; log.forEach((b) => { w[b.winner] = (w[b.winner] || 0) + 1; });
+        const top = Object.keys(w).sort((x, y) => w[y] - w[x])[0];
+        if (top) out.push({ emoji: "⚔️", title: "Battle Champ", holder: top, sub: w[top] + " win" + (w[top] > 1 ? "s" : "") });
+      }
+      return out;
+    },
+
     // ---- Import / Export --------------------------------------------------
     exportJSON() {
       return JSON.stringify(this.state, null, 2);

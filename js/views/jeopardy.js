@@ -15,6 +15,8 @@
     Store.update((s) => {
       s.jeopardy.scores = s.jeopardy.scores || {};
       s.jeopardy.scores[id] = (s.jeopardy.scores[id] || 0) + delta;
+      // Feed Victory Road too, scaled down (a $300 clue ≈ 3 championship pts).
+      Store.grantPoints(s, "jeopardy", id, Math.round(delta / 100));
     });
   }
 

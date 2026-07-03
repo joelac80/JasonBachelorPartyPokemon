@@ -105,6 +105,12 @@
       el("p", { class: "page-sub" }, "The Beer Olympics. Award points and crown a champion."),
     ]));
 
+    // Setup shortcuts — Draft and the Game Plan live here now, not on the map.
+    root.appendChild(el("div", { class: "vr-setup" }, [
+      el("a", { class: "btn subtle sm", href: "#/draft" }, "🎡 Draft teams"),
+      el("a", { class: "btn subtle sm", href: "#/activities" }, "🗓️ Game Plan"),
+    ]));
+
     // "What's next?" — spin to pick the next event to play.
     if (events.length) {
       root.appendChild(el("h2", { class: "section-title" }, "What's Next?"));
@@ -160,6 +166,17 @@
       ]));
       teams.forEach((t) => table.appendChild(scoreCell(ev, t)));
     });
+
+    // Read-only mini-games row — points auto-fed from Safari, Battle & Jeopardy.
+    table.appendChild(el("div", { class: "sb-event mini", title: "Auto-scored from the mini-games" }, [
+      el("span", { class: "sb-ev-emoji" }, "🎮"),
+      el("div", { class: "sb-ev-text" }, [
+        el("div", { class: "sb-ev-name" }, "Mini-games"),
+        el("div", { class: "sb-ev-pts" }, "Safari · Battle · Jeopardy — auto-scored"),
+      ]),
+    ]));
+    teams.forEach((t) => table.appendChild(el("div", { class: "sc-cell mini" },
+      el("span", { class: "sc-val" }, String(Store.miniGamePoints(t.id))))));
 
     root.appendChild(table);
 
