@@ -114,6 +114,24 @@
     const p = Store.state.party;
     const target = new Date(p.startDate);
 
+    // Live-battle banner — appears while a room battle is on, so anyone who
+    // dismissed the alert can still jump in to watch.
+    if (window.Sync) {
+      const liveHost = el("div", {});
+      root.appendChild(liveHost);
+      Sync.onLiveBattle((data) => {
+        liveHost.innerHTML = "";
+        if (!data || data.state !== "live") return;
+        const btn = el("button", { class: "btn primary sm" }, "👀 Watch");
+        btn.addEventListener("click", () => { if (window.watchLiveBattle) watchLiveBattle(data); });
+        liveHost.appendChild(el("div", { class: "live-banner" }, [
+          el("span", { class: "live-dot" }),
+          el("span", { class: "live-txt" }, "LIVE: " + data.aName + " vs " + data.bName + (data.event ? " · " + data.event : "")),
+          btn,
+        ]));
+      });
+    }
+
     const hero = el("section", { class: "hero" }, [
       p.heroImage
         ? el("img", { class: "hero-img", src: p.heroImage, alt: p.title })
