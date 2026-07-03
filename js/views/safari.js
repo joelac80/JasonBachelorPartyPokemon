@@ -31,7 +31,16 @@
     const tier = leg ? "Legendary" : x >= 200 ? "Elite" : x >= 140 ? "Strong" : x >= 90 ? "Evolved" : "Common";
     return { name: d.n, x: x, leg: leg, base: base, sips: sips, flee: flee, tier: tier, color: TIER_COLOR[tier] };
   }
-  function withLevels(base, levels) { return Math.min(0.92, base + 0.2 * levels); }
+  function withLevels(base, levels) { return Math.min(1, base + 0.2 * levels); }
+
+  // The ball reflects your odds: Poké → Great → Ultra → Master (100% = sure catch).
+  function ballTier(chance) {
+    if (chance >= 1) return { key: "master", name: "Master Ball", top: "#7a2ff2" };
+    if (chance >= 0.75) return { key: "ultra", name: "Ultra Ball", top: "#e6a100" };
+    if (chance >= 0.55) return { key: "great", name: "Great Ball", top: "#2a75bb" };
+    return { key: "poke", name: "Poké Ball", top: "#ee1515" };
+  }
+  function ballIcon(tier) { return el("span", { class: "ball-ico " + tier.key, style: { "--ball-top": tier.top } }); }
 
   // Flatter weighting than before — cool Pokémon show up more often.
   function weightFor(id) { const d = DEX[id]; let w = 1 / Math.pow(d.x, 0.55); if (d.leg) w *= 0.4; return w; }
@@ -100,6 +109,7 @@
       }
       const nfo = info(current);
       const chance = withLevels(nfo.base, level);
+      const ball = ballTier(chance);
       const owned = !!rec(active()).caught[current];
       const firstShow = revealId !== current && !status;
 
@@ -109,7 +119,7 @@
         : el("div", { class: "tc-ball-fallback" });
       const grass = el("div", { class: "safari-scene-grass" }, ["🌿", "🌿", "🌿", "🌿", "🌿"].map((g) => el("span", {}, g)));
       const scene = el("div", { class: "safari-scene" + (firstShow ? " rustle" : "") }, [
-        el("div", { class: "safari-scene-platform" }), wild, el("div", { class: "safari-ball-throw" }), grass,
+        el("div", { class: "safari-scene-platform" }), wild, el("div", { class: "safari-ball-throw", style: { "--ball-top": ball.top } }), grass,
       ]);
 
       // ---- controls (name/odds/etc. hidden until the silhouette focuses in) ----
@@ -121,6 +131,7 @@
       const odds = el("div", { class: "safari-odds" }, [
         el("span", { class: "safari-odds-big" }, Math.round(chance * 100) + "%"),
         el("span", {}, " catch chance" + (level ? " (base " + Math.round(nfo.base * 100) + "% + " + level + " challenge" + (level > 1 ? "s" : "") + ")" : "") + " · catch deals " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "")),
+        el("span", { class: "safari-ball-chip" }, [ballIcon(ball), " " + ball.name + (ball.key === "master" ? " — sure catch!" : "")]),
       ]);
       const pips = el("div", { class: "safari-pips" }, [0, 1, 2].map((i) => el("span", { class: "safari-pip" + (i < level ? " on" : "") })));
       let challengeArea;
@@ -141,7 +152,7 @@
       }
       const suspense = el("div", { class: "safari-suspense" });
       const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
-        el("button", { class: "btn primary", onClick: () => throwBall(nfo), disabled: pendingDare ? "true" : null }, "🔴 Throw Poké Ball"),
+        el("button", { class: "btn primary", onClick: () => throwBall(nfo), disabled: pendingDare ? "true" : null }, [ballIcon(ball), " Throw " + ball.name]),
         el("button", { class: "btn subtle", onClick: () => { current = null; level = 0; pendingDare = ""; status = ""; renderEncounter(); } }, "Run"),
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [

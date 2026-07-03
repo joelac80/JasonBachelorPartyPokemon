@@ -423,7 +423,12 @@ body {
 .safari-wild.fled { animation: safariFled .6s ease forwards; }
 @keyframes safariFled { to { transform: translateX(60px) scale(.7); opacity: 0; } }
 .safari-ball-throw { position: absolute; bottom: 10px; left: 50%; width: 30px; height: 30px; border-radius: 50%; opacity: 0;
-  background: linear-gradient(#ee1515 0 46%,#111 46% 54%,#fff 54% 100%); border: 3px solid #111; }
+  background: linear-gradient(var(--ball-top, #ee1515) 0 46%,#111 46% 54%,#fff 54% 100%); border: 3px solid #111; }
+/* ball tier icon */
+.ball-ico { display: inline-block; width: 17px; height: 17px; border-radius: 50%; border: 2px solid #111; vertical-align: middle;
+  background: linear-gradient(var(--ball-top, #ee1515) 0 46%, #111 46% 54%, #fff 54% 100%); position: relative; }
+.ball-ico.master::after { content: "M"; position: absolute; inset: -1px 0 auto 0; top: 0; text-align: center; font-size: 7px; line-height: 8px; font-weight: 900; color: #ff8fce; }
+.safari-ball-chip { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-weight: 800; }
 .safari-ball-throw.go { animation: safariThrow 1.7s ease forwards; }
 @keyframes safariThrow {
   0% { opacity: 1; transform: translate(-50%, 60px) scale(.7); }
