@@ -473,11 +473,21 @@ body {
 .safari-trainer select { flex: 1; }
 .safari-odds-big { font-family: var(--pixel); font-size: 18px; color: var(--pokered); margin-right: 4px; }
 .safari-challenge { background: #fff7ec; border: 2px dashed #f0b46a; border-radius: 10px; padding: 10px; margin: 4px 0 10px; display: flex; flex-direction: column; gap: 8px; }
-.safari-challenge-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.safari-challenge-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .safari-challenge-lbl { font-family: var(--pixel); font-size: 10px; color: #c07a1a; }
 .safari-pips { display: flex; gap: 5px; }
 .safari-pip { width: 12px; height: 12px; border-radius: 3px; background: #eadfce; border: 1.5px solid #d8c3a0; }
 .safari-pip.on { background: #f5732f; border-color: #f5732f; }
+.safari-boosts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.safari-boost-chip { font-family: var(--pixel); font-size: 10px; padding: 3px 8px; border-radius: 999px; border: 1.5px solid; white-space: nowrap; }
+.safari-boost-chip.berry { color: #b02a5b; border-color: #f2a7c3; background: #ffe9f1; }
+.safari-boost-chip.rally { color: #1f6fb0; border-color: #a7cef2; background: #e6f2ff; }
+.safari-boost-chip.combo { color: #c0500a; border-color: #f5b276; background: #fff0e0; }
+.safari-boost-chip.helper { color: #2e7d46; border-color: #a7e0ba; background: #e7f7ec; }
+.safari-combo-note { font-family: var(--pixel); font-size: 12px; color: #c0500a; margin-top: 4px; text-align: center; }
+.safari-combo-note.broke { color: #b02a2a; }
+.safari-assist-note { font-family: var(--pixel); font-size: 12px; color: #2e7d46; margin-top: 4px; text-align: center; }
+.safari-teamup { font-family: var(--pixel); font-size: 11px; color: #2e7d46; text-align: center; margin: 2px 0 6px; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
 .safari-suspense { font-family: var(--pixel); font-size: 14px; color: var(--pokeblue); min-height: 20px; text-align: center; margin: 4px 0; }
