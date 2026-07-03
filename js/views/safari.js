@@ -1,9 +1,10 @@
 /* safari.js — Pokédex Safari drinking game (per-trainer competition).
    Pick who's catching, find a wild Pokémon (cool ones show up more but are
-   very hard to catch), then stack boosts to raise your odds:
-     • Dares      up to 3 × +20%   (one-off, this encounter)
-     • Berry      +15%             (one-off; also halves flee chance)
-     • Squad rally +10%            (one-off, this encounter)
+   very hard to catch), then earn boosts by DOING things — each is a random
+   action you must perform; chicken out and you take a sip + forfeit that boost:
+     • Dares      up to 3 × +20%
+     • Berry      +15%   (also halves flee chance)
+     • Squad rally +10%
      • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
                         payout — half the sips, or the full haul on a legendary)
      • Catch combo +5%/link, cap +25% — carries between encounters, a flee breaks it
@@ -27,7 +28,32 @@
     "Grab someone a fresh drink 🍺", "Get the groom a round 🤵",
     "Cheers the person on your left 🥂", "Refill an empty cup nearby 🥤",
   ];
-  function randomDare() { return DARES[(Math.random() * DARES.length) | 0]; }
+  // Berry = coax the wild one closer with a solo bit of theatre.
+  const BERRY_ACTS = [
+    "Do your best Pokémon cry to lure it closer 📣",
+    "Mime tossing it a tasty berry 🫐",
+    "Sweet-talk the wild one out loud 🗣️",
+    "Strike a friendly gym-leader pose 🕺",
+    "Whistle the Pokémon Center jingle 🎵",
+    "Narrate the scene like a nature doc 🎥",
+    "Offer a real snack to someone in the room 🍿",
+  ];
+  // Rally = get the whole party involved.
+  const RALLY_ACTS = [
+    "Get the group to chant the catcher's name 📣",
+    "Start a slow-clap the room has to finish 👏",
+    "Lead a 'Gotta catch 'em all!' shout 🗣️",
+    "Everyone raise a glass and toast the throw 🥂",
+    "Run a group 3… 2… 1… THROW countdown 🔢",
+    "Whole squad does a Pokéball hand-motion 🙌",
+  ];
+  function pick(arr) { return arr[(Math.random() * arr.length) | 0]; }
+  // Each boost is an action you must actually perform; bail and there's a price.
+  const BOOSTS = {
+    dare: { pct: 0.20, pool: DARES, verb: "dare", emoji: "🔥" },
+    berry: { pct: 0.15, pool: BERRY_ACTS, verb: "berry", emoji: "🍓" },
+    rally: { pct: 0.10, pool: RALLY_ACTS, verb: "rally", emoji: "📣" },
+  };
 
   // Base catch is low (very low for cool Pokémon); each challenge level +20%.
   function info(id) {
@@ -69,12 +95,38 @@
   function attendeeName(id) { const a = Store.attendee(id); return a ? a.name : id; }
 
   function view(root) {
-    let current = null, busy = false, status = "", level = 0, pendingDare = "";
-    let usedBerry = false, usedRally = false, helper = "";
+    let current = null, busy = false, status = "", level = 0, helper = "";
+    let berryDone = false, rallyDone = false;             // boost earned (action done)
+    let dareLocked = false, berryLost = false, rallyLost = false;  // chickened out
+    let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
+
+    // Wipe all this-encounter boost state (called on new find / trainer swap / run).
+    function clearBoosts() {
+      level = 0; berryDone = false; rallyDone = false; helper = "";
+      dareLocked = false; berryLost = false; rallyLost = false; pending = null; penaltyMsg = "";
+    }
 
     // Effective catch chance = base + all active boosts (capped at 100%).
     function chanceFor(nfo) {
-      return Math.min(1, nfo.base + 0.2 * level + (usedBerry ? 0.15 : 0) + (usedRally ? 0.10 : 0) + (helper ? 0.15 : 0) + comboBonus(active()));
+      return Math.min(1, nfo.base + 0.2 * level + (berryDone ? 0.15 : 0) + (rallyDone ? 0.10 : 0) + (helper ? 0.15 : 0) + comboBonus(active()));
+    }
+
+    // Present a boost's random action. You then either do it or chicken out.
+    function startAction(kind) { const b = BOOSTS[kind]; pending = { kind: kind, prompt: pick(b.pool), pct: b.pct }; penaltyMsg = ""; sfx("select"); renderEncounter(); }
+    function doAction() {
+      if (!pending) return;
+      const k = pending.kind;
+      if (k === "dare") level++; else if (k === "berry") berryDone = true; else if (k === "rally") rallyDone = true;
+      sfx(k === "rally" ? "blip" : "coin");
+      pending = null; renderEncounter();
+    }
+    function chickenOut() {
+      if (!pending) return;
+      const k = pending.kind, verb = BOOSTS[k].verb;
+      Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });   // the price: a sip
+      if (k === "dare") dareLocked = true; else if (k === "berry") berryLost = true; else if (k === "rally") rallyLost = true;
+      penaltyMsg = "😳 Chickened out of the " + verb + " — take a sip! No more " + verb + " boosts this catch.";
+      pending = null; sfx("error"); renderEncounter();
     }
 
     // A helper is a second trainer teaming up (a "double-battle" catch): +15%,
@@ -90,7 +142,7 @@
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔴 Pokédex Safari"),
-      el("p", { class: "page-sub" }, "Pick your trainer, find a wild one, then stack boosts — dares, berries, a squad rally, and a catch combo — before you throw."),
+      el("p", { class: "page-sub" }, "Pick your trainer, find a wild one, then earn boosts by pulling off dares, berries and rallies — chicken out and you drink. Then throw."),
     ]));
 
     // ---- trainer selector ----
@@ -98,7 +150,7 @@
       Store.state.attendees.map((a) => el("option", { value: a.id, selected: P().active === a.id ? "true" : null }, a.name))));
     sel.addEventListener("change", () => {
       Store.update((s) => { s.pokedex.active = sel.value; });
-      current = null; level = 0; pendingDare = ""; status = ""; usedBerry = false; usedRally = false; helper = "";
+      current = null; status = ""; clearBoosts();
       renderAll();
     });
     root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Now catching:"), sel]));
@@ -161,8 +213,8 @@
       // Human-readable breakdown of every active boost.
       const parts = [];
       if (level) parts.push(level + " dare" + (level > 1 ? "s" : ""));
-      if (usedBerry) parts.push("berry");
-      if (usedRally) parts.push("rally");
+      if (berryDone) parts.push("berry");
+      if (rallyDone) parts.push("rally");
       if (helper) parts.push("helper");
       if (combo) parts.push("combo ×" + combo);
       const breakdown = parts.length ? " (base " + Math.round(nfo.base * 100) + "% + " + parts.join(" + ") + ")" : "";
@@ -175,25 +227,26 @@
 
       // Active-boost chips (berry / rally / combo) shown alongside the dare pips.
       const activeChips = [];
-      if (usedBerry) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓 Berry +15%"));
-      if (usedRally) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "📣 Rally +10%"));
+      if (berryDone) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓 Berry +15%"));
+      if (rallyDone) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "📣 Rally +10%"));
       if (helper) activeChips.push(el("span", { class: "safari-boost-chip helper" }, "🤝 " + attendeeName(helper) + " +15%"));
       if (combo) activeChips.push(el("span", { class: "safari-boost-chip combo" }, "🔥 Combo ×" + combo + " (+" + Math.round(comboBonus(active()) * 100) + "%)"));
 
       let challengeArea;
-      if (pendingDare) {
+      if (pending) {
+        // An action is on the table — do it for the boost, or bail and pay up.
         challengeArea = el("div", { class: "safari-dare" }, [
-          el("div", { class: "safari-dare-txt" }, "🔥 " + pendingDare),
+          el("div", { class: "safari-dare-txt" }, BOOSTS[pending.kind].emoji + " " + pending.prompt),
           el("div", { class: "safari-actions" }, [
-            el("button", { class: "btn primary sm", onClick: () => { level++; pendingDare = ""; renderEncounter(); } }, "✓ Did it (+20%)"),
-            el("button", { class: "btn subtle sm", onClick: () => { pendingDare = ""; renderEncounter(); } }, "Nah"),
+            el("button", { class: "btn primary sm", onClick: doAction }, "✓ Did it (+" + Math.round(pending.pct * 100) + "%)"),
+            el("button", { class: "btn subtle sm", onClick: chickenOut }, "😳 Chicken out — take a sip"),
           ]),
         ]);
       } else {
         const btns = [];
-        if (level < 3) btns.push(el("button", { class: "btn subtle sm", onClick: () => { pendingDare = randomDare(); renderEncounter(); } }, "🔥 Take a dare (+20%)"));
-        if (!usedBerry) btns.push(el("button", { class: "btn subtle sm", onClick: () => { usedBerry = true; sfx("coin"); renderEncounter(); } }, "🍓 Toss a Berry (+15%)"));
-        if (!usedRally) btns.push(el("button", { class: "btn subtle sm", onClick: () => { usedRally = true; sfx("blip"); renderEncounter(); } }, "📣 Squad rally (+10%)"));
+        if (level < 3 && !dareLocked) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("dare") }, "🔥 Take a dare (+20%)"));
+        if (!berryDone && !berryLost) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("berry") }, "🍓 Toss a Berry (+15%)"));
+        if (!rallyDone && !rallyLost) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("rally") }, "📣 Squad rally (+10%)"));
         btns.push(helper
           ? el("button", { class: "btn subtle sm", onClick: () => { helper = ""; renderEncounter(); } }, "🤝 Remove helper")
           : el("button", { class: "btn subtle sm", onClick: pickHelper }, "🤝 Add a helper (+15%)"));
@@ -201,8 +254,8 @@
       }
       const suspense = el("div", { class: "safari-suspense" });
       const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
-        el("button", { class: "btn primary", onClick: () => throwBall(nfo), disabled: pendingDare ? "true" : null }, [ballIcon(ball), " Throw " + ball.name]),
-        el("button", { class: "btn subtle", onClick: () => { current = null; level = 0; pendingDare = ""; status = ""; renderEncounter(); } }, "Run"),
+        el("button", { class: "btn primary", onClick: () => throwBall(nfo), disabled: pending ? "true" : null }, [ballIcon(ball), " Throw " + ball.name]),
+        el("button", { class: "btn subtle", onClick: () => { current = null; status = ""; clearBoosts(); renderEncounter(); } }, "Run"),
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [
         meta,
@@ -210,6 +263,7 @@
         odds,
         el("div", { class: "safari-challenge" }, [
           el("div", { class: "safari-challenge-row" }, [el("span", { class: "safari-challenge-lbl" }, "Boost"), pips].concat(activeChips)),
+          penaltyMsg ? el("div", { class: "safari-penalty" }, penaltyMsg) : null,
           challengeArea,
         ]),
         suspense, throwRow,
@@ -230,13 +284,13 @@
       }
     }
 
-    function findOne() { current = null; revealId = null; busy = false; status = ""; level = 0; pendingDare = ""; usedBerry = false; usedRally = false; helper = ""; current = randomEncounter(); sfx("blip"); renderEncounter(); }
+    function findOne() { current = null; revealId = null; busy = false; status = ""; clearBoosts(); current = randomEncounter(); sfx("blip"); renderEncounter(); }
 
     function throwBall(nfo) {
-      if (busy || !current || pendingDare) return;
+      if (busy || !current || pending) return;
       busy = true;
       const chance = chanceFor(nfo);
-      const flee = usedBerry ? nfo.flee / 2 : nfo.flee;   // a berry calms it — less likely to bolt
+      const flee = berryDone ? nfo.flee / 2 : nfo.flee;   // a berry calms it — less likely to bolt
       const outcome = Math.random() < chance ? "catch" : (Math.random() < flee ? "flee" : "break");
       const wild = enc.querySelector(".safari-wild-scene");
       const ball = enc.querySelector(".safari-ball-throw");
@@ -309,7 +363,7 @@
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
       }
-      current = null; busy = false; status = ""; level = 0; pendingDare = ""; usedBerry = false; usedRally = false; helper = "";
+      current = null; busy = false; status = ""; clearBoosts();
       renderStats(); renderBoard(); renderTeam(); renderDex();
     }
 

@@ -488,6 +488,7 @@ body {
 .safari-combo-note.broke { color: #b02a2a; }
 .safari-assist-note { font-family: var(--pixel); font-size: 12px; color: #2e7d46; margin-top: 4px; text-align: center; }
 .safari-teamup { font-family: var(--pixel); font-size: 11px; color: #2e7d46; text-align: center; margin: 2px 0 6px; }
+.safari-penalty { font-family: var(--pixel); font-size: 11px; color: #b02a2a; background: #fdeaea; border: 1.5px solid #f3b4b4; border-radius: 8px; padding: 6px 8px; text-align: center; }
 .safari-dare { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .safari-dare-txt { font-weight: 800; font-size: 15px; text-align: center; }
 .safari-suspense { font-family: var(--pixel); font-size: 14px; color: var(--pokeblue); min-height: 20px; text-align: center; margin: 4px 0; }
