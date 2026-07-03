@@ -60,4 +60,7 @@
   }
 
   Router.start();
+
+  // Optional live sync — connects only if a room was configured + enabled.
+  if (window.Sync && Sync.init) Sync.init();
 })();

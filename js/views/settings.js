@@ -152,6 +152,71 @@
     reader.readAsText(f);
   }
 
+  function syncSection() {
+    if (!window.Sync) return el("span");
+    const c = Sync.getConf();
+
+    const cfgIn = el("textarea", { class: "in mono", rows: 5,
+      placeholder: 'Paste your Firebase config here…\n{ "apiKey": "…", "projectId": "…", … }' });
+    if (c.config) cfgIn.value = JSON.stringify(c.config, null, 2);
+    const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. jason2026)", value: c.room });
+    const nameIn = el("input", { class: "in", placeholder: "Your name (shown on updates)", value: c.name });
+
+    const statusEl = el("div", { class: "sync-status" });
+    Sync.onStatus((state, msg) => {
+      statusEl.className = "sync-status " + state;
+      const label = { off: "● Off — local only", connecting: "● Connecting…", live: "● Live", error: "⚠ " + msg };
+      statusEl.textContent = state === "live" && msg ? "● Live — " + msg : (label[state] || state);
+    });
+
+    const enableBtn = el("button", { class: "btn primary" });
+    function paintBtn() {
+      const on = Sync.getConf().enabled;
+      enableBtn.textContent = on ? "⏻ Disconnect" : "🔗 Connect & sync";
+      enableBtn.className = "btn " + (on ? "danger" : "primary");
+    }
+    enableBtn.addEventListener("click", () => {
+      if (Sync.getConf().enabled) { Sync.disable(); }
+      else {
+        const r = Sync.save(cfgIn.value, roomIn.value, nameIn.value);
+        if (!r.ok) { alert(r.error); return; }
+        if (!roomIn.value.trim()) { alert("Pick a room code first (everyone joins the same one)."); return; }
+        Sync.enable();
+      }
+      paintBtn();
+    });
+    paintBtn();
+
+    const saveBtn = el("button", { class: "btn subtle", onClick: () => {
+      const r = Sync.save(cfgIn.value, roomIn.value, nameIn.value);
+      if (!r.ok) { alert(r.error); return; }
+      toast("Sync settings saved");
+    } }, "Save settings");
+
+    return el("section", { class: "settings-block" }, [
+      el("h2", { class: "section-title" }, "🔗 Live Sync (Firestore)"),
+      el("p", { class: "hint" }, "Off by default — the app runs fully local. Turn this on to share ONE live scoreboard across phones: everyone joins the same room code and sees the same catches, scores and votes in real time."),
+      statusEl,
+      el("label", { class: "field" }, [el("span", {}, "Firebase config"), cfgIn]),
+      el("div", { class: "settings-grid" }, [
+        el("label", { class: "field" }, [el("span", {}, "Room code (shared by all)"), roomIn]),
+        el("label", { class: "field" }, [el("span", {}, "Your name"), nameIn]),
+      ]),
+      el("div", { class: "toolbar" }, [enableBtn, saveBtn]),
+      el("details", { class: "sync-help" }, [
+        el("summary", {}, "How to set this up (one-time)"),
+        el("ol", { class: "sync-steps" }, [
+          el("li", {}, "Firebase console → create/pick a project → add a Web App."),
+          el("li", {}, "Build → Firestore Database → Create (production mode)."),
+          el("li", {}, "Build → Authentication → Sign-in method → enable Anonymous."),
+          el("li", {}, "Firestore → Rules → paste the rules from SYNC.md in the repo → Publish."),
+          el("li", {}, "Copy the firebaseConfig object into the box above, pick a shared room code, then Connect & sync."),
+          el("li", {}, "On every other phone: open the app → Settings → paste the SAME config + room code → Connect."),
+        ]),
+      ]),
+    ]);
+  }
+
   let toastTimer = null;
   function toast(msg) {
     let t = document.getElementById("toast");
@@ -170,6 +235,7 @@
       el("h1", {}, "⚙️ Settings"),
       el("p", { class: "page-sub" }, "Tune the party, teams, and events. Manage your data."),
     ]));
+    root.appendChild(syncSection());
     root.appendChild(partySection());
     root.appendChild(teamsSection());
     root.appendChild(eventsSection());
