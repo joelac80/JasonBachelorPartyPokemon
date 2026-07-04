@@ -10,6 +10,7 @@
     const game = Store.liveTrophies().filter((t) => t.title !== "First Sip" && t.title !== "Thirstiest");
     return game.concat(Store.drinkAwards());
   }
+  function nm(id) { const a = Store.attendee(id); return a ? a.name : ""; }
 
   function trophyEl(emoji, title, holder, sub) {
     return el("div", { class: "trophy" }, [
@@ -62,7 +63,7 @@
 
   function timeline() {
     // Merge text moments (chronicle) + photo moments into one time-ordered story.
-    const moments = (Store.state.chronicle || []).map((c) => ({ ts: c.ts, icon: c.icon, text: c.text }));
+    const moments = (Store.state.chronicle || []).map((c) => ({ ts: c.ts, icon: c.icon, text: c.text, by: c.by }));
     const photos = (Store.state.photos || []).map((p) => ({ ts: p.ts, img: p.img, text: p.caption, by: p.by, id: p.id, reactions: p.reactions, comments: p.comments }));
     const all = moments.concat(photos);
     if (!all.length) return el("p", { class: "hint" }, "No moments yet — add photos and play games; they'll fill in here.");
@@ -78,7 +79,10 @@
       el("div", { class: "poster-day" }, [
         el("div", { class: "poster-day-h" }, d.label),
         el("div", { class: "poster-feed" }, d.items.map((c) => {
-          if (!c.img) return el("div", { class: "poster-moment" }, [el("span", { class: "poster-moment-e" }, c.icon || "•"), el("span", {}, c.text)]);
+          if (!c.img) return el("div", { class: "poster-moment" }, [
+            el("span", { class: "poster-moment-e" }, c.icon || "•"),
+            el("span", {}, [c.text, c.by ? el("span", { class: "poster-moment-by" }, "  · logged by " + nm(c.by)) : null]),
+          ]);
           const counts = {}; (c.reactions || []).forEach((r) => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
           const summary = Object.keys(counts).map((e) => e + counts[e]).join("  ");
           const nComments = (c.comments || []).length;
@@ -138,6 +142,18 @@
         .concat(sup.map((s) => trophyEl(s.emoji, s.title, s.holder, "superlative")));
       poster.appendChild(el("h2", { class: "poster-section" }, "Awards"));
       poster.appendChild(el("div", { class: "trophy-strip" }, cards));
+    }
+
+    // ---- scorekeepers ----
+    const keepers = Store.state.attendees.map((a) => ({ a: a, n: Store.logCount(a.id) })).filter((r) => r.n > 0).sort((x, y) => y.n - x.n);
+    if (keepers.length) {
+      poster.appendChild(el("h2", { class: "poster-section" }, "📋 Scorekeepers"));
+      poster.appendChild(el("div", { class: "safari-board" }, keepers.map((r, i) =>
+        el("div", { class: "safari-board-row" + (i === 0 ? " lead" : "") }, [
+          el("span", { class: "safari-board-rank" }, i === 0 ? "📋" : "#" + (i + 1)),
+          el("span", { class: "safari-board-name" }, r.a.name),
+          el("span", { class: "safari-board-n" }, r.n + " logged"),
+        ]))));
     }
 
     // ---- what we drank ----
