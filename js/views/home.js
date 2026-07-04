@@ -78,6 +78,7 @@
     { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 85, y: 34 },
     { r: "ceremony",     e: "👑", t: "Champion",  x: 87, y: 15 },
     { r: "timeline",     e: "📜", t: "Weekend Log",x: 84, y: 50 },
+    { r: "stats",        e: "📊", t: "Trip Stats", x: 76, y: 62 },
     { r: "poster",       e: "🖼️", t: "Poster",    x: 70, y: 57 },
     { r: "settings",     e: "⚙️", t: "Settings",  x: 10, y: 14 },
   ];
@@ -87,7 +88,7 @@
     ["battle", "safari"], ["battle", "brackets"], ["brackets", "jeopardy"], ["jeopardy", "predictions"],
     ["jeopardy", "superlatives"], ["jeopardy", "badges"], ["badges", "hall"],
     ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"],
-    ["superlatives", "poster"], ["poster", "badges"], ["victoryroad", "timeline"], ["timeline", "poster"],
+    ["superlatives", "poster"], ["poster", "badges"], ["victoryroad", "timeline"], ["timeline", "poster"], ["timeline", "stats"],
   ];
 
   function overworld() {

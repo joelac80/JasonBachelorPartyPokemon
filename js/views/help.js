@@ -52,6 +52,7 @@
         { r: "hall", e: "🌿", t: "Hall of Bulbasaur", d: "Your gallery wall — add photos and art from the weekend." },
         { r: "ceremony", e: "👑", t: "Champion Ceremony", d: "The grand finale. Crowns the champion from the standings, plus superlative & badge winners." },
         { r: "timeline", e: "📜", t: "Weekend Log", d: "The full activity feed — every catch, battle, drink, card round, prediction, badge and photo, stamped with who logged it. Filter by category or scorekeeper." },
+        { r: "stats", e: "📊", t: "Trip Stats", d: "The weekend by the numbers — an activity chart, auto superlatives (Night Owl, Shutterbug…), everyone's Player Wrapped recap, a daily digest, battle rivalries, and a CSV export of the whole log." },
         { r: "poster", e: "🖼️", t: "Weekend Poster", d: "The whole trip on one board — every trainer with their Pokémon and badges, the awards wall, and a photo + move-by-move timeline. Add photo moments (they’re downscaled and shared to the room), then print or save a PDF keepsake." },
       ],
     },
