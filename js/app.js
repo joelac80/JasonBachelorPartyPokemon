@@ -19,6 +19,7 @@
     .add("hall", V.hall)
     .add("ceremony", V.ceremony)
     .add("timeline", V.timeline)
+    .add("stats", V.stats)
     .add("poster", V.poster)
     .add("settings", V.settings)
     .add("help", V.help);

@@ -143,6 +143,29 @@
     const gyms = section("Gym Badge Holders", gymBadgeRows());
     if (gyms) root.appendChild(gyms);
 
+    // Trophy Hall — every auto-earned trophy + the fun superlatives.
+    const allTrophies = Store.liveTrophies().concat(Store.funSuperlatives());
+    if (allTrophies.length) {
+      root.appendChild(el("h2", { class: "section-title" }, "🏅 Trophy Hall"));
+      root.appendChild(el("div", { class: "trophy-strip" }, allTrophies.map((t) =>
+        el("div", { class: "trophy" }, [
+          el("span", { class: "trophy-emoji" }, t.emoji),
+          el("div", { class: "trophy-txt" }, [
+            el("div", { class: "trophy-title" }, t.title),
+            el("div", { class: "trophy-holder" }, t.holder),
+            el("div", { class: "trophy-sub" }, t.sub),
+          ]),
+        ]))));
+    }
+    const topPhoto = Store.mostReactedPhoto && Store.mostReactedPhoto();
+    if (topPhoto) {
+      root.appendChild(el("h2", { class: "section-title" }, "📸 Photo of the Weekend"));
+      root.appendChild(el("figure", { class: "poster-photo", onClick: () => window.PhotoLog && PhotoLog.openDetail(topPhoto.p.id, () => Router.render()) }, [
+        el("img", { src: topPhoto.p.img, alt: topPhoto.p.caption || "" }),
+        el("figcaption", {}, (topPhoto.p.caption || "Photo") + (topPhoto.p.by ? " — " + topPhoto.p.by : "") + "  · " + topPhoto.n + " reactions"),
+      ]));
+    }
+
     // Catch of the Day tally
     const chs = Store.state.challenges || [];
     const caught = chs.filter((c) => Store.state.challengeDone[c.id] && Store.state.challengeDone[c.id].done).length;

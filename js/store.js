@@ -309,6 +309,81 @@
       (this.state.photos || []).forEach((p) => { if (p.loggedBy === attId) n++; });
       return n;
     },
+
+    // ---- Analytics (for the Stats hub / Wrapped / poster) -----------------
+    _allMoments() {
+      const m = (this.state.chronicle || []).map((c) => ({ ts: c.ts, by: c.by }));
+      (this.state.photos || []).forEach((p) => m.push({ ts: p.ts, by: p.loggedBy }));
+      return m;
+    },
+    activityByHour() {
+      const b = []; for (let i = 0; i < 24; i++) b.push(0);
+      this._allMoments().forEach((m) => { try { b[new Date(m.ts).getHours()]++; } catch (_) {} });
+      return b;
+    },
+    activityByDay() {
+      const by = {};
+      this._allMoments().forEach((m) => { const k = this.dayKey(m.ts); (by[k] = by[k] || { key: k, label: this.dayLabel(m.ts), n: 0 }).n++; });
+      return Object.keys(by).sort().map((k) => by[k]);
+    },
+    // Logs by a person (as scorekeeper) whose hour-of-day is in [lo, hi).
+    logsInHours(attId, lo, hi) {
+      let n = 0;
+      this._allMoments().forEach((m) => { if (m.by === attId) { try { const h = new Date(m.ts).getHours(); if (h >= lo && h < hi) n++; } catch (_) {} } });
+      return n;
+    },
+    photosOf(attId) { const a = this.attendee(attId); const nm = a ? a.name : ""; return (this.state.photos || []).filter((p) => p.by === nm).length; },
+    photosTakenBy(attId) { return (this.state.photos || []).filter((p) => p.loggedBy === attId).length; },
+    mostReactedPhoto() {
+      let best = null;
+      (this.state.photos || []).forEach((p) => { const n = (p.reactions || []).length; if (n > 0 && (!best || n > best.n)) best = { p: p, n: n }; });
+      return best;
+    },
+    // Battle head-to-head win records: [{ winner, loser, n }] sorted desc.
+    rivalries() {
+      const pairs = {};
+      (this.state.battles && this.state.battles.log || []).forEach((b) => {
+        const k = b.winner + " ⚔ " + b.loser; (pairs[k] = pairs[k] || { winner: b.winner, loser: b.loser, n: 0 }).n++;
+      });
+      return Object.keys(pairs).map((k) => pairs[k]).sort((a, b) => b.n - a.n);
+    },
+    // A milestone worth celebrating (round numbers).
+    _milestone(n) { return [10, 25, 50, 75, 100, 150, 200, 250, 300, 400, 500].indexOf(n) >= 0; },
+
+    // Everything about one trainer, for a Wrapped card.
+    wrapped(attId) {
+      const a = this.attendee(attId), nm = a ? a.name : attId;
+      const tr = (this.state.pokedex && this.state.pokedex.trainers || {})[attId] || {};
+      const log = (this.state.battles && this.state.battles.log) || [];
+      let w = 0, l = 0; log.forEach((b) => { if (b.winner === nm) w++; if (b.loser === nm) l++; });
+      const myDrinks = (this.state.drinks || []).filter((d) => d.trainer === attId);
+      const labelCounts = {}; myDrinks.forEach((d) => { if (d.label) labelCounts[d.label] = (labelCounts[d.label] || 0) + 1; });
+      const topDrink = Object.keys(labelCounts).sort((x, y) => labelCounts[y] - labelCounts[x])[0] || "";
+      return {
+        name: nm, team: this.team(this.teamOf(attId)),
+        caught: Object.keys(tr.caught || {}).length, master: tr.masterCatches || 0, helps: tr.helps || 0,
+        battleW: w, battleL: l, drinks: this.drinkCount(attId), topDrink: topDrink,
+        presidencies: this.presidencies(attId), assholeries: this.assholeries(attId),
+        euchre: this.euchreWins(attId), oracle: this.oracleScore(attId),
+        logged: this.logCount(attId), photosIn: this.photosOf(attId), photosTaken: this.photosTakenBy(attId),
+      };
+    },
+
+    // Auto-derived fun superlatives (data-backed, beyond the voted ones).
+    funSuperlatives() {
+      const out = [];
+      const owl = this._topAttendee((id) => this.logsInHours(id, 0, 5));
+      if (owl) out.push({ emoji: "🦉", title: "Night Owl", holder: owl.a.name, sub: owl.n + " late-night logs" });
+      const bird = this._topAttendee((id) => this.logsInHours(id, 5, 10));
+      if (bird) out.push({ emoji: "🌅", title: "Early Bird", holder: bird.a.name, sub: bird.n + " early logs" });
+      const doc = this._topAttendee((id) => this.photosOf(id));
+      if (doc) out.push({ emoji: "🌟", title: "Most Documented", holder: doc.a.name, sub: doc.n + " photos of them" });
+      const shutter = this._topAttendee((id) => this.photosTakenBy(id));
+      if (shutter) out.push({ emoji: "📷", title: "Shutterbug", holder: shutter.a.name, sub: shutter.n + " photos taken" });
+      const riv = this.rivalries()[0];
+      if (riv && riv.n >= 2) out.push({ emoji: "😈", title: "Rivalry", holder: riv.winner, sub: "beat " + riv.loser + " ×" + riv.n });
+      return out;
+    },
     // One-off chronicle entry from a view.
     logEvent(icon, text) { this.update((s) => { this.chron(s, icon, text); }); },
 
@@ -325,6 +400,7 @@
         s.drinks.push({ id: "dk" + Math.random().toString(36).slice(2) + stamp().toString(36), trainer: trainerId, type: type, label: label || undefined, ts: stamp() });
         this.chron(s, this.drinkEmoji(type), nm + " logged a " + type + (label ? " (" + label + ")" : "") + " " + this.drinkEmoji(type));
         if (firstEver) this.chron(s, "🍾", "First drink of the weekend — " + nm + " grabs First Sip!");
+        if (this._milestone(s.drinks.length)) this.chron(s, "🎉", "🍺 " + s.drinks.length + " drinks logged this weekend!");
       });
     },
 
