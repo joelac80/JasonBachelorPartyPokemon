@@ -75,7 +75,7 @@
         el("div", { class: "outro-sendoff-l" }, "TO THE GROOM"),
         el("div", { class: "outro-groom-name" }, groom ? groom.name : "The Groom"),
         w ? el("div", { class: "outro-groom-stats" }, statLine(w)) : null,
-        el("div", { class: "outro-sendoff-msg" }, "Here's to " + (groom ? groom.name.split(" ")[0] : "the groom") + " — gotta catch a wife! 💍🌿"),
+        el("div", { class: "outro-sendoff-msg" }, "Here's to " + (groom ? groom.name.split(" ")[0] : "the groom") + " — gotta catch that Bobby Quinn! 💍🌿"),
         el("button", { class: "btn spin-btn", onClick: finish }, "🖼️ To the Poster ▸"),
       ]));
       sfx("fanfare");
