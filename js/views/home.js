@@ -76,6 +76,7 @@
     { r: "badges",       e: "🏅", t: "Badges",    x: 71, y: 44 },
     { r: "hall",         e: "🌿", t: "Hall",      x: 72, y: 24 },
     { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 85, y: 34 },
+    { r: "messages",     e: "💌", t: "Messages",  x: 78, y: 8 },
     { r: "ceremony",     e: "👑", t: "Champion",  x: 87, y: 15 },
     { r: "timeline",     e: "📜", t: "Weekend Log",x: 84, y: 50 },
     { r: "stats",        e: "📊", t: "Trip Stats", x: 76, y: 62 },
@@ -87,7 +88,7 @@
     ["settings", "roster"], ["roster", "drinks"], ["drinks", "cards"], ["drinks", "challenges"], ["roster", "battle"],
     ["battle", "safari"], ["battle", "brackets"], ["brackets", "jeopardy"], ["jeopardy", "predictions"],
     ["jeopardy", "superlatives"], ["jeopardy", "badges"], ["badges", "hall"],
-    ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"],
+    ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"], ["ceremony", "messages"],
     ["superlatives", "poster"], ["poster", "badges"], ["victoryroad", "timeline"], ["timeline", "poster"], ["timeline", "stats"],
   ];
 

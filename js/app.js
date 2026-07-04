@@ -20,6 +20,7 @@
     .add("ceremony", V.ceremony)
     .add("timeline", V.timeline)
     .add("stats", V.stats)
+    .add("messages", V.messages)
     .add("poster", V.poster)
     .add("settings", V.settings)
     .add("help", V.help);
