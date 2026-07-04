@@ -131,6 +131,11 @@
     renderStage(false);
     root.appendChild(stage);
 
+    // The grand cinematic outro — credits → groom send-off → poster → unlock.
+    root.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+      el("button", { class: "btn spin-btn", onClick: () => { if (window.Outro) Outro.play(); } }, "🎬 Roll the Closing Credits"),
+    ]));
+
     // Podium
     const pod = podium();
     if (pod) { root.appendChild(el("h2", { class: "section-title" }, "Podium")); root.appendChild(pod); }

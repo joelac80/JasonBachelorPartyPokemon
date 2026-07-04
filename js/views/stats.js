@@ -57,17 +57,46 @@
     ]);
   }
 
-  function exportLog() {
-    const rows = ["day,time,text,logged_by"];
-    (Store.state.chronicle || []).slice().reverse().forEach((c) => {
-      const d = new Date(c.ts);
-      const day = Store.dayLabel(c.ts), time = (function () { try { return d.toLocaleTimeString(); } catch (_) { return ""; } })();
-      const by = c.by ? nm(c.by) : "";
-      rows.push([day, time, '"' + (c.text || "").replace(/"/g, "''") + '"', by].join(","));
-    });
+  // ---- structured exports (pivot-table friendly) ----
+  function timeStr(ts) { try { return new Date(ts).toLocaleTimeString(); } catch (_) { return ""; } }
+  function csvRow(arr) { return arr.map((v) => { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(","); }
+  function dl(name, rows) {
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-    const a = el("a", { href: URL.createObjectURL(blob), download: "bachelor-weekend-log.csv" });
+    const a = el("a", { href: URL.createObjectURL(blob), download: name });
     document.body.appendChild(a); a.click(); a.remove();
+  }
+  function teamName(id) { const t = Store.team(Store.teamOf(id)); return t ? t.name : ""; }
+
+  function exportLog() {
+    const rows = [csvRow(["day", "time", "text", "logged_by", "ts"])];
+    (Store.state.chronicle || []).slice().reverse().forEach((c) => rows.push(csvRow([Store.dayLabel(c.ts), timeStr(c.ts), c.text || "", c.by ? nm(c.by) : "", c.ts])));
+    dl("weekend-log.csv", rows);
+  }
+  function exportDrinks() {
+    const rows = [csvRow(["trainer", "team", "type", "specific_drink", "day", "time", "ts"])];
+    (Store.state.drinks || []).slice().sort((a, b) => a.ts - b.ts).forEach((d) => rows.push(csvRow([nm(d.trainer), teamName(d.trainer), d.type, d.label || "", Store.dayLabel(d.ts), timeStr(d.ts), d.ts])));
+    dl("drinks.csv", rows);
+  }
+  function exportCatches() {
+    const rows = [csvRow(["trainer", "team", "pokemon", "dex_no", "ball", "master_dare", "helper", "day", "time", "ts"])];
+    ((Store.state.pokedex && Store.state.pokedex.log) || []).slice().reverse().forEach((c) => rows.push(csvRow([nm(c.trainer), teamName(c.trainer), c.name, c.dexId, c.ball || "", c.master ? "yes" : "", c.helper ? nm(c.helper) : "", Store.dayLabel(c.ts), timeStr(c.ts), c.ts])));
+    dl("catches.csv", rows);
+  }
+  function exportBattles() {
+    const rows = [csvRow(["winner", "loser", "event", "day", "time", "ts"])];
+    ((Store.state.battles && Store.state.battles.log) || []).slice().reverse().forEach((b) => rows.push(csvRow([b.winner, b.loser, b.title || "", Store.dayLabel(b.ts), timeStr(b.ts), b.ts])));
+    dl("battles.csv", rows);
+  }
+  function exportCards() {
+    const rows = [csvRow(["game", "result", "note", "day", "time", "ts"])];
+    (Store.state.cardGames || []).slice().reverse().forEach((r) => {
+      let res;
+      if (r.game === "president" && r.ranking.length >= 2) res = "President: " + nm(r.ranking[0]) + " / Asshole: " + nm(r.ranking[r.ranking.length - 1]);
+      else if (r.game === "euchre") res = "Winners: " + r.ranking.map(nm).join(" & ");
+      else res = r.ranking.map(nm).join(", ");
+      rows.push(csvRow([r.game, res, r.note || "", Store.dayLabel(r.ts), timeStr(r.ts), r.ts]));
+    });
+    dl("card-games.csv", rows);
   }
 
   function view(root) {
@@ -129,9 +158,15 @@
         ]))));
     }
 
-    // export
-    root.appendChild(el("div", { class: "toolbar", style: { marginTop: "16px" } }, [
-      el("button", { class: "btn subtle", onClick: exportLog }, "⬇ Export the log (CSV)"),
+    // export — structured, pivot-table-ready CSVs
+    root.appendChild(el("h2", { class: "section-title" }, "⬇ Export the data"));
+    root.appendChild(el("p", { class: "hint" }, "Structured CSVs — drop them straight into a spreadsheet." ));
+    root.appendChild(el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, [
+      el("button", { class: "btn subtle sm", onClick: exportLog }, "📜 Full log"),
+      el("button", { class: "btn subtle sm", onClick: exportDrinks }, "🍺 Drinks"),
+      el("button", { class: "btn subtle sm", onClick: exportCatches }, "🔴 Catches"),
+      el("button", { class: "btn subtle sm", onClick: exportBattles }, "⚔️ Battles"),
+      el("button", { class: "btn subtle sm", onClick: exportCards }, "🃏 Card games"),
     ]));
   }
 

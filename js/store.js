@@ -82,6 +82,10 @@
       //   or the winners (Euchre) or the spotlight player (Kings/Ride the Bus).
       //   [{ id, game, ranking:[attId], note, by, ts }]
       cardGames: [],
+      // Message Wall for the groom — sealed from him until the closing ceremony.
+      //   [{ id, ts, by, text }]
+      messages: [],
+      messagesUnlocked: false,
       meta: { version: 1 },
     };
   }
@@ -109,6 +113,8 @@
         photos: parsed.photos || [],
         predictions: parsed.predictions || [],
         cardGames: parsed.cardGames || [],
+        messages: parsed.messages || [],
+        messagesUnlocked: parsed.messagesUnlocked || false,
         meta: Object.assign(base.meta, parsed.meta || {}),
       });
     } catch (e) {
@@ -448,6 +454,19 @@
       let n = 0;
       (this.state.predictions || []).forEach((p) => { if (p.closed && p.votes && p.votes[attId] === p.answer) n++; });
       return n;
+    },
+
+    // ---- Message Wall (for the groom) ------------------------------------
+    groom() { return this.state.attendees.find((a) => /groom/i.test(a.role || "")) || this.state.attendees[0] || null; },
+    isGroomActor() { const g = this.groom(); return !!(g && this.actorId() === g.id); },
+    addMessage(text, byId) {
+      text = (text || "").trim(); if (!text) return;
+      const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
+      this.update((s) => { s.messages = s.messages || []; s.messages.unshift({ id: "mg" + Math.random().toString(36).slice(2), ts: stamp(), by: byId || "", text: text }); });
+    },
+    unlockMessages() {
+      if (this.state.messagesUnlocked) return;
+      this.update((s) => { s.messagesUnlocked = true; this.chron(s, "🎬", "The closing ceremony unlocked the Message Wall for the groom!"); });
     },
 
     // ---- Card games -------------------------------------------------------

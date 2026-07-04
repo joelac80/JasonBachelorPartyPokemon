@@ -651,6 +651,45 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .poster-photo figcaption { padding: 6px 10px; font-size: 13px; color: var(--ink); }
 .photo-preview { width: 100%; max-height: 260px; object-fit: contain; border-radius: 10px; background: #000; }
 .poster-photo { cursor: pointer; }
+/* message wall */
+.mw-locked { text-align: center; background: #f3ecff; border: 2px dashed #7a2ff2; border-radius: 16px; padding: 28px 16px; }
+.mw-lock-emoji { font-size: 54px; }
+.mw-lock-title { font-family: var(--pixel); font-size: 16px; color: #7a2ff2; margin: 8px 0; }
+.mw-form { display: flex; flex-direction: column; gap: 8px; }
+.mw-form textarea.in { width: 100%; resize: vertical; }
+.mw-list { display: flex; flex-direction: column; gap: 10px; }
+.mw-card { background: var(--panel); border: 2px solid var(--line); border-left: 5px solid var(--pokered); border-radius: 12px; padding: 12px 14px; }
+.mw-text { font-size: 15px; font-style: italic; }
+.mw-from { text-align: right; font-weight: 800; margin-top: 6px; color: var(--ink-dim); }
+/* closing-ceremony cinematic outro */
+.outro { position: fixed; inset: 0; z-index: 400; background: radial-gradient(circle at 50% 30%, #10233b, #05070f); overflow: hidden; color: #fff; }
+.outro.out { animation: outroFade .5s ease forwards; }
+@keyframes outroFade { to { opacity: 0; visibility: hidden; } }
+.outro-skip { position: absolute; top: 14px; right: 14px; z-index: 5; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); border-radius: 999px; padding: 6px 14px; font-weight: 700; cursor: pointer; }
+.outro-credits { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 24px; text-align: center; animation: outroScroll linear forwards; }
+@keyframes outroScroll { from { transform: translateY(100vh); } to { transform: translateY(-115%); } }
+.outro-title { font-family: var(--pixel); font-size: clamp(24px, 7vw, 44px); color: #ffcb05; text-shadow: 3px 3px 0 rgba(0,0,0,.4); }
+.outro-sub { font-family: var(--pixel); font-size: 14px; color: #8fd0e6; }
+.outro-member { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.outro-mon { width: 74px; height: 74px; image-rendering: pixelated; }
+.outro-mem-name { font-family: var(--pixel); font-size: 17px; }
+.outro-mem-role { font-size: 12px; color: #a9b6c8; text-transform: uppercase; letter-spacing: .5px; }
+.outro-mem-stats { font-size: 13px; color: #d7e3f2; }
+.outro-mem-tro { font-size: 18px; }
+.outro-rain { position: absolute; top: -90px; image-rendering: pixelated; opacity: .92; animation: outroRain linear forwards; }
+.outro-rain.ball { border-radius: 50%; border: 2px solid #111; background: linear-gradient(#ee1515 0 46%,#111 46% 54%,#fff 54% 100%); }
+@keyframes outroRain { 0% { transform: translateY(-90px) rotate(0); } 100% { transform: translateY(120vh) rotate(360deg); } }
+.outro-sendoff { position: relative; z-index: 3; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px; }
+.outro-groom-mon { width: 160px; height: 160px; image-rendering: pixelated; filter: drop-shadow(0 10px 12px rgba(0,0,0,.5)); animation: hallPop .7s cubic-bezier(.2,1.5,.4,1) forwards; }
+.outro-sendoff-l { font-family: var(--pixel); font-size: 13px; color: #8fd0e6; letter-spacing: 2px; }
+.outro-groom-name { font-family: var(--pixel); font-size: clamp(28px, 9vw, 56px); color: #ffcb05; text-shadow: 3px 3px 0 #2e8b3d, 6px 6px 0 rgba(0,0,0,.3); }
+.outro-groom-stats { font-size: 15px; color: #eaf4ff; }
+.outro-sendoff-msg { font-weight: 800; font-size: 17px; margin: 6px 0 12px; }
+@keyframes hallPop { to { opacity: 1; transform: scale(1); } }
+/* unlock pop-up */
+.unlock-modal { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.unlock-emoji { font-size: 52px; }
+.unlock-title { font-family: var(--pixel); font-size: 20px; color: #2e8b3d; text-shadow: 2px 2px 0 #ffcb05; }
 .poster-photo-react { padding: 4px 10px 8px; font-size: 13px; color: var(--ink-dim); }
 /* photo detail modal */
 .photo-detail { display: flex; flex-direction: column; gap: 10px; }
