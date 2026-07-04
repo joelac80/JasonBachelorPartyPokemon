@@ -43,7 +43,7 @@
       el("div", { class: "toolbar" }, [
         el("button", { class: "btn primary", onClick: function () {
           const a = Store.attendee(sel.value), by = a ? a.name : "";
-          const entry = { id: "ph" + Math.random().toString(36).slice(2) + stamp().toString(36), ts: stamp(), img: dataUri, caption: cap.value.trim(), by: by };
+          const entry = { id: "ph" + Math.random().toString(36).slice(2) + stamp().toString(36), ts: stamp(), img: dataUri, caption: cap.value.trim(), by: by, loggedBy: Store.actorId() || undefined };
           Store.addPhoto(entry);
           if (window.Sync && Sync.sharePhoto) Sync.sharePhoto(entry);
           if (window.SFX && SFX.win) SFX.win();

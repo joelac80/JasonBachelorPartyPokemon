@@ -65,6 +65,7 @@
         { r: null, e: "👑💩", t: "Best & Worst President", d: "Most times President — and most times stuck as the Asshole — at the Card Table." },
         { r: null, e: "♠️", t: "Euchre Champ", d: "Most Euchre wins." },
         { r: null, e: "🍾🍺", t: "Drink awards", d: "First Sip, Thirstiest, and a champion for each drink kind — from the Drink Tracker." },
+        { r: null, e: "📋", t: "Scorekeeper", d: "Most moments logged — whoever does the work of tracking the weekend. Every action is stamped with who recorded it (set your identity via “You are” in Settings)." },
         { r: "roster", e: "👤", t: "Trainer profiles", d: "Tap ⓘ on a Squad card (or any leaderboard name) for anyone’s full profile — their Pokémon, team standing, badges and stats. Every trophy above shows on the Home hub, the Badges case, and the Poster." },
       ],
     },

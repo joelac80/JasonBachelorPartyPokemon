@@ -50,6 +50,7 @@
       stat(wins + "–" + losses, "Battle W–L"),
       stat(helpsN, "Assists"),
       stat(masterN, "Master catches"),
+      stat(Store.logCount(attId), "📋 Logged"),
     ]);
 
     const troRow = trophies.length

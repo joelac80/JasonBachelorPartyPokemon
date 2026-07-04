@@ -283,15 +283,31 @@
       if (first) { const a = this.attendee(first.trainer); if (a) out.push({ emoji: "🍾", title: "First Sip", holder: a.name, sub: "first drink of the weekend" }); }
       const thirst = this._topAttendee((id) => this.drinkCount(id));
       if (thirst) out.push({ emoji: "🍺", title: "Thirstiest", holder: thirst.a.name, sub: thirst.n + " drinks" });
+      const keeper = this._topAttendee((id) => this.logCount(id));
+      if (keeper) out.push({ emoji: "📋", title: "Scorekeeper", holder: keeper.a.name, sub: keeper.n + " moments logged" });
       return out;
     },
 
     // ---- Chronicle + Drinks ----------------------------------------------
+    // Who's operating this phone (the scorekeeper) — the signed-in trainer.
+    // Reads from Sync's local "me" so it works offline too. "" if not set.
+    actorId() { return (window.Sync && Sync.getMe && Sync.getMe()) || ""; },
+
     // Push a chronicle moment INSIDE an existing update(s). Newest first.
-    chron(s, icon, text) {
+    // Auto-stamps who logged it (the actor) unless `by` is given explicitly.
+    chron(s, icon, text, by) {
       s.chronicle = s.chronicle || [];
-      s.chronicle.unshift({ ts: (function () { try { return Date.now(); } catch (_) { return 0; } })(), icon: icon, text: text });
+      const who = (by !== undefined ? by : this.actorId()) || undefined;
+      s.chronicle.unshift({ ts: (function () { try { return Date.now(); } catch (_) { return 0; } })(), icon: icon, text: text, by: who });
       if (s.chronicle.length > 500) s.chronicle.length = 500;
+    },
+
+    // How many moments a trainer has logged (scorekeeping) — chronicle + photos.
+    logCount(attId) {
+      let n = 0;
+      (this.state.chronicle || []).forEach((c) => { if (c.by === attId) n++; });
+      (this.state.photos || []).forEach((p) => { if (p.loggedBy === attId) n++; });
+      return n;
     },
     // One-off chronicle entry from a view.
     logEvent(icon, text) { this.update((s) => { this.chron(s, icon, text); }); },
