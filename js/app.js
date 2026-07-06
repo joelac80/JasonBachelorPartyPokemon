@@ -83,6 +83,43 @@
     });
   }
 
+  // ---- PWA: service worker + notifications --------------------------------
+  // iPhones only support web notifications for Home-Screen-installed apps
+  // (iOS 16.4+), and Android Chrome requires the service-worker path — so all
+  // notifications route through the registration, not new Notification().
+  if ("serviceWorker" in navigator) {
+    try { navigator.serviceWorker.register("sw.js"); } catch (_) {}
+  }
+  function showNote(title, body) {
+    const opts = { body: body, icon: "assets/icon-192.png", badge: "assets/icon-192.png", tag: "bachhub" };
+    const fallback = () => { try { new Notification(title, opts); } catch (_) {} };
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+      navigator.serviceWorker.getRegistration()
+        .then((reg) => { if (reg && reg.showNotification) reg.showNotification(title, opts); else fallback(); })
+        .catch(fallback);
+    } else fallback();
+  }
+  function notify(title, body) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      if (document.visibilityState === "visible") return;   // in-app modal covers foreground
+      showNote(title, body);
+    } catch (_) {}
+  }
+  window.AppNotify = {
+    supported() { return "Notification" in window; },
+    installed() { return (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true; },
+    permission() { return ("Notification" in window) ? Notification.permission : "unsupported"; },
+    request(cb) {
+      try {
+        const p = Notification.requestPermission((r) => cb && cb(r));
+        if (p && p.then) p.then((r) => cb && cb(r));
+      } catch (_) { cb && cb("unsupported"); }
+    },
+    // Delayed test so you can background the app and see it arrive.
+    test() { setTimeout(() => { try { showNote("🔔 It works!", "Notifications are live — see you at the lake."); } catch (_) {} }, 4000); },
+  };
+
   Router.start();
 
   // Optional live sync — connects only if a room was configured + enabled.
@@ -99,15 +136,6 @@
       });
     }
     Sync.init();
-
-    // Phone notification (works best when the app is added to the home screen).
-    function notify(title, body) {
-      try {
-        if (!("Notification" in window) || Notification.permission !== "granted") return;
-        if (document.visibilityState === "visible") return;   // don't double up with the in-app modal
-        new Notification(title, { body: body, icon: "assets/favicon.svg", tag: "bachhub-battle" });
-      } catch (_) {}
-    }
 
     // Incoming battle challenge → prompt to accept anywhere in the app.
     const el = U.el;

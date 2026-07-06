@@ -174,6 +174,32 @@
       statusEl.textContent = state === "live" && msg ? "● Live — " + msg : (label[state] || state);
     });
 
+    // ---- phone notifications (status + explicit enable/test) ----
+    const noteStatus = el("div", { class: "sync-status" });
+    function paintNote() {
+      const A = window.AppNotify;
+      const p = A ? A.permission() : "unsupported";
+      const ios = /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+      let txt, cls;
+      if (p === "granted") { txt = "🔔 Notifications enabled" + (A.installed() ? " (installed app)" : ""); cls = "live"; }
+      else if (p === "denied") { txt = "🔕 Blocked — allow notifications for this site in your phone's browser settings"; cls = "error"; }
+      else if (p === "unsupported") {
+        txt = ios ? "🔕 iPhone: tap Share → Add to Home Screen, then open from the new icon and enable here"
+                  : "🔕 Notifications aren't supported in this browser";
+        cls = "error";
+      } else { txt = "🔔 Notifications off — tap Enable"; cls = "off"; }
+      noteStatus.className = "sync-status " + cls;
+      noteStatus.textContent = txt;
+    }
+    paintNote();
+    const noteBtns = el("div", { class: "toolbar" }, [
+      el("button", { class: "btn subtle sm", onClick: () => { if (window.AppNotify) AppNotify.request(() => paintNote()); } }, "🔔 Enable notifications"),
+      el("button", { class: "btn subtle sm", onClick: () => {
+        if (!window.AppNotify || AppNotify.permission() !== "granted") { alert("Enable notifications first."); return; }
+        AppNotify.test(); toast("Test fires in 4s — switch to another app to see it");
+      } }, "Send a test"),
+    ]);
+
     const enableBtn = el("button", { class: "btn primary" });
     function paintBtn() {
       const on = Sync.getConf().enabled;
@@ -210,6 +236,10 @@
         el("label", { class: "field" }, [el("span", {}, "Your name"), nameIn]),
       ]),
       el("div", { class: "toolbar" }, [enableBtn, saveBtn]),
+      el("h2", { class: "section-title" }, "🔔 Phone alerts"),
+      el("p", { class: "hint" }, "Get pinged when you're challenged or a battle starts. iPhone REQUIRES the app on your Home Screen first (Share → Add to Home Screen), opened from that icon."),
+      noteStatus,
+      noteBtns,
       el("details", { class: "sync-help" }, [
         el("summary", {}, "How to join (every guest)"),
         el("ol", { class: "sync-steps" }, [
