@@ -157,7 +157,7 @@
     const c = Sync.getConf();
 
     const cfgIn = el("textarea", { class: "in mono", rows: 5,
-      placeholder: 'Paste your Firebase config here…\n{ "apiKey": "…", "projectId": "…", … }' });
+      placeholder: "Preloaded with the party's project (" + c.projectId + ") — leave blank.\nPaste a firebaseConfig here only to override it." });
     if (c.config) cfgIn.value = JSON.stringify(c.config, null, 2);
     const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. jason2026)", value: c.room });
     const nameIn = el("input", { class: "in", placeholder: "Your name (shown on updates)", value: c.name });
@@ -202,9 +202,8 @@
 
     return el("section", { class: "settings-block" }, [
       el("h2", { class: "section-title" }, "🔗 Live Sync (Firestore)"),
-      el("p", { class: "hint" }, "Off by default — the app runs fully local. Turn this on to share ONE live scoreboard across phones: everyone joins the same room code and sees the same catches, scores and votes in real time."),
+      el("p", { class: "hint" }, "Off by default — the app runs fully local. Turn this on to share ONE live scoreboard across phones. The party's Firebase project is built in, so joining takes three taps: room code → your trainer → Connect."),
       statusEl,
-      el("label", { class: "field" }, [el("span", {}, "Firebase config"), cfgIn]),
       el("div", { class: "settings-grid" }, [
         el("label", { class: "field" }, [el("span", {}, "Room code (shared by all)"), roomIn]),
         el("label", { class: "field" }, [el("span", {}, "You are (your trainer)"), meSel]),
@@ -212,15 +211,18 @@
       ]),
       el("div", { class: "toolbar" }, [enableBtn, saveBtn]),
       el("details", { class: "sync-help" }, [
-        el("summary", {}, "How to set this up (one-time)"),
+        el("summary", {}, "How to join (every guest)"),
         el("ol", { class: "sync-steps" }, [
-          el("li", {}, "Firebase console → create/pick a project → add a Web App."),
-          el("li", {}, "Build → Firestore Database → Create (production mode)."),
-          el("li", {}, "Build → Authentication → Sign-in method → enable Anonymous."),
-          el("li", {}, "Firestore → Rules → paste the rules from SYNC.md in the repo → Publish."),
-          el("li", {}, "Copy the firebaseConfig object into the box above, pick a shared room code, then Connect & sync."),
-          el("li", {}, "On every other phone: open the app → Settings → paste the SAME config + room code → Connect."),
+          el("li", {}, "Open the app link on your phone (Add to Home Screen for the best experience)."),
+          el("li", {}, "Type the shared room code above."),
+          el("li", {}, "Pick YOUR trainer under “You are”."),
+          el("li", {}, "Tap Connect & sync — the Poké Ball in the top bar turns green when you're live."),
         ]),
+      ]),
+      el("details", { class: "sync-help" }, [
+        el("summary", {}, "Advanced: use a different Firebase project"),
+        el("p", { class: "hint" }, "The app ships pointed at the party's project. Paste a different firebaseConfig to override (blank = use the built-in one). One-time project setup lives in SYNC.md."),
+        el("label", { class: "field" }, [el("span", {}, "Firebase config override"), cfgIn]),
       ]),
     ]);
   }

@@ -13,6 +13,19 @@
     "https://www.gstatic.com/firebasejs/" + SDK_VER + "/firebase-firestore-compat.js",
   ];
 
+  // The party's Firebase project, baked in so guests only enter a room code.
+  // A web config is a public identifier, not a secret — access is controlled
+  // by the Firestore security rules (see SYNC.md). A pasted config in
+  // Settings still overrides this (e.g. to point at a different project).
+  const DEFAULT_CONFIG = {
+    apiKey: "AIzaSyBRk2WxgCNUYbbf39TPwmy1KVd2TldxJyE",
+    authDomain: "jason-bach-party.firebaseapp.com",
+    projectId: "jason-bach-party",
+    storageBucket: "jason-bach-party.firebasestorage.app",
+    messagingSenderId: "466012282050",
+    appId: "1:466012282050:web:ce1619ba0dc7c1a385ef5b",
+  };
+
   let conf = load();                 // { config, room, name, me, enabled }
   let app = null, db = null, ref = null, unsub = null;
   let applying = false;              // suppress echo while applying a remote doc
@@ -72,7 +85,7 @@
   }
 
   async function connect() {
-    const cfg = conf.config, room = (conf.room || "").trim();
+    const cfg = conf.config || DEFAULT_CONFIG, room = (conf.room || "").trim();
     if (!cfg || !cfg.projectId) { setStatus("error", "Add your Firebase config first."); return; }
     if (!room) { setStatus("error", "Pick a room code first."); return; }
     setStatus("connecting", "Connecting…");
@@ -202,13 +215,22 @@
 
   window.Sync = {
     init() { if (conf.enabled && conf.config && conf.room) connect(); },
-    getConf() { return { config: conf.config, room: conf.room || "", name: conf.name || "", enabled: !!conf.enabled }; },
+    getConf() {
+      return { config: conf.config, room: conf.room || "", name: conf.name || "", enabled: !!conf.enabled,
+        usingDefault: !conf.config, projectId: (conf.config || DEFAULT_CONFIG).projectId };
+    },
     isSupported() { return true; },
     // Save config/room/name from the Settings form (does not auto-enable).
+    // Leaving the config blank means "use the party's baked-in project".
     save(rawConfig, room, name) {
-      const cfg = parseConfig(rawConfig);
-      if (!cfg || !cfg.projectId) return { ok: false, error: "That doesn't look like a Firebase config (no projectId)." };
-      conf.config = cfg; conf.room = (room || "").trim(); conf.name = (name || "").trim();
+      if (rawConfig && String(rawConfig).trim()) {
+        const cfg = parseConfig(rawConfig);
+        if (!cfg || !cfg.projectId) return { ok: false, error: "That doesn't look like a Firebase config (no projectId)." };
+        conf.config = cfg;
+      } else {
+        conf.config = null;   // fall back to DEFAULT_CONFIG
+      }
+      conf.room = (room || "").trim(); conf.name = (name || "").trim();
       persist();
       return { ok: true };
     },

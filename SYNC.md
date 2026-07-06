@@ -12,18 +12,27 @@ a Firestore document so multiple phones can share one live scoreboard.
   host drives the scoreboard and others mostly watch; simultaneous edits to the
   same thing can clobber. Not a CRDT.
 
-## One-time setup (≈5 minutes)
+## Joining (every guest — no setup)
 
-1. Go to the [Firebase console](https://console.firebase.google.com/) and
-   create a project (or reuse one). Add a **Web App** (`</>`).
+The party's Firebase project (`jason-bach-party`) is **baked into the app**
+(`js/sync.js` → `DEFAULT_CONFIG`), so guests never touch a config:
+
+1. Open the app link → **Settings → Live Sync**.
+2. Type the shared **room code**, pick **your trainer** under "You are".
+3. Tap **Connect & sync** — the top-bar Poké Ball turns green when live.
+
+## One-time project setup (already done for `jason-bach-party`)
+
+Kept for reference / pointing the app at a different project:
+
+1. [Firebase console](https://console.firebase.google.com/) → create a project →
+   add a **Web App** (`</>`).
 2. **Build → Firestore Database → Create database** (production mode, any region).
 3. **Build → Authentication → Get started → Sign-in method → enable Anonymous.**
    (The app signs each device in silently; the rules below require it.)
 4. **Firestore → Rules**, paste the rules below, click **Publish**.
-5. In the app: **Settings → Live Sync** → paste your `firebaseConfig` object,
-   choose a shared **room code**, enter your name, tap **Connect & sync**.
-6. On every other phone: open the app → **Settings** → paste the **same** config
-   and room code → **Connect**.
+5. Either replace `DEFAULT_CONFIG` in `js/sync.js`, or paste the new
+   `firebaseConfig` into **Settings → Live Sync → Advanced** on each device.
 
 ## Security rules (Anonymous auth — recommended)
 
@@ -66,8 +75,8 @@ service cloud.firestore {
 ## Notes
 
 - The Firebase **web config is not a secret** (it's a public identifier); security
-  comes from the rules above. It's kept out of this repo and pasted per-device on
-  purpose, since the repo is public.
+  comes from the rules above. That's why it's safe to bake `DEFAULT_CONFIG` into
+  this public repo — the rules (anonymous auth required) are the actual gate.
 - Turning sync **off** (Disconnect) drops back to pure local mode instantly.
 - Sub-channels (`presence`, `challenges`, `live`, `photos`) are separate
   subcollections so heartbeats, live battles, and photos never bloat the state
