@@ -254,6 +254,7 @@
       if (a) conf.name = a.name;
       persist();
       writePresence();
+      try { window.dispatchEvent(new CustomEvent("sync-me")); } catch (_) {}
       return conf.name;
     },
     presence() { return presenceList.slice(); },
