@@ -29,6 +29,7 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { overflow-x: hidden; }   /* one wide element must never gutter the whole app */
 body {
   background:
     radial-gradient(circle at 15% 12%, rgba(42,117,187,0.10), transparent 22%),
@@ -387,7 +388,9 @@ body {
 .safari-stat-l { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 1px; }
 .safari-enc { margin-bottom: 8px; }
 .safari-idle { text-align: center; background: linear-gradient(#bfe3ff 0 55%, #a6d88f 55%); border: 3px solid var(--ink); border-radius: var(--radius); padding: 26px 16px; box-shadow: var(--shadow); }
-.safari-grass { font-size: 30px; letter-spacing: 6px; margin-bottom: 14px; }
+.safari-idle.walk { position: relative; overflow: hidden; padding: 44px 16px 58px; }
+.safari-grass { position: absolute; bottom: 4px; left: 0; right: 0; display: flex; justify-content: center; gap: 14px; font-size: 28px; }
+.safari-grass span { display: inline-block; }
 .safari-card { background: linear-gradient(#bfe3ff 0 55%, #a6d88f 55%); border: 3px solid var(--ink); border-radius: var(--radius); padding: 18px 16px; text-align: center; box-shadow: var(--shadow); }
 
 /* wild-battle encounter scene */
@@ -452,8 +455,8 @@ body {
 .safari-payout { font-weight: 900; font-size: 18px; color: #b06a00; background: #fff7d6; border-radius: 10px; padding: 10px; margin-bottom: 12px; }
 .safari-payout.miss { color: var(--danger); background: #fdeaea; }
 /* team */
-.safari-team { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-.safari-team-slot { aspect-ratio: 1; border-radius: 12px; border: 2px dashed var(--line); background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; padding: 4px; }
+.safari-team { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.safari-team-slot { min-width: 0; aspect-ratio: 1; border-radius: 12px; border: 2px dashed var(--line); background: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; padding: 4px; }
 .safari-team-slot.empty { color: var(--ink-dim); font-size: 22px; cursor: default; }
 .safari-team-slot.filled { border-style: solid; border-color: var(--pokeyellow); background: #fff7d6; }
 .safari-team-slot.filled img { width: 100%; max-width: 54px; image-rendering: pixelated; }
