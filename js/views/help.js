@@ -36,7 +36,7 @@
     {
       title: "🔗 Play together (Live Sync)",
       items: [
-        { r: "settings", e: "🔗", t: "Turn on Live Sync", d: "Optional. Settings → Live Sync: paste your Firebase config, pick a shared room code, and sign in as your trainer. Now everyone’s phones share one live scoreboard. Off = fully local. (Setup steps are in SYNC.md.)" },
+        { r: "settings", e: "🔗", t: "Turn on Live Sync", d: "Optional. Settings → Live Sync: type the shared room code, pick your trainer, tap Connect — the party's Firebase project is built in, no config needed. Now everyone’s phones share one live scoreboard. Off = fully local." },
         { r: null, e: "🟢", t: "Green Poké Ball", d: "The Poké Ball in the top bar glows green when your phone is live-synced to the room (grey/hidden when local)." },
         { r: "battle", e: "🥊", t: "Trainers here now", d: "Once synced, the Battle Arena shows who else is signed in — tap ⚔ Challenge to battle their phone." },
         { r: null, e: "👀", t: "Challenge & spectate", d: "Get challenged → accept → both battle. Everyone else gets a “Watch” alert to spectate, and a LIVE banner on Home lets latecomers jump in." },
