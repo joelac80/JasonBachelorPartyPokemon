@@ -162,6 +162,23 @@
           ]),
         ]))));
     }
+    // Type Gym Leaders — one crown per Pokémon type, from the Safari.
+    const typeGyms = Store.typeLeaders().filter((l) => l.n > 0);
+    if (typeGyms.length) {
+      root.appendChild(el("h2", { class: "section-title" }, "⚡ Type Gym Leaders"));
+      root.appendChild(el("div", { class: "gym-lead-grid" }, typeGyms.map((l) => {
+        const ico = U.energyIcon(l.type);
+        return el("div", { class: "gym-lead held", onClick: () => window.Profile && Profile.open(l.holderId) }, [
+          ico ? el("img", { class: "gym-lead-ico", src: ico, alt: l.type }) : null,
+          el("div", { class: "gym-lead-txt" }, [
+            el("div", { class: "gym-lead-t" }, l.type.charAt(0).toUpperCase() + l.type.slice(1) + " Gym"),
+            el("div", { class: "gym-lead-holder" }, l.holder),
+            el("div", { class: "gym-lead-n" }, l.n + " caught"),
+          ]),
+        ]);
+      })));
+    }
+
     const topPhoto = Store.mostReactedPhoto && Store.mostReactedPhoto();
     if (topPhoto) {
       root.appendChild(el("h2", { class: "section-title" }, "📸 Photo of the Weekend"));
