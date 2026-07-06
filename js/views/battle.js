@@ -45,14 +45,79 @@
     ]);
   }
 
+  // Ordered Pokémon list for a trainer's duel picker: team of 6 first, then
+  // the rest of their caught dex. Everyone at least has their partner.
+  function duelPool(attId) {
+    const t = (Store.state.pokedex.trainers || {})[attId] || {};
+    const ids = (t.team || []).filter(Boolean).slice();
+    Object.keys(t.caught || {}).map(Number).forEach((id) => { if (ids.indexOf(id) < 0) ids.push(id); });
+    if (!ids.length) { const a = Store.attendee(attId); if (a && a.favoriteId) ids.push(a.favoriteId); }
+    return ids;
+  }
+
   function view(root) {
     const sideA = [], sideB = [];
     let eventLabel = "";
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "⚔️ Battle Arena"),
-      el("p", { class: "page-sub" }, "Set any matchup — 1v1 or 2v2 — tag the event, and battle. Winner's bragging rights only."),
+      el("p", { class: "page-sub" }, "Fight a real turn-based duel with your caught Pokémon, or call a quick winner for any event matchup."),
     ]));
+
+    // ---- Duel Mode: real turn-based battles at Lv50 ----
+    const duel = { a: { attId: "", monId: 0 }, b: { attId: "", monId: 0 } };
+    const duelHost = el("div", { class: "duel-setup" });
+    root.appendChild(el("h2", { class: "section-title" }, "🎮 Pokémon Duel"));
+    root.appendChild(el("p", { class: "hint" },
+      "Turn-based, every Pokémon at Lv50. 🧪 Potion = 3 sips to heal · 🍺 Liquid Courage = finish half your drink for a guaranteed crit."));
+    root.appendChild(duelHost);
+
+    function duelSide(side, label, cls) {
+      const d = duel[side];
+      const sel = el("select", { class: "in" }, [el("option", { value: "" }, "Pick a trainer…")]
+        .concat(Store.state.attendees.map((a) => el("option", { value: a.id }, a.name))));
+      sel.value = d.attId;
+      sel.addEventListener("change", () => { d.attId = sel.value; d.monId = duelPool(d.attId)[0] || 0; renderDuel(); });
+      const kids = [el("div", { class: "arena-side-title" }, label), sel];
+      if (d.attId) {
+        const pool = duelPool(d.attId);
+        kids.push(el("div", { class: "duel-pick-row" }, pool.map((id) => {
+          const st = window.Duel ? Duel.statsFor(id) : { name: "#" + id, hpMax: 0 };
+          const src = (window.DEX_SPRITES && DEX_SPRITES[id]) || Store.sprite(id);
+          return el("button", { class: "duel-pick" + (d.monId === id ? " on" : ""), title: st.name,
+            onClick: () => { d.monId = id; renderDuel(); } }, [
+            src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
+          ]);
+        })));
+        if (d.monId && window.Duel) {
+          const st = Duel.statsFor(d.monId);
+          kids.push(el("div", { class: "duel-pick-meta" },
+            st.name + " · Lv50 · " + st.hpMax + " HP · " + st.moves.map((m) => m.name).join(" / ")));
+        }
+      }
+      return el("div", { class: "arena-side " + cls }, kids);
+    }
+
+    function renderDuel() {
+      duelHost.innerHTML = "";
+      duelHost.appendChild(el("div", { class: "arena-grid" }, [
+        duelSide("a", "🔵 Blue Corner", "blue"),
+        el("div", { class: "arena-vs" }, "VS"),
+        duelSide("b", "🔴 Red Corner", "red"),
+      ]));
+      duelHost.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+        el("button", { class: "btn spin-btn", onClick: () => {
+          if (!duel.a.attId || !duel.b.attId || !duel.a.monId || !duel.b.monId) { alert("Pick both trainers and their Pokémon first."); return; }
+          if (!window.Duel) return;
+          Duel.start({ a: duel.a, b: duel.b, title: (eventLabel || "").trim() || "Duel",
+            onResult: () => { renderLog(); } });
+        } }, "🎮 START DUEL"),
+      ]));
+    }
+    renderDuel();
+
+    root.appendChild(el("h2", { class: "section-title" }, "📣 Quick Call (referee mode)"));
+    root.appendChild(el("p", { class: "hint" }, "For real-world events — set the matchup, then tap who won."));
 
     // ---- Who's here now (live sync): challenge a present trainer's phone ----
     if (window.Sync) {

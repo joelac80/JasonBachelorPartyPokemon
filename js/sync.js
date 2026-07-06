@@ -284,7 +284,7 @@
       liveRef.set({
         id: newId("lb"), aName: info.aName || "", bName: info.bName || "",
         aClient: info.aClient || "", bClient: info.bClient || "", event: info.event || "",
-        state: "live", winner: "", t: nowMs(),
+        mode: info.mode || "", state: "live", winner: "", t: nowMs(),
       }).catch(function () {});
     },
     finishLiveBattle(winner) {
