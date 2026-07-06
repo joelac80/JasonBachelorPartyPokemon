@@ -61,43 +61,62 @@
   }
 
   // ---- Overworld region map (replaces the tile grid) ----------------------
-  // Locations placed in a 100 x 64 viewBox; the SVG scales to fit any width.
+  // Nine landmarks in a 100 x 64 viewBox. Single-destination landmarks link
+  // straight through (r); multi-building "towns" (sub) open a town menu.
   const MAP = [
-    { r: "roster",       e: "🎴", t: "Squad",     x: 12, y: 50 },
-    { r: "drinks",       e: "🍺", t: "Drinks",    x: 24, y: 38 },
-    { r: "cards",        e: "🃏", t: "Card Table",x: 20, y: 22 },
-    { r: "challenges",   e: "🎣", t: "The Dock",  x: 30, y: 26 },
-    { r: "battle",       e: "⚔️", t: "Battle",    x: 40, y: 46 },
-    { r: "safari",       e: "🔴", t: "Safari",    x: 49, y: 11 },
-    { r: "brackets",     e: "🥊", t: "Brackets",  x: 47, y: 25 },
-    { r: "jeopardy",     e: "❓", t: "Jeopardy",  x: 58, y: 38 },
-    { r: "predictions",  e: "🔮", t: "Oracle",    x: 62, y: 20 },
-    { r: "superlatives", e: "🗳️", t: "Awards",    x: 58, y: 55 },
-    { r: "badges",       e: "🏅", t: "Badges",    x: 71, y: 44 },
-    { r: "hall",         e: "🌿", t: "Hall",      x: 72, y: 24 },
-    { r: "victoryroad",  e: "🏆", t: "Victory Rd",x: 85, y: 34 },
-    { r: "messages",     e: "💌", t: "Messages",  x: 78, y: 8 },
-    { r: "ceremony",     e: "👑", t: "Champion",  x: 87, y: 15 },
-    { r: "timeline",     e: "📜", t: "Weekend Log",x: 84, y: 50 },
-    { r: "stats",        e: "📊", t: "Trip Stats", x: 76, y: 62 },
-    { r: "poster",       e: "🖼️", t: "Poster",    x: 70, y: 57 },
-    { r: "settings",     e: "⚙️", t: "Settings",  x: 10, y: 14 },
+    { id: "settings", r: "settings",    e: "⚙️", t: "Settings",        x: 8,  y: 10 },
+    { id: "lodge",    r: "roster",      e: "🎴", t: "The Lodge",       x: 13, y: 50 },
+    { id: "tavern",   r: "drinks",      e: "🍺", t: "Lakeside Tavern", x: 32, y: 33 },
+    { id: "safari",   r: "safari",      e: "🔴", t: "Safari Zone",     x: 52, y: 11 },
+    { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Rd",      x: 84, y: 40 },
+    { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
+      { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Any 1v1 or 2v2 — winner's team scores" },
+      { r: "brackets", e: "🥊", t: "Brackets",     d: "Run a tournament" },
+    ] },
+    { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
+      { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
+      { r: "predictions", e: "🔮", t: "Oracle",     d: "Call it before it happens" },
+      { r: "cards",       e: "🃏", t: "Card Table", d: "President, Euchre, King's Cup…" },
+      { r: "challenges",  e: "🎣", t: "The Dock",   d: "Catch of the Day challenges" },
+    ] },
+    { id: "fame", e: "🏅", t: "Hall of Fame", x: 67, y: 52, sub: [
+      { r: "badges",       e: "🏅", t: "Gym Badges",        d: "8 badges + the live trophies" },
+      { r: "superlatives", e: "🗳️", t: "Awards",            d: "Vote the superlatives" },
+      { r: "hall",         e: "🌿", t: "Hall of Bulbasaur", d: "The gallery wall" },
+      { r: "messages",     e: "💌", t: "Message Wall",      d: "Notes for the groom (sealed!)" },
+    ] },
+    { id: "summit", e: "👑", t: "The Summit", x: 89, y: 12, sub: [
+      { r: "ceremony", e: "👑", t: "Ceremony",    d: "Crown the champion + closing credits" },
+      { r: "timeline", e: "📜", t: "Weekend Log", d: "Every moment, attributed" },
+      { r: "stats",    e: "📊", t: "Trip Stats",  d: "Charts, Wrapped, exports" },
+      { r: "poster",   e: "🖼️", t: "Poster",      d: "The keepsake board" },
+    ] },
   ];
-  // Routes between locations, keyed by route name so the list survives edits.
   const MAP_PATHS = [
-    ["settings", "roster"], ["roster", "drinks"], ["drinks", "cards"], ["drinks", "challenges"], ["roster", "battle"],
-    ["battle", "safari"], ["battle", "brackets"], ["brackets", "jeopardy"], ["jeopardy", "predictions"],
-    ["jeopardy", "superlatives"], ["jeopardy", "badges"], ["badges", "hall"],
-    ["badges", "victoryroad"], ["superlatives", "victoryroad"], ["victoryroad", "ceremony"], ["ceremony", "messages"],
-    ["superlatives", "poster"], ["poster", "badges"], ["victoryroad", "timeline"], ["timeline", "poster"], ["timeline", "stats"],
+    ["settings", "lodge"], ["lodge", "tavern"], ["tavern", "safari"], ["tavern", "frontier"],
+    ["frontier", "gamecorner"], ["safari", "gamecorner"], ["frontier", "fame"],
+    ["gamecorner", "victory"], ["fame", "victory"], ["victory", "summit"],
   ];
 
+  // A town's menu of buildings.
+  function openTown(id) {
+    const n = MAP.find((m) => m.id === id);
+    if (!n || !n.sub) return;
+    if (window.SFX && SFX.blip) SFX.blip();
+    const body = el("div", { class: "town-menu" }, n.sub.map((sb) =>
+      el("a", { class: "town-item", href: "#/" + sb.r, onClick: () => ctrl.close() }, [
+        el("span", { class: "town-e" }, sb.e),
+        el("div", {}, [el("div", { class: "town-t" }, sb.t), el("div", { class: "town-d" }, sb.d)]),
+      ])));
+    const ctrl = Modal.open(n.e + " " + n.t, body, null, {});
+  }
+
   function overworld() {
-    const idx = {}; MAP.forEach((n) => (idx[n.r] = n));
+    const idx = {}; MAP.forEach((n) => (idx[n.id] = n));
     let s = '<svg viewBox="0 0 100 64" class="ow-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Region map">';
     s += '<rect x="0" y="0" width="100" height="64" fill="#a6d88f"/>';
     s += '<ellipse cx="31" cy="18" rx="17" ry="8.5" fill="#8fd0e6" stroke="#6fb8d0" stroke-width="0.5"/>';
-    [[5,40],[19,58],[52,60],[66,57],[81,20],[38,9],[97,44]].forEach((t) =>
+    [[5,40],[22,58],[45,60],[92,58],[78,20],[40,8],[97,30]].forEach((t) =>
       { s += '<circle cx="' + t[0] + '" cy="' + t[1] + '" r="2.1" fill="#5aa85a"/>'; });
     MAP_PATHS.forEach((pr) => {
       const p = idx[pr[0]], q = idx[pr[1]];
@@ -106,15 +125,27 @@
         '" stroke="#efe1ac" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 3.2"/>';
     });
     MAP.forEach((n) => {
-      s += '<a href="#/' + n.r + '" class="ow-node">';
-      s += '<circle cx="' + n.x + '" cy="' + n.y + '" r="4.7" fill="#ffffff" stroke="#1f2330" stroke-width="0.8"/>';
-      s += '<text x="' + n.x + '" y="' + (n.y + 0.3) + '" text-anchor="middle" dominant-baseline="central" font-size="4.6">' + n.e + '</text>';
-      s += '<text x="' + n.x + '" y="' + (n.y + 8) + '" text-anchor="middle" font-size="3" class="ow-label">' + n.t + '</text>';
-      s += '</a>';
+      const town = !!n.sub;
+      s += town
+        ? '<g class="ow-node" data-town="' + n.id + '" style="cursor:pointer">'
+        : '<a href="#/' + n.r + '" class="ow-node">';
+      const r = town ? 5.6 : 4.7;
+      s += '<circle cx="' + n.x + '" cy="' + n.y + '" r="' + r + '" fill="#ffffff" stroke="#1f2330" stroke-width="0.8"/>';
+      s += '<text x="' + n.x + '" y="' + (n.y + 0.3) + '" text-anchor="middle" dominant-baseline="central" font-size="' + (town ? 5.2 : 4.6) + '">' + n.e + '</text>';
+      if (town) {
+        s += '<circle cx="' + (n.x + 4.4) + '" cy="' + (n.y - 4.4) + '" r="2.3" fill="#e6352f" stroke="#fff" stroke-width="0.5"/>';
+        s += '<text x="' + (n.x + 4.4) + '" y="' + (n.y - 4.1) + '" text-anchor="middle" dominant-baseline="central" font-size="2.8" fill="#fff" font-weight="bold">' + n.sub.length + '</text>';
+      }
+      s += '<text x="' + n.x + '" y="' + (n.y + r + 3.4) + '" text-anchor="middle" font-size="3" class="ow-label">' + n.t + '</text>';
+      s += town ? '</g>' : '</a>';
     });
     s += '</svg>';
     const wrap = el("div", { class: "overworld" });
     wrap.innerHTML = s;
+    wrap.addEventListener("click", (e) => {
+      const g = e.target.closest && e.target.closest("[data-town]");
+      if (g) openTown(g.getAttribute("data-town"));
+    });
     return wrap;
   }
 

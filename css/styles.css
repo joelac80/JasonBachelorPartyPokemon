@@ -692,6 +692,15 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .unlock-modal { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .unlock-emoji { font-size: 52px; }
 .unlock-title { font-family: var(--pixel); font-size: 20px; color: #2e8b3d; text-shadow: 2px 2px 0 #ffcb05; }
+/* town menu (overworld landmarks with multiple buildings) */
+.town-menu { display: flex; flex-direction: column; gap: 8px; }
+.town-item { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; text-decoration: none; color: inherit; }
+.town-item:hover, .town-item:active { border-color: var(--pokered); }
+.town-e { font-size: 26px; line-height: 1; flex: none; }
+.town-t { font-weight: 800; font-size: 15px; }
+.town-d { font-size: 12px; color: var(--ink-dim); }
+/* brand shows your Pokémon when signed in */
+.brand-ball.mon img { width: 24px; height: 24px; image-rendering: pixelated; display: block; }
 .poster-photo-react { padding: 4px 10px 8px; font-size: 13px; color: var(--ink-dim); }
 /* photo detail modal */
 .photo-detail { display: flex; flex-direction: column; gap: 10px; }

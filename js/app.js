@@ -26,14 +26,31 @@
     .add("help", V.help);
   Router.setNotFound(V.home);
 
-  // Reflect party title into the header + document title.
+  // Brand: your Pokémon (sprite + name) when signed in as a trainer, else the
+  // party title. Evolving updates it live (currentForm is re-read on change).
   function syncTitle() {
     const t = (Store.state.party && Store.state.party.title) || "Bachelor Party HQ";
     document.title = t;
     const brand = document.getElementById("brand-title");
-    if (brand) brand.textContent = t;
+    const ball = document.querySelector(".brand-ball");
+    const me = window.Sync && Sync.getMe && Sync.getMe();
+    const a = me && Store.attendee(me);
+    if (!brand) return;
+    if (a) {
+      const f = Store.currentForm(a);
+      brand.textContent = f.name || a.name.split(" ")[0];
+      const spr = f.id && Store.sprite(f.id);
+      if (ball) {
+        if (spr) { ball.innerHTML = '<img src="' + spr + '" alt="">'; ball.classList.add("mon"); }
+        else { ball.textContent = "◓"; ball.classList.remove("mon"); }
+      }
+    } else {
+      brand.textContent = t;
+      if (ball) { ball.textContent = "◓"; ball.classList.remove("mon"); }
+    }
   }
   Store.subscribe(syncTitle);
+  window.addEventListener("sync-me", syncTitle);
   syncTitle();
 
   // Sound on/off toggle (retro SFX).
