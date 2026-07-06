@@ -32,6 +32,15 @@
   function trophiesFor(name) {
     return Store.liveTrophies().concat(Store.funSuperlatives()).filter((t) => t.holder === name).map((t) => t.emoji).join(" ");
   }
+  // Energy symbols for any type gyms this trainer holds.
+  function gymRow(attId) {
+    const gyms = Store.typeLeaders().filter((l) => l.holderId === attId && l.n > 0);
+    if (!gyms.length) return null;
+    return el("div", { class: "outro-gyms" }, gyms.map((l) => {
+      const ico = U.energyIcon(l.type);
+      return ico ? el("img", { class: "outro-gym-ico", src: ico, alt: l.type, title: l.type + " Gym Leader" }) : null;
+    }));
+  }
   function memberCard(a) {
     const f = Store.currentForm(a), spr = f.id ? Store.sprite(f.id) : "";
     const w = Store.wrapped(a.id), tro = trophiesFor(a.name);
@@ -41,6 +50,7 @@
       a.role ? el("div", { class: "outro-mem-role" }, a.role) : null,
       el("div", { class: "outro-mem-stats" }, statLine(w)),
       teamRow(w),
+      gymRow(a.id),
       tro ? el("div", { class: "outro-mem-tro" }, tro) : null,
     ]);
   }

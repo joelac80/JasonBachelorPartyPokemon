@@ -143,6 +143,19 @@
       poster.appendChild(el("div", { class: "trophy-strip" }, cards));
     }
 
+    // ---- type gym leaders ----
+    const gyms = Store.typeLeaders().filter((l) => l.n > 0);
+    if (gyms.length) {
+      poster.appendChild(el("h2", { class: "poster-section" }, "⚡ Type Gym Leaders"));
+      poster.appendChild(el("div", { class: "chip-row" }, gyms.map((l) => {
+        const ico = U.energyIcon(l.type);
+        return el("span", { class: "drink-chip" }, [
+          ico ? el("img", { class: "poster-gym-ico", src: ico, alt: l.type }) : null,
+          " " + l.holder + " ×" + l.n,
+        ]);
+      })));
+    }
+
     // ---- scorekeepers ----
     const keepers = Store.state.attendees.map((a) => ({ a: a, n: Store.logCount(a.id) })).filter((r) => r.n > 0).sort((x, y) => y.n - x.n);
     if (keepers.length) {
