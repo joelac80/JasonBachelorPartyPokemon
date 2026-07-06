@@ -63,11 +63,15 @@
         if (!Sync.isLive()) return;                       // only when a room is joined
         const me = Sync.myClientId();
         const others = (list || []).filter((p) => p.clientId !== me && p.attId);
+        const unsigned = (list || []).filter((p) => p.clientId !== me && !p.attId).length;
         hereHost.appendChild(el("h2", { class: "section-title" }, "🟢 Trainers here now"));
         if (!others.length) {
-          hereHost.appendChild(el("p", { class: "hint" }, "No one else is signed in yet — get the crew to open the app, join the room, and pick their trainer in Settings."));
+          hereHost.appendChild(el("p", { class: "hint" }, unsigned
+            ? "🔌 " + unsigned + " device" + (unsigned > 1 ? "s are" : " is") + " in the room but hasn't picked a trainer — Settings → “You are”."
+            : "No one else is signed in yet — get the crew to open the app, join the room, and pick their trainer in Settings."));
           return;
         }
+        if (unsigned) hereHost.appendChild(el("p", { class: "hint" }, "🔌 +" + unsigned + " device" + (unsigned > 1 ? "s" : "") + " connected without a trainer picked."));
         hereHost.appendChild(el("div", { class: "here-grid" }, others.map((p) => {
           const a = Store.attendee(p.attId);
           const src = a ? Store.sprite(Store.currentForm(a).id) : "";

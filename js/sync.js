@@ -39,7 +39,9 @@
   let presenceList = [];
   const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
-  const PRESENCE_TTL = 60000, HEARTBEAT = 25000;
+  // Generous TTL: phones suspend background tabs (heartbeats pause), so give
+  // people 3 minutes before they drop off the "here now" list.
+  const PRESENCE_TTL = 180000, HEARTBEAT = 25000;
 
   const clientId = (function () {
     let id = null;
@@ -145,6 +147,8 @@
       if (list.length) { applying = true; try { Store.mergePhotos(list); } finally { applying = false; } }   // upsert (adds + reaction/comment updates)
     }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
+    // Freshen our heartbeat the moment the tab comes back to the foreground.
+    try { document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") writePresence(); }); } catch (_) {}
   }
   function writePresence() {
     if (!myPresRef) return;
@@ -214,7 +218,9 @@
   Store.subscribe(function () { schedulePush(); });
 
   window.Sync = {
-    init() { if (conf.enabled && conf.config && conf.room) connect(); },
+    // Reconnect on load whenever a room was joined (config may be the baked-in
+    // default, so its absence must NOT block the reconnect).
+    init() { if (conf.enabled && conf.room) connect(); },
     getConf() {
       return { config: conf.config, room: conf.room || "", name: conf.name || "", enabled: !!conf.enabled,
         usingDefault: !conf.config, projectId: (conf.config || DEFAULT_CONFIG).projectId };
