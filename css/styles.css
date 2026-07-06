@@ -498,6 +498,8 @@ body {
 .safari-combo-note.broke { color: #b02a2a; }
 .safari-assist-note { font-family: var(--pixel); font-size: 12px; color: #2e7d46; margin-top: 4px; text-align: center; }
 .safari-teamup { font-family: var(--pixel); font-size: 11px; color: #2e7d46; text-align: center; margin: 2px 0 6px; }
+.safari-oneof { font-family: var(--pixel); font-size: 9px; padding: 3px 8px; border-radius: 999px; background: linear-gradient(105deg, #ffe9a8, #ffd34d); color: #7a5200; border: 1.5px solid #e6b800; white-space: nowrap; }
+.safari-legend-note { font-family: var(--pixel); font-size: 12px; color: #7a5200; background: linear-gradient(105deg, #fff6d8, #ffedb0); border: 2px solid #e6b800; border-radius: 10px; padding: 8px 10px; margin: 4px 0; text-align: center; }
 .vr-setup { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
 .safari-team-pts { font-family: var(--pixel); font-size: 11px; color: #b8860b; text-align: center; margin-top: 4px; }
 .sb-event.mini { background: #eef4ff; }

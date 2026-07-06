@@ -1,8 +1,11 @@
 /* safari.js — Pokédex Safari drinking game (per-trainer competition).
-   Pick who's catching, find a wild Pokémon (cool ones show up more but are
-   very hard to catch), then earn boosts by DOING things — each is a random
-   action you must perform; chicken out and you take a sip + forfeit that boost,
-   and ~20% of the time the wild one spooks and bolts (encounter over):
+   Encounter odds are near-flat (legendaries show up!), but catch rates are
+   drastically tiered: Common 55% → Legendary 4% base, and legendaries take
+   boosts at half strength — so landing one is a genuine celebration. Each
+   legendary is ONE OF ONE: first catch claims the only one in the region.
+   Earn boosts by DOING things — each is a random action you must perform;
+   chicken out and you take a sip + forfeit that boost, and the wild one may
+   spook and bolt (up to 50% for legendaries):
      • Dares      up to 3 × +20%
      • Berry      +15%   (also halves flee chance)
      • Squad rally +10%
@@ -80,15 +83,25 @@
     return Math.max(0.15, Math.min(0.5, s));
   }
 
-  // Base catch is low (very low for cool Pokémon); each challenge level +20%.
+  // Catch rates are DRASTICALLY tiered — commons are easy, legendaries are a
+  // 4%-base celebration (and boosts only work at half strength on them).
+  const TIER_BASE = { Common: 0.55, Evolved: 0.40, Strong: 0.25, Elite: 0.15, Legendary: 0.04 };
   function info(id) {
     const d = DEX[id] || { x: 60 }; const x = d.x, leg = !!d.leg;
-    let base = 0.6 - x / 500; base = Math.max(0.05, Math.min(0.6, base));
-    if (leg) base = Math.min(base, 0.06);
-    let sips = 1 + Math.round(x / 70); if (leg) sips += 2; sips = Math.min(7, Math.max(1, sips));
-    const flee = leg ? 0.06 : 0.12;
     const tier = leg ? "Legendary" : x >= 200 ? "Elite" : x >= 140 ? "Strong" : x >= 90 ? "Evolved" : "Common";
+    const base = TIER_BASE[tier];
+    let sips = 1 + Math.round(x / 70); sips = Math.min(7, Math.max(1, sips));
+    if (leg) sips = 8;                       // a legendary catch is a big payout
+    const flee = leg ? 0.06 : 0.12;
     return { name: d.n, x: x, leg: leg, base: base, sips: sips, flee: flee, tier: tier, color: TIER_COLOR[tier] };
+  }
+
+  // Legendaries are ONE OF ONE: once anyone in the room catches it, it's out
+  // of the wild pool for everyone. Returns the owner's attendee id, or "".
+  function legendaryOwner(id) {
+    const trs = P().trainers || {};
+    for (const tid in trs) { if (trs[tid].caught && trs[tid].caught[id]) return tid; }
+    return "";
   }
 
   // The ball reflects your odds: Poké → Great → Ultra → Master (100% = sure catch).
@@ -111,8 +124,14 @@
   function comboOf(id) { return (rec(id).combo || 0); }
   function comboBonus(id) { return Math.min(0.25, 0.05 * comboOf(id)); }
 
-  // Flatter weighting than before — cool Pokémon show up more often.
-  function weightFor(id) { const d = DEX[id]; let w = 1 / Math.pow(d.x, 0.55); if (d.leg) w *= 0.4; return w; }
+  // Near-flat encounter odds — cool Pokémon show up almost as often as commons;
+  // the drama lives in the catch rate, not the sighting. Claimed legendaries
+  // leave the wild pool entirely (one of one).
+  function weightFor(id) {
+    const d = DEX[id]; let w = 1 / Math.pow(d.x, 0.30);
+    if (d.leg) { if (legendaryOwner(id)) return 0; w *= 0.7; }
+    return w;
+  }
   function randomEncounter() {
     let total = 0; const cum = [];
     IDS.forEach((id) => { total += weightFor(id); cum.push([total, id]); });
@@ -139,10 +158,12 @@
     }
 
     // Effective catch chance = base + all active boosts (capped at 100%).
-    // A completed Master Ball dare is an outright guaranteed catch.
+    // Legendaries resist: boosts work at HALF strength on them, so even fully
+    // stacked they're ~65% — only the Master Ball dare guarantees one.
     function chanceFor(nfo) {
       if (masterDone) return 1;
-      return Math.min(1, nfo.base + 0.2 * level + (berryDone ? 0.15 : 0) + (rallyDone ? 0.10 : 0) + (helper ? 0.15 : 0) + comboBonus(active()));
+      const boosts = 0.2 * level + (berryDone ? 0.15 : 0) + (rallyDone ? 0.10 : 0) + (helper ? 0.15 : 0) + comboBonus(active());
+      return Math.min(1, nfo.base + boosts * (nfo.leg ? 0.5 : 1));
     }
 
     // Present a boost's random action. You then either do it or chicken out.
@@ -274,6 +295,7 @@
       const meta = el("div", { class: "safari-wild-meta" }, [
         el("span", { class: "safari-tier", style: { background: nfo.color } }, nfo.tier),
         el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
+        nfo.leg ? el("span", { class: "safari-oneof" }, "✨ ONE OF ONE") : null,
         owned ? el("span", { class: "safari-owned" }, "✓ already in dex") : null,
       ]);
       // Human-readable breakdown of every active boost.
@@ -291,7 +313,7 @@
       }
       const odds = el("div", { class: "safari-odds" }, [
         el("span", { class: "safari-odds-big" }, Math.round(chance * 100) + "%"),
-        el("span", {}, " catch chance" + breakdown + " · catch deals " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "")),
+        el("span", {}, " catch chance" + breakdown + " · catch deals " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + (nfo.leg ? " · resists boosts (½ effect)" : "")),
         el("span", { class: "safari-ball-chip" }, [ballIcon(ball), " " + ball.name + (ball.key === "master" ? " — sure catch!" : "")]),
       ]);
       const pips = el("div", { class: "safari-pips" }, [0, 1, 2].map((i) => el("span", { class: "safari-pip" + (i < level ? " on" : "") })));
@@ -429,7 +451,8 @@
           s.pokedex.log = s.pokedex.log || [];
           s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
-          Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
+          if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + " — the only one in the region!" + (viaMaster ? " (Master Ball dare!)" : ""));
+          else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
         });
         const catcherTeam = Store.team(Store.teamOf(tid));
@@ -439,6 +462,7 @@
         enc.appendChild(el("div", { class: "safari-card result win" }, [
           el("img", { class: "safari-wild pop", src: SP[id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + nfo.name + "!"),
+          nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 ONE OF ONE — the only " + nfo.name + " in the region belongs to " + attendeeName(tid) + "!") : null,
           el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
           el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + "!"),
           catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + nfo.sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
@@ -588,4 +612,6 @@
 
   window.Views = window.Views || {};
   window.Views.safari = view;
+  // Tuning/debug hook (used by tests; harmless in production).
+  window.SafariDebug = { info: info, weightFor: weightFor, legendaryOwner: legendaryOwner };
 })();
