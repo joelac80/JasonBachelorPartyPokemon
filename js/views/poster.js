@@ -44,8 +44,7 @@
     const gyms = (Store.state.gymBadges || []).filter((g) => g.holder === a.id);
     const trophies = allAwards().filter((t) => t.holder === a.name);
     const drinks = Store.drinkCount(a.id);
-    const tr = Store.state.pokedex.trainers[a.id];
-    const caught = tr ? Object.keys(tr.caught || {}).length : 0;
+    const caught = Store.dexCount(a.id);
 
     const badgeRow = [];
     gyms.forEach((g) => { const ic = g.icon || (window.BADGE_ICONS && BADGE_ICONS[g.id]) || ""; if (ic) badgeRow.push(el("img", { class: "poster-badge", src: ic, title: g.name, alt: g.name })); });

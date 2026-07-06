@@ -261,7 +261,7 @@
     // the holder onto the home hub and the Gym Badges case.
     liveTrophies() {
       const tr = (this.state.pokedex && this.state.pokedex.trainers) || {};
-      const cc = (id) => (tr[id] ? Object.keys(tr[id].caught || {}).length : 0);
+      const cc = (id) => this.dexCount(id);
       const mc = (id) => (tr[id] && tr[id].masterCatches) || 0;
       const hp = (id) => (tr[id] && tr[id].helps) || 0;
       const out = [];
@@ -367,7 +367,7 @@
       const topDrink = Object.keys(labelCounts).sort((x, y) => labelCounts[y] - labelCounts[x])[0] || "";
       return {
         name: nm, team: this.team(this.teamOf(attId)),
-        caught: Object.keys(tr.caught || {}).length, master: tr.masterCatches || 0, helps: tr.helps || 0,
+        caught: this.dexCount(attId), master: tr.masterCatches || 0, helps: tr.helps || 0,
         // "seen" unions catches in, so pre-tracking catches still count as seen.
         seen: Object.keys(Object.assign({}, tr.seen || {}, tr.caught || {})).length,
         pokeTeam: (tr.team || []).slice(0, 6),
@@ -555,6 +555,33 @@
       if (p && window.Sync && Sync.sharePhoto) Sync.sharePhoto(p);
     },
 
+    // ---- Partner Pokémon ---------------------------------------------------
+    // Every trainer's partner (their favorite) starts owned + leading their
+    // Safari team. Idempotent — run at boot and after remote applies so the
+    // data self-heals on every device.
+    fixupPartners(s) {
+      let changed = false;
+      s.pokedex = s.pokedex || { active: "", trainers: {}, log: [], given: 0, taken: 0 };
+      s.pokedex.trainers = s.pokedex.trainers || {};
+      (s.attendees || []).forEach((a) => {
+        if (!a.favoriteId) return;
+        const t = s.pokedex.trainers[a.id] = s.pokedex.trainers[a.id] || { caught: {}, team: [], catches: 0 };
+        t.caught = t.caught || {}; t.team = t.team || [];
+        if (!t.caught[a.favoriteId]) { t.caught[a.favoriteId] = { count: 1, ball: "partner" }; changed = true; }
+        if (t.team.indexOf(a.favoriteId) < 0 && t.team.length < 6) { t.team.unshift(a.favoriteId); changed = true; }
+      });
+      return changed;
+    },
+    // Dex completion for the 251 race — the freebie partner doesn't count.
+    dexCount(attId) {
+      const a = this.attendee(attId);
+      const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
+      if (!t) return 0;
+      let n = Object.keys(t.caught || {}).length;
+      if (a && a.favoriteId && t.caught && t.caught[a.favoriteId]) n--;
+      return Math.max(0, n);
+    },
+
     drinkTypes() { return DRINKS.slice(); },
     drinkEmoji: drinkEmoji,
     drinkCount(trainerId, type) {
@@ -604,10 +631,14 @@
       const keepPhotos = this.state.photos || [];   // photos aren't in the synced doc
       this.state = Object.assign(freshState(), obj);
       if (!obj.photos || !obj.photos.length) this.state.photos = keepPhotos;
+      this.fixupPartners(this.state);               // heal partner ownership
       this.persist();
       this._subs.forEach((fn) => fn(this.state));
     },
   };
+
+  // Seed partner ownership at boot (idempotent; persists only if it changed).
+  if (Store.fixupPartners(Store.state)) Store.persist();
 
   window.Store = Store;
 })();

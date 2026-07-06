@@ -19,12 +19,15 @@
     if (w.logged) parts.push("📋 " + w.logged);
     return parts.join("   ·   ") || FALLBACKS[(w.name || "").length % FALLBACKS.length];
   }
-  // The trainer's Safari team of 6, as a row of mini sprites.
+  // The trainer's Safari team of 6, as a row of mini sprites. Partners can
+  // live outside the 251 dex — fall back to the favorites sprite pack.
   function teamRow(w) {
-    const ids = (w.pokeTeam || []).filter((d) => window.DEX_SPRITES && DEX_SPRITES[d]);
-    if (!ids.length) return null;
-    return el("div", { class: "outro-team" }, ids.map((d) =>
-      el("img", { class: "outro-team-mon", src: DEX_SPRITES[d], alt: (window.DEX && DEX[d] && DEX[d].n) || "" })));
+    const mons = (w.pokeTeam || [])
+      .map((d) => (window.DEX_SPRITES && DEX_SPRITES[d]) || Store.sprite(d))
+      .filter(Boolean);
+    if (!mons.length) return null;
+    return el("div", { class: "outro-team" }, mons.map((src) =>
+      el("img", { class: "outro-team-mon", src: src, alt: "" })));
   }
   function trophiesFor(name) {
     return Store.liveTrophies().concat(Store.funSuperlatives()).filter((t) => t.holder === name).map((t) => t.emoji).join(" ");
