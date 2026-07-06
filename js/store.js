@@ -368,6 +368,9 @@
       return {
         name: nm, team: this.team(this.teamOf(attId)),
         caught: Object.keys(tr.caught || {}).length, master: tr.masterCatches || 0, helps: tr.helps || 0,
+        // "seen" unions catches in, so pre-tracking catches still count as seen.
+        seen: Object.keys(Object.assign({}, tr.seen || {}, tr.caught || {})).length,
+        pokeTeam: (tr.team || []).slice(0, 6),
         battleW: w, battleL: l, drinks: this.drinkCount(attId), topDrink: topDrink,
         presidencies: this.presidencies(attId), assholeries: this.assholeries(attId),
         euchre: this.euchreWins(attId), oracle: this.oracleScore(attId),

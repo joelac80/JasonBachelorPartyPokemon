@@ -45,8 +45,10 @@
       ]),
     ]);
 
+    const seenN = Object.keys(Object.assign({}, tr.seen || {}, tr.caught || {})).length;
     const stats = el("div", { class: "pf-stats" }, [
       stat(dexN + " / 251", "Safari dex"),
+      stat(seenN, "👀 Seen"),
       stat(wins + "–" + losses, "Battle W–L"),
       stat(helpsN, "Assists"),
       stat(masterN, "Master catches"),
