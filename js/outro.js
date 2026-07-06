@@ -7,15 +7,24 @@
   const { el } = U;
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
 
+  const FALLBACKS = ["along for the ride", "vibes coordinator", "here for the plot",
+    "zero stats, all heart", "a mystery wrapped in a Poké Ball", "stats pending, legend confirmed"];
   function statLine(w) {
     const parts = [];
-    if (w.caught) parts.push("🔴 " + w.caught);
+    if (w.caught || w.seen) parts.push("🔴 caught " + w.caught + " · 👀 seen " + w.seen);
     if (w.battleW || w.battleL) parts.push("⚔ " + w.battleW + "-" + w.battleL);
     if (w.drinks) parts.push("🍺 " + w.drinks);
     if (w.presidencies) parts.push("👑 " + w.presidencies);
     if (w.oracle) parts.push("🔮 " + w.oracle);
     if (w.logged) parts.push("📋 " + w.logged);
-    return parts.join("   ·   ") || "along for the ride";
+    return parts.join("   ·   ") || FALLBACKS[(w.name || "").length % FALLBACKS.length];
+  }
+  // The trainer's Safari team of 6, as a row of mini sprites.
+  function teamRow(w) {
+    const ids = (w.pokeTeam || []).filter((d) => window.DEX_SPRITES && DEX_SPRITES[d]);
+    if (!ids.length) return null;
+    return el("div", { class: "outro-team" }, ids.map((d) =>
+      el("img", { class: "outro-team-mon", src: DEX_SPRITES[d], alt: (window.DEX && DEX[d] && DEX[d].n) || "" })));
   }
   function trophiesFor(name) {
     return Store.liveTrophies().concat(Store.funSuperlatives()).filter((t) => t.holder === name).map((t) => t.emoji).join(" ");
@@ -28,6 +37,7 @@
       el("div", { class: "outro-mem-name" }, a.name),
       a.role ? el("div", { class: "outro-mem-role" }, a.role) : null,
       el("div", { class: "outro-mem-stats" }, statLine(w)),
+      teamRow(w),
       tro ? el("div", { class: "outro-mem-tro" }, tro) : null,
     ]);
   }
@@ -75,6 +85,7 @@
         el("div", { class: "outro-sendoff-l" }, "TO THE GROOM"),
         el("div", { class: "outro-groom-name" }, groom ? groom.name : "The Groom"),
         w ? el("div", { class: "outro-groom-stats" }, statLine(w)) : null,
+        w ? teamRow(w) : null,
         el("div", { class: "outro-sendoff-msg" }, "Here's to " + (groom ? groom.name.split(" ")[0] : "the groom") + " — gotta catch that Bobby Quinn! 💍🌿"),
         el("button", { class: "btn spin-btn", onClick: finish }, "🖼️ To the Poster ▸"),
       ]));

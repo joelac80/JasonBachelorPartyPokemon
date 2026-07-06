@@ -361,7 +361,17 @@
       }
     }
 
-    function findOne() { current = null; revealId = null; busy = false; status = ""; clearBoosts(); current = randomEncounter(); sfx("blip"); renderEncounter(); }
+    function findOne() {
+      current = null; revealId = null; busy = false; status = ""; clearBoosts();
+      current = randomEncounter();
+      // Pokédex "seen": it appeared in front of the active trainer.
+      const tid = active();
+      if (tid) Store.update((s) => {
+        const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+        t.seen = t.seen || {}; t.seen[current] = 1;
+      });
+      sfx("blip"); renderEncounter();
+    }
 
     function throwBall(nfo) {
       if (busy || !current || pending) return;
