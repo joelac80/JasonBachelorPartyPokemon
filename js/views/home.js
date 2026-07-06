@@ -17,19 +17,6 @@
     };
   }
 
-  function fanBadges() {
-    const badges = Store.state.badges || [];
-    if (!badges.length) return null;
-    return el("div", { class: "badge-strip" }, badges.map((b) =>
-      el("div", { class: "badge" }, [
-        b.img
-          ? el("img", { src: b.img, alt: b.name })
-          : el("span", { class: "badge-dot", style: { background: b.color || "#888" } }),
-        el("span", {}, b.name),
-      ])
-    ));
-  }
-
   // Live cross-feature trophies (Ash Ketchum, Master Catcher, Best Helper,
   // Battle Champ) — earned in the mini-games, surfaced on the front door.
   function liveTrophies() {
@@ -224,8 +211,6 @@
 
     root.appendChild(hero);
     root.appendChild(cd);
-    const badges = fanBadges();
-    if (badges) { root.appendChild(el("h2", { class: "section-title" }, "Fan Badges Earned")); root.appendChild(badges); }
     const trophies = liveTrophies();
     if (trophies) { root.appendChild(el("h2", { class: "section-title" }, "🏅 Live Trophies")); root.appendChild(trophies); }
     const oak = oakTip();
