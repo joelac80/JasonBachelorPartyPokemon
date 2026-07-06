@@ -28,7 +28,7 @@
         { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "Every trainer's team of 6 and dex progress on one page — plus the Type Gym Leaders: catch the most of a type to claim its gym (partners don't count)." },
         { r: "drinks", e: "🍺", t: "Drink Tracker", d: "Log every round by trainer, type, and day. First Sip, Thirstiest, and a champion for each drink kind all earn badges." },
         { r: "cards", e: "🃏", t: "Card Table", d: "Track President/Asshole (finishing order → Best & Worst President), Euchre, King's Cup and Ride the Bus. Winners score team points; the awards land on the poster." },
-        { r: "battle", e: "⚔️", t: "Battle Arena", d: "Set any 1v1 or 2v2, tag the event (e.g. Beer Pong), and fight. The winner’s team scores." },
+        { r: "battle", e: "⚔️", t: "Battle Arena", d: "Two modes. 🎮 Pokémon Duel: pick your caught Pokémon and fight a real turn-based battle at Lv50 — moves come from its types, 🧪 Potion = 3 sips to heal, 🍺 Liquid Courage = finish half your drink for a guaranteed crit. 📣 Quick Call: set any 1v1/2v2 for a real-world event and tap who won. Either way the winner’s team scores." },
         { r: "brackets", e: "🥊", t: "Brackets", d: "Run a tournament bracket — each matchup can launch the battle screen." },
         { r: "jeopardy", e: "❓", t: "Jeopardy", d: "Bulbasaur-themed trivia with Daily Bulbas. Award (or dock) clue values to teams." },
         { r: "predictions", e: "🔮", t: "Predictions (Oracle)", d: "Call outcomes before they happen — who wins, how many drinks, will the groom cry. Nail your calls to climb the Oracle board; right calls score for your team." },

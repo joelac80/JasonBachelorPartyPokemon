@@ -244,5 +244,5 @@
   // plays the KO once the referee's result arrives.
   function spectate(opts) { return start(Object.assign({}, opts || {}, { spectator: true })); }
 
-  window.Battle = { start: start, spectate: spectate, resolveMember: resolveMember };
+  window.Battle = { start: start, spectate: spectate, resolveMember: resolveMember, effectiveness: effectiveness };
 })();

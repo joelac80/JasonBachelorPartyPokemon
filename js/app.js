@@ -188,6 +188,7 @@
       if (data.state === "live" && !handledLive[data.id]) {
         handledLive[data.id] = 1;
         if (me === data.aClient) {                    // referee — plays + reports
+          if (data.mode === "duel") return;           // the Duel screen is already up on this phone
           Battle.start({
             title: data.event || "Challenge",
             a: { label: data.aName, names: [data.aName] },
