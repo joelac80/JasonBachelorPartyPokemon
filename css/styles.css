@@ -237,6 +237,8 @@ body {
   background: var(--panel); border: 2px solid var(--line); border-radius: 10px;
   padding: 10px; display: flex; align-items: center;
 }
+/* Pin the event column so swiping through teams never loses the row labels. */
+.sb-corner, .sb-event { position: sticky; left: 0; z-index: 2; box-shadow: 3px 0 6px rgba(20,24,40,0.08); }
 .sb-corner { font-family: var(--pixel); font-size: 12px; color: var(--ink-dim); }
 .sb-team { font-weight: 800; gap: 6px; justify-content: center; text-align: center; border-color: transparent; }
 .sb-team-emoji { font-size: 18px; }
@@ -776,6 +778,14 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 
 /* ---------------- Responsive ---------------- */
 @media (max-width: 820px) {
+  /* compact scoreboard cells on phones */
+  .sb-corner, .sb-team, .sb-event, .sc-cell { padding: 8px; }
+  .sc-cell { flex-wrap: wrap; row-gap: 4px; }
+  .sc-btn { width: 26px; height: 26px; font-size: 15px; }
+  .sc-val { font-size: 15px; min-width: 26px; }
+  .sc-award { padding: 3px 7px; font-size: 11px; }
+  .sb-ev-emoji { font-size: 18px; }
+
   .nav-toggle { display: block; }
   .nav { position: absolute; top: 100%; right: 0; left: 0; background: var(--pokered-dk); padding: 8px; display: none;
     max-height: calc(100vh - 110px); max-height: calc(100dvh - 110px); overflow-y: auto; -webkit-overflow-scrolling: touch; }

@@ -137,7 +137,7 @@
     root.appendChild(el("h2", { class: "section-title" }, "Scoreboard"));
 
     const table = el("div", { class: "scoreboard", style: {
-      gridTemplateColumns: "minmax(140px,1.4fr) repeat(" + teams.length + ", minmax(150px,1fr))",
+      gridTemplateColumns: "minmax(126px,1.3fr) repeat(" + teams.length + ", minmax(118px,1fr))",
     } });
 
     // header row
