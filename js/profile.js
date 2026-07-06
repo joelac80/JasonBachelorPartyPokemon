@@ -18,7 +18,7 @@
     if (!a) return;
     const form = Store.currentForm(a);
     const tr = (Store.state.pokedex && Store.state.pokedex.trainers && Store.state.pokedex.trainers[attId]) || {};
-    const dexN = Object.keys(tr.caught || {}).length;
+    const dexN = Store.dexCount(attId);
     const masterN = tr.masterCatches || 0, helpsN = tr.helps || 0;
 
     const log = (Store.state.battles && Store.state.battles.log) || [];

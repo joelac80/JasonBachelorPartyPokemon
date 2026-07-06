@@ -110,6 +110,7 @@
     great: { key: "great", name: "Great Ball", top: "#2a75bb" },
     ultra: { key: "ultra", name: "Ultra Ball", top: "#e6a100" },
     master: { key: "master", name: "Master Ball", top: "#7a2ff2" },
+    partner: { key: "partner", name: "Partner", top: "#2e8b3d" },   // came with the trainer ❤
   };
   function ballTier(chance) {
     if (chance >= 1) return BALLS.master;
@@ -142,7 +143,7 @@
 
   function P() { return Store.state.pokedex; }
   function rec(id) { return (P().trainers && P().trainers[id]) || { caught: {}, team: [], catches: 0 }; }
-  function caughtCount(id) { return Object.keys(rec(id).caught || {}).length; }
+  function caughtCount(id) { return Store.dexCount(id); }   // partner freebie excluded
   function attendeeName(id) { const a = Store.attendee(id); return a ? a.name : id; }
 
   function view(root) {
@@ -569,10 +570,14 @@
       const slots = el("div", { class: "safari-team" });
       for (let i = 0; i < 6; i++) {
         const id = team[i];
-        slots.appendChild(id
-          ? el("button", { class: "safari-team-slot filled", title: "Remove", onClick: () => toggleTeam(id) },
-              [el("img", { src: SP[id], alt: DEX[id].n }), el("span", {}, DEX[id].n)])
-          : el("div", { class: "safari-team-slot empty" }, "＋"));
+        if (!id) { slots.appendChild(el("div", { class: "safari-team-slot empty" }, "＋")); continue; }
+        // Partners can live outside the 251 dex — fall back to the favorites
+        // sprite pack and the attendee's favorite name.
+        const src = SP[id] || Store.sprite(id);
+        const nm = DEX[id] ? DEX[id].n
+          : ((Store.state.attendees.find((x) => x.favoriteId === id) || {}).favorite || "Partner");
+        slots.appendChild(el("button", { class: "safari-team-slot filled", title: "Remove", onClick: () => toggleTeam(id) },
+          [src ? el("img", { src: src, alt: nm }) : el("span", {}, "◓"), el("span", {}, nm)]));
       }
       teamHost.appendChild(slots);
     }
@@ -588,7 +593,7 @@
         const got = !!caught[id];
         const ballKey = got && caught[id].ball;
         grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : ""),
-          title: got ? DEX[id].n + (ballKey ? " — caught with a " + ballByKey(ballKey).name : "") + " — tap for team" : "#" + id + " — not caught",
+          title: got ? DEX[id].n + (ballKey === "partner" ? " — your partner ❤" : (ballKey ? " — caught with a " + ballByKey(ballKey).name : "")) + " — tap for team" : "#" + id + " — not caught",
           onClick: got ? () => toggleTeam(id) : null }, [
           SP[id] ? el("img", { src: SP[id], alt: got ? DEX[id].n : "", loading: "lazy" }) : null,
           el("span", { class: "safari-dex-num" }, "#" + id),
