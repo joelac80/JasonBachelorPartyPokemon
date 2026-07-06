@@ -270,9 +270,9 @@
       enc.innerHTML = "";
       if (!active()) { enc.appendChild(el("div", { class: "safari-idle" }, el("p", { class: "empty" }, "👆 Pick a trainer to start catching."))); return; }
       if (!current) {
-        enc.appendChild(el("div", { class: "safari-idle" }, [
-          el("div", { class: "safari-grass" }, "🌿🌿🌿"),
+        enc.appendChild(el("div", { class: "safari-idle walk" }, [
           el("button", { class: "btn spin-btn", onClick: findOne }, "👣 Walk in the grass"),
+          el("div", { class: "safari-grass" }, ["🌿", "🌿", "🌿", "🌿", "🌿"].map((g) => el("span", {}, g))),
         ]));
         return;
       }
