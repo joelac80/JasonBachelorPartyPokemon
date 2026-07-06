@@ -698,6 +698,27 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .unlock-modal { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .unlock-emoji { font-size: 52px; }
 .unlock-title { font-family: var(--pixel); font-size: 20px; color: #2e8b3d; text-shadow: 2px 2px 0 #ffcb05; }
+/* pokédex tracker */
+.trk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.trk-card { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 7px; }
+.trk-head { display: flex; flex-direction: column; gap: 2px; }
+.trk-name { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trk-nums { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); }
+.trk-bar { height: 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; }
+.trk-fill { height: 100%; background: linear-gradient(90deg, #2e8b3d, #5fbf6a); border-radius: 999px; transition: width .3s ease; }
+.trk-team { display: flex; gap: 2px; align-items: center; }
+.trk-slot { width: 26px; height: 26px; image-rendering: pixelated; }
+.trk-slot.empty { display: inline-flex; align-items: center; justify-content: center; color: var(--ink-dim); width: 26px; }
+.trk-gyms { display: flex; flex-wrap: wrap; gap: 5px; }
+.trk-gym { display: inline-flex; align-items: center; gap: 2px; font-family: var(--pixel); font-size: 9px; background: var(--paper); border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 6px; }
+.trk-gym img { width: 14px; height: 14px; }
+.gym-lead-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.gym-lead { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; opacity: .65; }
+.gym-lead.held { opacity: 1; border-color: #cbb26a; background: #fffbec; cursor: pointer; }
+.gym-lead-ico { width: 30px; height: 30px; flex: none; }
+.gym-lead-t { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); }
+.gym-lead-holder { font-weight: 800; font-size: 13px; }
+.gym-lead-n { font-size: 11px; color: var(--ink-dim); }
 /* town menu (overworld landmarks with multiple buildings) */
 .town-menu { display: flex; flex-direction: column; gap: 8px; }
 .town-item { display: flex; gap: 12px; align-items: flex-start; background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 12px 14px; text-decoration: none; color: inherit; }

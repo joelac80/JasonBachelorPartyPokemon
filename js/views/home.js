@@ -54,7 +54,10 @@
     { id: "settings", r: "settings",    e: "⚙️", t: "Settings",        x: 8,  y: 10 },
     { id: "lodge",    r: "roster",      e: "🎴", t: "The Lodge",       x: 13, y: 50 },
     { id: "tavern",   r: "drinks",      e: "🍺", t: "Lakeside Tavern", x: 32, y: 33 },
-    { id: "safari",   r: "safari",      e: "🔴", t: "Safari Zone",     x: 52, y: 11 },
+    { id: "safari", e: "🔴", t: "Safari Zone", x: 52, y: 11, sub: [
+      { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
+      { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Gym Leaders" },
+    ] },
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Rd",      x: 84, y: 40 },
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
       { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Any 1v1 or 2v2 — winner's team scores" },

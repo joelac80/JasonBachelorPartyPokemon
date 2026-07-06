@@ -30,6 +30,10 @@
       document.addEventListener("keydown", function onEsc(e) {
         if (e.key === "Escape") { close(); document.removeEventListener("keydown", onEsc); }
       });
+      // Navigating away (link tap, back button) shouldn't leave a modal behind.
+      window.addEventListener("hashchange", function onNav() {
+        close(); window.removeEventListener("hashchange", onNav);
+      });
       document.body.appendChild(overlay);
       return { close };
     },

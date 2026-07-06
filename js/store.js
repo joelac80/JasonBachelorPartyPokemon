@@ -582,6 +582,31 @@
       return Math.max(0, n);
     },
 
+    // Caught species of a given type (partner freebie excluded, same fairness
+    // rule as dexCount). Types come from DEX[id].t.
+    typeCaught(attId, type) {
+      const a = this.attendee(attId);
+      const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
+      if (!t || !t.caught || !window.DEX) return 0;
+      let n = 0;
+      for (const id in t.caught) {
+        if (a && a.favoriteId === +id) continue;
+        const d = window.DEX[id];
+        if (d && d.t && d.t.indexOf(type) >= 0) n++;
+      }
+      return n;
+    },
+    // One "Gym Leader" per type — whoever caught the most of it (ties keep the
+    // earlier leader via _topAttendee's strict > comparison).
+    typeLeaders() {
+      const TYPES = ["normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison",
+        "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"];
+      return TYPES.map((ty) => {
+        const top = this._topAttendee((id) => this.typeCaught(id, ty));
+        return { type: ty, holder: top ? top.a.name : "", holderId: top ? top.a.id : "", n: top ? top.n : 0 };
+      });
+    },
+
     drinkTypes() { return DRINKS.slice(); },
     drinkEmoji: drinkEmoji,
     drinkCount(trainerId, type) {
