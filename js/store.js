@@ -490,7 +490,7 @@
           ranking.forEach((a) => this.grantPoints(s, "cards", this.teamOf(a), 2));
         } else if (ranking.length) {
           const who = nm(ranking[0]);
-          const head = game === "ridebus" ? "🚌 " + who + " rode the bus" : (game === "kings" ? "👑 " + who : who);
+          const head = game === "ridebus" ? "🚌 " + who + " rode the bus" : (game === "kings" ? "🫗 " + who : who);
           this.chron(s, "🃏", head + (note ? " — " + note : ""));
         } else {
           this.chron(s, "🃏", note);

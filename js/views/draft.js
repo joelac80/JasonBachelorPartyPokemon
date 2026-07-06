@@ -32,7 +32,7 @@
 
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
-      el("h1", {}, "🎴 Draft Board"),
+      el("h1", {}, "🎡 Draft Board"),
       el("p", { class: "page-sub" }, "Set a captain for each team, then draft trainers into the columns." ),
     ]));
 
