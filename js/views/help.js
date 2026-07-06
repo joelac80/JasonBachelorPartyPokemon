@@ -40,7 +40,7 @@
         { r: null, e: "🟢", t: "Green Poké Ball", d: "The Poké Ball in the top bar glows green when your phone is live-synced to the room (grey/hidden when local)." },
         { r: "battle", e: "🥊", t: "Trainers here now", d: "Once synced, the Battle Arena shows who else is signed in — tap ⚔ Challenge to battle their phone." },
         { r: null, e: "👀", t: "Challenge & spectate", d: "Get challenged → accept → both battle. Everyone else gets a “Watch” alert to spectate, and a LIVE banner on Home lets latecomers jump in." },
-        { r: null, e: "🔔", t: "Phone alerts", d: "Allow notifications (and Add to Home Screen) and your phone pings you when you’re challenged or a battle starts — even in your pocket." },
+        { r: "settings", e: "🔔", t: "Phone alerts", d: "Pings when you’re challenged or a battle starts. iPhone: FIRST Add to Home Screen (Share → Add to Home Screen), open from that icon, then Settings → Enable notifications → Send a test. Alerts fire while the app is open in the background — not when it’s fully closed." },
       ],
     },
     {

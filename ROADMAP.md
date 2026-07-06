@@ -34,27 +34,44 @@ optional Firebase layer for live multiplayer._
 
 ---
 
-## 📋 To-do before the party (owner: you)
+## ✅ Done (setup night, Jul 5)
 
-**Publish**
-1. **Enable GitHub Pages** for a permanent public URL — repo Settings → Pages → Deploy from branch → `main` → `/root`. Share that link with the crew.
+- **GitHub Pages live**: https://joelac80.github.io/JasonBachelorPartyPokemon/ — share this link.
+- **Firebase set up** (`jason-bach-party`): Firestore + Anonymous auth + rules published;
+  the config is **baked into the app**, so guests only type the room code.
+- **First on-device sync session**: green ball confirmed; fixed reconnect-on-reload,
+  mobile menu, scoreboard sticky column, card ⓘ placement from real-phone testing.
 
-**Live Sync (optional but great for multi-phone)**
-2. **Set up Firebase** — follow `SYNC.md`: create a project, enable Firestore + Anonymous auth, **paste the security rules**, then in-app Settings → Live Sync paste the config + a shared **room code**.
-   - ⚠️ **Use the CURRENT rules from `SYNC.md`** — they were fixed to cover the sub-channels (presence/challenges/live/photos/messages). An older copy blocks those.
-3. **Two-phone test** — the sandbox can't reach Google's SDK, so the cross-device path (presence → challenge → spectate → notification → photo/message share) is only mock-validated. Confirm on real phones.
-4. *(Optional)* Ask me to **hardcode the Firebase config** so guests only type the room code — paste me your `firebaseConfig` and I'll wire it in.
+## 📋 Still to do before the party (owner: you)
+
+**Testing**
+1. **Re-run the two-device test** (post-fixes): both devices sign in as different
+   trainers → both appear in Battle Arena "Trainers here now" → send a challenge →
+   accept → third device gets the Watch alert → spectate resolves. Also confirm a
+   drink logged on one phone appears on the other, and a photo shares to the room.
+2. Sanity-check **phone notifications** (allow permission; works best after
+   Add to Home Screen).
 
 **Content**
-5. **Drop in Bob's real Jeopardy clues** — Jeopardy board → ✎ edit each clue.
-6. **Fill real details in Settings** — party info, teams, and Victory Road events/rules/points as they firm up.
-7. *(Optional)* **Clear test data** before the trip — Settings → Reset to defaults (wipes any practice scores/logs).
+3. **Drop in Bob's real Jeopardy clues** — Jeopardy board → ✎ edit each clue.
+4. **Tune badge powers / earn conditions** — Badges → ✎ on any badge (now editable).
+5. **Fill real details in Settings** — party info, Victory Road events/rules/points.
+6. **Clear test data right before the trip** — Settings → Reset to defaults on the
+   host phone **while connected** (the reset syncs to the room). Note: shared photos
+   live in their own Firestore channel and will merge back — delete the room's
+   `photos` subcollection in the Firebase console if you want those gone too.
 
 **On arrival — tell the crew**
-8. Everyone **opens the link, joins the room code, and picks "You are" (their trainer)** in Settings. This drives attribution, the 📋 Scorekeeper award, challenges, and message authorship.
-9. **Jason signs in as himself** — this keeps the 💌 Message Wall sealed on his phone until you Roll the Closing Credits.
-10. Everyone **Add to Home Screen** for the best notifications.
-11. At the end: **Ceremony → 🎬 Roll the Closing Credits** for the finale + Jason's unlock.
+7. Everyone opens the link → Settings → **room code + "You are" (their trainer)** →
+   Connect. Green Poké Ball = live. This drives attribution, Scorekeeper, challenges,
+   and message authorship.
+8. **Jason signs in as himself** — keeps the 💌 Message Wall sealed on his phone
+   until the closing credits unlock it.
+9. Everyone **Add to Home Screen** for the best notifications.
+10. During the weekend: draft teams (Victory Road → Setup), log everything, leave
+    Messages for Jason, snap photo moments.
+11. At the end: **Ceremony → 🎬 Roll the Closing Credits** → Bulbasaur send-off →
+    Poster → Jason's "NEW AREA UNLOCKED" Message Wall reveal.
 
 ---
 
