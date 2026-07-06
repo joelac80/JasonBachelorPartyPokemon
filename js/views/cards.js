@@ -9,7 +9,7 @@
   const GAMES = [
     { key: "president", name: "Asshole / President", emoji: "🃏", mode: "order" },
     { key: "euchre", name: "Euchre", emoji: "♠️", mode: "winners" },
-    { key: "kings", name: "King's Cup", emoji: "👑", mode: "spotlight" },
+    { key: "kings", name: "King's Cup", emoji: "🫗", mode: "spotlight" },
     { key: "ridebus", name: "Ride the Bus", emoji: "🚌", mode: "spotlight" },
   ];
   function gameOf(k) { return GAMES.find((g) => g.key === k) || GAMES[0]; }

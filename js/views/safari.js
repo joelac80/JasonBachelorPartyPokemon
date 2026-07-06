@@ -69,7 +69,7 @@
   // Each boost is an action you must actually perform; bail and there's a price.
   // `master` short-circuits the odds to a guaranteed catch when completed.
   const BOOSTS = {
-    dare: { pct: 0.20, pool: DARES, verb: "dare", emoji: "🔥" },
+    dare: { pct: 0.20, pool: DARES, verb: "dare", emoji: "🌶️" },
     berry: { pct: 0.15, pool: BERRY_ACTS, verb: "berry", emoji: "🍓" },
     rally: { pct: 0.10, pool: RALLY_ACTS, verb: "rally", emoji: "📣" },
     master: { pct: 1, pool: MASTER_ACTS, verb: "Master Ball dare", emoji: "🟣" },
@@ -189,14 +189,14 @@
         if (Math.random() < spookChance(nfo0)) {
           const id = current, lost = comboOf(active());
           wildEscaped(id, nfo0, nfo0.name + " spooked and bolted!",
-            "😳 You hesitated on the " + verb + " — take a sip, and it's gone!",
+            "🐔 You hesitated on the " + verb + " — take a sip, and it's gone!",
             lost > 1 ? "💔 Catch combo of " + lost + " broken!" : null);
           return;
         }
       }
       if (k === "dare") dareLocked = true; else if (k === "berry") berryLost = true;
       else if (k === "rally") rallyLost = true; else if (k === "master") masterLost = true;
-      penaltyMsg = "😳 Chickened out of the " + verb + " — take a sip! No more " + verb + " this catch.";
+      penaltyMsg = "🐔 Chickened out of the " + verb + " — take a sip! No more " + verb + " this catch.";
       sfx("error"); renderEncounter();
     }
 
@@ -272,7 +272,7 @@
       if (!current) {
         enc.appendChild(el("div", { class: "safari-idle" }, [
           el("div", { class: "safari-grass" }, "🌿🌿🌿"),
-          el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Walk in the grass"),
+          el("button", { class: "btn spin-btn", onClick: findOne }, "👣 Walk in the grass"),
         ]));
         return;
       }
@@ -336,14 +336,14 @@
           el("div", { class: "safari-dare-txt" }, BOOSTS[pending.kind].emoji + " " + pending.prompt),
           el("div", { class: "safari-actions" }, [
             el("button", { class: "btn primary sm", onClick: doAction }, isMaster ? "✓ Nailed it — Master Ball!" : "✓ Did it (+" + Math.round(pending.pct * 100) + "%)"),
-            el("button", { class: "btn subtle sm", onClick: chickenOut }, "😳 Chicken out — take a sip"),
+            el("button", { class: "btn subtle sm", onClick: chickenOut }, "🐔 Chicken out — take a sip"),
           ]),
         ]);
       } else if (masterDone) {
         challengeArea = el("div", { class: "hint" }, "🟣 Master Ball earned — throw for the guaranteed catch!");
       } else {
         const btns = [];
-        if (level < 3 && !dareLocked) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("dare") }, "🔥 Take a dare (+20%)"));
+        if (level < 3 && !dareLocked) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("dare") }, "🌶️ Take a dare (+20%)"));
         if (!berryDone && !berryLost) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("berry") }, "🍓 Toss a Berry (+15%)"));
         if (!rallyDone && !rallyLost) btns.push(el("button", { class: "btn subtle sm", onClick: () => startAction("rally") }, "📣 Squad rally (+10%)"));
         btns.push(helper
