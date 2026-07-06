@@ -64,6 +64,7 @@
       el("div", { class: "gym-badge-top" }, [
         disc,
         el("div", { class: "gym-badge-name" }, b.name),
+        el("button", { class: "gym-badge-edit", title: "Edit badge", onClick: () => editBadge(b.id) }, "✎"),
       ]),
       el("div", { class: "gym-badge-row" }, [
         el("span", { class: "gym-badge-label" }, "Earn it"),
@@ -76,6 +77,38 @@
       holderArea,
       actions,
     ]);
+  }
+
+  // Edit a badge's name, earn condition and power — state-backed, so edits
+  // persist and sync to the room.
+  function editBadge(badgeId) {
+    const b = Store.state.gymBadges.find((g) => g.id === badgeId);
+    if (!b) return;
+    const nameIn = el("input", { class: "in", value: b.name || "" });
+    const earnIn = el("textarea", { class: "in", rows: 2 });
+    earnIn.value = b.earn || "";
+    const powerIn = el("textarea", { class: "in", rows: 2 });
+    powerIn.value = b.power || "";
+    let ctrl;
+    const body = el("div", { class: "modal-form" }, [
+      el("label", { class: "field" }, [el("span", {}, "Badge name"), nameIn]),
+      el("label", { class: "field" }, [el("span", {}, "How to earn it"), earnIn]),
+      el("label", { class: "field" }, [el("span", {}, "⚡ Power (what the holder gets to do)"), powerIn]),
+      el("div", { class: "toolbar" }, [
+        el("button", { class: "btn primary", onClick: () => {
+          Store.update((s) => {
+            const x = s.gymBadges.find((g) => g.id === badgeId);
+            x.name = nameIn.value.trim() || x.name;
+            x.earn = earnIn.value.trim();
+            x.power = powerIn.value.trim();
+          });
+          if (ctrl) ctrl.close();
+          Router.render();
+        } }, "Save"),
+        el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Cancel"),
+      ]),
+    ]);
+    ctrl = Modal.open("Edit: " + (b.name || "badge"), body, null, {});
   }
 
   function award(badgeId) {
