@@ -685,6 +685,7 @@
       return t && t.length ? t.slice() : [];
     },
     evoReady(attId, monId) {
+      if (this.TRADE_EVOS[monId]) return false;   // Kadabra & co. ONLY evolve by trade
       const t = (this.state.pokedex.trainers || {})[attId];
       const r = t && t.caught && t.caught[monId];
       return !!(r && (r.kos || 0) >= this.KO_TO_EVOLVE && this.evoTargets(monId).length);
