@@ -32,13 +32,13 @@
   function trophiesFor(name) {
     return Store.liveTrophies().concat(Store.funSuperlatives()).filter((t) => t.holder === name).map((t) => t.emoji).join(" ");
   }
-  // Energy symbols for any type gyms this trainer holds.
+  // Energy symbols for any type crowns this trainer holds.
   function gymRow(attId) {
     const gyms = Store.typeLeaders().filter((l) => l.holderId === attId && l.n > 0);
     if (!gyms.length) return null;
     return el("div", { class: "outro-gyms" }, gyms.map((l) => {
       const ico = U.energyIcon(l.type);
-      return ico ? el("img", { class: "outro-gym-ico", src: ico, alt: l.type, title: l.type + " Gym Leader" }) : null;
+      return ico ? el("img", { class: "outro-gym-ico", src: ico, alt: l.type, title: l.type + " Type Master" }) : null;
     }));
   }
   function memberCard(a) {
