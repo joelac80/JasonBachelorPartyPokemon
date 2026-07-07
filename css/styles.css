@@ -1439,3 +1439,47 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .gymc-card.red-card { background: linear-gradient(#2b2b40, #3a2b4b); border-color: #e6352f; color: #f2f2f2; }
 .gymc-card.red-card .gymc-leader, .gymc-card.red-card .gymc-holders.none { color: #b9b9d0; }
 .gymc-ico.red-q { font-size: 26px; line-height: 1; }
+
+/* 👑 Pokémon League — the cinematic climb */
+.league-journey { background: linear-gradient(#171722, #232338 55%, #2b2b44); border: 3px solid #3a3a55;
+  border-radius: var(--radius); padding: 16px 12px; display: flex; flex-direction: column; gap: 0; box-shadow: var(--shadow); }
+.league-stage { display: flex; gap: 10px; padding: 8px 0; position: relative; }
+.league-stage-rail { display: flex; flex-direction: column; align-items: center; width: 34px; flex: 0 0 auto; }
+.league-dot { font-size: 18px; z-index: 1; }
+.league-stage:not(:last-child) .league-stage-rail::after { content: ""; flex: 1; width: 3px; margin-top: 4px;
+  background: linear-gradient(#4a4a6b, #3a3a55); border-radius: 2px; }
+.league-stage-card { flex: 1; background: rgba(255,255,255,.06); border: 2px solid #4a4a6b; border-radius: 12px;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; color: #e8e8f2; }
+.league-stage-card .gymc-badge { color: #fff; }
+.league-stage-card .gymc-leader { color: #a9a9c4; }
+.league-stage.cleared .league-stage-card { border-color: #b8860b; background: rgba(230,184,0,.10); }
+.league-stage.next .league-stage-card { border-color: #ee1515; box-shadow: 0 0 12px rgba(238,21,21,.45); animation: shinyPulse 1.6s ease infinite; }
+.league-stage.locked .league-stage-card { opacity: .75; }
+.league-stage.red .league-stage-card { background: linear-gradient(rgba(20,20,30,.9), rgba(58,43,75,.9)); border-color: #e6352f; }
+.league-stage.fog .league-stage-card { border-style: dashed; opacity: .55; }
+.league-stage-head { display: flex; align-items: center; gap: 10px; }
+.league-mt { font-size: 26px; }
+.league-ace { width: 54px; height: 54px; image-rendering: pixelated; margin-left: auto;
+  filter: brightness(0) opacity(.55); transition: filter .6s ease; }
+.league-ace.lit { filter: none; }
+.league-now { font-family: var(--pixel); font-size: 11px; color: #ffcb05; }
+.league-lock { font-size: 12px; color: #c9a0a0; }
+.league-stage-card .gymc-holder { background: rgba(255,255,255,.9); }
+/* chamber entrance overlay */
+.league-intro { position: fixed; inset: 0; z-index: 260; background: rgba(12,12,20,.96); display: flex;
+  align-items: center; justify-content: center; padding: 24px; opacity: 0; transition: opacity .5s ease; }
+.league-intro.go { opacity: 1; }
+.league-intro-inner { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 480px; }
+.league-intro-ico { width: 74px; height: 74px; filter: drop-shadow(0 0 18px rgba(255,255,255,.35)); animation: evoPop .7s cubic-bezier(.2,1.5,.4,1); }
+.league-intro-mt { font-size: 72px; filter: drop-shadow(0 0 22px rgba(230,53,47,.6)); animation: evoPop .7s cubic-bezier(.2,1.5,.4,1); }
+.league-intro-rank { font-family: var(--pixel); font-size: 13px; letter-spacing: 3px; color: #a9a9c4; }
+.league-intro-name { font-family: var(--pixel); font-size: 34px; font-weight: 900; color: #fff; text-shadow: 3px 3px 0 rgba(238,21,21,.55); }
+.league-intro-quote { color: #d8d8ea; font-size: 15px; line-height: 1.55; font-style: italic; }
+.league-intro.red .league-intro-name { text-shadow: 3px 3px 0 rgba(120,120,200,.5); }
+/* 🏛 Hall of Fame */
+.hof-list { display: flex; flex-direction: column; gap: 10px; }
+.hof-row { background: linear-gradient(90deg, #fff2c4, #fffdf2); border: 2.5px solid #b8860b; border-radius: 12px;
+  padding: 10px 12px; box-shadow: var(--shadow); }
+.hof-name { font-weight: 800; margin-bottom: 6px; }
+.hof-team { display: flex; gap: 4px; flex-wrap: wrap; }
+.hof-mon { width: 44px; height: 44px; image-rendering: pixelated; }

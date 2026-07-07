@@ -63,6 +63,7 @@
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
       { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Any 1v1 or 2v2 — winner's team scores" },
       { r: "brackets", e: "🥊", t: "Brackets",     d: "Run a tournament" },
+      { r: "league",  e: "👑", t: "Pokémon League", d: "Elite Four → Champion LANCE → …the summit" },
     ] },
     { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
       { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
