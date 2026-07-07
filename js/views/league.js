@@ -9,14 +9,22 @@
   const SP = window.DEX_SPRITES || {};
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
 
+  // Since the Johto gyms run their HGSS rematch squads, the Elite Four run
+  // THEIR HGSS round-two rematch teams too (six deep, fully evolved) so the
+  // League stays above the gyms. Later-gen rematch mons are swapped for
+  // their closest Gen 1–2 kin: Bronzong/Grumpig/Gardevoir→Mr. Mime/Hypno/
+  // Espeon (Will), Skuntank/Swalot/Toxicroak→Weezing+his GSC classics
+  // (Koga), Lucario→Heracross and Onix grows into Steelix (Bruno),
+  // Weavile/Spiritomb/Absol→Sneasel/Gengar/Tyranitar (Karen). LANCE's
+  // triple-Dragonite six is already his ceiling; RED is RED.
   const LEAGUE = [
-    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [178, 124, 103, 80, 178], pts: 6,
+    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [122, 124, 97, 196, 80, 178], pts: 6,
       quote: "I have trained my mind to see all that is coming… and I foresee your defeat." },
-    { key: "koga",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 89, 169], pts: 6,
+    { key: "koga",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 110, 89, 169], pts: 6,
       quote: "A ninja's poison lingers long after the strike. Can you endure it?" },
-    { key: "bruno", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 95, 68], pts: 6,
+    { key: "bruno", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 208, 214, 68], pts: 6,
       quote: "We will grind you down with our superior power. Hoo hah!" },
-    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [197, 45, 94, 198, 229], pts: 6,
+    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [215, 45, 94, 248, 197, 229], pts: 6,
       quote: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Show me YOUR favorites." },
     { key: "lance", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8,
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },
@@ -86,7 +94,8 @@
             title: idx === 5 ? "Mt. Silver" : "the Pokémon League",
             league: { idx: idx, key: st.key, name: st.name, rank: st.rank, pts: st.pts },
             a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: idx === 5 ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice() }] },
+            b: { units: [{ npc: idx === 5 ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
+              boost: idx === 5 ? 1.35 : idx === 4 ? 1.2 : 1.15 }] },
             onResult: () => Router.render() });
         } });
     });
