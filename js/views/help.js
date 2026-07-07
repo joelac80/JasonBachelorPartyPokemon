@@ -118,6 +118,7 @@
 
     root.appendChild(el("div", { class: "help-foot" }, [
       el("a", { class: "btn spin-btn", href: "#/home" }, "🗺️ Back to the map"),
+      el("button", { class: "btn subtle", onClick: () => { if (window.Onboard) Onboard.start(true); } }, "▶ Replay the welcome tour"),
     ]));
   }
 

@@ -1477,6 +1477,24 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .league-intro-quote { color: #d8d8ea; font-size: 15px; line-height: 1.55; font-style: italic; }
 .league-intro.red .league-intro-name { text-shadow: 3px 3px 0 rgba(120,120,200,.5); }
 .league-intro.fame .league-intro-mt { filter: drop-shadow(0 0 22px rgba(255,208,64,.65)); }
+/* 👋 first-open onboarding tour */
+.onb { position: fixed; inset: 0; z-index: 300; background: linear-gradient(160deg, rgba(10,16,14,.97), rgba(16,26,40,.97));
+  display: flex; align-items: center; justify-content: center; padding: 18px; opacity: 0; transition: opacity .35s ease; overflow-y: auto; }
+.onb.go { opacity: 1; }
+.onb-skip { position: absolute; top: 12px; right: 14px; background: none; border: none; color: #9db2c9;
+  font-family: var(--pixel); font-size: 12px; cursor: pointer; padding: 8px; }
+.onb-card { max-width: 480px; width: 100%; text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 12px; animation: evoPop .45s cubic-bezier(.2,1.4,.4,1); }
+.onb-hero { font-size: 64px; filter: drop-shadow(0 0 20px rgba(255,255,255,.25)); }
+.onb-title { font-family: var(--pixel); font-size: 19px; font-weight: 900; color: #fff; line-height: 1.4; }
+.onb-text { color: #d5dde8; font-size: 15px; line-height: 1.6; margin: 0; }
+.onb-grid { max-height: 38vh; overflow-y: auto; }
+.onb .in { text-align: center; font-size: 16px; }
+.onb-dots { display: flex; gap: 7px; justify-content: center; margin-top: 4px; }
+.onb-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.22); }
+.onb-dot.on { background: #ffd166; box-shadow: 0 0 8px rgba(255,209,102,.7); }
+.onb-toolbar { justify-content: center; }
+.onb .btn.primary.off { opacity: .55; }
 .league-intro.fame .league-intro-name { text-shadow: 3px 3px 0 rgba(184,134,11,.6); }
 /* 🏛 Hall of Fame */
 .hof-list { display: flex; flex-direction: column; gap: 10px; }
