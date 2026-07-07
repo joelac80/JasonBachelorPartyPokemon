@@ -5,15 +5,24 @@
 (function () {
   const { el } = U;
 
+  // Johto runs the HGSS Fighting Dojo REMATCH teams (everything here is
+  // Lv50 anyway, so the leaders bring their grown-up squads). Rematch mons
+  // from later generations are swapped for their closest Gen 1–2 kin:
+  // Staraptor/Swellow/Honchkrow→Dodrio/Xatu/Murkrow, Shedinja/Vespiquen/
+  // Yanmega→Shuckle/Beedrill/Yanma, Bibarel/Lickilicky/Delcatty→Furret/
+  // Lickitung/Persian, Drifblim/Mismagius/Sableye/Dusknoir→the Ecruteak
+  // ghost duos, Medicham/Hariyama/Breloom→the Hitmons+Primeape, Bronzong/
+  // Empoleon/Magnezone→Forretress/Magneton, Abomasnow/Glalie/Walrein/
+  // Mamoswine→Jynx/Cloyster/Lapras/Piloswine, Salamence→Aerodactyl.
   const GYMS = [
-    { leader: "FALKNER",   badge: "Zephyr",   type: "flying",   team: [16, 17] },
-    { leader: "BUGSY",     badge: "Hive",     type: "bug",      team: [11, 14, 123] },
-    { leader: "WHITNEY",   badge: "Plain",    type: "normal",   team: [35, 241] },
-    { leader: "MORTY",     badge: "Fog",      type: "ghost",    team: [92, 93, 93, 94] },
-    { leader: "CHUCK",     badge: "Storm",    type: "fighting", team: [57, 62] },
-    { leader: "JASMINE",   badge: "Mineral",  type: "steel",    team: [81, 81, 208] },
-    { leader: "PRYCE",     badge: "Glacier",  type: "ice",      team: [86, 87, 221] },
-    { leader: "CLAIR",     badge: "Rising",   type: "dragon",   team: [148, 148, 148, 230] },
+    { leader: "FALKNER",   badge: "Zephyr",   type: "flying",   team: [164, 85, 198, 178, 22, 18] },
+    { leader: "BUGSY",     badge: "Hive",     type: "bug",      team: [213, 15, 193, 127, 214, 212] },
+    { leader: "WHITNEY",   badge: "Plain",    type: "normal",   team: [203, 162, 108, 53, 36, 241] },
+    { leader: "MORTY",     badge: "Fog",      type: "ghost",    team: [200, 200, 93, 93, 94, 94] },
+    { leader: "CHUCK",     badge: "Storm",    type: "fighting", team: [237, 107, 106, 57, 68, 62] },
+    { leader: "JASMINE",   badge: "Mineral",  type: "steel",    team: [205, 227, 82, 82, 208] },
+    { leader: "PRYCE",     badge: "Glacier",  type: "ice",      team: [87, 124, 91, 215, 131, 221] },
+    { leader: "CLAIR",     badge: "Rising",   type: "dragon",   team: [130, 6, 142, 149, 149, 230] },
     { leader: "BROCK",     badge: "Boulder",  type: "rock",     team: [75, 111, 139, 95, 141] },
     { leader: "MISTY",     badge: "Cascade",  type: "water",    team: [55, 195, 131, 121] },
     { leader: "LT. SURGE", badge: "Thunder",  type: "electric", team: [26, 101, 82, 125] },
@@ -93,7 +102,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏟 Gym Circuit"),
-      el("p", { class: "page-sub" }, "The 16 canon Gym Leaders of Johto & Kanto, Falkner → BLUE — the battling heart of the Frontier." ),
+      el("p", { class: "page-sub" }, "The 16 canon Gym Leaders of Johto & Kanto, Falkner → BLUE — the battling heart of the Frontier. Johto's leaders bring their full REMATCH squads." ),
     ]));
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
