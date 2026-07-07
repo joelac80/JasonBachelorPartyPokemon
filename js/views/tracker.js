@@ -13,11 +13,13 @@
     for (let i = 0; i < 6; i++) {
       const id = team[i];
       if (!id) { slots.push(el("span", { class: "trk-slot empty" }, "·")); continue; }
-      const src = SP()[id] || Store.sprite(id);
+      const rc = (t.caught || {})[id];
+      const shiny = !!(rc && rc.shiny);
+      const src = (shiny && (window.DEX_SPRITES_SHINY || {})[id]) || SP()[id] || Store.sprite(id);
       const nm = DEX()[id] ? DEX()[id].n
         : ((Store.state.attendees.find((x) => x.favoriteId === id) || {}).favorite || "Partner");
       slots.push(src
-        ? el("img", { class: "trk-slot", src: src, alt: nm, title: nm })
+        ? el("img", { class: "trk-slot" + (shiny ? " shiny" : ""), src: src, alt: nm, title: nm + (shiny ? " ✨ SHINY" : "") })
         : el("span", { class: "trk-slot empty" }, "◓"));
     }
     return el("div", { class: "trk-team" }, slots);

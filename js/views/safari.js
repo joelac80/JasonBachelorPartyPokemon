@@ -19,6 +19,10 @@
   const { el } = U;
   const DEX = window.DEX || {};
   const SP = window.DEX_SPRITES || {};
+  const SPS = window.DEX_SPRITES_SHINY || {};
+  // ✨ Shiny odds — Gen 2 would be proud. Every encounter rolls; a shiny
+  // catch pays out DOUBLE sips and is marked forever in the dex.
+  const SHINY_RATE = 1 / 16;
   const IDS = Object.keys(DEX).map(Number);
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
   function now() { try { return Date.now(); } catch (_) { return 0; } }
@@ -147,7 +151,7 @@
   function attendeeName(id) { const a = Store.attendee(id); return a ? a.name : id; }
 
   function view(root) {
-    let current = null, busy = false, status = "", level = 0, helper = "";
+    let current = null, busy = false, status = "", level = 0, helper = "", shiny = false;
     let berryDone = false, rallyDone = false, masterDone = false;   // boost earned
     let dareLocked = false, berryLost = false, rallyLost = false, masterLost = false;  // bailed
     let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
@@ -213,7 +217,7 @@
         note ? el("div", { class: "safari-combo-note broke" }, note) : null,
         el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
       ]));
-      current = null; busy = false; status = ""; clearBoosts();
+      current = null; busy = false; status = ""; shiny = false; clearBoosts();
       renderStats(); renderBoard(); renderTeam(); renderDex();
     }
 
@@ -284,18 +288,22 @@
       const firstShow = revealId !== current && !status;
 
       // ---- battle scene ----
-      const wild = SP[current]
-        ? el("img", { class: "safari-wild-scene" + (firstShow ? " revealing" : ""), src: SP[current], alt: nfo.name })
+      const wildSrc = (shiny && SPS[current]) || SP[current];
+      const wild = wildSrc
+        ? el("img", { class: "safari-wild-scene" + (firstShow ? " revealing" : ""), src: wildSrc, alt: nfo.name })
         : el("div", { class: "tc-ball-fallback" });
       const grass = el("div", { class: "safari-scene-grass" }, ["🌿", "🌿", "🌿", "🌿", "🌿"].map((g) => el("span", {}, g)));
+      const sparkle = shiny ? el("div", { class: "safari-sparkles" }, ["✨", "✨", "✨"].map((s, i) =>
+        el("span", { class: "s" + i }, s))) : null;
       const scene = el("div", { class: "safari-scene" + (firstShow ? " rustle" : "") }, [
-        el("div", { class: "safari-scene-platform" }), wild, el("div", { class: "safari-ball-throw", style: { "--ball-top": ball.top } }), grass,
+        el("div", { class: "safari-scene-platform" }), wild, sparkle, el("div", { class: "safari-ball-throw", style: { "--ball-top": ball.top } }), grass,
       ]);
 
       // ---- controls (name/odds/etc. hidden until the silhouette focuses in) ----
       const meta = el("div", { class: "safari-wild-meta" }, [
         el("span", { class: "safari-tier", style: { background: nfo.color } }, nfo.tier),
         el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
+        shiny ? el("span", { class: "safari-shiny-chip" }, "✨ SHINY — double payout!") : null,
         nfo.leg ? el("span", { class: "safari-oneof" }, "✨ ONE OF ONE") : null,
         owned ? el("span", { class: "safari-owned" }, "✓ already in dex") : null,
       ]);
@@ -368,7 +376,7 @@
         ]),
         suspense, throwRow,
       ]);
-      const appeared = el("div", { class: "safari-appeared" }, status || (firstShow ? "The tall grass rustles…" : ("A wild " + nfo.name + " appeared!")));
+      const appeared = el("div", { class: "safari-appeared" }, status || (firstShow ? "The tall grass rustles…" : ((shiny ? "A wild ✨ SHINY " : "A wild ") + nfo.name + " appeared!")));
 
       enc.appendChild(el("div", { class: "safari-battlebox" }, [scene, el("div", { class: "safari-controls" }, [appeared, post])]));
 
@@ -377,9 +385,9 @@
         sfx("select");
         setTimeout(() => {
           if (revealId !== current) return;
-          appeared.textContent = "A wild " + nfo.name + " appeared!";
+          appeared.textContent = (shiny ? "A wild ✨ SHINY " : "A wild ") + nfo.name + " appeared!";
           post.classList.remove("hidden");
-          sfx("win");
+          sfx(shiny ? "dailyBulba" : "win");
         }, 1200);
       }
     }
@@ -387,6 +395,7 @@
     function findOne() {
       current = null; revealId = null; busy = false; status = ""; clearBoosts();
       current = randomEncounter();
+      shiny = Math.random() < SHINY_RATE;
       // Pokédex "seen": it appeared in front of the active trainer.
       const tid = active();
       if (tid) Store.update((s) => {
@@ -425,16 +434,20 @@
       }
       if (outcome === "catch") {
         let newCombo = 0;
+        const isShiny = shiny;
+        // ✨ A shiny pays out DOUBLE sips.
+        const sips = isShiny ? nfo.sips * 2 : nfo.sips;
         const helperId = helper && helper !== tid ? helper : "";
         const helperName = helperId ? attendeeName(helperId) : "";
         // Helper shares the reward: half the sips on a normal catch, the full
         // haul when the assist lands a legendary.
-        const helperSips = helperId ? (nfo.leg ? nfo.sips : Math.max(1, Math.round(nfo.sips / 2))) : 0;
+        const helperSips = helperId ? (nfo.leg ? sips : Math.max(1, Math.round(sips / 2))) : 0;
         Store.update((s) => {
           const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
           const prev = t.caught[id];
           // Keep the ball that first landed it (best-catch keepsake).
-          t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed };
+          t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed,
+            shiny: ((prev && prev.shiny) || isShiny) || undefined };
           t.catches = Object.keys(t.caught).length;
           t.combo = (t.combo || 0) + 1;               // extend the catch combo
           newCombo = t.combo;
@@ -444,29 +457,31 @@
             h.helps = (h.helps || 0) + 1;
             h.assistSips = (h.assistSips || 0) + helperSips;
           }
-          s.pokedex.given = (s.pokedex.given || 0) + nfo.sips + helperSips;
+          s.pokedex.given = (s.pokedex.given || 0) + sips + helperSips;
           // Feed the championship: a catch scores its sip-value for the
           // catcher's team; the helper's team banks their share too.
-          Store.grantPoints(s, "safari", Store.teamOf(tid), nfo.sips);
+          Store.grantPoints(s, "safari", Store.teamOf(tid), sips);
           if (helperId) Store.grantPoints(s, "safari", Store.teamOf(helperId), helperSips);
           s.pokedex.log = s.pokedex.log || [];
-          s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, ts: now() });
+          s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, shiny: isShiny || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
-          if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + " — the only one in the region!" + (viaMaster ? " (Master Ball dare!)" : ""));
+          if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY, the only one in the region!!" : " — double payout!"));
+          else if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + " — the only one in the region!" + (viaMaster ? " (Master Ball dare!)" : ""));
           else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
         });
         const catcherTeam = Store.team(Store.teamOf(tid));
-        sfx("win");
+        sfx(isShiny ? "fanfare" : "win");
         const nextBonus = Math.min(0.25, 0.05 * newCombo);
         enc.innerHTML = "";
-        enc.appendChild(el("div", { class: "safari-card result win" }, [
-          el("img", { class: "safari-wild pop", src: SP[id], alt: nfo.name }),
-          el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + nfo.name + "!"),
+        enc.appendChild(el("div", { class: "safari-card result win" + (isShiny ? " shiny" : "") }, [
+          el("img", { class: "safari-wild pop", src: (isShiny && SPS[id]) || SP[id], alt: nfo.name }),
+          el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + (isShiny ? "a ✨ SHINY " : "") + nfo.name + "!"),
+          isShiny ? el("div", { class: "safari-legend-note" }, "✨ SHINY — its colors are different! Double payout, marked in the dex forever.") : null,
           nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 ONE OF ONE — the only " + nfo.name + " in the region belongs to " + attendeeName(tid) + "!") : null,
           el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
-          el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + "!"),
-          catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + nfo.sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
+          el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + sips + " sip" + (sips > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + "!"),
+          catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
           helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
           newCombo > 1 ? el("div", { class: "safari-combo-note" }, "🔥 Catch combo ×" + newCombo + " — +" + Math.round(nextBonus * 100) + "% on your next throw!") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
@@ -488,7 +503,7 @@
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
       }
-      current = null; busy = false; status = ""; clearBoosts();
+      current = null; busy = false; status = ""; shiny = false; clearBoosts();
       renderStats(); renderBoard(); renderTeam(); renderDex();
     }
 
@@ -573,11 +588,13 @@
         if (!id) { slots.appendChild(el("div", { class: "safari-team-slot empty" }, "＋")); continue; }
         // Partners can live outside the 251 dex — fall back to the favorites
         // sprite pack and the attendee's favorite name.
-        const src = SP[id] || Store.sprite(id);
+        const rc = (rec(active()).caught || {})[id];
+        const isShiny = !!(rc && rc.shiny);
+        const src = (isShiny && SPS[id]) || SP[id] || Store.sprite(id);
         const nm = DEX[id] ? DEX[id].n
           : ((Store.state.attendees.find((x) => x.favoriteId === id) || {}).favorite || "Partner");
-        slots.appendChild(el("button", { class: "safari-team-slot filled", title: "Remove", onClick: () => toggleTeam(id) },
-          [src ? el("img", { src: src, alt: nm }) : el("span", {}, "◓"), el("span", {}, nm)]));
+        slots.appendChild(el("button", { class: "safari-team-slot filled" + (isShiny ? " shiny" : ""), title: "Remove", onClick: () => toggleTeam(id) },
+          [src ? el("img", { src: src, alt: nm }) : el("span", {}, "◓"), el("span", {}, (isShiny ? "✨" : "") + nm)]));
       }
       teamHost.appendChild(slots);
     }
@@ -592,11 +609,14 @@
       IDS.forEach((id) => {
         const got = !!caught[id];
         const ballKey = got && caught[id].ball;
-        grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : ""),
-          title: got ? DEX[id].n + (ballKey === "partner" ? " — your partner ❤" : (ballKey ? " — caught with a " + ballByKey(ballKey).name : "")) + " — tap for team" : "#" + id + " — not caught",
+        const isShiny = got && !!caught[id].shiny;
+        const src = (isShiny && SPS[id]) || SP[id];
+        grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : "") + (isShiny ? " shiny" : ""),
+          title: got ? DEX[id].n + (isShiny ? " ✨ SHINY" : "") + (ballKey === "partner" ? " — your partner ❤" : (ballKey ? " — caught with a " + ballByKey(ballKey).name : "")) + " — tap for team" : "#" + id + " — not caught",
           onClick: got ? () => toggleTeam(id) : null }, [
-          SP[id] ? el("img", { src: SP[id], alt: got ? DEX[id].n : "", loading: "lazy" }) : null,
+          src ? el("img", { src: src, alt: got ? DEX[id].n : "", loading: "lazy" }) : null,
           el("span", { class: "safari-dex-num" }, "#" + id),
+          isShiny ? el("span", { class: "safari-dex-shiny" }, "✨") : null,
           ballKey ? el("span", { class: "safari-dex-ball" }, ballIcon(ballByKey(ballKey))) : null,
         ]));
       });
