@@ -8,7 +8,7 @@
       const overlay = el("div", { class: "modal-overlay" });
       const close = () => overlay.remove();
 
-      const footer = el("div", { class: "modal-footer" }, [
+      const footer = opts.noFooter ? null : el("div", { class: "modal-footer" }, [
         el("button", { class: "btn subtle", onClick: close }, "Cancel"),
         onSave
           ? el("button", { class: "btn primary", onClick: () => { onSave(); close(); } },
