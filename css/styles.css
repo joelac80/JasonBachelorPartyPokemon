@@ -1476,6 +1476,8 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .league-intro-name { font-family: var(--pixel); font-size: 34px; font-weight: 900; color: #fff; text-shadow: 3px 3px 0 rgba(238,21,21,.55); }
 .league-intro-quote { color: #d8d8ea; font-size: 15px; line-height: 1.55; font-style: italic; }
 .league-intro.red .league-intro-name { text-shadow: 3px 3px 0 rgba(120,120,200,.5); }
+.league-intro.fame .league-intro-mt { filter: drop-shadow(0 0 22px rgba(255,208,64,.65)); }
+.league-intro.fame .league-intro-name { text-shadow: 3px 3px 0 rgba(184,134,11,.6); }
 /* 🏛 Hall of Fame */
 .hof-list { display: flex; flex-direction: column; gap: 10px; }
 .hof-row { background: linear-gradient(90deg, #fff2c4, #fffdf2); border: 2.5px solid #b8860b; border-radius: 12px;
@@ -1483,3 +1485,4 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .hof-name { font-weight: 800; margin-bottom: 6px; }
 .hof-team { display: flex; gap: 4px; flex-wrap: wrap; }
 .hof-mon { width: 44px; height: 44px; image-rendering: pixelated; }
+.hof-fight { margin-top: 8px; }
