@@ -58,6 +58,7 @@
       stat(Store.tradeCount(attId), "🔁 Trades"),
       stat(Store.evoCount(attId), "🎉 Evolutions"),
       stat(beltNow ? "👊 now" : Store.beltReigns(attId), "🥇 Belt reigns"),
+      stat(Store.gymBadgeCount(attId) + " / 16", "🏟 Gym badges"),
       stat(wins + "–" + losses, "Battle W–L"),
       stat(helpsN, "Assists"),
       stat(masterN, "Master catches"),

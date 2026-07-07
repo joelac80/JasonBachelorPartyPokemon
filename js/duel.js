@@ -633,10 +633,15 @@
           const player = sides[playerSide].units[0];
           Store.update((s) => {
             if (winSide === playerSide) {
-              const g = (s.gymBadges || [])[opts.gym.idx];
-              if (g) { g.holder = player.attId; g.used = false; }
+              // Everyone can hold every badge — a win just adds you.
+              s.gymCircuit = s.gymCircuit || {};
+              const hs = s.gymCircuit[opts.gym.idx] = s.gymCircuit[opts.gym.idx] || [];
+              const fresh = hs.indexOf(player.attId) < 0;
+              if (fresh) hs.push(player.attId);
               Store.grantPoints(s, "battle", player.teamId, 5);
-              Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (g ? g.name : "gym") + " badge!");
+              Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (opts.gym.badge || "gym") + " Badge!" + (fresh ? "" : " (rematch flex)"));
+              if (fresh && Store.gymBadgeCount(player.attId) >= 16)
+                Store.chron(s, "🏆", "ALL 16 BADGES — " + player.name + " has conquered Johto AND Kanto. CHAMPION!!");
             } else {
               Store.chron(s, "🤖", "Leader " + opts.gym.leader + " defended the gym — " + player.name + " drinks 3 and trains harder.");
             }
@@ -853,12 +858,20 @@
 
     // ---- VS intro, then the faster lead moves first ----
     function vsPanel(cls, s) {
+      const mons = [];
+      sides[s].units.forEach((u) => {
+        if (u.ai) {
+          // Gym leaders keep their team in the balls — one ball per mon,
+          // identities hidden until they're sent out.
+          u.party.forEach(() => mons.push(el("div", { class: "battle-ball-inner vs-mon" })));
+          return;
+        }
+        const m = mon(u);
+        const src = frontSprite(m.id, m.shiny);
+        mons.push(src ? el("img", { class: "vs-mon", src: src, alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" }));
+      });
       return el("div", { class: "vs-panel " + cls }, [
-        el("div", { class: "vs-mons" }, sides[s].units.map((u) => {
-          const m = mon(u);
-          const src = frontSprite(m.id, m.shiny);
-          return src ? el("img", { class: "vs-mon", src: src, alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" });
-        })),
+        el("div", { class: "vs-mons" }, mons),
         el("div", { class: "vs-name" }, label(s)),
       ]);
     }
