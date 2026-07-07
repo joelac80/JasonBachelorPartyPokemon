@@ -1432,3 +1432,10 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .gymc-holders.none { color: var(--ink-dim); font-size: 12px; }
 .gymc-holder { font-size: 11px; font-weight: 700; background: #fff; border: 1.5px solid #b8860b;
   border-radius: 999px; padding: 2px 8px; cursor: pointer; }
+
+/* 👑 Pokémon League cards */
+.gymc-card.league { border-color: #7a5aa0; }
+.gymc-card.league.earned { border-color: #b8860b; }
+.gymc-card.red-card { background: linear-gradient(#2b2b40, #3a2b4b); border-color: #e6352f; color: #f2f2f2; }
+.gymc-card.red-card .gymc-leader, .gymc-card.red-card .gymc-holders.none { color: #b9b9d0; }
+.gymc-ico.red-q { font-size: 26px; line-height: 1; }

@@ -625,6 +625,31 @@
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
       ], () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel)), 700); if (done) done(); });
       if (!record) return;
+      // 👑 Pokémon League: Elite Four → LANCE → the silent one on Mt. Silver.
+      // Off the leaderboards, like gyms — glory (and points) only.
+      if (opts.league) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const lg = opts.league;
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              s.league = s.league || {};
+              const w = s.league[player.attId] = s.league[player.attId] || [];
+              const fresh = w.indexOf(lg.key) < 0;
+              if (fresh) w.push(lg.key);
+              Store.grantPoints(s, "battle", player.teamId, lg.pts || 6);
+              if (lg.key === "red") Store.chron(s, "🗻", player.name + " climbed Mt. Silver and defeated RED. There is nothing left to prove. THE ABSOLUTE CHAMPION.");
+              else if (lg.key === "lance") Store.chron(s, "👑", player.name + " defeated Champion LANCE — welcome to the HALL OF FAME!" + (fresh ? " …the summit of Mt. Silver just rumbled." : ""));
+              else Store.chron(s, "⭐", player.name + " toppled Elite Four " + lg.name + "!");
+            } else {
+              if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " drinks 3 and descends the mountain.");
+              else Store.chron(s, "🤖", lg.rank + " " + lg.name + " stands undefeated — " + player.name + " drinks 3.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
       // 🏟 Gym challenges: badge on a win, sips on a loss — they never touch
       // the duel leaderboard, Elo, or the Champion's Belt.
       if (opts.gym) {
