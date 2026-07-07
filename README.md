@@ -1,71 +1,77 @@
 # 🎉 Bachelor Party HQ — Jason's Bachelor Party
 
-A **100% local** web app for the big weekend. No internet required, no accounts,
-no build step. Themes: **Bulbasaur / Pokémon**, **Indiana Hoosiers** (Fernando
-Mendoza), **Carolina Panthers** (a.k.a. *Team Persian*), and pure **lake house
-vibes**.
+A **local-first Pokémon-themed PWA** for the big weekend (Bristol, IN · Jul 9–12,
+2026). Vanilla JS, no build step, no accounts. Runs 100% in the browser — with an
+optional Firebase live-sync layer so every phone shares ONE scoreboard.
+
+**Live app:** https://joelac80.github.io/JasonBachelorPartyPokemon/
+
+## Quick start (the crew)
+
+1. Open the link on your phone → the **welcome tour** walks you through
+   everything: pick your trainer, type the room code, done.
+2. **Add to Home Screen** (Share → Add to Home Screen on iPhone) for the
+   installable app + reliable notifications.
+3. Green Poké Ball in the top bar = live-synced to the room.
 
 ## What's inside
 
-- **🏆 Victory Road** — the Beer Olympics scoreboard. Award points per team per
-  event, watch live standings and medals update in real time.
-- **🎡 Draft & Wheel** — spin a wheel to pick a trainer, assign them to a team,
-  and manage a live draft board (with an auto-balance button).
-- **🎴 Trainer Cards** — Pokémon-style cards for everyone attending. Fully
-  editable (name, nickname, type, team, signature move).
-- **🗓️ Itinerary** — the weekend schedule on a clean timeline.
-- **😂 Meme Vault** — add memes by URL or upload straight from your phone/laptop.
-- **⚙️ Settings** — edit party info, teams, and events; export/import a backup;
-  reset to defaults.
+**🗺 The overworld map** — six towns, each with a theme:
 
-## How to run it
+- **🔴 Safari Zone** — the catching game (dares → boosts → throw), ✨ 1-in-16
+  shinies, 🍓 Sitrus Berry drops, nicknames, roaming legendaries; the
+  **Pokédex Tracker** (teams, dex progress, ⚡ Type Masters) and the
+  **Trading Post** (1-for-1 swaps; Kadabra/Machoke/Graveler/Haunter evolve
+  ONLY by trade).
+- **⚔️ Battle Frontier** — the battling heart:
+  - **Battle Arena** — real turn-based Lv50 duels, singles or doubles, each
+    trainer on their OWN phone. KO = 2 sips, loss toasts 4; 🧪 Potion = 3 sips
+    to heal; 🍺 Liquid Courage = finish half your drink for a same-turn
+    can't-miss crit. Battle EXP: 3 KOs by a mon = evolution. Elo ratings +
+    the 🥇 Champion's Belt.
+  - **Brackets** — tournaments that launch real duels.
+  - **🏟 Gym Circuit** — the 16 canon Gen 2 leaders (Johto runs HGSS rematch
+    squads). Even matches, hidden lineups, everyone can earn every badge.
+  - **👑 Pokémon League** — Victory Road gate (8 Johto badges) → Elite Four
+    (HGSS rematch teams, in order) → Champion LANCE → the Hall of Fame (with
+    ⚔ Battles of Fame vs enshrined teams) → and RED waits on Mt. Silver for
+    anyone holding all 16 badges.
+  - When the room is live, gym/League runs **broadcast** — everyone can
+    👀 watch move-by-move and cheer with floating emoji.
+- **🎰 Game Corner** — Jeopardy (Bulbasaur trivia), the Oracle (predictions),
+  the Card Table (President, Euchre, King's Cup…), Catch of the Day dares.
+- **🍺 Lakeside Tavern** — the drink tracker (First Sip, Thirstiest, per-drink champs).
+- **🏅 Honors Hall** — weekend badges (hand-awarded, with powers), awards
+  voting, the Hall of Bulbasaur gallery, and the 💌 sealed Message Wall.
+- **👑 The Summit** — the Ceremony (crowning + closing credits), Weekend Log,
+  Trip Stats (Wrapped, exports), and the keepsake Poster.
 
-### Easiest (recommended)
-- **Mac:** double-click `start.command`
-- **Windows:** double-click `start.bat`
+Everything feeds one **Victory Road** team scoreboard, and the **Ceremony**
+crowns the champion on the last night.
 
-These start a tiny local web server and open the app in your browser. Everyone
-on the **same Wi‑Fi** can also join from their phones: find the host computer's
-local IP (e.g. `192.168.1.42`) and visit `http://192.168.1.42:8000`.
+Tap **?** in the top bar for the Field Guide — the full in-app manual. The
+welcome tour can be replayed from there too.
 
-> Note: each device keeps its **own** copy of the data in its browser. For a
-> shared scoreboard, run it on one laptop/TV and use that as the "control
-> center." Use **Settings ▸ Export/Import** to copy data between devices.
+## Running it locally (development)
 
-### Manual
-From this folder, run any static server, e.g.:
+Any static server works:
+
 ```bash
 python3 -m http.server 8000      # then open http://localhost:8000
 # or:  npx serve .
+# or:  double-click start.command (Mac) / start.bat (Windows)
 ```
 
-You *can* also just double-click `index.html`, but some browsers restrict local
-storage on `file://` — serving it (above) is more reliable.
+Deploys are just pushes to `main` — GitHub Pages serves the repo root.
 
-## Adding your real info
+## Live sync
 
-Open **`data/seed.js`** and edit the arrays:
+Optional. The Firebase project (`jason-bach-party`) config is baked in — guests
+only enter the shared **room code** (in the welcome tour or Settings). Without
+it, each phone is its own save file (Settings → Export/Import moves data).
+Details in `SYNC.md`; owner checklist in `ROADMAP.md`.
 
-- `party` — title, date/time, location, blurb (drives the home page + countdown)
-- `attendees` — the real crew (name, team, Pokémon type, catchphrase)
-- `teams` — team names, emojis, colors
-- `events` — Victory Road events and their point values
-- `activities` — the itinerary
-- `memes` — starter memes (or add them in-app)
+## Editing content
 
-After editing `seed.js`, open the app and use **Settings ▸ Reset to defaults**
-to reload the fresh data (this wipes in-app edits/scores, so do it before the
-party starts). You can also just edit everything in-app — changes are saved
-automatically in the browser.
-
-## Tech notes
-
-- Plain HTML/CSS/JavaScript. No dependencies, no CDNs, works offline.
-- State is stored in the browser via `localStorage`.
-- Structure:
-  - `index.html` — shell + script order
-  - `css/styles.css` — the theme
-  - `data/seed.js` — all editable content
-  - `js/` — `store`, `router`, `util`, `modal`, `app`, and one file per view in `js/views/`
-
-Gotta party 'em all. 🔴⚪
+- `data/seed.js` — party info, attendees, teams, events, badges, itinerary
+- Jeopardy clues, badge powers, and Victory Road events are editable in-app (✎)

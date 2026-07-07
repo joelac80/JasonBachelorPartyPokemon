@@ -42,7 +42,7 @@
       { e: "🔴", t: "Catch Pokémon in the Safari",
         d: "The Safari Zone is the engine: do dares to earn boosts, then throw. ✨ 1-in-16 encounters are SHINY. Swap at the Trading Post (some Pokémon ONLY evolve by trade), and your caught team fights for you everywhere else." },
       { e: "⚔️", t: "Battle on your own phones",
-        d: "Real turn-based Lv50 duels — each trainer plays on their own phone. Every KO = 2 sips, losers toast 4. 🧪 Potion = 3 sips to heal; 🍺 finish half your drink for a can't-miss crit. Then climb: 16 Gym Leaders → Elite Four → Champion LANCE → …something waits on Mt. Silver." },
+        d: "Real turn-based Lv50 duels — each trainer plays on their own phone. Every KO = 2 sips, losers toast 4. 🧪 Potion = 3 sips to heal; 🍺 finish half your drink for a can't-miss crit. Then climb: 16 Gym Leaders → Elite Four → Champion LANCE → …something waits on Mt. Silver. Big fights broadcast live — the whole room watches and cheers." },
       { e: "🏆", t: "Everything scores",
         d: "Jeopardy, the Oracle, the Card Table, drinks, dares — every win feeds your team's total on Victory Road, and Sunday's Ceremony crowns the champion. Lost later? Tap the ? up top for the Field Guide. Now go." },
     ];
