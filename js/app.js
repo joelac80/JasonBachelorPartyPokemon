@@ -207,7 +207,7 @@
         (ch.fromName || "Someone") + (isDuel ? " wants a Pokémon Duel" : " wants to battle") + (ch.event ? " · " + ch.event : ""));
       if (window.SFX && SFX.select) SFX.select();
       let ctrl;
-      const isDouble = isDuel && !!ch.pairAtt;
+      const isDouble = isDuel && (!!ch.pairAtt || !!ch.solo2);
       // A partner signed in on their own phone plays their own turns —
       // otherwise their side's lead phone drives both units.
       const clientOf = (attId, fallback) => {
@@ -216,8 +216,13 @@
       };
       const launch = (bUnits) => {
         Sync.respondChallenge(ch, true);
-        const aUnits = [{ attId: ch.fromAtt, client: ch.fromClient, monIds: ch.party || [] }];
-        if (isDouble) aUnits.push({ attId: ch.pairAtt, client: clientOf(ch.pairAtt, ch.fromClient), monIds: ch.pairParty || [] });
+        let aUnits;
+        if (ch.solo2) {          // one trainer running both slots
+          aUnits = (ch.party || []).slice(0, 2).map((id) => ({ attId: ch.fromAtt, client: ch.fromClient, monIds: [id] }));
+        } else {
+          aUnits = [{ attId: ch.fromAtt, client: ch.fromClient, monIds: ch.party || [] }];
+          if (ch.pairAtt) aUnits.push({ attId: ch.pairAtt, client: clientOf(ch.pairAtt, ch.fromClient), monIds: ch.pairParty || [] });
+        }
         const aLead = Duel.statsFor((ch.party || [])[0] || 1).x, bLead = Duel.statsFor(bUnits[0].monIds[0]).x;
         const setup = {
           title: ch.event || "Duel",
@@ -240,24 +245,41 @@
             onDone: (ids) => launch([{ attId: me, client: Sync.myClientId(), monIds: ids }]) });
           return;
         }
-        Duel.pickParty({ attId: me, max: 1, title: "Your Pokémon (double battle)", onDone: (mine) => {
-          Duel.pickTrainer({ exclude: [me, ch.fromAtt, ch.pairAtt].filter(Boolean), title: "Pick your partner",
-            hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.",
-            onDone: (ally) => {
-              const allyName = (Store.attendee(ally) || {}).name || "Partner";
-              Duel.pickParty({ attId: ally, max: 1, title: allyName + "'s Pokémon", onDone: (theirs) => {
-                launch([
-                  { attId: me, client: Sync.myClientId(), monIds: mine },
-                  { attId: ally, client: clientOf(ally, Sync.myClientId()), monIds: theirs },
-                ]);
+        // Double battle: fight with a partner, or run two of your own.
+        let styleCtrl;
+        const withPartner = () => {
+          Duel.pickParty({ attId: me, max: 1, title: "Your Pokémon (double battle)", onDone: (mine) => {
+            Duel.pickTrainer({ exclude: [me, ch.fromAtt, ch.pairAtt].filter(Boolean), title: "Pick your partner",
+              hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.",
+              onDone: (ally) => {
+                const allyName = (Store.attendee(ally) || {}).name || "Partner";
+                Duel.pickParty({ attId: ally, max: 1, title: allyName + "'s Pokémon", onDone: (theirs) => {
+                  launch([
+                    { attId: me, client: Sync.myClientId(), monIds: mine },
+                    { attId: ally, client: clientOf(ally, Sync.myClientId()), monIds: theirs },
+                  ]);
+                } });
               } });
-            } });
-        } });
+          } });
+        };
+        const solo = () => {
+          Duel.pickParty({ attId: me, min: 2, max: 2, title: "Pick TWO Pokémon", hint: "Both fight at the same time.",
+            onDone: (ids) => launch(ids.map((id) => ({ attId: me, client: Sync.myClientId(), monIds: [id] }))) });
+        };
+        const sBody = el("div", { class: "chal-modal" }, [
+          el("div", { class: "chal-line" }, "How does your side fight?"),
+          el("div", { class: "toolbar" }, [
+            el("button", { class: "btn primary", onClick: () => { styleCtrl.close(); withPartner(); } }, "🤝 With a partner"),
+            el("button", { class: "btn primary", onClick: () => { styleCtrl.close(); solo(); } }, "🐾 Solo — 2 Pokémon"),
+          ]),
+        ]);
+        styleCtrl = Modal.open("Double battle!", sBody, null, { noFooter: true });
       };
-      const pairName = isDouble ? ((Store.attendee(ch.pairAtt) || {}).name || "a partner") : "";
+      const pairName = ch.pairAtt ? ((Store.attendee(ch.pairAtt) || {}).name || "a partner") : "";
       const body = el("div", { class: "chal-modal" }, [
         el("div", { class: "chal-line" }, (isDuel ? "🎮 " : "⚔ ") + (ch.fromName || "Someone") +
-          (isDouble ? " & " + pairName + " challenge you to a DOUBLE battle — grab a partner!"
+          (ch.solo2 ? " challenges you to a DOUBLE battle, running two of their own Pokémon — bring a partner or go solo!"
+            : ch.pairAtt ? " & " + pairName + " challenge you to a DOUBLE battle — grab a partner (or go solo with 2)!"
             : isDuel ? " challenges you to a Pokémon Duel! (bringing " + ((ch.party || []).length || 1) + ")"
             : " challenges you to a battle!")),
         ch.event ? el("div", { class: "chal-ev" }, "Event: " + ch.event) : null,
