@@ -9,6 +9,7 @@
     {
       title: "🚀 Set up (before the party)",
       items: [
+        { r: null, e: "👋", t: "The welcome tour", d: "Every fresh phone gets a six-slide walkthrough on first open — picking your trainer and the room code happens right in it. Skippable; replay it any time from the bottom of this guide." },
         { r: "victoryroad", e: "🎡", t: "Draft teams", d: "Split the crew into teams — find it under Victory Road’s Setup row." },
         { r: "roster", e: "🎴", t: "The Squad", d: "Everyone’s trainer card + their favorite Pokémon. Tap ⓘ for a profile, ✎ to edit." },
         { r: "activities", e: "🗓️", t: "Game Plan", d: "The weekend itinerary — also under Victory Road’s Setup row." },

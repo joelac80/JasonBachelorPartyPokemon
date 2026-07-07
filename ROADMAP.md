@@ -15,22 +15,27 @@ optional Firebase layer for live multiplayer._
 - Retro SFX + offline chiptune music; energy-symbol & gym-badge iconography.
 
 **Games**
-- **Pokédex Safari** — silhouette encounters, dares/berries/rallies (with chicken-out spook), helper double-battles, Master Ball dare, ball tiers, per-catch ball record.
-- **Battle Arena** — 1v1/2v2, type effectiveness, VS intro, back sprites, logging.
-- **Brackets**, **Jeopardy** (Daily Bulbas), **Predictions/Oracle**.
+- **Pokédex Safari** — silhouette encounters, dares/berries/rallies (with chicken-out spook), helper double-battles, Master Ball dare, ball tiers, per-catch ball record, ✨ **shinies (1/16, real sprites)**, 🍓 **Sitrus Berry drops**, **nicknames**, 🌩 **roaming legendaries** (room-wide race).
+- **Pokémon Duels** — real turn-based Lv50 battles: singles & doubles, **each trainer on their own phone** (partners too), perspective-correct back sprites, exact type chart (immunities, ×4), switching, 🧪 Potion = 3 sips, 🍺 Liquid Courage = same-turn Z-move crit, KO = 2 sips / loss = 4, **battle-EXP evolution** (3 KOs by the mon itself; trade-evo species excluded), veteran KO bonus, Sitrus auto-heal, instant rematch, 📈 **Elo**, 🥇 **Champion's Belt**.
+- **🏟 Gym Circuit** — the 16 canon Gen 2 leaders (Johto at **HGSS rematch strength**), even matches, hidden lineups, multi-holder badges, AI-controlled.
+- **👑 Pokémon League** — its own cinematic page: Victory Road gate (8 Johto badges) → Elite Four (**HGSS rematch teams**, in order, rank-boosted) → Champion LANCE → **Hall of Fame** (champions enshrined WITH their team; ⚔ **Battle of Fame** vs any enshrined squad) → hidden **RED** on Mt. Silver (needs Lance + all 16 badges).
+- **Trading Post** — 1-for-1 swaps (partners untradeable), **trade evolutions** (Kadabra/Machoke/Graveler/Haunter ONLY evolve by trade), remote trade **offers with consent**, shiny flags travel.
+- **Brackets** (launch real duels), **Jeopardy** (Daily Bulbas), **Predictions/Oracle**.
 - **Card Table** — President/Asshole, Euchre, King's Cup, Ride the Bus (+ "same table" memory).
 - **Drink Tracker** — by trainer/type/day, named drinks, "what we drank".
 
 **Competition & keepsakes**
-- One **Victory Road** scoreboard: Safari, Battle, Jeopardy, Oracle, and Cards all auto-feed team points → the **Ceremony** crowns it.
-- **Live Trophies** everywhere: 🧢 Ash Ketchum, 🟣 Master Catcher, 🤝 Best Helper, ⚔️ Battle Champ, 🔮 Oracle, 👑/💩 Best & Worst President, ♠️ Euchre Champ, 🍾 First Sip, 🍺 Thirstiest + per-drink champs.
+- One **Victory Road** scoreboard: Safari, Duels, Gyms, League, Jeopardy, Oracle, and Cards all auto-feed team points → the **Ceremony** crowns it.
+- **Live Trophies** everywhere: 🧢 Ash Ketchum, 🟣 Master Catcher, 🤝 Best Helper, ⚔️ Battle Champ, ✨ Shiny Hunter, 🏟 Gym Crusher/CHAMPION, 👑 League Contender / 🗻 Conquered Mt. Silver, 🥇 Champion's Belt, 🔮 Oracle, 👑/💩 Best & Worst President, ♠️ Euchre Champ, 🍾 First Sip, 🍺 Thirstiest + per-drink champs.
 - **Weekend Chronicle** → **Poster Board** (crew grid, awards wall, "what we drank", photo + move-by-move timeline; print/PDF).
 - **Photo log** — capture, downscale, caption, react ❤️😂🔥👏🥳 + comment.
-- **Field Guide** (`?` in top bar) documenting everything.
+- 💌 **Message Wall** — notes for the groom, sealed on his phone until the Ceremony's closing credits.
+- **Field Guide** (`?` in top bar) documenting everything + **first-open onboarding tour** (six slides; picks trainer + room code; replayable from the guide).
 
 **Live multiplayer (optional, Firestore)**
-- Local-first; sync only when a room is joined. Green Poké Ball indicator.
-- Presence ("who's here now"), phone-to-phone **challenges**, **spectator** battles, LIVE home banner, phone **notifications**, synced photos (separate channel).
+- Local-first; sync only when a room is joined. Green Poké Ball indicator. PWA (manifest + service worker), phone **notifications**.
+- Presence ("who's here now"), phone-to-phone **challenges** (duels & trades), spectating with **emoji cheers that float on the players' screens**, LIVE home banner, synced photos (separate channel).
+- **Gym/League runs broadcast live** — stakes in the alert ("🏅 Fog Badge on the line"), move-by-move watching, and a room-wide "🏁 …wins!" ping at the end.
 
 ---
 
@@ -62,9 +67,10 @@ optional Firebase layer for live multiplayer._
    `photos` subcollection in the Firebase console if you want those gone too.
 
 **On arrival — tell the crew**
-7. Everyone opens the link → Settings → **room code + "You are" (their trainer)** →
-   Connect. Green Poké Ball = live. This drives attribution, Scorekeeper, challenges,
-   and message authorship.
+7. Everyone opens the link → the **welcome tour** does the rest (pick your
+   trainer + type the room code, right in the tour). Green Poké Ball = live.
+   This drives attribution, Scorekeeper, challenges, and message authorship.
+   (Anyone who skipped it: Settings, or ? → "Replay the welcome tour".)
 8. **Jason signs in as himself** — keeps the 💌 Message Wall sealed on his phone
    until the closing credits unlock it.
 9. Everyone **Add to Home Screen** for the best notifications.
@@ -86,7 +92,6 @@ optional Firebase layer for live multiplayer._
 ## 🚀 Next-level ideas (to take it further)
 
 **Sentimental / connective**
-- **Message Wall for Jason** — everyone leaves a note/advice/roast, sealed until the Ceremony and printed on the poster. _(The centerpiece.)_
 - **Quote / "Overheard" board** — log the weekend's best lines with who said them; huge for the poster.
 
 **More play, more interests**
@@ -103,5 +108,4 @@ optional Firebase layer for live multiplayer._
 - **Ceremony finale upgrade** — pull every trophy + a highlight reel + the message wall into one grand closing screen.
 
 **Platform**
-- **PWA install** — manifest + service worker for a true installable, offline-cached app and more reliable notifications.
 - **Poster → image export** so it's one-tap shareable (beyond print-to-PDF).
