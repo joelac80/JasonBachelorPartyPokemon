@@ -274,6 +274,22 @@
       enc.innerHTML = "";
       if (!active()) { enc.appendChild(el("div", { class: "safari-idle" }, el("p", { class: "empty" }, "👆 Pick a trainer to start catching."))); return; }
       if (!current) {
+        // 🌩 roaming legendary: room-wide race — jump it to the front of the grass
+        const roam = window.Sync && Sync.roam && Sync.roam();
+        if (roam && DEX[roam.monId] && !legendaryOwner(roam.monId)) {
+          enc.appendChild(el("div", { class: "roam-banner" }, [
+            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the lake house — first catch claims it!"),
+            el("button", { class: "btn primary sm", onClick: () => {
+              current = roam.monId; shiny = false; revealId = null; status = ""; clearBoosts();
+              const tid = active();
+              if (tid) Store.update((s) => {
+                const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+                t.seen = t.seen || {}; t.seen[current] = 1;
+              });
+              sfx("dailyBulba"); renderEncounter();
+            } }, "🎯 Encounter it"),
+          ]));
+        }
         enc.appendChild(el("div", { class: "safari-idle walk" }, [
           el("button", { class: "btn spin-btn", onClick: findOne }, "👣 Walk in the grass"),
           el("div", { class: "safari-grass" }, ["🌿", "🌿", "🌿", "🌿", "🌿"].map((g) => el("span", {}, g))),
@@ -435,6 +451,9 @@
       if (outcome === "catch") {
         let newCombo = 0;
         const isShiny = shiny;
+        // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
+        // auto-eaten in duels when a mon drops below 30% HP.
+        const berryDrop = Math.random() < 0.3;
         // ✨ A shiny pays out DOUBLE sips.
         const sips = isShiny ? nfo.sips * 2 : nfo.sips;
         const helperId = helper && helper !== tid ? helper : "";
@@ -447,7 +466,9 @@
           const prev = t.caught[id];
           // Keep the ball that first landed it (best-catch keepsake).
           t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed,
-            shiny: ((prev && prev.shiny) || isShiny) || undefined };
+            shiny: ((prev && prev.shiny) || isShiny) || undefined,
+            nick: (prev && prev.nick) || undefined, kos: (prev && prev.kos) || undefined };
+          if (berryDrop) t.berries = (t.berries || 0) + 1;
           t.catches = Object.keys(t.caught).length;
           t.combo = (t.combo || 0) + 1;               // extend the catch combo
           newCombo = t.combo;
@@ -470,6 +491,11 @@
           else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
         });
+        // Roaming legendary landed → the race is over, tell the room.
+        try {
+          const roam = window.Sync && Sync.roam && Sync.roam();
+          if (roam && roam.monId === id) Sync.claimRoam(attendeeName(tid));
+        } catch (_) {}
         const catcherTeam = Store.team(Store.teamOf(tid));
         sfx(isShiny ? "fanfare" : "win");
         const nextBonus = Math.min(0.25, 0.05 * newCombo);
@@ -483,6 +509,7 @@
           el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + sips + " sip" + (sips > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + "!"),
           catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
           helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
+          berryDrop ? el("div", { class: "safari-combo-note" }, "🍓 It dropped a Sitrus Berry! (auto-heals your Pokémon in duels — 🍓×" + ((rec(tid).berries) || 1) + " in the bag)") : null,
           newCombo > 1 ? el("div", { class: "safari-combo-note" }, "🔥 Catch combo ×" + newCombo + " — +" + Math.round(nextBonus * 100) + "% on your next throw!") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
@@ -564,6 +591,36 @@
     function assistSipsOf(id) { return rec(id).assistSips || 0; }
     function masterCatchesOf(id) { return rec(id).masterCatches || 0; }
 
+    // ---- mon action sheet: team, nickname, battle record ----
+    function openMonSheet(id) {
+      const tid = active(); if (!tid) return;
+      const r = (rec(tid).caught || {})[id]; if (!r) return;
+      const isShiny = !!r.shiny;
+      const evoT = Store.evoTargets(id);
+      const tradeEvo = Store.TRADE_EVOS[id];
+      const nickIn = el("input", { class: "in", placeholder: DEX[id] ? DEX[id].n : "Nickname", value: r.nick || "", maxlength: "14" });
+      let ctrl;
+      const body = el("div", { class: "modal-form" }, [
+        el("div", { class: "evo-prompt-head" }, [
+          el("img", { class: "evo-prompt-img", src: (isShiny && SPS[id]) || SP[id] || Store.sprite(id), alt: "" }),
+          el("p", { class: "hint" }, (r.nick ? r.nick + " the " : "") + (DEX[id] ? DEX[id].n : "#" + id) +
+            (isShiny ? " ✨" : "") + " · " + ballByKey(r.ball || "poke").name +
+            " · 💥 " + (r.kos || 0) + " KO" + ((r.kos || 0) === 1 ? "" : "s") +
+            (tradeEvo ? " · 🔁 evolves by trade only" : (evoT.length ? " · ⚡ " + (r.kos || 0) + "/" + Store.KO_TO_EVOLVE + " to evolve" : ""))),
+        ]),
+        el("div", { class: "field" }, [el("span", {}, "✎ Nickname (shows in battles)"), nickIn]),
+        el("div", { class: "toolbar" }, [
+          el("button", { class: "btn primary", onClick: () => {
+            Store.setNick(tid, id, nickIn.value);
+            if (ctrl) ctrl.close(); renderTeam(); renderDex();
+          } }, "Save"),
+          el("button", { class: "btn subtle", onClick: () => { toggleTeam(id); if (ctrl) ctrl.close(); } },
+            inTeam(id) ? "− Remove from team" : "＋ Add to team"),
+        ]),
+      ]);
+      ctrl = Modal.open((DEX[id] ? DEX[id].n : "#" + id), body, null, { noFooter: true });
+    }
+
     // ---- team of 6 (active trainer) ----
     function inTeam(id) { return (rec(active()).team || []).indexOf(id) >= 0; }
     function toggleTeam(id) {
@@ -580,7 +637,8 @@
     function renderTeam() {
       teamHost.innerHTML = "";
       if (!active()) return;
-      teamHost.appendChild(el("h2", { class: "section-title" }, attendeeName(active()) + "'s Team of 6"));
+      const bag = rec(active()).berries || 0;
+      teamHost.appendChild(el("h2", { class: "section-title" }, attendeeName(active()) + "'s Team of 6" + (bag ? " · 🍓×" + bag : "")));
       const team = rec(active()).team || [];
       const slots = el("div", { class: "safari-team" });
       for (let i = 0; i < 6; i++) {
@@ -591,8 +649,8 @@
         const rc = (rec(active()).caught || {})[id];
         const isShiny = !!(rc && rc.shiny);
         const src = (isShiny && SPS[id]) || SP[id] || Store.sprite(id);
-        const nm = DEX[id] ? DEX[id].n
-          : ((Store.state.attendees.find((x) => x.favoriteId === id) || {}).favorite || "Partner");
+        const nm = (rc && rc.nick) || (DEX[id] ? DEX[id].n
+          : ((Store.state.attendees.find((x) => x.favoriteId === id) || {}).favorite || "Partner"));
         slots.appendChild(el("button", { class: "safari-team-slot filled" + (isShiny ? " shiny" : ""), title: "Remove", onClick: () => toggleTeam(id) },
           [src ? el("img", { src: src, alt: nm }) : el("span", {}, "◓"), el("span", {}, (isShiny ? "✨" : "") + nm)]));
       }
@@ -612,8 +670,8 @@
         const isShiny = got && !!caught[id].shiny;
         const src = (isShiny && SPS[id]) || SP[id];
         grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : "") + (isShiny ? " shiny" : ""),
-          title: got ? DEX[id].n + (isShiny ? " ✨ SHINY" : "") + (ballKey === "partner" ? " — your partner ❤" : (ballKey ? " — caught with a " + ballByKey(ballKey).name : "")) + " — tap for team" : "#" + id + " — not caught",
-          onClick: got ? () => toggleTeam(id) : null }, [
+          title: got ? DEX[id].n + (isShiny ? " ✨ SHINY" : "") + (ballKey === "partner" ? " — your partner ❤" : (ballKey ? " — caught with a " + ballByKey(ballKey).name : "")) + " — tap for team & nickname" : "#" + id + " — not caught",
+          onClick: got ? () => openMonSheet(id) : null }, [
           src ? el("img", { src: src, alt: got ? DEX[id].n : "", loading: "lazy" }) : null,
           el("span", { class: "safari-dex-num" }, "#" + id),
           isShiny ? el("span", { class: "safari-dex-shiny" }, "✨") : null,
@@ -621,14 +679,26 @@
         ]));
       });
       dexHost.appendChild(grid);
-      dexHost.appendChild(el("div", { class: "toolbar" }, [
+      const tools = [
         el("button", { class: "btn subtle sm", onClick: () => {
           if (confirm("Reset the ENTIRE Safari (all trainers, catches, teams, log)?")) {
             Store.update((s) => { s.pokedex = { active: "", trainers: {}, log: [], given: 0, taken: 0 }; });
             location.reload();
           }
         } }, "Reset Safari"),
-      ]));
+      ];
+      // 🌩 room event: release a roaming legendary the whole room races for.
+      if (window.Sync && Sync.isLive && Sync.isLive() && !(Sync.roam && Sync.roam())) {
+        tools.unshift(el("button", { class: "btn subtle sm", onClick: () => {
+          const wild = IDS.filter((x) => DEX[x].leg && !legendaryOwner(x));
+          if (!wild.length) { alert("Every legendary is already claimed!"); return; }
+          const pickId = wild[(Math.random() * wild.length) | 0];
+          Sync.startRoam(pickId);
+          Store.logEvent("🌩", "A wild " + DEX[pickId].n + " is ROAMING — first to catch it claims it!");
+          renderEncounter(); renderDex();
+        } }, "🌩 Unleash a roaming legendary"));
+      }
+      dexHost.appendChild(el("div", { class: "toolbar" }, tools));
     }
 
     function renderAll() { renderStats(); renderEncounter(); renderBoard(); renderTeam(); renderDex(); }

@@ -1409,3 +1409,12 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .evo-prompt-head { display: flex; align-items: center; gap: 10px; }
 .evo-prompt-img { width: 72px; height: 72px; image-rendering: pixelated; flex: 0 0 auto; }
 .evo-opt-img { width: 34px; height: 34px; image-rendering: pixelated; vertical-align: middle; }
+
+/* remote trade offer modal */
+.trade-offer-row { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 10px 0; }
+
+/* 🌩 roaming legendary banner */
+.roam-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  background: linear-gradient(90deg, #2b2b40, #4a3a6b); color: #ffe27a; border: 2.5px solid #e6b800;
+  border-radius: 12px; padding: 10px 12px; font-weight: 700; font-size: 13px; margin-bottom: 10px;
+  box-shadow: 0 0 12px rgba(230,184,0,.45); animation: shinyPulse 1.4s ease infinite; }

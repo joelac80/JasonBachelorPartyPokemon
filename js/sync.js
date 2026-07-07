@@ -34,10 +34,10 @@
   const statusSubs = [];
 
   // ---- presence + challenges (live multiplayer) ----
-  let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null;
-  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null;
-  let presenceList = [];
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [];
+  let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
+  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
+  let presenceList = [], roamLast = null;
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   // Generous TTL: phones suspend background tabs (heartbeats pause), so give
   // people 3 minutes before they drop off the "here now" list.
@@ -147,6 +147,13 @@
       const data = d.exists ? d.data() : null;
       duelSubs.forEach((f) => { try { f(data); } catch (_) {} });
     }, function () {});
+    // Roaming legendary event — one doc, whole room races to catch it.
+    roamRef = db.collection("rooms").doc(room).collection("live").doc("roam");
+    if (roamUnsub) roamUnsub();
+    roamUnsub = roamRef.onSnapshot((d) => {
+      roamLast = d.exists ? d.data() : null;
+      roamSubs.forEach((f) => { try { f(roamLast); } catch (_) {} });
+    }, function () {});
     // Photo log channel — one small doc per downscaled photo.
     photosRef = db.collection("rooms").doc(room).collection("photos");
     if (photosUnsub) photosUnsub();
@@ -170,8 +177,9 @@
     if (liveUnsub) { liveUnsub(); liveUnsub = null; }
     if (photosUnsub) { photosUnsub(); photosUnsub = null; }
     if (duelUnsub) { duelUnsub(); duelUnsub = null; }
+    if (roamUnsub) { roamUnsub(); roamUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = null; presenceList = [];
+    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; roamLast = null;
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
 
@@ -324,6 +332,22 @@
       if (!duelRef) return;
       duelRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
+    // ---- roaming legendary (room-wide race) ----
+    startRoam(monId) {
+      if (!roamRef || !monId) return;
+      roamRef.set({ id: newId("rm"), monId: monId, state: "live", by: conf.name || "", t: nowMs() }).catch(function () {});
+    },
+    claimRoam(byName) {
+      if (!roamRef) return;
+      roamRef.set({ state: "done", claimedBy: byName || "", t: nowMs() }, { merge: true }).catch(function () {});
+    },
+    roam() {
+      if (!roamLast || roamLast.state !== "live") return null;
+      if (roamLast.t && nowMs() - roamLast.t > 1200000) return null;   // 20 min and it wanders off
+      return roamLast;
+    },
+    onRoam(fn) { roamSubs.push(fn); return () => { const i = roamSubs.indexOf(fn); if (i >= 0) roamSubs.splice(i, 1); }; },
+
     // Spectator reaction — floats up on every screen watching the duel.
     sendDuelReaction(emoji) {
       if (!duelRef || !emoji) return;

@@ -125,10 +125,18 @@
         : "⚔ Ready — " + (picked.length === 1 ? picked.length + " Pokémon" : "party of " + picked.length);
       cta.disabled = picked.length < min;
     }
+    // One tap loads the trainer's saved Team of 6 (capped to this picker's max).
+    const teamBtn = el("button", { class: "btn subtle sm", onClick: () => {
+      const t = ((Store.state.pokedex || {}).trainers || {})[opts.attId] || {};
+      const team = (t.team || []).filter((id) => pool.indexOf(id) >= 0).slice(0, max);
+      if (!team.length) { alert("No team set — build one on the Safari page."); return; }
+      picked = team;
+      paint();
+    } }, "⚡ Use my team");
     const body = el("div", { class: "modal-form" }, [
       el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
       grid,
-      el("div", { class: "toolbar" }, [cta]),
+      el("div", { class: "toolbar" }, [cta, teamBtn]),
     ]);
     paint();
     const ref = Modal.open(opts.title || "Choose your party", body, null, {});
@@ -163,19 +171,29 @@
     const title = (opts.title || "Duel").trim() || "Duel";
 
     function makeUnit(u) {
-      const at = Store.attendee(u.attId) || { name: "Trainer", team: "" };
+      // NPC units (gym leaders) have no attendee — just a name and an AI flag.
+      const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
       const party = (u.monIds || []).filter(Boolean).map((id) => {
         const m = statsFor(id); m.hp = m.hpMax;
         m.shiny = isShinyFor(u.attId, id);          // ✨ carried into battle
         // battle EXP: KOs banked before this battle (this mon must land the
-        // blow itself to earn more)
+        // blow itself to earn more). Veterans hit harder: +2% attack per
+        // banked KO, capped at +20%.
         const t0 = ((Store.state.pokedex || {}).trainers || {})[u.attId];
-        m.kos0 = (t0 && t0.caught && t0.caught[id] && t0.caught[id].kos) || 0;
+        const rec0 = (t0 && t0.caught && t0.caught[id]) || {};
+        m.kos0 = rec0.kos || 0;
         m.kos = 0;
+        m.atk = m.atk * (1 + Math.min(0.2, 0.02 * m.kos0));
+        m.species = m.name;
+        if (rec0.nick) m.name = rec0.nick;          // nicknames scream in battle text
         return m;
       });
       if (!party.length) { const m = statsFor(1); m.hp = m.hpMax; party.push(m); }
+      // 🍓 one Sitrus Berry per trainer per battle, if their bag has any
+      // (snapshotted at setup so every phone agrees).
+      const bag = ((Store.state.pokedex || {}).trainers || {})[u.attId];
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
+        ai: !!u.ai, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
         party: party, cur: 0, potions: 2, courage: true, armed: false };
     }
     const sides = {
@@ -420,6 +438,7 @@
           const t = s.pokedex.trainers[u.attId];
           const r = t && t.caught && t.caught[m.id];
           if (r) r.kos = (r.kos || 0) + 1;
+          if (t) t.koLife = (t.koLife || 0) + 1;      // lifetime KOs (never spent)
         });
       } catch (_) {}
       if (!(window.DEX_EVOS || {})[m.id]) return null;
@@ -454,10 +473,24 @@
         if (sides[dSide].units.some(unitAlive)) { renderHp(dSide); advance(); done(); return; }  // doubles partner fights on
         finish(act.side, act, "faint", instant, done);
       };
+      // 🍓 auto-berry: survive a hit below 30% and the trainer's Sitrus kicks in
+      const eatBerry = () => {
+        tu.berryUsed = true;
+        mon(tu).hp = Math.min(mon(tu).hpMax, mon(tu).hp + 45);
+        paintHp(tu);
+        try {
+          Store.update((s) => {
+            const t = s.pokedex.trainers[tu.attId];
+            if (t && t.berries > 0) t.berries--;
+          });
+        } catch (_) {}
+      };
+      const berryReady = () => tm.hp > 0 && tm.hp < tm.hpMax * 0.3 && tu.hasBerry && !tu.berryUsed;
       if (instant) {
         if (!act.miss) {
           tm.hp = Math.max(0, tm.hp - act.dmg); paintHp(tu);
           if (tm.hp <= 0) { creditKO(u, m); if (tu._monEl) tu._monEl.classList.add("fainted"); }
+          else if (berryReady()) eatBerry();
         }
         afterDamage();
         return;
@@ -500,6 +533,8 @@
             [tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
             ["🍺 KO! " + tu.name + " takes 2 sips!", 1150],
           ].concat(act._exp ? [[act._exp, 1300, () => sfx("coin")]] : []), afterDamage);
+        } else if (berryReady()) {
+          beats([["🍓 " + tu.name + "'s Sitrus Berry! " + tm.name + " recovered 45 HP!", 1250, () => { eatBerry(); sfx("coin"); }]], afterDamage);
         } else afterDamage();
       });
     }
@@ -507,8 +542,9 @@
     // ---- battle-EXP evolutions (after the battle, classic style) ----
     // Prompts appear on the phone that controls the mon; branched lines
     // (Eevee!) get a choice. Declining keeps the EXP for next time.
-    function promptEvolutions() {
-      if (mode === "watch" || !window.Modal) return;
+    function promptEvolutions(afterAll) {
+      const fin = afterAll || function () {};
+      if (mode === "watch" || !window.Modal) { fin(); return; }
       const pend = [], seen = {};
       ["a", "b"].forEach((sd) => sides[sd].units.forEach((un) => {
         if (!(mode === "local" || isMine(un))) return;
@@ -519,9 +555,24 @@
         });
       }));
       (function next() {
-        const p = pend.shift(); if (!p) return;
+        const p = pend.shift(); if (!p) { fin(); return; }
         showEvoPrompt(p, next);
       })();
+    }
+
+    // Losers always want to run it back — same trainers, same parties,
+    // fresh HP. Hot-seat only (remote rematches are a new challenge).
+    function offerRematch(wLabel) {
+      if (mode !== "local" || !window.Modal) return;
+      let ctrl;
+      const body = el("div", { class: "chal-modal" }, [
+        el("div", { class: "chal-line" }, "🏆 " + wLabel + " took it. Run it back?"),
+        el("div", { class: "toolbar" }, [
+          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); start(opts); } }, "🔁 Rematch"),
+          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Done"),
+        ]),
+      ]);
+      ctrl = Modal.open("Rematch?", body, null, { noFooter: true });
     }
     function showEvoPrompt(p, onDone) {
       const targets = Store.evoTargets(p.mon.id);
@@ -572,8 +623,27 @@
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
-      ], () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(promptEvolutions, 700); if (done) done(); });
+      ], () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel)), 700); if (done) done(); });
       if (!record) return;
+      // 🏟 Gym challenges: badge on a win, sips on a loss — they never touch
+      // the duel leaderboard, Elo, or the Champion's Belt.
+      if (opts.gym) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              const g = (s.gymBadges || [])[opts.gym.idx];
+              if (g) { g.holder = player.attId; g.used = false; }
+              Store.grantPoints(s, "battle", player.teamId, 5);
+              Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (g ? g.name : "gym") + " badge!");
+            } else {
+              Store.chron(s, "🤖", "Leader " + opts.gym.leader + " defended the gym — " + player.name + " drinks 3 and trains harder.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
       try {
         Store.update((s) => {
           s.battles = s.battles || { log: [] }; s.battles.log = s.battles.log || [];
@@ -592,14 +662,23 @@
           if (!doubles) {
             const w = sides[winSide].units[0], l = sides[other(winSide)].units[0];
             const belt = s.battles.belt;
+            const logBelt = () => { s.battles.beltLog = s.battles.beltLog || []; s.battles.beltLog.push({ attId: w.attId, ts: now() }); };
             if (!belt || !belt.attId) {
-              s.battles.belt = { attId: w.attId, name: w.name, streak: 1, ts: now() };
+              s.battles.belt = { attId: w.attId, name: w.name, streak: 1, ts: now() }; logBelt();
               if (Store.chron) Store.chron(s, "🥇", w.name + " claimed the Champion's Belt!");
             } else if (belt.attId === w.attId) {
               belt.streak = (belt.streak || 1) + 1; belt.name = w.name;
             } else if (belt.attId === l.attId) {
-              s.battles.belt = { attId: w.attId, name: w.name, streak: 1, ts: now() };
+              s.battles.belt = { attId: w.attId, name: w.name, streak: 1, ts: now() }; logBelt();
               if (Store.chron) Store.chron(s, "🥇", w.name + " took the Champion's Belt from " + l.name + "!");
+            }
+            // 📈 Duel Elo (singles only, K=32, everyone starts at 1000).
+            if (w.attId && l.attId) {
+              s.battles.elo = s.battles.elo || {};
+              const rw = s.battles.elo[w.attId] || 1000, rl = s.battles.elo[l.attId] || 1000;
+              const exp = 1 / (1 + Math.pow(10, (rl - rw) / 400));
+              s.battles.elo[w.attId] = Math.round(rw + 32 * (1 - exp));
+              s.battles.elo[l.attId] = Math.round(rl - 32 * (1 - exp));
             }
           }
         });
@@ -675,11 +754,41 @@
         miss: miss, crit: crit, armed: armed, courage: armed, eff: eff, dmg: dmg });
     }
 
+    // ---- gym-leader AI: picks the hardest-hitting move vs the best target,
+    // sends the next mon on a faint. No drinks — leaders battle sober.
+    function aiAct(u, ptr) {
+      if (S.done) return;
+      if (S.pending) {
+        const b = bench(u);
+        if (b.length) sendAct({ seq: S.seq + 1, kind: "next", side: ptr.side, unit: ptr.unit, to: b[0].i });
+        return;
+      }
+      const m = mon(u);
+      let best = null;
+      livingEnemies(ptr.side).forEach((f) => {
+        m.moves.forEach((mv, i) => {
+          const score = mv.pow * effFor(mv.type, mon(f.u).types) * (mv.acc / 100);
+          if (!best || score > best.score) best = { score: score, mIdx: i, tIdx: f.i };
+        });
+      });
+      if (best && best.score > 0) { doMove(u, ptr, best.mIdx, best.tIdx); return; }
+      doMove(u, ptr, 99, (livingEnemies(ptr.side)[0] || { i: 0 }).i);   // fully walled → Struggle
+    }
+
     function renderMenu() {
       if (S.done) return;
       menu.innerHTML = "";
       const ptr = S.pending || S.actor;
       const u = sides[ptr.side].units[ptr.unit];
+      if (u.ai) {
+        menu.appendChild(el("div", { class: "duel-wait" }, "🤖 " + u.name +
+          (S.pending ? " sends out the next Pokémon…" : " is planning an attack…")));
+        setTimeout(() => {
+          const p2 = S.pending || S.actor;
+          if (!S.done && !S.busy && sides[p2.side].units[p2.unit] === u) aiAct(u, p2);
+        }, 1400);
+        return;
+      }
       if (mode === "watch" || !isMine(u)) {
         menu.appendChild(el("div", { class: "duel-wait" },
           (mode === "watch" ? "👀 " : "⏳ ") + u.name +

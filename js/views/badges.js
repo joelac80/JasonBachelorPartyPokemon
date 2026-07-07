@@ -23,9 +23,37 @@
     const ctrl = Modal.open(title, grid, null, {});
   }
 
+  // 🏟 NPC gym teams — battle the leader (AI) to EARN the badge. Mapped to
+  // the badge case by index; a win takes (or steals) the badge, a loss = sips.
+  const NPC_GYMS = [
+    { leader: "BROCK", team: [74, 95] },        // rock
+    { leader: "MISTY", team: [120, 121] },      // water
+    { leader: "LT. SURGE", team: [25, 26] },    // electric
+    { leader: "ERIKA", team: [114, 45] },       // grass
+    { leader: "KOGA", team: [109, 89] },        // poison
+    { leader: "SABRINA", team: [64, 65] },      // psychic
+    { leader: "BLAINE", team: [58, 59] },       // fire
+    { leader: "CLAIR", team: [148, 149] },      // dragon
+  ];
+  function challengeGym(idx, b) {
+    const gym = NPC_GYMS[idx % NPC_GYMS.length];
+    const go = (attId) => {
+      Duel.pickParty({ attId: attId, max: 3, title: "Your party vs Leader " + gym.leader, hint: "Up to 3 — the leader runs " + gym.team.length + ".", onDone: (ids) => {
+        Duel.start({ mode: "local", title: "the " + b.name + " Gym", gym: { idx: idx, leader: gym.leader },
+          a: { units: [{ attId: attId, monIds: ids }] },
+          b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: gym.team.slice() }] },
+          onResult: () => Router.render() });
+      } });
+    };
+    const me = window.Sync && Sync.getMe && Sync.getMe();
+    if (me) go(me); else openPicker("Who challenges Leader " + gym.leader + "?", (a) => go(a.id));
+  }
+
   function badgeCard(b) {
     const fg = contrast(b.color);
     const holder = b.holder ? Store.attendee(b.holder) : null;
+    const idx = (Store.state.gymBadges || []).findIndex((g) => g.id === b.id);
+    const gym = NPC_GYMS[Math.max(0, idx) % NPC_GYMS.length];
 
     const holderArea = holder
       ? el("div", { class: "badge-holder held" + (b.used ? " used" : "") }, [
@@ -76,6 +104,10 @@
       ]),
       holderArea,
       actions,
+      el("div", { class: "badge-actions" }, [
+        el("button", { class: "btn primary sm", onClick: () => challengeGym(Math.max(0, idx), b) },
+          "⚔ Battle Leader " + gym.leader + (holder ? " — steal the badge" : " for the badge")),
+      ]),
     ]);
   }
 

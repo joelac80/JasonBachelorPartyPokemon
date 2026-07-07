@@ -37,7 +37,9 @@
     const w = Store.wrapped(attId);
     const line = (v, l) => el("div", { class: "wrap-stat" }, [el("div", { class: "wrap-v" }, String(v)), el("div", { class: "wrap-l" }, l)]);
     const rows = [
-      line(w.caught, "🔴 caught"), line(w.seen, "👀 seen"), line(w.battleW + "–" + w.battleL, "⚔️ battles"),
+      line(w.caught, "🔴 caught"), line(w.seen, "👀 seen"), line(w.duel.w + "–" + w.duel.l, "🎮 duels"),
+      line(w.elo, "📈 rating"), line(w.kos, "💥 KOs"), line(w.shinies, "✨ shinies"),
+      line(w.trades, "🔁 trades"), line(w.evolutions, "🎉 evolutions"), line(w.beltNow ? "👊" : w.beltReigns, "🥇 belt reigns"),
       line(w.drinks, "🍺 drinks"), line(w.presidencies, "👑 presidencies"),
       line(w.assholeries, "💩 assholeries"), line(w.oracle, "🔮 correct calls"),
       line(w.helps, "🤝 assists"), line(w.logged, "📋 logged"),
