@@ -167,7 +167,7 @@
     opts = opts || {};
     const mode = opts.mode || "local";
     const myClient = opts.myClient || "";
-    const net = opts.net || null;
+    let net = opts.net || null;
     const title = (opts.title || "Duel").trim() || "Duel";
 
     function makeUnit(u) {
@@ -220,8 +220,10 @@
     const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null, zmove: false,
       first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null };
     if (!S.first) {
+      // Deterministic tie-break (challenger first) so every phone —
+      // players, partners, and watchers — agrees who leads.
       const ax = mon(sides.a.units[0]).x, bx = mon(sides.b.units[0]).x;
-      S.first = ax === bx ? (Math.random() < 0.5 ? "a" : "b") : (ax > bx ? "a" : "b");
+      S.first = ax >= bx ? "a" : "b";
     }
     S.actor = { side: S.first, unit: firstLiving(S.first) };
 
@@ -338,13 +340,31 @@
       rxSeen = Math.max(rxSeen, list.length);
     }
 
-    // Broadcast hot-seat duels on the old channel so the room's Watch alert
-    // still fires (winner reveal). Remote duels are announced by their setup.
-    let liveLocal = false;
+    // Broadcast local battles turn-by-turn when the room is live: the full
+    // setup + every act goes out on the duel channel (the same plumbing
+    // remote duels use), so any phone can WATCH move-by-move and cheer —
+    // gym runs and League climbs become room events. The banner channel
+    // still announces it (Watch alert + the Home LIVE strip), carrying the
+    // stakes so the room knows a badge or a crown is on the line.
+    let liveLocal = false, castId = null, castUnsub = null;
     if (mode === "local" && opts.broadcast !== false && window.Sync && Sync.isLive && Sync.isLive()) {
       liveLocal = true;
-      Sync.startLiveBattle({ aName: label("a"), bName: label("b"), event: title,
-        aClient: Sync.myClientId(), mode: "duel" });
+      try {
+        const lg = opts.league;
+        const stakes = opts.gym ? "🏅 " + ((opts.gym.badge || "Gym") + " Badge") + " on the line"
+          : lg ? (lg.idx === 5 ? "🗻 Mt. Silver — facing RED" : "👑 " + ((lg.rank || "League") + " " + (lg.name || "")).trim())
+          : opts.hof ? "🏛 Battle of Fame" : "";
+        const setup = { mode: "local", title: title, first: S.first,
+          gym: opts.gym || null, league: lg || null, hof: opts.hof || null,
+          a: { units: ((opts.a || {}).units || []) }, b: { units: ((opts.b || {}).units || []) } };
+        castId = Sync.startRemoteDuel && Sync.startRemoteDuel(setup);
+        if (castId) {
+          net = { send: function (act) { try { Sync.sendDuelAct(act); } catch (_) {} } };
+          castUnsub = Sync.onDuel(function (d) { if (d && d.id === castId) receiveRx(d.rx || []); });
+        }
+        Sync.startLiveBattle({ aName: label("a"), bName: label("b"), event: title,
+          aClient: Sync.myClientId(), mode: castId ? "duel-remote" : "duel", stakes: stakes });
+      } catch (_) {}
     }
 
     function beats(steps, fin) {
@@ -628,6 +648,15 @@
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
       ], () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel)), 700); if (done) done(); });
       if (!record) return;
+      // End the room broadcast no matter which branch records below —
+      // watchers' screens resolve and the LIVE banner clears.
+      try {
+        if (window.Sync) {
+          if (mode === "remote") { Sync.endRemoteDuel(wLabel); Sync.finishLiveBattle(wLabel); }
+          else if (liveLocal) { if (castId) Sync.endRemoteDuel(wLabel); Sync.finishLiveBattle(wLabel); }
+          if (castUnsub) { castUnsub(); castUnsub = null; }
+        }
+      } catch (_) {}
       // 👑 Pokémon League: Elite Four → LANCE → the silent one on Mt. Silver.
       // Off the leaderboards, like gyms — glory (and points) only.
       if (opts.league) {
@@ -746,12 +775,6 @@
           }
         });
       } catch (_) {}
-      try {
-        if (window.Sync) {
-          if (mode === "remote") { Sync.endRemoteDuel(wLabel); Sync.finishLiveBattle(wLabel); }
-          else if (liveLocal) Sync.finishLiveBattle(wLabel);
-        }
-      } catch (_) {}
     }
 
     // ---- menus (only the phone that controls the current pick gets one) ----
@@ -843,7 +866,9 @@
       menu.innerHTML = "";
       const ptr = S.pending || S.actor;
       const u = sides[ptr.side].units[ptr.unit];
-      if (u.ai) {
+      // Only the hosting phone rolls the AI's dice — watchers replay its
+      // acts from the stream like any other player's.
+      if (u.ai && mode !== "watch") {
         menu.appendChild(el("div", { class: "duel-wait" }, "🤖 " + u.name +
           (S.pending ? " sends out the next Pokémon…" : " is planning an attack…")));
         setTimeout(() => {
@@ -905,7 +930,10 @@
       if (bench(u).length) row.push(el("button", { class: "btn subtle sm", onClick: () => partyPanel(u, ptr, "switch", true) }, "🔄 Switch"));
       row.push(el("button", { class: "btn subtle sm", onClick: () => {
         if (!S.moved) {                           // nothing happened yet — just walk away (hot-seat only)
-          if (mode === "local") { if (liveLocal) try { Sync.finishLiveBattle(""); } catch (_) {} close(); return; }
+          if (mode === "local") {
+            if (liveLocal) try { Sync.finishLiveBattle(""); if (castId) Sync.endRemoteDuel(""); if (castUnsub) { castUnsub(); castUnsub = null; } } catch (_) {}
+            close(); return;
+          }
         }
         if (confirm("Give up? " + label(other(ptr.side)) + " take" + (sides[other(ptr.side)].units.length > 1 ? "" : "s") + " the win.")) {
           sendAct({ seq: S.seq + 1, kind: "forfeit", side: ptr.side, unit: ptr.unit });
