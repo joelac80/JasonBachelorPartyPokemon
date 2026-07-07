@@ -277,6 +277,13 @@
         const top = Object.keys(w).sort((x, y) => w[y] - w[x])[0];
         if (top) out.push({ emoji: "⚔️", title: "Battle Champ", holder: top, sub: w[top] + " win" + (w[top] > 1 ? "s" : "") });
       }
+      // Champion's Belt — held by the last trainer to win/defend a singles duel.
+      const belt = (this.state.battles && this.state.battles.belt) || null;
+      if (belt && belt.attId) {
+        const ba = this.attendee(belt.attId);
+        out.push({ emoji: "🥇", title: "Champion's Belt", holder: (ba && ba.name) || belt.name,
+          sub: belt.streak > 1 ? belt.streak + " straight duel wins" : "beat them in a duel to take it" });
+      }
       const oracle = this._topAttendee((id) => this.oracleScore(id));
       if (oracle) out.push({ emoji: "🔮", title: "Oracle", holder: oracle.a.name, sub: oracle.n + " correct call" + (oracle.n > 1 ? "s" : "") });
       const pres = this._topAttendee((id) => this.presidencies(id));

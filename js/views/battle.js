@@ -63,7 +63,13 @@
     const duelHost = el("div", { class: "duel-setup" });
     root.appendChild(el("h2", { class: "section-title" }, "🎮 Pokémon Duel"));
     root.appendChild(el("p", { class: "hint" },
-      "Turn-based, every Pokémon at Lv50. 🧪 Potion = 3 sips to heal · 🍺 Liquid Courage = finish half your drink for a guaranteed crit. Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
+      "Turn-based, every Pokémon at Lv50. 🧪 Potion = 3 sips to heal · 🍺 Liquid Courage = finish half your drink for a guaranteed crit. Every KO = 2 sips, losing side toasts 4. Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
+    // Champion's Belt — win a singles duel to claim it, beat the holder to take it.
+    const belt = (Store.state.battles && Store.state.battles.belt) || null;
+    root.appendChild(el("div", { class: "duel-belt" + (belt ? "" : " open"), onClick: () => { if (belt && window.Profile) Profile.open(belt.attId); } }, belt
+      ? "🥇 Champion's Belt: " + ((Store.attendee(belt.attId) || {}).name || belt.name) +
+        (belt.streak > 1 ? " — " + belt.streak + " straight" : "") + ". Beat them in a singles duel to take it!"
+      : "🥇 The Champion's Belt is UNCLAIMED — win a singles duel to grab it."));
     root.appendChild(duelHost);
 
     function unitEditor(side, cls, u, slotLabel) {

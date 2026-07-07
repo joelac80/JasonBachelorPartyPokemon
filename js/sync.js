@@ -323,6 +323,11 @@
       if (!duelRef) return;
       duelRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
+    // Spectator reaction — floats up on every screen watching the duel.
+    sendDuelReaction(emoji) {
+      if (!duelRef || !emoji) return;
+      duelRef.set({ rx: firebase.firestore.FieldValue.arrayUnion({ e: emoji, by: conf.name || "", t: nowMs() }) }, { merge: true }).catch(function () {});
+    },
     onDuel(fn) { duelSubs.push(fn); return () => { const i = duelSubs.indexOf(fn); if (i >= 0) duelSubs.splice(i, 1); }; },
 
     // Share a photo moment to the room (its own doc — keeps the state doc lean).
