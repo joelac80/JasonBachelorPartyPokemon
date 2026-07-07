@@ -63,6 +63,7 @@
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
       { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Any 1v1 or 2v2 — winner's team scores" },
       { r: "brackets", e: "🥊", t: "Brackets",     d: "Run a tournament" },
+      { r: "gyms",    e: "🏟", t: "Gym Circuit", d: "16 canon leaders — even matches, hidden teams" },
       { r: "league",  e: "👑", t: "Pokémon League", d: "Elite Four → Champion LANCE → …the summit" },
     ] },
     { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
@@ -72,7 +73,7 @@
       { r: "challenges",  e: "🎣", t: "The Dock",   d: "Catch of the Day challenges" },
     ] },
     { id: "fame", e: "🏅", t: "Hall of Fame", x: 67, y: 52, sub: [
-      { r: "badges",       e: "🏅", t: "Gym Badges",        d: "8 badges + the live trophies" },
+      { r: "badges",       e: "🏅", t: "Weekend Badges",    d: "8 party badges + the live trophies" },
       { r: "superlatives", e: "🗳️", t: "Awards",            d: "Vote the superlatives" },
       { r: "hall",         e: "🌿", t: "Hall of Bulbasaur", d: "The gallery wall" },
       { r: "messages",     e: "💌", t: "Message Wall",      d: "Notes for the groom (sealed!)" },
