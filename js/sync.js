@@ -281,6 +281,7 @@
         toClient: toClient, toAtt: toAtt || "", toName: toName || "", event: event || "", state: "pending", t: nowMs(),
         kind: (extra && extra.kind) || "", party: (extra && extra.party) || [],
         pairAtt: (extra && extra.pairAtt) || "", pairParty: (extra && extra.pairParty) || [],
+        solo2: !!(extra && extra.solo2),
       }).catch(function () {});
       return id;
     },

@@ -31,7 +31,7 @@
   };
   function effectiveness(atk, def) {
     const c = TYPE_CHART[atk]; if (!c) return 1;
-    if (c.no && c.no.indexOf(def) >= 0) return 0.5;   // treat immunity as "resisted" flavor
+    if (c.no && c.no.indexOf(def) >= 0) return 0;     // true immunity (0 damage in duels)
     if (c.se && c.se.indexOf(def) >= 0) return 2;
     if (c.nve && c.nve.indexOf(def) >= 0) return 0.5;
     return 1;

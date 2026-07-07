@@ -67,6 +67,10 @@
     return defTypes.reduce((m, t) => m * f(moveType, t), 1);
   }
 
+  // Last resort when every move is nullified by immunity (e.g. a mono-Normal
+  // mon staring down a Ghost): typeless, always usable, never great.
+  const STRUGGLE = { name: "Struggle", pow: 50, acc: 100, type: "none" };
+
   // A trainer's pickable Pokémon: team of 6 first, then the rest of their
   // caught dex. Everyone at least has their partner.
   function poolFor(attId) {
@@ -82,10 +86,11 @@
   function pickParty(opts) {
     const pool = poolFor(opts.attId);
     const max = opts.max || 6;
+    const min = opts.min || 1;
     let picked = [];
     const grid = el("div", { class: "duel-party-grid" });
     const cta = el("button", { class: "btn primary", onClick: () => {
-      if (!picked.length) return;
+      if (picked.length < min) return;
       ref.close(); opts.onDone(picked.slice());
     } }, "Ready");
     function paint() {
@@ -103,8 +108,10 @@
           idx >= 0 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
         ]));
       });
-      cta.textContent = "⚔ Ready" + (picked.length ? " — party of " + picked.length : "");
-      cta.disabled = picked.length ? false : true;
+      cta.textContent = picked.length < min
+        ? "⚔ Pick " + (min - picked.length) + " more"
+        : "⚔ Ready — " + (picked.length === 1 ? picked.length + " Pokémon" : "party of " + picked.length);
+      cta.disabled = picked.length < min;
     }
     const body = el("div", { class: "modal-form" }, [
       el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
@@ -158,7 +165,12 @@
     };
     const doubles = sides.a.units.length > 1 || sides.b.units.length > 1;
     function other(s) { return s === "a" ? "b" : "a"; }
-    function label(s) { return sides[s].units.map((u) => u.name).join(" & "); }
+    // One trainer running both slots of a double reads as one name, not "X & X".
+    function label(s) {
+      const seen = [];
+      sides[s].units.forEach((u) => { if (seen.indexOf(u.name) < 0) seen.push(u.name); });
+      return seen.join(" & ");
+    }
     function mon(u) { return u.party[u.cur]; }
     function unitAlive(u) { return u.party.some((m) => m.hp > 0); }
     function firstLiving(s) { const us = sides[s].units; for (let i = 0; i < us.length; i++) if (unitAlive(us[i])) return i; return 0; }
@@ -383,7 +395,7 @@
       S.moved++;
       const dSide = other(act.side);
       const tu = sides[dSide].units[act.tUnit];
-      const m = mon(u), mv = m.moves[act.move] || m.moves[0], tm = mon(tu);
+      const m = mon(u), mv = act.move === 99 ? STRUGGLE : (m.moves[act.move] || m.moves[0]), tm = mon(tu);
       u.armed = false;
       const afterDamage = () => {
         if (tm.hp > 0) { advance(); done(); return; }
@@ -410,6 +422,13 @@
         ], () => { advance(); done(); });
         return;
       }
+      if (act.eff === 0) {                              // immune — no damage at all
+        beats([
+          [m.name + " used " + mv.name + "!", 850, () => sfx("select")],
+          ["It doesn't affect " + tm.name + "…", 1150, () => sfx("error")],
+        ], () => { advance(); done(); });
+        return;
+      }
       const steps = [[m.name + " used " + mv.name + "!", 800, () => sfx("select")]];
       steps.push([null, 500, () => {
         tm.hp = Math.max(0, tm.hp - act.dmg);
@@ -419,7 +438,9 @@
         paintHp(tu); sfx("coin");
       }]);
       if (act.crit) steps.push([act.armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
-      if (act.eff > 1) steps.push(["It's super effective!", 900]);
+      if (act.eff >= 4) steps.push(["💥💥 It's SUPER effective!! (double weakness)", 950]);
+      else if (act.eff > 1) steps.push(["It's super effective!", 900]);
+      else if (act.eff <= 0.25) steps.push(["It barely has any effect…", 900]);
       else if (act.eff < 1) steps.push(["It's not very effective…", 900]);
       steps.push(["−" + act.dmg + " HP!", 650]);
       beats(steps, () => {
@@ -440,8 +461,8 @@
       const lMons = sides[other(winSide)].units.map((x) => mon(x).name).join(" & ");
       const record = mode === "local" || (mode === "remote" && act.by === myClient);
       beats([
-        how === "forfeit" ? ["🏳️ " + lLabel + (sides[other(winSide)].units.length > 1 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
-        ["🏆 " + wLabel + " win" + (sides[winSide].units.length > 1 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
+        how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
+        ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
       ], () => { close(); if (opts.onResult) opts.onResult(winSide); if (done) done(); });
       if (!record) return;
@@ -533,13 +554,14 @@
     }
 
     function doMove(u, ptr, mIdx, tIdx) {
-      const m = mon(u), mv = m.moves[mIdx];
+      const m = mon(u), mv = mIdx === 99 ? STRUGGLE : m.moves[mIdx];
       const tm = mon(sides[other(ptr.side)].units[tIdx]);
       const armed = u.armed;
-      const miss = !armed && Math.random() * 100 >= mv.acc;
       const eff = effFor(mv.type, tm.types);
-      const crit = !miss && (armed || Math.random() < 0.08);
-      const dmg = miss ? 0 : Math.max(1, Math.round(mv.pow * m.atk * eff * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      const immune = eff === 0;                        // type trumps everything, even beer
+      const miss = !immune && !armed && Math.random() * 100 >= mv.acc;
+      const crit = !immune && !miss && (armed || Math.random() < 0.08);
+      const dmg = (miss || immune) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * eff * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
       sendAct({ seq: S.seq + 1, kind: "move", side: ptr.side, unit: ptr.unit, move: mIdx, tUnit: tIdx,
         miss: miss, crit: crit, armed: armed, eff: eff, dmg: dmg });
     }
@@ -572,7 +594,13 @@
       const m = mon(u);
       menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
         "🎮 " + u.name + " — what will " + m.name + " do?" + (u.armed ? " (🍺 crit armed!)" : "")));
-      menu.appendChild(el("div", { class: "duel-moves" }, m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)))));
+      const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)));
+      // Everything immune against everything standing? Struggle keeps the
+      // fight alive (typeless, always usable).
+      const foes = livingEnemies(ptr.side);
+      const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types) === 0));
+      if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99)));
+      menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
       const row = [
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
           confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP.",
@@ -619,7 +647,7 @@
       overlay.classList.add("go", "ready");
       sfx("blip");
       const lead = sides[S.first].units[0];
-      msg.textContent = mon(lead).name + " is faster — " + label(S.first) + " go" + (sides[S.first].units.length > 1 ? "" : "es") + " first!";
+      msg.textContent = mon(lead).name + " is faster — " + label(S.first) + " go" + (label(S.first).indexOf(" & ") >= 0 ? "" : "es") + " first!";
       setTimeout(() => { if (!S.done) { S.ready = true; renderMenu(); pump(); } }, 900);
     }, 1700);
 
