@@ -271,7 +271,8 @@
     isLive() { return statusState === "live" || statusState === "connecting"; },
     myClientId() { return clientId; },
     // Challenge a present device (by its clientId) to a battle. `extra` can
-    // carry { kind: "duel", party: [monIds] } for a real remote duel.
+    // carry { kind: "duel", party: [monIds] } for a real remote duel, plus
+    // { pairAtt, pairParty } to make it a DOUBLE battle (bring a partner).
     sendChallenge(toClient, toAtt, toName, event, extra) {
       if (!chalRef) return null;
       const id = newId("ch");
@@ -279,6 +280,7 @@
         id: id, fromClient: clientId, fromAtt: conf.me || "", fromName: conf.name || "You",
         toClient: toClient, toAtt: toAtt || "", toName: toName || "", event: event || "", state: "pending", t: nowMs(),
         kind: (extra && extra.kind) || "", party: (extra && extra.party) || [],
+        pairAtt: (extra && extra.pairAtt) || "", pairParty: (extra && extra.pairParty) || [],
       }).catch(function () {});
       return id;
     },
