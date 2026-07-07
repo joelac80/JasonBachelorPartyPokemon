@@ -140,6 +140,62 @@
     }
     Sync.init();
 
+    // First-open welcome: pick your trainer + room code right away instead
+    // of hunting through Settings. Shows until you pick or skip; Settings
+    // can still change everything later.
+    try {
+      const OKEY = "jasonBachHub.onboarded";
+      let seen = false; try { seen = localStorage.getItem(OKEY) === "1"; } catch (_) {}
+      if (!Sync.getMe() && !seen && window.Modal) setTimeout(() => {
+        const wel = U.el;
+        let sel = "";
+        const conf0 = Sync.getConf();
+        const grid = wel("div", { class: "sl-vote-grid" });
+        function paintGrid() {
+          grid.innerHTML = "";
+          Store.state.attendees.forEach((a) => {
+            const f = Store.currentForm(a);
+            const src = f.id ? Store.sprite(f.id) : "";
+            grid.appendChild(wel("button", { class: "sl-vote-pick" + (sel === a.id ? " on" : ""), onClick: () => { sel = a.id; paintGrid(); } }, [
+              src ? wel("img", { class: "sl-thumb", src: src, alt: "" }) : wel("span", { class: "draft-thumb-ball" }),
+              wel("span", { class: "sl-vote-name" }, a.name),
+            ]));
+          });
+        }
+        paintGrid();
+        const roomIn = wel("input", { class: "in", placeholder: "Room code (e.g. GARZA26)", value: conf0.room || "" });
+        let ctrl;
+        const done = (join) => {
+          try { localStorage.setItem(OKEY, "1"); } catch (_) {}
+          if (join) {
+            if (!sel) { alert("Tap your trainer first!"); return; }
+            const a = Store.attendee(sel);
+            Sync.setMe(sel);
+            const room = roomIn.value.trim();
+            if (room) {
+              Sync.save("", room, (a && a.name) || "");
+              Sync.enable();
+              if (window.AppNotify && AppNotify.supported() && AppNotify.permission() === "default") AppNotify.request(function () {});
+            }
+            if (window.SFX && SFX.win) SFX.win();
+            if (window.Router) Router.render();
+          }
+          if (ctrl) ctrl.close();
+        };
+        const body = wel("div", { class: "modal-form" }, [
+          wel("p", { class: "hint" }, "Who are you? Pick your trainer, add the room code the crew is using, and everything you log follows you all weekend."),
+          grid,
+          wel("div", { class: "field" }, [wel("span", {}, "🔗 Room code — join the live room (everyone's phones share one scoreboard)"), roomIn]),
+          wel("div", { class: "toolbar" }, [
+            wel("button", { class: "btn primary", onClick: () => done(true) }, "🚀 Let's go"),
+            wel("button", { class: "btn subtle", onClick: () => done(false) }, "Skip for now"),
+          ]),
+          wel("p", { class: "hint" }, "Change any of this later in ⚙️ Settings."),
+        ]);
+        ctrl = Modal.open("👋 Welcome to Jason's Bachelor Party!", body, null, { noFooter: true });
+      }, 500);
+    } catch (_) {}
+
     // Incoming battle challenge → prompt to accept anywhere in the app.
     // kind "duel" = a real remote duel: accepting opens your party picker,
     // then this phone writes the matchup so both phones (and watchers) open.
