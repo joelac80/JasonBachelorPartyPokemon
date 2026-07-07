@@ -425,6 +425,13 @@
       if (!(window.DEX_EVOS || {})[m.id]) return null;
       const need = Store.KO_TO_EVOLVE || 3;
       const total = (m.kos0 || 0) + m.kos;
+      // Kadabra/Machoke/Graveler/Haunter refuse to evolve from EXP — only a
+      // trade will do. Rub it in at the moment they'd otherwise be ready.
+      if (Store.TRADE_EVOS && Store.TRADE_EVOS[m.id]) {
+        return total >= need
+          ? "🔁 " + m.name + " has the EXP… but it ONLY evolves by TRADE — hit the Trading Post!"
+          : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + ")";
+      }
       return total >= need
         ? "⚡ " + m.name + " has enough battle EXP to EVOLVE after the battle!"
         : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + " KOs to evolve)";
