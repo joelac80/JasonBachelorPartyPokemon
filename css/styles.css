@@ -1364,3 +1364,9 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
   padding: 10px 12px; font-weight: 700; font-size: 14px; color: #5a4200; margin: 6px 0 10px; cursor: pointer;
   box-shadow: var(--shadow); }
 .duel-belt.open { background: var(--paper); border-style: dashed; color: var(--ink-dim); cursor: default; }
+
+/* Liquid Courage Z-move menu — powered-up glow on the move buttons */
+.duel-moves.zmove .duel-move { border-color: #e6b800; background: #fff7d6;
+  box-shadow: 0 0 10px rgba(230, 184, 0, .65), 0 2px 0 rgba(0,0,0,.35); animation: zGlow 1.1s ease infinite; }
+@keyframes zGlow { 0%,100% { box-shadow: 0 0 6px rgba(230,184,0,.45), 0 2px 0 rgba(0,0,0,.35); }
+  50% { box-shadow: 0 0 16px rgba(230,184,0,.9), 0 2px 0 rgba(0,0,0,.35); } }

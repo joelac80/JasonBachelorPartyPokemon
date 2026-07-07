@@ -177,7 +177,7 @@
     function bench(u) { return u.party.map((m, i) => ({ m: m, i: i })).filter((x) => x.i !== u.cur && x.m.hp > 0); }
     function livingEnemies(s) { return sides[other(s)].units.map((u, i) => ({ u: u, i: i })).filter((x) => unitAlive(x.u)); }
 
-    const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null,
+    const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null, zmove: false,
       first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null };
     if (!S.first) {
       const ax = mon(sides.a.units[0]).x, bx = mon(sides.b.units[0]).x;
@@ -396,7 +396,8 @@
       const dSide = other(act.side);
       const tu = sides[dSide].units[act.tUnit];
       const m = mon(u), mv = act.move === 99 ? STRUGGLE : (m.moves[act.move] || m.moves[0]), tm = mon(tu);
-      u.armed = false;
+      if (act.courage) u.courage = false;               // half a drink, spent on this very hit
+      const chug = act.courage ? [["🍺 " + u.name + " chugs — LIQUID COURAGE!", 950, () => sfx("correct")]] : [];
       const afterDamage = () => {
         if (tm.hp > 0) { advance(); done(); return; }
         // fainted — replacement, drop the unit, or end the battle
@@ -423,13 +424,13 @@
         return;
       }
       if (act.eff === 0) {                              // immune — no damage at all
-        beats([
+        beats(chug.concat([
           [m.name + " used " + mv.name + "!", 850, () => sfx("select")],
           ["It doesn't affect " + tm.name + "…", 1150, () => sfx("error")],
-        ], () => { advance(); done(); });
+        ]), () => { advance(); done(); });
         return;
       }
-      const steps = [[m.name + " used " + mv.name + "!", 800, () => sfx("select")]];
+      const steps = chug.concat([[m.name + " used " + mv.name + "!", 800, () => sfx("select")]]);
       steps.push([null, 500, () => {
         tm.hp = Math.max(0, tm.hp - act.dmg);
         tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
@@ -541,29 +542,30 @@
         [el("button", { class: "btn subtle sm", onClick: renderMenu }, "↩ Back")]));
     }
 
-    function pickTarget(u, ptr, mIdx) {
+    function pickTarget(u, ptr, mIdx, z) {
       const foes = livingEnemies(ptr.side);
-      if (foes.length <= 1) { doMove(u, ptr, mIdx, foes.length ? foes[0].i : 0); return; }
+      if (foes.length <= 1) { doMove(u, ptr, mIdx, foes.length ? foes[0].i : 0, z); return; }
       menu.innerHTML = "";
       menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) }, "🎯 Which target?"));
       menu.appendChild(el("div", { class: "battle-menu-row" }, foes.map((x) =>
-        el("button", { class: "btn primary", onClick: () => doMove(u, ptr, mIdx, x.i) },
+        el("button", { class: "btn primary", onClick: () => doMove(u, ptr, mIdx, x.i, z) },
           mon(x.u).name + " (" + x.u.name + ")"))));
       menu.appendChild(el("div", { class: "battle-menu-row" },
         [el("button", { class: "btn subtle sm", onClick: renderMenu }, "↩ Back")]));
     }
 
-    function doMove(u, ptr, mIdx, tIdx) {
+    function doMove(u, ptr, mIdx, tIdx, z) {
       const m = mon(u), mv = mIdx === 99 ? STRUGGLE : m.moves[mIdx];
       const tm = mon(sides[other(ptr.side)].units[tIdx]);
-      const armed = u.armed;
+      const armed = !!z;                               // Liquid Courage: unleashed on THIS hit
+      S.zmove = false;
       const eff = effFor(mv.type, tm.types);
       const immune = eff === 0;                        // type trumps everything, even beer
       const miss = !immune && !armed && Math.random() * 100 >= mv.acc;
       const crit = !immune && !miss && (armed || Math.random() < 0.08);
       const dmg = (miss || immune) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * eff * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
       sendAct({ seq: S.seq + 1, kind: "move", side: ptr.side, unit: ptr.unit, move: mIdx, tUnit: tIdx,
-        miss: miss, crit: crit, armed: armed, eff: eff, dmg: dmg });
+        miss: miss, crit: crit, armed: armed, courage: armed, eff: eff, dmg: dmg });
     }
 
     function renderMenu() {
@@ -592,13 +594,23 @@
       }
       if (S.pending) { partyPanel(u, ptr, "next", false); return; }
       const m = mon(u);
-      menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
-        "🎮 " + u.name + " — what will " + m.name + " do?" + (u.armed ? " (🍺 crit armed!)" : "")));
-      const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)));
       // Everything immune against everything standing? Struggle keeps the
       // fight alive (typeless, always usable).
       const foes = livingEnemies(ptr.side);
       const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types) === 0));
+      // Liquid Courage armed: Z-move style — the chug happened, now unleash
+      // a move on THIS same turn (can't miss, guaranteed crit).
+      if (S.zmove) {
+        menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
+          "🍺💥 LIQUID COURAGE — " + u.name + ", unleash a move!"));
+        const zEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i, true)));
+        if (walled) zEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99, true)));
+        menu.appendChild(el("div", { class: "duel-moves zmove" }, zEls));
+        return;
+      }
+      menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
+        "🎮 " + u.name + " — what will " + m.name + " do?"));
+      const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)));
       if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99)));
       menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
       const row = [
@@ -607,9 +619,8 @@
             "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "potion", side: ptr.side, unit: ptr.unit }));
         } }, "🧪 Potion ×" + u.potions),
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
-          confirmPanel("🍺 Liquid Courage — " + u.name + " finishes half their drink. " + m.name +
-            "'s next attack can't miss and lands a CRITICAL HIT.",
-            "🍺 Chugged!", () => sendAct({ seq: S.seq + 1, kind: "courage", side: ptr.side, unit: ptr.unit }));
+          confirmPanel("🍺 Liquid Courage — " + u.name + " finishes half their drink, then UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT.",
+            "🍺 Chugged — power up!", () => { S.zmove = true; sfx("correct"); renderMenu(); });
         } }, "🍺 Liquid Courage"),
       ];
       if (bench(u).length) row.push(el("button", { class: "btn subtle sm", onClick: () => partyPanel(u, ptr, "switch", true) }, "🔄 Switch"));
