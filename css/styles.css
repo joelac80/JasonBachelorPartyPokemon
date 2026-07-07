@@ -1309,3 +1309,33 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .duel-pick.on { border-color: var(--pokeyellow); background: #fff7d6; box-shadow: 0 0 0 2px rgba(230,184,0,.35); }
 .duel-pick img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .duel-pick-meta { font-size: 11px; color: var(--ink-dim); margin-top: 4px; line-height: 1.4; }
+
+/* ---- duel v2: parties, doubles, remote play ---- */
+/* per-mon combat states (doubles animate one mon, not the whole side) */
+.battle-mon.attack { animation: lungeYou .42s ease; }
+.battle-sprite.foe .battle-mon.attack { animation: lungeFoe .42s ease; }
+.battle-mon.hurt { animation: battleHurt .5s steps(1) 2; }
+.battle-mon.crit { animation: battleCrit .5s steps(1) 3; }
+.battle-mon.fainted { animation: battleFaint .6s ease forwards; }
+.battle-hpbox.doubles { max-width: 46%; }
+/* format chips + party order badge */
+.duel-format .chip.on { border-color: var(--pokered); background: #fdeaea; color: var(--pokered); }
+.duel-unit + .duel-unit { margin-top: 10px; padding-top: 10px; border-top: 2px dashed var(--line); }
+.duel-pick { position: relative; }
+.duel-pick-n { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 999px;
+  background: var(--pokered); color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center;
+  justify-content: center; border: 2px solid #fff; }
+.duel-party-grid { display: flex; flex-wrap: wrap; gap: 8px; max-height: 42vh; overflow-y: auto; padding: 4px 2px; }
+.duel-party-grid .duel-pick { width: 56px; height: 56px; flex: 0 0 auto; border-radius: 10px; border: 2px solid var(--line);
+  background: var(--paper); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 2px; }
+.duel-party-grid .duel-pick.on { border-color: var(--pokeyellow); background: #fff7d6; box-shadow: 0 0 0 2px rgba(230,184,0,.35); }
+.duel-party-grid .duel-pick img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+/* in-battle: switch/replacement bench + waiting banner */
+.duel-party-row { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px; max-width: 100%; }
+.duel-bench { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 2.5px solid #fff;
+  border-radius: 12px; background: #fffdf2; padding: 6px 8px; cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.duel-bench img { width: 44px; height: 44px; image-rendering: pixelated; }
+.duel-bench-txt { font-family: var(--pixel); font-size: 9px; font-weight: 800; color: #262626; white-space: nowrap; }
+.duel-wait { color: #fff; font-family: var(--pixel); font-size: 12px; padding: 8px 4px; text-align: center;
+  animation: duelWaitPulse 1.6s ease infinite; }
+@keyframes duelWaitPulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }

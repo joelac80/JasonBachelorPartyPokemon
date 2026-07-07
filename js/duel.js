@@ -1,14 +1,19 @@
-/* duel.js — real turn-based Pokémon duels. Global `Duel`.
-   Duel.start({ a: {attId, monId}, b: {attId, monId}, title, onResult })
-   Everything fights at Lv50: HP and attack come from the species' power
-   stat (DEX x), moves come from its types (a reliable hit + a heavy risky
-   one per type). Drink actions spice it up:
+/* duel.js — turn-based Pokémon duels. Global `Duel`.
+   Duel.start({ mode, title, first, a, b, myClient, net, onResult, onEnd })
+     a/b: { units: [{ attId, monIds: [...], client? }, ...] }
+       1 unit per side = singles (bring a party of up to 6, switch on faint
+       or spend a turn to switch voluntarily); 2 units = a DOUBLE battle
+       (two trainers per side, one mon each, pick your target).
+   Everything fights at Lv50: HP/attack come from the species power stat,
+   moves from its types. Drink actions (per trainer, each takes the turn):
      🧪 Drink Potion   — take 3 sips → heal 60 HP (2 per battle)
      🍺 Liquid Courage — finish half your drink → next attack can't miss
                          and lands a guaranteed CRITICAL HIT (once)
-   Hot-seat: pass the phone each turn. Wins are logged like any battle
-   (battle log + Victory Road points + chronicle), and when a room is live
-   the duel is broadcast so the crew gets the "Watch" alert. */
+   modes: "local" (hot-seat, pass the phone), "remote" (each trainer picks
+   their turns on their own phone — actions travel as small serialized
+   acts, all dice rolled by the acting phone so every screen agrees), and
+   "watch" (spectators replay the same acts live, turn by turn).
+   Wins land in the battle log + chronicle and score Victory Road points. */
 (function () {
   const { el } = U;
   const DEX = window.DEX || {};
@@ -20,8 +25,8 @@
   const TYPE_EMOJI = { normal: "⭐", fire: "🔥", water: "💧", electric: "⚡", grass: "🌿", ice: "❄️", fighting: "🥊", poison: "☠️", ground: "⛰️", flying: "🪽", psychic: "🔮", bug: "🐛", rock: "🪨", ghost: "👻", dragon: "🐉", dark: "🌑", steel: "⚙️", fairy: "✨" };
   const TYPE_COLOR = { normal: "#a8a878", fire: "#f08030", water: "#6890f0", electric: "#e0b400", grass: "#78c850", ice: "#58b8c8", fighting: "#c03028", poison: "#a040a0", ground: "#c8a850", flying: "#a890f0", psychic: "#f85888", bug: "#a8b820", rock: "#b8a038", ghost: "#705898", dragon: "#7038f8", dark: "#705848", steel: "#9898b0", fairy: "#e87898" };
 
-  // Two damage moves per type: [name, power, accuracy]. The first is the
-  // reliable jab, the second the heavy haymaker that sometimes whiffs.
+  // Two damage moves per type: [name, power, accuracy] — a reliable jab and
+  // a heavy haymaker that sometimes whiffs.
   const MOVES = {
     normal: [["Body Slam", 60, 100], ["Double-Edge", 100, 85]],
     fire: [["Flamethrower", 65, 100], ["Fire Blast", 110, 75]],
@@ -51,92 +56,184 @@
     const moves = [];
     types.forEach((t) => (MOVES[t] || MOVES.normal).forEach((m) =>
       moves.push({ name: m[0], pow: m[1], acc: m[2], type: t })));
-    // Mono-typed mons round out their set with a neutral Tackle.
     if (types.length === 1 && types[0] !== "normal") moves.push({ name: "Tackle", pow: 50, acc: 100, type: "normal" });
     return { id: monId, name: d.n, x: x, types: types,
       hpMax: 120 + Math.round(x * 0.5), atk: 0.55 + x / 500, moves: moves.slice(0, 4) };
   }
 
-  // Effectiveness vs a (possibly dual-typed) defender.
   function effFor(moveType, defTypes) {
     const f = window.Battle && Battle.effectiveness;
     if (!f) return 1;
     return defTypes.reduce((m, t) => m * f(moveType, t), 1);
   }
 
-  function hpBox(F, side) {
-    const fill = el("div", { class: "battle-hp-fill" });
-    const num = el("span", { class: "duel-hp-num" }, F.hp + " / " + F.mon.hpMax);
-    const box = el("div", { class: "battle-hpbox " + side }, [
-      el("div", { class: "battle-hp-mem" }, [
-        el("div", { class: "battle-hp-name" }, [F.mon.name + " ", el("span", { class: "duel-lv" }, "Lv50")]),
-        el("div", { class: "battle-hp-row" }, [
-          el("span", { class: "battle-hp-lbl" }, "HP"),
-          el("div", { class: "battle-hp-track" }, [fill]),
-        ]),
-        el("div", { class: "duel-hp-sub" }, [num, el("span", { class: "duel-owner" }, F.name)]),
-      ]),
-    ]);
+  // A trainer's pickable Pokémon: team of 6 first, then the rest of their
+  // caught dex. Everyone at least has their partner.
+  function poolFor(attId) {
+    const t = ((Store.state.pokedex || {}).trainers || {})[attId] || {};
+    const ids = (t.team || []).filter(Boolean).slice();
+    Object.keys(t.caught || {}).map(Number).forEach((id) => { if (ids.indexOf(id) < 0) ids.push(id); });
+    if (!ids.length) { const a = Store.attendee(attId); if (a && a.favoriteId) ids.push(a.favoriteId); }
+    return ids;
+  }
+
+  // Ordered party picker (modal) — used to challenge someone to a remote
+  // duel and to accept one. onDone receives the picked mon ids, lead first.
+  function pickParty(opts) {
+    const pool = poolFor(opts.attId);
+    const max = opts.max || 6;
+    let picked = [];
+    const grid = el("div", { class: "duel-party-grid" });
+    const cta = el("button", { class: "btn primary", onClick: () => {
+      if (!picked.length) return;
+      ref.close(); opts.onDone(picked.slice());
+    } }, "Ready");
     function paint() {
-      const pct = Math.max(0, F.hp / F.mon.hpMax);
-      fill.style.width = (pct * 100).toFixed(1) + "%";
-      fill.classList.toggle("low", pct <= 0.5 && pct > 0.2);
-      fill.classList.toggle("crit", pct <= 0.2);
-      num.textContent = Math.max(0, F.hp) + " / " + F.mon.hpMax;
+      grid.innerHTML = "";
+      pool.forEach((id) => {
+        const st = statsFor(id);
+        const idx = picked.indexOf(id);
+        const src = SP[id] || Store.sprite(id);
+        grid.appendChild(el("button", { class: "duel-pick" + (idx >= 0 ? " on" : ""), title: st.name, onClick: () => {
+          const i = picked.indexOf(id);
+          if (i >= 0) picked.splice(i, 1); else if (picked.length < max) picked.push(id);
+          paint();
+        } }, [
+          src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
+          idx >= 0 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
+        ]));
+      });
+      cta.textContent = "⚔ Ready" + (picked.length ? " — party of " + picked.length : "");
+      cta.disabled = picked.length ? false : true;
     }
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
+      grid,
+      el("div", { class: "toolbar" }, [cta]),
+    ]);
     paint();
-    return { box: box, paint: paint };
+    const ref = Modal.open(opts.title || "Choose your party", body, null, {});
   }
 
-  function spriteEl(F, side) {
-    const back = side === "you" ? BACK[F.mon.id] : "";
-    const src = back || SP[F.mon.id] || (window.Store && Store.sprite(F.mon.id)) || "";
-    const inner = src
-      ? el("img", { class: "battle-sprite-img", src: src, alt: "",
-          style: side === "you" && !back ? { transform: "scaleX(-1)" } : {} })
-      : el("div", { class: "battle-ball-inner" });
-    return el("div", { class: "battle-sprite " + side }, [el("div", { class: "battle-mon mon0" }, [inner])]);
-  }
-
+  // ---------------- the battle itself ----------------
   function start(opts) {
     opts = opts || {};
-    function fighter(sideOpts) {
-      const at = Store.attendee(sideOpts.attId) || { name: "Trainer", team: "" };
-      const mon = statsFor(sideOpts.monId);
-      return { attId: sideOpts.attId, name: at.name, teamId: at.team || "",
-        mon: mon, hp: mon.hpMax, potions: 2, courage: true, armed: false };
-    }
-    const A = fighter(opts.a), B = fighter(opts.b);
+    const mode = opts.mode || "local";
+    const myClient = opts.myClient || "";
+    const net = opts.net || null;
     const title = (opts.title || "Duel").trim() || "Duel";
-    let turn = A.mon.x === B.mon.x ? (Math.random() < 0.5 ? "a" : "b") : (A.mon.x > B.mon.x ? "a" : "b");
-    let moved = 0, done = false;
 
-    const youHp = hpBox(A, "you"), foeHp = hpBox(B, "foe");
-    const youSprite = spriteEl(A, "you"), foeSprite = spriteEl(B, "foe");
-    const msg = el("div", { class: "battle-msg" }, title + " — " + A.name + " VS " + B.name + "!");
+    function makeUnit(u) {
+      const at = Store.attendee(u.attId) || { name: "Trainer", team: "" };
+      const party = (u.monIds || []).filter(Boolean).map((id) => {
+        const m = statsFor(id); m.hp = m.hpMax; return m;
+      });
+      if (!party.length) { const m = statsFor(1); m.hp = m.hpMax; party.push(m); }
+      return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
+        party: party, cur: 0, potions: 2, courage: true, armed: false };
+    }
+    const sides = {
+      a: { key: "a", units: ((opts.a || {}).units || []).slice(0, 2).map(makeUnit) },
+      b: { key: "b", units: ((opts.b || {}).units || []).slice(0, 2).map(makeUnit) },
+    };
+    const doubles = sides.a.units.length > 1 || sides.b.units.length > 1;
+    function other(s) { return s === "a" ? "b" : "a"; }
+    function label(s) { return sides[s].units.map((u) => u.name).join(" & "); }
+    function mon(u) { return u.party[u.cur]; }
+    function unitAlive(u) { return u.party.some((m) => m.hp > 0); }
+    function firstLiving(s) { const us = sides[s].units; for (let i = 0; i < us.length; i++) if (unitAlive(us[i])) return i; return 0; }
+    function bench(u) { return u.party.map((m, i) => ({ m: m, i: i })).filter((x) => x.i !== u.cur && x.m.hp > 0); }
+    function livingEnemies(s) { return sides[other(s)].units.map((u, i) => ({ u: u, i: i })).filter((x) => unitAlive(x.u)); }
+
+    const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null,
+      first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null };
+    if (!S.first) {
+      const ax = mon(sides.a.units[0]).x, bx = mon(sides.b.units[0]).x;
+      S.first = ax === bx ? (Math.random() < 0.5 ? "a" : "b") : (ax > bx ? "a" : "b");
+    }
+    S.actor = { side: S.first, unit: firstLiving(S.first) };
+
+    // ---- arena DOM ----
+    const sprites = {
+      a: el("div", { class: "battle-sprite you" + (sides.a.units.length > 1 ? " doubles" : "") }),
+      b: el("div", { class: "battle-sprite foe" + (sides.b.units.length > 1 ? " doubles" : "") }),
+    };
+    function monImg(s, u) {
+      const id = mon(u).id;
+      const back = s === "a" ? BACK[id] : "";
+      const src = back || SP[id] || (window.Store && Store.sprite(id)) || "";
+      return src
+        ? el("img", { class: "battle-sprite-img", src: src, alt: "",
+            style: s === "a" && !back ? { transform: "scaleX(-1)" } : {} })
+        : el("div", { class: "battle-ball-inner" });
+    }
+    function renderSprites(s) {
+      const w = sprites[s]; w.innerHTML = "";
+      sides[s].units.forEach((u, i) => {
+        const mw = el("div", { class: "battle-mon mon" + i + (unitAlive(u) ? "" : " fainted") }, [monImg(s, u)]);
+        u._monEl = mw;
+        w.appendChild(mw);
+      });
+    }
+    renderSprites("a"); renderSprites("b");
+
+    const hpBoxes = {
+      a: el("div", { class: "battle-hpbox you" + (sides.a.units.length > 1 ? " doubles" : "") }),
+      b: el("div", { class: "battle-hpbox foe" + (sides.b.units.length > 1 ? " doubles" : "") }),
+    };
+    function paintHp(u) {
+      if (!u._fill) return;
+      const m = mon(u), pct = Math.max(0, m.hp / m.hpMax);
+      u._fill.style.width = (pct * 100).toFixed(1) + "%";
+      u._fill.classList.toggle("low", pct <= 0.5 && pct > 0.2);
+      u._fill.classList.toggle("crit", pct <= 0.2);
+      u._num.textContent = Math.max(0, m.hp) + " / " + m.hpMax;
+    }
+    function renderHp(s) {
+      const box = hpBoxes[s]; box.innerHTML = "";
+      sides[s].units.forEach((u) => {
+        const m = mon(u);
+        u._fill = el("div", { class: "battle-hp-fill" });
+        u._num = el("span", { class: "duel-hp-num" });
+        const left = u.party.filter((x) => x.hp > 0).length;
+        box.appendChild(el("div", { class: "battle-hp-mem" }, [
+          el("div", { class: "battle-hp-name" }, [m.name + " ", el("span", { class: "duel-lv" }, "Lv50")]),
+          el("div", { class: "battle-hp-row" }, [
+            el("span", { class: "battle-hp-lbl" }, "HP"),
+            el("div", { class: "battle-hp-track" }, [u._fill]),
+          ]),
+          el("div", { class: "duel-hp-sub" }, [u._num,
+            el("span", { class: "duel-owner" }, u.name + (u.party.length > 1 ? " · ⚪" + left + "/" + u.party.length : ""))]),
+        ]));
+        paintHp(u);
+      });
+    }
+    renderHp("a"); renderHp("b");
+
+    const msg = el("div", { class: "battle-msg" }, title + " — " + label("a") + " VS " + label("b") + "!");
     const menu = el("div", { class: "battle-menu" });
     const overlay = el("div", { class: "battle" }, [
       el("div", { class: "battle-arena" }, [
         el("div", { class: "battle-platform foe" }), el("div", { class: "battle-platform you" }),
-        foeHp.box, foeSprite, youSprite, youHp.box,
+        hpBoxes.b, sprites.b, sprites.a, hpBoxes.a,
       ]),
       msg, menu,
     ]);
-    function close() { overlay.classList.add("out"); setTimeout(() => overlay.remove(), 350); }
-    function cur() { return turn === "a" ? A : B; }
-    function other() { return turn === "a" ? B : A; }
-    function spriteOf(F) { return F === A ? youSprite : foeSprite; }
-    function hpOf(F) { return F === A ? youHp : foeHp; }
+    function close() {
+      overlay.classList.add("out");
+      setTimeout(() => overlay.remove(), 350);
+      if (opts.onEnd) try { opts.onEnd(); } catch (_) {}
+    }
 
-    // Broadcast so the room gets the "Watch" alert (winner reveal for them).
-    let live = false;
-    if (opts.broadcast !== false && window.Sync && Sync.isLive && Sync.isLive()) {
-      live = true;
-      Sync.startLiveBattle({ aName: A.name, bName: B.name, event: title,
+    // Broadcast hot-seat duels on the old channel so the room's Watch alert
+    // still fires (winner reveal). Remote duels are announced by their setup.
+    let liveLocal = false;
+    if (mode === "local" && opts.broadcast !== false && window.Sync && Sync.isLive && Sync.isLive()) {
+      liveLocal = true;
+      Sync.startLiveBattle({ aName: label("a"), bName: label("b"), event: title,
         aClient: Sync.myClientId(), mode: "duel" });
     }
 
-    // Play a sequence of [text, waitMs] beats, then call done().
     function beats(steps, fin) {
       let i = 0;
       (function next() {
@@ -148,141 +245,273 @@
       })();
     }
 
-    function finish(winner, loser, how) {
-      done = true;
+    // ---- act plumbing: every decision is a small serializable act ----
+    function sendAct(act) {
+      act.by = myClient || "local";
+      if (net) try { net.send(act); } catch (_) {}
+      enqueue(act);
+    }
+    function enqueue(act) {
+      if (!act || typeof act.seq !== "number") return;
+      if (act.seq <= S.seq) return;                                   // already applied (echo)
+      if (S.queue.some((q) => q.seq === act.seq)) return;
+      S.queue.push(act);
+      S.queue.sort((x, y) => x.seq - y.seq);
+      pump();
+    }
+    function receiveActs(acts) { (acts || []).forEach(enqueue); }
+    function pump() {
+      if (!S.ready || S.busy || S.done || !S.queue.length) return;
+      if (S.queue[0].seq !== S.seq + 1) return;                        // wait for the gap to fill
+      const act = S.queue.shift();
+      const instant = S.queue.length > 0;                              // catching up — skip anims
+      S.busy = true;
+      S.seq = act.seq;
+      applyAct(act, instant, () => { S.busy = false; pump(); });
+    }
+
+    function advance() {
+      const s = S.actor.side, units = sides[s].units;
+      let u = S.actor.unit + 1;
+      while (u < units.length && !unitAlive(units[u])) u++;
+      if (u < units.length) S.actor = { side: s, unit: u };
+      else { const o = other(s); S.actor = { side: o, unit: firstLiving(o) }; }
+      renderMenu();
+    }
+
+    function applyAct(act, instant, done) {
+      const u = sides[act.side].units[act.unit];
+      if (act.kind === "move") return applyMove(act, u, instant, done);
+      if (act.kind === "potion") {
+        u.potions = Math.max(0, u.potions - 1); S.moved++;
+        const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 60); paintHp(u);
+        if (instant) { advance(); done(); return; }
+        menu.innerHTML = "";
+        beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+60 HP)", 1200, () => sfx("coin")]],
+          () => { advance(); done(); });
+        return;
+      }
+      if (act.kind === "courage") {
+        u.courage = false; u.armed = true; S.moved++;
+        if (instant) { advance(); done(); return; }
+        menu.innerHTML = "";
+        beats([["🍺 " + u.name + " chugs half the drink — " + mon(u).name + " is fired up!", 1200, () => sfx("correct")]],
+          () => { advance(); done(); });
+        return;
+      }
+      if (act.kind === "switch" || act.kind === "next") {
+        const old = mon(u).name;
+        u.cur = act.to; S.moved++;
+        renderSprites(act.side); renderHp(act.side);
+        const isNext = act.kind === "next";
+        const fin = () => { if (isNext) { S.pending = null; advance(); } else advance(); done(); };
+        if (instant) { fin(); return; }
+        menu.innerHTML = "";
+        beats([[isNext ? u.name + " sent out " + mon(u).name + "!" : u.name + " withdrew " + old + " — go, " + mon(u).name + "!",
+          1100, () => sfx("blip")]], fin);
+        return;
+      }
+      if (act.kind === "forfeit") {
+        finish(other(act.side), act, "forfeit", instant, done);
+        return;
+      }
+      done();
+    }
+
+    function applyMove(act, u, instant, done) {
+      S.moved++;
+      const dSide = other(act.side);
+      const tu = sides[dSide].units[act.tUnit];
+      const m = mon(u), mv = m.moves[act.move] || m.moves[0], tm = mon(tu);
+      u.armed = false;
+      const afterDamage = () => {
+        if (tm.hp > 0) { advance(); done(); return; }
+        // fainted — replacement, drop the unit, or end the battle
+        if (unitAlive(tu)) {                       // bench remains → owner picks
+          S.pending = { side: dSide, unit: act.tUnit };
+          renderMenu(); done(); return;
+        }
+        if (sides[dSide].units.some(unitAlive)) { renderHp(dSide); advance(); done(); return; }  // doubles partner fights on
+        finish(act.side, act, "faint", instant, done);
+      };
+      if (instant) {
+        if (!act.miss) { tm.hp = Math.max(0, tm.hp - act.dmg); paintHp(tu); if (tm.hp <= 0 && tu._monEl) tu._monEl.classList.add("fainted"); }
+        afterDamage();
+        return;
+      }
       menu.innerHTML = "";
+      u._monEl.classList.add("attack");
+      setTimeout(() => u._monEl.classList.remove("attack"), 600);
+      if (act.miss) {
+        beats([
+          [m.name + " used " + mv.name + "!", 850, () => sfx("select")],
+          ["…it missed!", 1000, () => sfx("error")],
+        ], () => { advance(); done(); });
+        return;
+      }
+      const steps = [[m.name + " used " + mv.name + "!", 800, () => sfx("select")]];
+      steps.push([null, 500, () => {
+        tm.hp = Math.max(0, tm.hp - act.dmg);
+        tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
+        setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
+        paintHp(tu); sfx("coin");
+      }]);
+      if (act.crit) steps.push([act.armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
+      if (act.eff > 1) steps.push(["It's super effective!", 900]);
+      else if (act.eff < 1) steps.push(["It's not very effective…", 900]);
+      steps.push(["−" + act.dmg + " HP!", 650]);
+      beats(steps, () => {
+        if (tm.hp <= 0) {
+          beats([[tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }]], afterDamage);
+        } else afterDamage();
+      });
+    }
+
+    function finish(winSide, act, how, instant, done) {
+      S.done = true;
+      menu.innerHTML = "";
+      const wLabel = label(winSide), lLabel = label(other(winSide));
+      const wMons = sides[winSide].units.map((x) => mon(x).name).join(" & ");
+      const lMons = sides[other(winSide)].units.map((x) => mon(x).name).join(" & ");
+      const record = mode === "local" || (mode === "remote" && act.by === myClient);
       beats([
-        [how === "faint" ? loser.mon.name + " fainted!" : loser.name + " chickened out!", 1200,
-          () => { spriteOf(loser).classList.add("fainted"); sfx("error"); }],
-        ["🏆 " + winner.name + "'s " + winner.mon.name + " wins the duel!", 1900, () => sfx("fanfare")],
-      ], () => { close(); if (opts.onResult) opts.onResult(winner === A ? "a" : "b"); });
+        how === "forfeit" ? ["🏳️ " + lLabel + (sides[other(winSide)].units.length > 1 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
+        ["🏆 " + wLabel + " win" + (sides[winSide].units.length > 1 ? "" : "s") + " the duel!", 1900, () => sfx("fanfare")],
+      ], () => { close(); if (opts.onResult) opts.onResult(winSide); if (done) done(); });
+      if (!record) return;
       try {
         Store.update((s) => {
           s.battles = s.battles || { log: [] }; s.battles.log = s.battles.log || [];
-          s.battles.log.unshift({ title: title, winner: winner.name, loser: loser.name, ts: now(),
-            duel: true, wMon: winner.mon.name, lMon: loser.mon.name });
+          s.battles.log.unshift({ title: title, winner: wLabel, loser: lLabel, ts: now(),
+            duel: true, wMon: wMons, lMon: lMons });
           if (s.battles.log.length > 60) s.battles.log.length = 60;
-          if (winner.teamId) Store.grantPoints(s, "battle", winner.teamId, 4);
-          if (Store.chron) Store.chron(s, "⚔️", winner.name + "'s " + winner.mon.name + " KO'd " +
-            loser.name + "'s " + loser.mon.name + " in a duel!");
+          const teams = [];
+          sides[winSide].units.forEach((x) => { if (x.teamId && teams.indexOf(x.teamId) < 0) teams.push(x.teamId); });
+          teams.forEach((tid) => Store.grantPoints(s, "battle", tid, 4));
+          if (Store.chron) Store.chron(s, "⚔️", doubles
+            ? wLabel + " out-dueled " + lLabel + " in a double battle!"
+            : wLabel + "'s " + wMons + " KO'd " + lLabel + "'s " + lMons + " in a duel!");
         });
       } catch (_) {}
-      if (live) try { Sync.finishLiveBattle(winner.name); } catch (_) {}
+      try {
+        if (window.Sync) {
+          if (mode === "remote") { Sync.endRemoteDuel(wLabel); Sync.finishLiveBattle(wLabel); }
+          else if (liveLocal) Sync.finishLiveBattle(wLabel);
+        }
+      } catch (_) {}
     }
 
-    function attack(move) {
-      const me = cur(), foe = other();
-      moved++;
-      menu.innerHTML = "";
-      const armed = me.armed; me.armed = false;
-      const hits = armed || Math.random() * 100 < move.acc;
-      spriteOf(me).classList.add("attack");
-      setTimeout(() => spriteOf(me).classList.remove("attack"), 600);
-      if (!hits) {
-        beats([
-          [me.mon.name + " used " + move.name + "!", 850, () => sfx("select")],
-          ["…it missed!", 1000, () => sfx("error")],
-        ], nextTurn);
-        return;
-      }
-      const eff = effFor(move.type, foe.mon.types);
-      const crit = armed || Math.random() < 0.08;
-      const dmg = Math.max(1, Math.round(move.pow * me.mon.atk * eff * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
-      const steps = [[me.mon.name + " used " + move.name + "!", 800, () => sfx("select")]];
-      steps.push([null, 500, () => {
-        foe.hp = Math.max(0, foe.hp - dmg);
-        const sp = spriteOf(foe);
-        sp.classList.add("hurt"); if (crit) sp.classList.add("crit");
-        setTimeout(() => sp.classList.remove("hurt", "crit"), 700);
-        hpOf(foe).paint(); sfx("coin");
-      }]);
-      if (crit) steps.push([armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
-      if (eff > 1) steps.push(["It's super effective!", 900]);
-      else if (eff < 1) steps.push(["It's not very effective…", 900]);
-      steps.push(["−" + dmg + " HP!", 700]);
-      beats(steps, () => { if (foe.hp <= 0) finish(me, foe, "faint"); else nextTurn(); });
+    // ---- menus (only the phone that controls the current pick gets one) ----
+    function isMine(u) { return mode === "local" || (mode === "remote" && u.client === myClient); }
+
+    function moveBtn(m, onPick) {
+      return el("button", { class: "duel-move", style: { "--mt": TYPE_COLOR[m.type] || "#a8a878" }, onClick: onPick }, [
+        el("span", { class: "duel-move-name" }, (TYPE_EMOJI[m.type] || "⭐") + " " + m.name),
+        el("span", { class: "duel-move-sub" }, "POW " + m.pow + " · " + m.acc + "%"),
+      ]);
     }
 
-    // Drink actions — inline confirm so the table can verify the sips happen.
-    function confirmPanel(lines, okLabel, onOk) {
+    function confirmPanel(text, okLabel, onOk) {
       menu.innerHTML = "";
       menu.appendChild(el("div", { class: "duel-confirm" }, [
-        el("div", { class: "duel-confirm-txt" }, lines),
+        el("div", { class: "duel-confirm-txt" }, text),
         el("div", { class: "battle-menu-row" }, [
           el("button", { class: "btn primary", onClick: onOk }, okLabel),
           el("button", { class: "btn subtle", onClick: renderMenu }, "↩ Back"),
         ]),
       ]));
     }
-    function potion() {
-      const me = cur();
-      confirmPanel("🧪 Drink Potion — " + me.name + " takes 3 sips, and " + me.mon.name + " heals 60 HP.",
-        "✅ Sips taken — heal!", () => {
-          me.potions--; moved++;
-          me.hp = Math.min(me.mon.hpMax, me.hp + 60);
-          hpOf(me).paint();
-          menu.innerHTML = "";
-          beats([[me.mon.name + " regained health! (+60 HP)", 1100, () => sfx("coin")]], nextTurn);
-        });
-    }
-    function courage() {
-      const me = cur();
-      confirmPanel("🍺 Liquid Courage — " + me.name + " finishes half their drink. " + me.mon.name +
-        "'s next attack can't miss and lands a CRITICAL HIT.",
-        "🍺 Chugged!", () => {
-          me.courage = false; me.armed = true; moved++;
-          menu.innerHTML = "";
-          beats([[me.mon.name + " is fired up!", 1100, () => sfx("correct")]], nextTurn);
-        });
-    }
-    function forfeit() {
-      const me = cur(), foe = other();
-      if (!moved) {                       // nothing happened yet — just walk away
-        if (live) try { Sync.finishLiveBattle(""); } catch (_) {}
-        close(); return;
-      }
-      if (confirm("Give up? " + foe.name + "'s " + foe.mon.name + " takes the win.")) finish(foe, me, "forfeit");
+
+    function partyPanel(u, ptr, kind, allowBack) {
+      // pick a replacement (kind "next") or a voluntary switch (kind "switch")
+      menu.innerHTML = "";
+      menu.appendChild(el("div", { class: "duel-turn " + (ptr.side === "a" ? "you" : "foe") },
+        kind === "next" ? "💫 " + u.name + " — choose your next Pokémon!" : "🔄 " + u.name + " — switch to who?"));
+      menu.appendChild(el("div", { class: "duel-party-row" }, bench(u).map((x) =>
+        el("button", { class: "duel-bench", onClick: () => {
+          sendAct({ seq: S.seq + 1, kind: kind, side: ptr.side, unit: ptr.unit, to: x.i });
+        } }, [
+          SP[x.m.id] ? el("img", { src: SP[x.m.id], alt: x.m.name }) : el("span", { class: "draft-thumb-ball" }),
+          el("span", { class: "duel-bench-txt" }, x.m.name + " · " + x.m.hp + "/" + x.m.hpMax),
+        ]))));
+      if (allowBack) menu.appendChild(el("div", { class: "battle-menu-row" },
+        [el("button", { class: "btn subtle sm", onClick: renderMenu }, "↩ Back")]));
     }
 
-    function moveBtn(m) {
-      return el("button", { class: "duel-move", style: { "--mt": TYPE_COLOR[m.type] || "#a8a878" }, onClick: () => attack(m) }, [
-        el("span", { class: "duel-move-name" }, (TYPE_EMOJI[m.type] || "⭐") + " " + m.name),
-        el("span", { class: "duel-move-sub" }, "POW " + m.pow + " · " + m.acc + "%"),
+    function pickTarget(u, ptr, mIdx) {
+      const foes = livingEnemies(ptr.side);
+      if (foes.length <= 1) { doMove(u, ptr, mIdx, foes.length ? foes[0].i : 0); return; }
+      menu.innerHTML = "";
+      menu.appendChild(el("div", { class: "duel-turn " + (ptr.side === "a" ? "you" : "foe") }, "🎯 Which target?"));
+      menu.appendChild(el("div", { class: "battle-menu-row" }, foes.map((x) =>
+        el("button", { class: "btn primary", onClick: () => doMove(u, ptr, mIdx, x.i) },
+          mon(x.u).name + " (" + x.u.name + ")"))));
+      menu.appendChild(el("div", { class: "battle-menu-row" },
+        [el("button", { class: "btn subtle sm", onClick: renderMenu }, "↩ Back")]));
+    }
+
+    function doMove(u, ptr, mIdx, tIdx) {
+      const m = mon(u), mv = m.moves[mIdx];
+      const tm = mon(sides[other(ptr.side)].units[tIdx]);
+      const armed = u.armed;
+      const miss = !armed && Math.random() * 100 >= mv.acc;
+      const eff = effFor(mv.type, tm.types);
+      const crit = !miss && (armed || Math.random() < 0.08);
+      const dmg = miss ? 0 : Math.max(1, Math.round(mv.pow * m.atk * eff * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      sendAct({ seq: S.seq + 1, kind: "move", side: ptr.side, unit: ptr.unit, move: mIdx, tUnit: tIdx,
+        miss: miss, crit: crit, armed: armed, eff: eff, dmg: dmg });
+    }
+
+    function renderMenu() {
+      if (S.done) return;
+      menu.innerHTML = "";
+      const ptr = S.pending || S.actor;
+      const u = sides[ptr.side].units[ptr.unit];
+      if (mode === "watch" || !isMine(u)) {
+        menu.appendChild(el("div", { class: "duel-wait" },
+          (mode === "watch" ? "👀 " : "⏳ ") + u.name +
+          (S.pending ? " is choosing the next Pokémon…" : " is choosing…")));
+        return;
+      }
+      if (S.pending) { partyPanel(u, ptr, "next", false); return; }
+      const m = mon(u);
+      menu.appendChild(el("div", { class: "duel-turn " + (ptr.side === "a" ? "you" : "foe") },
+        "🎮 " + u.name + " — what will " + m.name + " do?" + (u.armed ? " (🍺 crit armed!)" : "")));
+      menu.appendChild(el("div", { class: "duel-moves" }, m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)))));
+      const row = [
+        el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
+          confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP.",
+            "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "potion", side: ptr.side, unit: ptr.unit }));
+        } }, "🧪 Potion ×" + u.potions),
+        el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
+          confirmPanel("🍺 Liquid Courage — " + u.name + " finishes half their drink. " + m.name +
+            "'s next attack can't miss and lands a CRITICAL HIT.",
+            "🍺 Chugged!", () => sendAct({ seq: S.seq + 1, kind: "courage", side: ptr.side, unit: ptr.unit }));
+        } }, "🍺 Liquid Courage"),
+      ];
+      if (bench(u).length) row.push(el("button", { class: "btn subtle sm", onClick: () => partyPanel(u, ptr, "switch", true) }, "🔄 Switch"));
+      row.push(el("button", { class: "btn subtle sm", onClick: () => {
+        if (!S.moved) {                           // nothing happened yet — just walk away (hot-seat only)
+          if (mode === "local") { if (liveLocal) try { Sync.finishLiveBattle(""); } catch (_) {} close(); return; }
+        }
+        if (confirm("Give up? " + label(other(ptr.side)) + " take" + (sides[other(ptr.side)].units.length > 1 ? "" : "s") + " the win.")) {
+          sendAct({ seq: S.seq + 1, kind: "forfeit", side: ptr.side, unit: ptr.unit });
+        }
+      } }, "🏳️"));
+      menu.appendChild(el("div", { class: "battle-menu-row duel-items" }, row));
+    }
+
+    // ---- VS intro, then the faster lead moves first ----
+    function vsPanel(cls, s) {
+      return el("div", { class: "vs-panel " + cls }, [
+        el("div", { class: "vs-mons" }, sides[s].units.map((u) => {
+          const id = mon(u).id;
+          return SP[id] ? el("img", { class: "vs-mon", src: SP[id], alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" });
+        })),
+        el("div", { class: "vs-name" }, label(s)),
       ]);
     }
-    function renderMenu() {
-      if (done) return;
-      const me = cur();
-      menu.innerHTML = "";
-      menu.appendChild(el("div", { class: "duel-turn " + (turn === "a" ? "you" : "foe") },
-        "🎮 " + me.name + " — what will " + me.mon.name + " do?" + (me.armed ? " (🍺 crit armed!)" : "")));
-      menu.appendChild(el("div", { class: "duel-moves" }, me.mon.moves.map(moveBtn)));
-      menu.appendChild(el("div", { class: "battle-menu-row duel-items" }, [
-        el("button", { class: "btn subtle sm", disabled: me.potions > 0 ? null : "true", onClick: potion },
-          "🧪 Potion ×" + me.potions),
-        el("button", { class: "btn subtle sm", disabled: me.courage ? null : "true", onClick: courage },
-          "🍺 Liquid Courage"),
-        el("button", { class: "btn subtle sm", onClick: forfeit }, "🏳️"),
-      ]));
-    }
-    function nextTurn() {
-      if (done) return;
-      turn = turn === "a" ? "b" : "a";
-      renderMenu();
-    }
-
-    // VS intro, then the faster species moves first.
-    const vs = el("div", { class: "battle-vs" }, [
-      el("div", { class: "vs-panel a" }, [
-        el("div", { class: "vs-mons" }, [SP[A.mon.id] ? el("img", { class: "vs-mon", src: SP[A.mon.id], alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" })]),
-        el("div", { class: "vs-name" }, A.name + "'s " + A.mon.name),
-      ]),
-      el("div", { class: "vs-badge" }, "VS"),
-      el("div", { class: "vs-panel b" }, [
-        el("div", { class: "vs-mons" }, [SP[B.mon.id] ? el("img", { class: "vs-mon", src: SP[B.mon.id], alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" })]),
-        el("div", { class: "vs-name" }, B.name + "'s " + B.mon.name),
-      ]),
-    ]);
+    const vs = el("div", { class: "battle-vs" }, [vsPanel("a", "a"), el("div", { class: "vs-badge" }, "VS"), vsPanel("b", "b")]);
     document.body.appendChild(overlay);
     overlay.appendChild(vs);
     sfx("blip");
@@ -293,12 +522,13 @@
       setTimeout(() => vs.remove(), 400);
       overlay.classList.add("go", "ready");
       sfx("blip");
-      msg.textContent = cur().mon.name + " is faster — " + cur().name + " goes first!";
-      setTimeout(renderMenu, 900);
+      const lead = sides[S.first].units[0];
+      msg.textContent = mon(lead).name + " is faster — " + label(S.first) + " go" + (sides[S.first].units.length > 1 ? "" : "es") + " first!";
+      setTimeout(() => { if (!S.done) { S.ready = true; renderMenu(); pump(); } }, 900);
     }, 1700);
 
-    return { close: close };
+    return { receiveActs: receiveActs, close: close };
   }
 
-  window.Duel = { start: start, statsFor: statsFor };
+  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty };
 })();

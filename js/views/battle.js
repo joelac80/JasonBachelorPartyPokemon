@@ -45,16 +45,6 @@
     ]);
   }
 
-  // Ordered Pokémon list for a trainer's duel picker: team of 6 first, then
-  // the rest of their caught dex. Everyone at least has their partner.
-  function duelPool(attId) {
-    const t = (Store.state.pokedex.trainers || {})[attId] || {};
-    const ids = (t.team || []).filter(Boolean).slice();
-    Object.keys(t.caught || {}).map(Number).forEach((id) => { if (ids.indexOf(id) < 0) ids.push(id); });
-    if (!ids.length) { const a = Store.attendee(attId); if (a && a.favoriteId) ids.push(a.favoriteId); }
-    return ids;
-  }
-
   function view(root) {
     const sideA = [], sideB = [];
     let eventLabel = "";
@@ -65,41 +55,68 @@
     ]));
 
     // ---- Duel Mode: real turn-based battles at Lv50 ----
-    const duel = { a: { attId: "", monId: 0 }, b: { attId: "", monId: 0 } };
+    // Singles = 1 trainer per side with a party of up to 6 (switch on faint,
+    // or spend a turn to switch). Doubles = 2 trainers per side, 1 mon each.
+    let format = "single";
+    const duel = { a: [{ attId: "", party: [] }], b: [{ attId: "", party: [] }] };
+    function blankUnits() { return format === "double" ? [{ attId: "", party: [] }, { attId: "", party: [] }] : [{ attId: "", party: [] }]; }
     const duelHost = el("div", { class: "duel-setup" });
     root.appendChild(el("h2", { class: "section-title" }, "🎮 Pokémon Duel"));
     root.appendChild(el("p", { class: "hint" },
-      "Turn-based, every Pokémon at Lv50. 🧪 Potion = 3 sips to heal · 🍺 Liquid Courage = finish half your drink for a guaranteed crit."));
+      "Turn-based, every Pokémon at Lv50. 🧪 Potion = 3 sips to heal · 🍺 Liquid Courage = finish half your drink for a guaranteed crit. Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
     root.appendChild(duelHost);
 
-    function duelSide(side, label, cls) {
-      const d = duel[side];
-      const sel = el("select", { class: "in" }, [el("option", { value: "" }, "Pick a trainer…")]
+    function unitEditor(side, cls, u, slotLabel) {
+      const maxParty = format === "double" ? 1 : 6;
+      const sel = el("select", { class: "in" }, [el("option", { value: "" }, slotLabel || "Pick a trainer…")]
         .concat(Store.state.attendees.map((a) => el("option", { value: a.id }, a.name))));
-      sel.value = d.attId;
-      sel.addEventListener("change", () => { d.attId = sel.value; d.monId = duelPool(d.attId)[0] || 0; renderDuel(); });
-      const kids = [el("div", { class: "arena-side-title" }, label), sel];
-      if (d.attId) {
-        const pool = duelPool(d.attId);
+      sel.value = u.attId;
+      sel.addEventListener("change", () => {
+        u.attId = sel.value;
+        const pool = Duel.poolFor(u.attId);
+        u.party = pool.length ? [pool[0]] : [];
+        renderDuel();
+      });
+      const kids = [sel];
+      if (u.attId) {
+        const pool = Duel.poolFor(u.attId);
         kids.push(el("div", { class: "duel-pick-row" }, pool.map((id) => {
-          const st = window.Duel ? Duel.statsFor(id) : { name: "#" + id, hpMax: 0 };
+          const st = Duel.statsFor(id);
+          const idx = u.party.indexOf(id);
           const src = (window.DEX_SPRITES && DEX_SPRITES[id]) || Store.sprite(id);
-          return el("button", { class: "duel-pick" + (d.monId === id ? " on" : ""), title: st.name,
-            onClick: () => { d.monId = id; renderDuel(); } }, [
+          return el("button", { class: "duel-pick" + (idx >= 0 ? " on" : ""), title: st.name,
+            onClick: () => {
+              if (idx >= 0) u.party.splice(idx, 1);
+              else if (u.party.length < maxParty) u.party.push(id);
+              else if (maxParty === 1) u.party = [id];
+              renderDuel();
+            } }, [
             src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
+            idx >= 0 && maxParty > 1 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
           ]);
         })));
-        if (d.monId && window.Duel) {
-          const st = Duel.statsFor(d.monId);
-          kids.push(el("div", { class: "duel-pick-meta" },
-            st.name + " · Lv50 · " + st.hpMax + " HP · " + st.moves.map((m) => m.name).join(" / ")));
+        if (u.party.length) {
+          const lead = Duel.statsFor(u.party[0]);
+          kids.push(el("div", { class: "duel-pick-meta" }, (maxParty > 1
+            ? "Party of " + u.party.length + " — lead: " : "") +
+            lead.name + " · Lv50 · " + lead.hpMax + " HP · " + lead.moves.map((m) => m.name).join(" / ")));
         }
       }
-      return el("div", { class: "arena-side " + cls }, kids);
+      return el("div", { class: "duel-unit" }, kids);
+    }
+
+    function duelSide(side, label, cls) {
+      const units = duel[side];
+      return el("div", { class: "arena-side " + cls }, [el("div", { class: "arena-side-title" }, label)]
+        .concat(units.map((u, i) => unitEditor(side, cls, u, format === "double" ? "Trainer " + (i + 1) + "…" : "Pick a trainer…"))));
     }
 
     function renderDuel() {
       duelHost.innerHTML = "";
+      duelHost.appendChild(el("div", { class: "chip-row duel-format" }, [
+        el("button", { class: "chip" + (format === "single" ? " on" : ""), onClick: () => { if (format !== "single") { format = "single"; duel.a = blankUnits(); duel.b = blankUnits(); renderDuel(); } } }, "⚔ Single — party up to 6"),
+        el("button", { class: "chip" + (format === "double" ? " on" : ""), onClick: () => { if (format !== "double") { format = "double"; duel.a = blankUnits(); duel.b = blankUnits(); renderDuel(); } } }, "🤝 Double — 2 trainers a side"),
+      ]));
       duelHost.appendChild(el("div", { class: "arena-grid" }, [
         duelSide("a", "🔵 Blue Corner", "blue"),
         el("div", { class: "arena-vs" }, "VS"),
@@ -107,9 +124,11 @@
       ]));
       duelHost.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
         el("button", { class: "btn spin-btn", onClick: () => {
-          if (!duel.a.attId || !duel.b.attId || !duel.a.monId || !duel.b.monId) { alert("Pick both trainers and their Pokémon first."); return; }
-          if (!window.Duel) return;
-          Duel.start({ a: duel.a, b: duel.b, title: (eventLabel || "").trim() || "Duel",
+          const ok = (us) => us.every((u) => u.attId && u.party.length);
+          if (!ok(duel.a) || !ok(duel.b)) { alert("Every trainer needs to be picked and have at least one Pokémon."); return; }
+          Duel.start({ mode: "local", title: (eventLabel || "").trim() || "Duel",
+            a: { units: duel.a.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) },
+            b: { units: duel.b.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) },
             onResult: () => { renderLog(); } });
         } }, "🎮 START DUEL"),
       ]));
@@ -139,17 +158,31 @@
         if (unsigned) hereHost.appendChild(el("p", { class: "hint" }, "🔌 +" + unsigned + " device" + (unsigned > 1 ? "s" : "") + " connected without a trainer picked."));
         hereHost.appendChild(el("div", { class: "here-grid" }, others.map((p) => {
           const a = Store.attendee(p.attId);
+          const nm = p.name || (a && a.name) || "Trainer";
           const src = a ? Store.sprite(Store.currentForm(a).id) : "";
-          const btn = el("button", { class: "btn primary sm" }, "⚔ Challenge");
+          // 🎮 Duel: a REAL remote duel — they pick their party and play
+          // their turns on their own phone.
+          const duelBtn = el("button", { class: "btn primary sm" }, "🎮 Duel");
+          duelBtn.addEventListener("click", () => {
+            const me = Sync.getMe();
+            if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+            Duel.pickParty({ attId: me, title: "Challenge " + nm + " — your party", onDone: (ids) => {
+              Sync.sendChallenge(p.clientId, p.attId, nm, (eventLabel || "").trim(), { kind: "duel", party: ids });
+              duelBtn.disabled = true; duelBtn.textContent = "Waiting…";
+              setTimeout(() => { if (duelBtn.isConnected) { duelBtn.disabled = false; duelBtn.textContent = "🎮 Duel"; } }, 15000);
+            } });
+          });
+          // ⚔ Quick call: the old referee battle (you tap who won).
+          const btn = el("button", { class: "btn subtle sm" }, "⚔ Quick call");
           btn.addEventListener("click", () => {
-            Sync.sendChallenge(p.clientId, p.attId, p.name || (a && a.name) || "Trainer", (eventLabel || "").trim());
+            Sync.sendChallenge(p.clientId, p.attId, nm, (eventLabel || "").trim());
             btn.disabled = true; btn.textContent = "Waiting…";
-            setTimeout(() => { if (btn.isConnected) { btn.disabled = false; btn.textContent = "⚔ Challenge"; } }, 8000);
+            setTimeout(() => { if (btn.isConnected) { btn.disabled = false; btn.textContent = "⚔ Quick call"; } }, 8000);
           });
           return el("div", { class: "here-card" }, [
             src ? el("img", { class: "here-sprite", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
-            el("div", { class: "here-name" }, p.name || (a && a.name) || "Trainer"),
-            btn,
+            el("div", { class: "here-name" }, nm),
+            duelBtn, btn,
           ]);
         })));
       };
