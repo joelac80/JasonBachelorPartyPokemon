@@ -203,6 +203,36 @@
     const el = U.el;
     Sync.onChallengeIncoming((ch) => {
       if (!window.Modal) return;
+      // 🔁 Trade offer — the other trainer consents on THEIR phone.
+      if (ch.kind === "trade" && window.TradeFX) {
+        const give = (ch.party || [])[0], want = (ch.pairParty || [])[0];
+        notify("🔁 Trade offer!", (ch.fromName || "Someone") + " offers " + TradeFX.nameOf(give) + " for your " + TradeFX.nameOf(want));
+        if (window.SFX && SFX.select) SFX.select();
+        let tctrl;
+        const tbody = el("div", { class: "chal-modal" }, [
+          el("div", { class: "chal-line" }, "🔁 " + (ch.fromName || "Someone") + " offers their " + TradeFX.nameOf(give) + " for your " + TradeFX.nameOf(want) + "!"),
+          el("div", { class: "trade-offer-row" }, [
+            el("img", { class: "evo-prompt-img", src: TradeFX.spriteOf(give, TradeFX.shinyOf(ch.fromAtt, give)), alt: "" }),
+            el("span", { class: "trade-arrows" }, "⇄"),
+            el("img", { class: "evo-prompt-img", src: TradeFX.spriteOf(want, TradeFX.shinyOf(ch.toAtt, want)), alt: "" }),
+          ]),
+          el("div", { class: "toolbar" }, [
+            el("button", { class: "btn primary", onClick: () => {
+              if (tctrl) tctrl.close();
+              const me = Sync.getMe();
+              if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+              const aSh = TradeFX.shinyOf(ch.fromAtt, give), bSh = TradeFX.shinyOf(me, want);
+              const result = Store.trade(ch.fromAtt, give, me, want);
+              if (!result) { alert("That trade isn't valid anymore (already traded away?)."); Sync.respondChallenge(ch, false); return; }
+              Sync.respondChallenge(ch, true);
+              TradeFX.play(ch.fromName || "They", give, aSh, (Store.attendee(me) || {}).name || "You", want, bSh, result, function () {});
+            } }, "🤝 Accept trade"),
+            el("button", { class: "btn subtle", onClick: () => { Sync.respondChallenge(ch, false); if (tctrl) tctrl.close(); } }, "Decline"),
+          ]),
+        ]);
+        tctrl = Modal.open("Trade offer!", tbody, null, { noFooter: true });
+        return;
+      }
       const isDuel = ch.kind === "duel";
       notify(isDuel ? "🎮 Duel challenge!" : "⚔ You've been challenged!",
         (ch.fromName || "Someone") + (isDuel ? " wants a Pokémon Duel" : " wants to battle") + (ch.event ? " · " + ch.event : ""));
@@ -297,6 +327,18 @@
     // (Duel challenges skip this — the accepter announces via the duel doc.)
     Sync.onChallengeAccepted((ch) => {
       if (ch.kind === "duel") return;
+      // Trade accepted → the offerer's phone celebrates too (state syncs in).
+      if (ch.kind === "trade") {
+        if (ch.fromClient === Sync.myClientId() && window.TradeFX) {
+          const give = (ch.party || [])[0], want = (ch.pairParty || [])[0];
+          const EV = Store.TRADE_EVOS || {};
+          const result = { toB: EV[give] || give, toA: EV[want] || want, evoB: !!EV[give], evoA: !!EV[want] };
+          TradeFX.play(ch.fromName || "You", give, TradeFX.shinyOf(ch.fromAtt, give),
+            ch.toName || "They", want, TradeFX.shinyOf(ch.toAtt, want), result, function () {});
+          if (window.SFX && SFX.win) SFX.win();
+        }
+        return;
+      }
       if (ch.fromClient === Sync.myClientId()) {
         Sync.startLiveBattle({ aName: ch.fromName, bName: ch.toName, event: ch.event, aClient: ch.fromClient, bClient: ch.toClient });
       }
@@ -328,6 +370,32 @@
         if (h.receiveRx) h.receiveRx(data.rx || []);
       }
     });
+    // 🌩 roaming legendary — alert every phone, first catch wins.
+    const handledRoam = {};
+    Sync.onRoam((data) => {
+      if (!data || !data.id) return;
+      if (data.state === "live" && !handledRoam[data.id]) {
+        handledRoam[data.id] = 1;
+        if (data.t && Date.now() - data.t > 1200000) return;   // stale event
+        const nm = (window.DEX && DEX[data.monId] && DEX[data.monId].n) || "legendary";
+        notify("🌩 Roaming legendary!", "A wild " + nm + " is loose — first catch claims it!");
+        if (window.SFX && SFX.fanfare) SFX.fanfare();
+        let rctrl;
+        const rbody = el("div", { class: "chal-modal" }, [
+          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the lake house! First trainer to catch it claims the only one in the region."),
+          el("div", { class: "toolbar" }, [
+            el("button", { class: "btn primary", onClick: () => { if (rctrl) rctrl.close(); location.hash = "#/safari"; } }, "🎯 Hunt it"),
+            el("button", { class: "btn subtle", onClick: () => { if (rctrl) rctrl.close(); } }, "Let it roam"),
+          ]),
+        ]);
+        rctrl = Modal.open("Roaming legendary!", rbody, null, { noFooter: true });
+      }
+      if (data.state === "done" && data.claimedBy && !handledRoam[data.id + "d"]) {
+        handledRoam[data.id + "d"] = 1;
+        notify("🌩 Claimed!", data.claimedBy + " caught the roaming legendary!");
+      }
+    });
+
     function openDuelWatch() {
       const d = latestDuel;
       if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id]) return;

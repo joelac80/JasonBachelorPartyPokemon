@@ -101,11 +101,18 @@
             idx >= 0 && maxParty > 1 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
           ]);
         })));
+        if (maxParty > 1) kids.push(el("button", { class: "btn subtle sm", onClick: () => {
+          const t = (Store.state.pokedex.trainers || {})[u.attId] || {};
+          const team = (t.team || []).filter((id) => pool.indexOf(id) >= 0).slice(0, maxParty);
+          if (team.length) { u.party = team; renderDuel(); } else alert("No team set — build one on the Safari page.");
+        } }, "⚡ Use my team"));
         if (u.party.length) {
           const lead = Duel.statsFor(u.party[0]);
+          const kos = ((Store.state.pokedex.trainers || {})[u.attId] || { caught: {} }).caught[u.party[0]];
+          const vet = kos && kos.kos ? Math.min(20, 2 * kos.kos) : 0;
           kids.push(el("div", { class: "duel-pick-meta" }, (maxParty > 1
             ? "Party of " + u.party.length + " — lead: " : "") +
-            lead.name + " · Lv50 · " + lead.hpMax + " HP · " + lead.moves.map((m) => m.name).join(" / ")));
+            lead.name + " · Lv50 · " + lead.hpMax + " HP" + (vet ? " · ⚔ veteran +" + vet + "% ATK" : "") + " · " + lead.moves.map((m) => m.name).join(" / ")));
         }
       }
       return el("div", { class: "duel-unit" }, kids);
@@ -208,17 +215,12 @@
             ]);
             fmt = Modal.open("🎮 Pokémon Duel", body, null, {});
           });
-          // ⚔ Quick call: the old referee battle (you tap who won).
-          const btn = el("button", { class: "btn subtle sm" }, "⚔ Quick call");
-          btn.addEventListener("click", () => {
-            Sync.sendChallenge(p.clientId, p.attId, nm, (eventLabel || "").trim());
-            btn.disabled = true; btn.textContent = "Waiting…";
-            setTimeout(() => { if (btn.isConnected) { btn.disabled = false; btn.textContent = "⚔ Quick call"; } }, 8000);
-          });
+          // (The old remote "quick call" button is gone — real duels cover
+          // phone-to-phone; the referee matchup below still logs live events.)
           return el("div", { class: "here-card" }, [
             src ? el("img", { class: "here-sprite", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
             el("div", { class: "here-name" }, nm),
-            duelBtn, btn,
+            duelBtn,
           ]);
         })));
       };
@@ -271,6 +273,19 @@
           el("span", { class: "safari-board-name" }, r.k),
           el("span", { class: "safari-board-n" }, r.n + " win" + (r.n > 1 ? "s" : "")),
         ]))));
+      // 📈 Duel Elo — singles only, everyone starts at 1000.
+      const elo = (Store.state.battles && Store.state.battles.elo) || {};
+      const eloRows = Object.keys(elo).map((id) => ({ a: Store.attendee(id), r: elo[id] }))
+        .filter((x) => x.a).sort((x, y) => y.r - x.r);
+      if (eloRows.length) {
+        logHost.appendChild(el("h2", { class: "section-title" }, "📈 Duel Ratings"));
+        logHost.appendChild(el("div", { class: "safari-board" }, eloRows.map((x, i) =>
+          el("div", { class: "safari-board-row clickable" + (i === 0 ? " lead" : ""), onClick: () => window.Profile && Profile.open(x.a.id) }, [
+            el("span", { class: "safari-board-rank" }, i === 0 ? "📈" : "#" + (i + 1)),
+            el("span", { class: "safari-board-name" }, x.a.name),
+            el("span", { class: "safari-board-n" }, String(x.r)),
+          ]))));
+      }
       logHost.appendChild(el("h2", { class: "section-title" }, "Recent Battles"));
       logHost.appendChild(el("div", { class: "battle-log" }, log.slice(0, 12).map((bt) =>
         el("div", { class: "battle-log-row" }, [

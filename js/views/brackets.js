@@ -105,22 +105,46 @@
     }, { saveLabel: "Create bracket", wide: false });
   }
 
-  // ---- Battle button → shared Battle engine ---------------------------------
+  // ---- Battle button → a REAL duel when both entrants are squad members,
+  // with the old referee screen as the fallback (custom names, teams, or
+  // real-world matches someone just wants to log).
   function openBattle(bid, r, m, aName, bName, total, onChange) {
-    Battle.start({
+    const record = (winnerKey) => {
+      const winner = winnerKey === "a" ? aName : bName;
+      Store.update((s) => {
+        const bx = s.brackets.find((x) => x.id === bid);
+        if (bx) { bx.winners[r][m] = winner; normalize(bx); }
+      });
+      onChange();
+    };
+    const referee = () => Battle.start({
       title: "the Match",
       a: { label: aName, names: membersOf(aName) },
       b: { label: bName, names: membersOf(bName) },
       isFinal: r === total - 1,
-      onResult: (winnerKey) => {
-        const winner = winnerKey === "a" ? aName : bName;
-        Store.update((s) => {
-          const bx = s.brackets.find((x) => x.id === bid);
-          if (bx) { bx.winners[r][m] = winner; normalize(bx); }
-        });
-        onChange();
-      },
+      onResult: record,
     });
+    const aAtt = Store.state.attendees.find((x) => x.name === aName);
+    const bAtt = Store.state.attendees.find((x) => x.name === bName);
+    if (!aAtt || !bAtt || !window.Duel) { referee(); return; }
+    let ctrl;
+    const body = U.el("div", { class: "chal-modal" }, [
+      U.el("div", { class: "chal-line" }, aName + " vs " + bName + " — how do we settle it?"),
+      U.el("div", { class: "toolbar" }, [
+        U.el("button", { class: "btn primary", onClick: () => { ctrl.close();
+          Duel.pickParty({ attId: aAtt.id, max: 3, title: aName + "'s party (up to 3)", onDone: (aIds) => {
+            Duel.pickParty({ attId: bAtt.id, max: 3, title: bName + "'s party (up to 3)", onDone: (bIds) => {
+              Duel.start({ mode: "local", title: r === total - 1 ? "the Final" : "the Match",
+                a: { units: [{ attId: aAtt.id, monIds: aIds }] },
+                b: { units: [{ attId: bAtt.id, monIds: bIds }] },
+                onResult: record });
+            } });
+          } });
+        } }, "🎮 Real duel"),
+        U.el("button", { class: "btn subtle", onClick: () => { ctrl.close(); referee(); } }, "📣 Quick call"),
+      ]),
+    ]);
+    ctrl = Modal.open("⚔ " + (r === total - 1 ? "The Final!" : "Bracket match"), body, null, { noFooter: true });
   }
 
   // ---- Render one bracket ---------------------------------------------------

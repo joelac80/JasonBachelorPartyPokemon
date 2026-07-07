@@ -47,6 +47,9 @@
     })();
   }
 
+  // Shared with app.js so remote trade offers can play the same cinematic.
+  window.TradeFX = { play: playTrade, spriteOf: spriteOf, shinyOf: shinyOf, nameOf: nameOf };
+
   function view(root) {
     const pick = { a: { attId: "", mon: 0 }, b: { attId: "", mon: 0 } };
 
@@ -104,10 +107,32 @@
         sideCard("b", "🔴 Trainer B gives…", "red"),
       ]));
       const ready = pick.a.attId && pick.b.attId && pick.a.mon && pick.b.mon;
+      // Remote consent: when I'm one side and the OTHER trainer is signed in
+      // on their own phone in the room, the trade becomes an OFFER they
+      // accept over there. Otherwise (same table / not synced) it's instant.
+      const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+      const live = window.Sync && Sync.isLive && Sync.isLive();
+      let remote = null;
+      if (live && me && ready) {
+        const mine = pick.a.attId === me ? "a" : (pick.b.attId === me ? "b" : "");
+        if (mine) {
+          const them = mine === "a" ? pick.b : pick.a;
+          const p = (Sync.presence() || []).find((x) => x.attId === them.attId && x.clientId !== Sync.myClientId());
+          if (p) remote = { mine: mine, them: them, client: p.clientId };
+        }
+      }
       host.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
         el("button", { class: "btn spin-btn", onClick: () => {
           if (!ready) { alert("Pick both trainers and the Pokémon they're each giving up."); return; }
           const an = (Store.attendee(pick.a.attId) || {}).name, bn = (Store.attendee(pick.b.attId) || {}).name;
+          if (remote) {
+            const my = remote.mine === "a" ? pick.a : pick.b;
+            const themName = (Store.attendee(remote.them.attId) || {}).name || "them";
+            Sync.sendChallenge(remote.client, remote.them.attId, themName, "",
+              { kind: "trade", party: [my.mon], pairParty: [remote.them.mon] });
+            alert("📨 Trade offer sent — " + themName + " accepts (or declines) on their phone.");
+            return;
+          }
           if (!confirm("🔁 " + an + "'s " + nameOf(pick.a.mon) + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + " — deal?")) return;
           const aSh = shinyOf(pick.a.attId, pick.a.mon), bSh = shinyOf(pick.b.attId, pick.b.mon);
           const result = Store.trade(pick.a.attId, pick.a.mon, pick.b.attId, pick.b.mon);
@@ -115,8 +140,10 @@
           const aM = pick.a.mon, bM = pick.b.mon;
           pick.a.mon = 0; pick.b.mon = 0;
           playTrade(an, aM, aSh, bn, bM, bSh, result, () => { render(); renderRecent(); });
-        } }, "🔁 MAKE THE TRADE"),
+        } }, remote ? "📨 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
       ]));
+      if (remote) host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } },
+        "🔒 " + ((Store.attendee(remote.them.attId) || {}).name || "They") + " is on their own phone — they'll get this as an offer to accept."));
     }
 
     function renderRecent() {

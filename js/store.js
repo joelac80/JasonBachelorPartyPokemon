@@ -389,6 +389,10 @@
         presidencies: this.presidencies(attId), assholeries: this.assholeries(attId),
         euchre: this.euchreWins(attId), oracle: this.oracleScore(attId),
         logged: this.logCount(attId), photosIn: this.photosOf(attId), photosTaken: this.photosTakenBy(attId),
+        duel: this.duelRecord(attId), kos: this.koLife(attId), shinies: this.shinyCount(attId),
+        trades: this.tradeCount(attId), evolutions: this.evoCount(attId),
+        beltReigns: this.beltReigns(attId), elo: this.eloOf(attId),
+        beltNow: !!(this.state.battles && this.state.battles.belt && this.state.battles.belt.attId === attId),
       };
     },
 
@@ -665,6 +669,10 @@
         const aKeep = give(A, aMon), bKeep = give(B, bMon);
         const toB = recv(B, aMon, aKeep);      // B receives what A gave
         const toA = recv(A, bMon, bKeep);      // A receives what B gave
+        s.pokedex.trades = s.pokedex.trades || [];
+        s.pokedex.trades.unshift({ a: aId, b: bId, gave: aMon, got: bMon,
+          ts: (function () { try { return Date.now(); } catch (_) { return 0; } })() });
+        if (s.pokedex.trades.length > 60) s.pokedex.trades.length = 60;
         result = { toA: toA, toB: toB, evoA: toA !== bMon, evoB: toB !== aMon };
         const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
         const an = (this.attendee(aId) || {}).name || aId, bn = (this.attendee(bId) || {}).name || bId;
@@ -673,6 +681,60 @@
         if (result.evoA) this.chron(s, "⚡", "Whoa — the traded " + nm(bMon) + " evolved into " + nm(toA) + " for " + an + "!", by);
       });
       return result;
+    },
+
+    // ---- battle & collecting analytics --------------------------------------
+    // Duel win/loss from the battle log (name-matched; doubles count for
+    // both partners on a side).
+    duelRecord(attId) {
+      const a = this.attendee(attId); if (!a) return { w: 0, l: 0 };
+      const hit = (label) => (label || "").split(" & ").indexOf(a.name) >= 0;
+      let w = 0, l = 0;
+      ((this.state.battles && this.state.battles.log) || []).forEach((b) => {
+        if (!b.duel) return;
+        if (hit(b.winner)) w++; else if (hit(b.loser)) l++;
+      });
+      return { w: w, l: l };
+    },
+    koLife(attId) {
+      const t = (this.state.pokedex.trainers || {})[attId];
+      return (t && t.koLife) || 0;
+    },
+    shinyCount(attId) {
+      const t = (this.state.pokedex.trainers || {})[attId];
+      if (!t || !t.caught) return 0;
+      let n = 0; for (const k in t.caught) if (t.caught[k].shiny) n++;
+      return n;
+    },
+    tradeCount(attId) {
+      return ((this.state.pokedex && this.state.pokedex.trades) || [])
+        .filter((t) => t.a === attId || t.b === attId).length;
+    },
+    evoCount(attId) {
+      const t = (this.state.pokedex.trainers || {})[attId];
+      return (t && t.evolutions) || 0;
+    },
+    beltReigns(attId) {
+      return ((this.state.battles && this.state.battles.beltLog) || [])
+        .filter((x) => x.attId === attId).length;
+    },
+    eloOf(attId) {
+      return ((this.state.battles && this.state.battles.elo) || {})[attId] || 1000;
+    },
+
+    // Nickname a caught mon (per trainer). Blank clears it.
+    setNick(attId, monId, nick) {
+      this.update((s) => {
+        const t = s.pokedex.trainers[attId];
+        const r = t && t.caught && t.caught[monId];
+        if (!r) return;
+        nick = String(nick || "").trim().slice(0, 14);
+        if (nick) r.nick = nick; else delete r.nick;
+      });
+    },
+    nickOf(attId, monId) {
+      const t = (this.state.pokedex.trainers || {})[attId];
+      return (t && t.caught && t.caught[monId] && t.caught[monId].nick) || "";
     },
 
     // ---- Battle-EXP evolution ------------------------------------------------
@@ -706,6 +768,7 @@
         t.seen = t.seen || {}; t.seen[targetId] = 1;
         const i = (t.team || []).indexOf(monId);
         if (i >= 0 && t.team.indexOf(targetId) < 0) t.team[i] = targetId;
+        t.evolutions = (t.evolutions || 0) + 1;
         const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
         const an = (this.attendee(attId) || {}).name || attId;
         this.chron(s, "🎉", "What?! " + an + "'s " + nm(monId) + " evolved into " + nm(targetId) + " — " + this.KO_TO_EVOLVE + " KOs of battle EXP!", by);

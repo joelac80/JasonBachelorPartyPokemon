@@ -46,9 +46,18 @@
     ]);
 
     const seenN = Object.keys(Object.assign({}, tr.seen || {}, tr.caught || {})).length;
+    const duel = Store.duelRecord(attId);
+    const beltNow = Store.state.battles && Store.state.battles.belt && Store.state.battles.belt.attId === attId;
     const stats = el("div", { class: "pf-stats" }, [
       stat(dexN + " / 251", "Safari dex"),
       stat(seenN, "👀 Seen"),
+      stat(duel.w + "–" + duel.l, "🎮 Duels"),
+      stat(Store.eloOf(attId), "📈 Rating"),
+      stat(Store.koLife(attId), "💥 KOs"),
+      stat(Store.shinyCount(attId), "✨ Shinies"),
+      stat(Store.tradeCount(attId), "🔁 Trades"),
+      stat(Store.evoCount(attId), "🎉 Evolutions"),
+      stat(beltNow ? "👊 now" : Store.beltReigns(attId), "🥇 Belt reigns"),
       stat(wins + "–" + losses, "Battle W–L"),
       stat(helpsN, "Assists"),
       stat(masterN, "Master catches"),
