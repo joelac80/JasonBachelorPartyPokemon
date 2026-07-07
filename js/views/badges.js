@@ -47,87 +47,6 @@
   ];
   window.GYM_CIRCUIT = GYMS;   // profiles/tests can read the circuit
 
-  // 👑 The Pokémon League — Gen 2 canon: the Elite Four in order, then
-  // Champion LANCE. And when someone finally takes the throne… Mt. Silver
-  // appears. RED says nothing. Canon teams, even matches, hidden lineups.
-  const LEAGUE = [
-    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [178, 124, 103, 80, 178], pts: 6 },
-    { key: "koga",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 89, 169], pts: 6 },
-    { key: "bruno", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 95, 68], pts: 6 },
-    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [197, 45, 94, 198, 229], pts: 6 },
-    { key: "lance", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8 },
-    { key: "red",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10 },
-  ];
-  window.LEAGUE_STAGES = LEAGUE;
-
-  function johtoBadges(attId) {
-    let n = 0; for (let i = 0; i < 8; i++) if (Store.gymHolders(i).indexOf(attId) >= 0) n++;
-    return n;
-  }
-  // Why can't this trainer fight stage idx yet? "" = clear to battle.
-  function leagueBlocked(attId, idx) {
-    const wins = Store.leagueWins(attId);
-    if (idx <= 3) {
-      if (johtoBadges(attId) < 8) return "The League only admits trainers holding all 8 JOHTO badges (" + johtoBadges(attId) + "/8).";
-      if (idx > 0 && wins.indexOf(LEAGUE[idx - 1].key) < 0) return "The Elite Four fall IN ORDER — beat " + LEAGUE[idx - 1].name + " first.";
-      return "";
-    }
-    if (idx === 4) {
-      const e4 = ["will", "koga", "bruno", "karen"].every((k) => wins.indexOf(k) >= 0);
-      return e4 ? "" : "Champion LANCE only faces trainers who've toppled all four Elite Four.";
-    }
-    if (wins.indexOf("lance") < 0) return "…the summit is silent. (Beat Champion LANCE first.)";
-    if (Store.gymBadgeCount(attId) < 16) return "RED faces only trainers holding ALL 16 badges (" + Store.gymBadgeCount(attId) + "/16).";
-    return "";
-  }
-
-  function challengeLeague(idx) {
-    const st = LEAGUE[idx];
-    const size = st.team.length;
-    const go = (attId) => {
-      const why = leagueBlocked(attId, idx);
-      if (why) { alert(why); return; }
-      if (Duel.poolFor(attId).length < size) { alert(st.name + " runs " + size + " Pokémon — you need " + size + " of your own."); return; }
-      Duel.pickParty({ attId: attId, min: size, max: size,
-        title: "vs " + (idx === 5 ? "RED" : st.rank + " " + st.name) + " — pick EXACTLY " + size,
-        hint: idx === 5 ? "The silent trainer of Mt. Silver. " + size + " vs " + size + "." : "Even match: " + size + " vs " + size + ". The lineup is hidden.",
-        onDone: (ids) => {
-          Duel.start({ mode: "local",
-            title: idx === 5 ? "Mt. Silver" : "the Pokémon League",
-            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, pts: st.pts },
-            a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: idx === 5 ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice() }] },
-            onResult: () => Router.render() });
-        } });
-    };
-    const me = window.Sync && Sync.getMe && Sync.getMe();
-    if (me) go(me); else openPicker("Who challenges " + st.name + "?", (a) => go(a.id));
-  }
-
-  function leagueCard(idx) {
-    const st = LEAGUE[idx];
-    const beat = Store.state.attendees.filter((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0);
-    const ico = U.energyIcon(st.type);
-    const isRed = idx === 5;
-    return el("div", { class: "gymc-card league" + (isRed ? " red-card" : "") + (beat.length ? " earned" : "") }, [
-      el("div", { class: "gymc-head" }, [
-        ico && !isRed ? el("img", { class: "gymc-ico", src: ico, alt: st.type }) : (isRed ? el("span", { class: "gymc-ico red-q" }, "🗻") : null),
-        el("div", { class: "gymc-names" }, [
-          el("div", { class: "gymc-badge" }, isRed ? "Mt. Silver" : st.rank + " " + st.name),
-          el("div", { class: "gymc-leader" }, isRed
-            ? "A silent trainer waits at the summit · team of 6 (hidden)"
-            : (idx === 4 ? "The final test" : "League gauntlet #" + (idx + 1)) + " · team of " + st.team.length + " (hidden)"),
-        ]),
-      ]),
-      beat.length
-        ? el("div", { class: "gymc-holders" }, beat.map((a) =>
-            el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, (isRed ? "🗻 " : "👑 ") + a.name)))
-        : el("div", { class: "gymc-holders none" }, isRed ? "…" : "Unbeaten"),
-      el("button", { class: "btn primary sm", onClick: () => challengeLeague(idx) },
-        (isRed ? "🗻 Face RED" : "👑 Challenge " + st.name) + " (" + st.team.length + "v" + st.team.length + ")"),
-    ]);
-  }
-
   function challengeGym(idx) {
     const gym = GYMS[idx];
     const size = gym.team.length;
@@ -287,14 +206,9 @@
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
     root.appendChild(el("div", { class: "gymc-grid" }, GYMS.map((g, i) => circuitCard(i))));
 
-    // ---- 👑 the Pokémon League ----
-    root.appendChild(el("h2", { class: "section-title" }, "👑 The Pokémon League"));
-    root.appendChild(el("p", { class: "hint" },
-      "All 8 JOHTO badges get you in. The Elite Four fall in order, then Champion LANCE — canon teams, even matches, hidden lineups. And the stories say something waits beyond…"));
-    // RED stays completely hidden until someone has actually beaten LANCE.
-    const anyLance = Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf("lance") >= 0);
-    const stages = anyLance ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4];
-    root.appendChild(el("div", { class: "gymc-grid" }, stages.map((i) => leagueCard(i))));
+    // The League has its own cinematic page now.
+    root.appendChild(el("div", { class: "duel-belt", onClick: () => { location.hash = "#/league"; } },
+      "👑 All 8 Johto badges? Victory Road is open — enter the POKÉMON LEAGUE →"));
 
     root.appendChild(el("h2", { class: "section-title" }, "🏅 Party Badges (hand-awarded)"));
 

@@ -640,7 +640,14 @@
               if (fresh) w.push(lg.key);
               Store.grantPoints(s, "battle", player.teamId, lg.pts || 6);
               if (lg.key === "red") Store.chron(s, "🗻", player.name + " climbed Mt. Silver and defeated RED. There is nothing left to prove. THE ABSOLUTE CHAMPION.");
-              else if (lg.key === "lance") Store.chron(s, "👑", player.name + " defeated Champion LANCE — welcome to the HALL OF FAME!" + (fresh ? " …the summit of Mt. Silver just rumbled." : ""));
+              else if (lg.key === "lance") {
+                // 🏛 Hall of Fame: the champion AND the team that did it, forever.
+                if (fresh) {
+                  s.hof = s.hof || [];
+                  s.hof.push({ attId: player.attId, ts: now(), party: player.party.map((x) => x.id) });
+                }
+                Store.chron(s, "👑", player.name + " defeated Champion LANCE — welcome to the HALL OF FAME!" + (fresh ? " …the summit of Mt. Silver just rumbled." : ""));
+              }
               else Store.chron(s, "⭐", player.name + " toppled Elite Four " + lg.name + "!");
             } else {
               if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " drinks 3 and descends the mountain.");
