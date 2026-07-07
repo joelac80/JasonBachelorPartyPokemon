@@ -139,29 +139,89 @@
     Sync.init();
 
     // Incoming battle challenge → prompt to accept anywhere in the app.
+    // kind "duel" = a real remote duel: accepting opens your party picker,
+    // then this phone writes the matchup so both phones (and watchers) open.
     const el = U.el;
     Sync.onChallengeIncoming((ch) => {
       if (!window.Modal) return;
-      notify("⚔ You've been challenged!", (ch.fromName || "Someone") + " wants to battle" + (ch.event ? " · " + ch.event : ""));
+      const isDuel = ch.kind === "duel";
+      notify(isDuel ? "🎮 Duel challenge!" : "⚔ You've been challenged!",
+        (ch.fromName || "Someone") + (isDuel ? " wants a Pokémon Duel" : " wants to battle") + (ch.event ? " · " + ch.event : ""));
       if (window.SFX && SFX.select) SFX.select();
       let ctrl;
+      const accept = () => {
+        if (ctrl) ctrl.close();
+        if (!isDuel) { Sync.respondChallenge(ch, true); return; }
+        const me = Sync.getMe();
+        if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+        Duel.pickParty({ attId: me, title: "Choose your party",
+          hint: (ch.fromName || "They") + " brought " + ((ch.party || []).length || 1) + ". Tap Pokémon in order — the first is your lead.",
+          onDone: (ids) => {
+            Sync.respondChallenge(ch, true);
+            const aLead = Duel.statsFor((ch.party || [])[0] || 1).x, bLead = Duel.statsFor(ids[0]).x;
+            const setup = {
+              title: ch.event || "Duel",
+              first: aLead === bLead ? (Math.random() < 0.5 ? "a" : "b") : (aLead > bLead ? "a" : "b"),
+              a: { units: [{ attId: ch.fromAtt, client: ch.fromClient, monIds: ch.party || [] }] },
+              b: { units: [{ attId: me, client: Sync.myClientId(), monIds: ids }] },
+            };
+            Sync.startRemoteDuel(setup);
+            Sync.startLiveBattle({ aName: ch.fromName, bName: (Store.attendee(me) || {}).name || "You",
+              event: setup.title, aClient: ch.fromClient, bClient: Sync.myClientId(), mode: "duel-remote" });
+          } });
+      };
       const body = el("div", { class: "chal-modal" }, [
-        el("div", { class: "chal-line" }, "⚔ " + (ch.fromName || "Someone") + " challenges you to a battle!"),
+        el("div", { class: "chal-line" }, (isDuel ? "🎮 " : "⚔ ") + (ch.fromName || "Someone") +
+          (isDuel ? " challenges you to a Pokémon Duel! (bringing " + ((ch.party || []).length || 1) + ")" : " challenges you to a battle!")),
         ch.event ? el("div", { class: "chal-ev" }, "Event: " + ch.event) : null,
         el("div", { class: "toolbar" }, [
-          el("button", { class: "btn primary", onClick: () => { Sync.respondChallenge(ch, true); if (ctrl) ctrl.close(); } }, "✅ Accept & battle"),
+          el("button", { class: "btn primary", onClick: accept }, isDuel ? "✅ Accept & pick your party" : "✅ Accept & battle"),
           el("button", { class: "btn subtle", onClick: () => { Sync.respondChallenge(ch, false); if (ctrl) ctrl.close(); } }, "Decline"),
         ]),
       ]);
-      ctrl = Modal.open("Battle challenge!", body, null, {});
+      ctrl = Modal.open(isDuel ? "Duel challenge!" : "Battle challenge!", body, null, {});
     });
 
     // On accept, the challenger broadcasts a live battle for the whole room.
+    // (Duel challenges skip this — the accepter announces via the duel doc.)
     Sync.onChallengeAccepted((ch) => {
+      if (ch.kind === "duel") return;
       if (ch.fromClient === Sync.myClientId()) {
         Sync.startLiveBattle({ aName: ch.fromName, bName: ch.toName, event: ch.event, aClient: ch.fromClient, bClient: ch.toClient });
       }
     });
+
+    // Remote duel doc → participants' screens open automatically; every
+    // snapshot feeds the turn acts into any open duel screen (players and
+    // spectators replay the exact same acts).
+    const duelScreens = {};
+    let latestDuel = null;
+    Sync.onDuel((data) => {
+      latestDuel = data;
+      if (!data || !data.id || !data.setupJson) return;
+      let setup; try { setup = JSON.parse(data.setupJson); } catch (_) { return; }
+      const me = Sync.myClientId();
+      const units = (setup.a.units || []).concat(setup.b.units || []);
+      const mine = units.some((u) => u.client === me);
+      const fresh = !data.t || (Date.now() - data.t) < 1800000;   // ignore stale docs (30 min)
+      if (data.state === "live" && mine && fresh && !duelScreens[data.id]) {
+        duelScreens[data.id] = Duel.start(Object.assign({}, setup, {
+          mode: "remote", myClient: me,
+          net: { send: Sync.sendDuelAct },
+          onEnd: () => { delete duelScreens[data.id]; },
+        }));
+      }
+      if (duelScreens[data.id]) duelScreens[data.id].receiveActs(data.acts || []);
+    });
+    function openDuelWatch() {
+      const d = latestDuel;
+      if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id]) return;
+      let setup; try { setup = JSON.parse(d.setupJson); } catch (_) { return; }
+      duelScreens[d.id] = Duel.start(Object.assign({}, setup, {
+        mode: "watch", onEnd: () => { delete duelScreens[d.id]; },
+      }));
+      duelScreens[d.id].receiveActs(d.acts || []);
+    }
 
     // A live battle → the challenger referees (interactive), the opponent
     // auto-watches, and everyone else gets a "Watch" alert. Spectator screens
@@ -169,6 +229,7 @@
     const handledLive = {};
     let specHandle = null, latestLive = null;
     function openSpectator(data) {
+      if (data && data.mode === "duel-remote") { openDuelWatch(); return; }   // turn-by-turn watch
       if (!window.Battle || !Battle.spectate || specHandle || !data) return;
       specHandle = Battle.spectate({
         title: data.event || "Challenge",
@@ -188,7 +249,8 @@
       if (data.state === "live" && !handledLive[data.id]) {
         handledLive[data.id] = 1;
         if (me === data.aClient) {                    // referee — plays + reports
-          if (data.mode === "duel") return;           // the Duel screen is already up on this phone
+          // duel modes: the real Duel screen opens via its own channel
+          if (data.mode === "duel" || data.mode === "duel-remote") return;
           Battle.start({
             title: data.event || "Challenge",
             a: { label: data.aName, names: [data.aName] },
@@ -196,6 +258,7 @@
             onResult: (winnerKey) => Sync.finishLiveBattle(winnerKey === "a" ? data.aName : data.bName),
           });
         } else if (me === data.bClient) {             // the opponent — auto-watch
+          if (data.mode === "duel-remote") return;    // they're playing it on their own phone
           notify("⚔ Your battle is on!", "vs " + data.aName + (data.event ? " · " + data.event : ""));
           openSpectator(data);
         } else {                                       // everyone else — offer to watch

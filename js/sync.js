@@ -34,10 +34,10 @@
   const statusSubs = [];
 
   // ---- presence + challenges (live multiplayer) ----
-  let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null;
-  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null;
+  let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null;
+  let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null;
   let presenceList = [];
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [];
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   // Generous TTL: phones suspend background tabs (heartbeats pause), so give
   // people 3 minutes before they drop off the "here now" list.
@@ -139,6 +139,14 @@
       const data = d.exists ? d.data() : null;
       liveSubs.forEach((f) => { try { f(data); } catch (_) {} });
     }, function () {});
+    // Remote duel channel: one doc holding the matchup + an append-only list
+    // of turn acts. Every phone (players AND spectators) replays the acts.
+    duelRef = db.collection("rooms").doc(room).collection("live").doc("duel");
+    if (duelUnsub) duelUnsub();
+    duelUnsub = duelRef.onSnapshot((d) => {
+      const data = d.exists ? d.data() : null;
+      duelSubs.forEach((f) => { try { f(data); } catch (_) {} });
+    }, function () {});
     // Photo log channel — one small doc per downscaled photo.
     photosRef = db.collection("rooms").doc(room).collection("photos");
     if (photosUnsub) photosUnsub();
@@ -161,8 +169,9 @@
     if (chalUnsub) { chalUnsub(); chalUnsub = null; }
     if (liveUnsub) { liveUnsub(); liveUnsub = null; }
     if (photosUnsub) { photosUnsub(); photosUnsub = null; }
+    if (duelUnsub) { duelUnsub(); duelUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = liveRef = photosRef = null; presenceList = [];
+    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = null; presenceList = [];
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
 
@@ -261,13 +270,15 @@
     onPresence(fn) { presenceSubs.push(fn); fn(presenceList.slice()); return () => { const i = presenceSubs.indexOf(fn); if (i >= 0) presenceSubs.splice(i, 1); }; },
     isLive() { return statusState === "live" || statusState === "connecting"; },
     myClientId() { return clientId; },
-    // Challenge a present device (by its clientId) to a battle.
-    sendChallenge(toClient, toAtt, toName, event) {
+    // Challenge a present device (by its clientId) to a battle. `extra` can
+    // carry { kind: "duel", party: [monIds] } for a real remote duel.
+    sendChallenge(toClient, toAtt, toName, event, extra) {
       if (!chalRef) return null;
       const id = newId("ch");
       chalRef.doc(id).set({
         id: id, fromClient: clientId, fromAtt: conf.me || "", fromName: conf.name || "You",
         toClient: toClient, toAtt: toAtt || "", toName: toName || "", event: event || "", state: "pending", t: nowMs(),
+        kind: (extra && extra.kind) || "", party: (extra && extra.party) || [],
       }).catch(function () {});
       return id;
     },
@@ -292,6 +303,25 @@
       liveRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
     onLiveBattle(fn) { liveSubs.push(fn); return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); }; },
+
+    // ---- remote duels (turn-by-turn across phones) ----
+    // The accepter writes the matchup; each phone appends its turn acts.
+    // Setup travels as a JSON string (arrays nest inside it freely).
+    startRemoteDuel(setup) {
+      if (!duelRef || !setup) return null;
+      const id = newId("dl");
+      duelRef.set({ id: id, state: "live", t: nowMs(), setupJson: JSON.stringify(setup), acts: [] }).catch(function () {});
+      return id;
+    },
+    sendDuelAct(act) {
+      if (!duelRef || !act) return;
+      duelRef.set({ acts: firebase.firestore.FieldValue.arrayUnion(act) }, { merge: true }).catch(function () {});
+    },
+    endRemoteDuel(winner) {
+      if (!duelRef) return;
+      duelRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
+    },
+    onDuel(fn) { duelSubs.push(fn); return () => { const i = duelSubs.indexOf(fn); if (i >= 0) duelSubs.splice(i, 1); }; },
 
     // Share a photo moment to the room (its own doc — keeps the state doc lean).
     sharePhoto(entry) { if (photosRef && entry && entry.id) photosRef.doc(entry.id).set(entry).catch(function () {}); },
