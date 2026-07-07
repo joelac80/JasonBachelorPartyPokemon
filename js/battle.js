@@ -50,6 +50,13 @@
     }
     const tm = Store.state.teams.find((t) => t.name && name.indexOf(t.name) >= 0);
     if (tm) return { ball: true, type: tm.id, move: "Team Rush" };
+    // NPC Gym Leaders / League members — the ball carries their real type
+    // (Falkner's is flying, not a random bolt).
+    const up = name.toUpperCase();
+    const gym = (window.GYM_CIRCUIT || []).find((g) => up.indexOf(g.leader) >= 0);
+    if (gym) return { ball: true, type: gym.type, move: "Gym Sweep" };
+    const st = (window.LEAGUE_STAGES || []).find((s) => new RegExp("\\b" + s.name + "\\b").test(up));
+    if (st) return { ball: true, type: st.type, move: "Elite Strike" };
     return { ball: true, type: "normal", move: "Tackle" };
   }
 
@@ -79,7 +86,7 @@
         style: { transform: "scaleX(" + flip + ") scale(" + (mn.scale || 1) + ")" } });
     } else {
       inner = el("div", { class: "battle-ball-inner" });
-      const ico = energyIcon(mn.type === "normal" ? "electric" : mn.type);
+      const ico = energyIcon(mn.type);
       if (ico) inner.appendChild(el("img", { class: "battle-ball-ico", src: ico, alt: "" }));
     }
     return inner;
