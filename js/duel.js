@@ -174,17 +174,25 @@
     S.actor = { side: S.first, unit: firstLiving(S.first) };
 
     // ---- arena DOM ----
+    // Perspective: each phone draws ITS OWN side at the bottom with back
+    // sprites, like the real games. The battle data (sides a/b, acts) is
+    // identical everywhere — only the camera flips. Watchers and hot-seat
+    // screens see side a at the bottom.
+    const myView = (mode === "remote"
+      && sides.b.units.some((u) => u.client === myClient)
+      && !sides.a.units.some((u) => u.client === myClient)) ? "b" : "a";
+    function posOf(s) { return s === myView ? "you" : "foe"; }
     const sprites = {
-      a: el("div", { class: "battle-sprite you" + (sides.a.units.length > 1 ? " doubles" : "") }),
-      b: el("div", { class: "battle-sprite foe" + (sides.b.units.length > 1 ? " doubles" : "") }),
+      a: el("div", { class: "battle-sprite " + posOf("a") + (sides.a.units.length > 1 ? " doubles" : "") }),
+      b: el("div", { class: "battle-sprite " + posOf("b") + (sides.b.units.length > 1 ? " doubles" : "") }),
     };
     function monImg(s, u) {
       const id = mon(u).id;
-      const back = s === "a" ? BACK[id] : "";
+      const back = s === myView ? BACK[id] : "";
       const src = back || SP[id] || (window.Store && Store.sprite(id)) || "";
       return src
         ? el("img", { class: "battle-sprite-img", src: src, alt: "",
-            style: s === "a" && !back ? { transform: "scaleX(-1)" } : {} })
+            style: s === myView && !back ? { transform: "scaleX(-1)" } : {} })
         : el("div", { class: "battle-ball-inner" });
     }
     function renderSprites(s) {
@@ -198,8 +206,8 @@
     renderSprites("a"); renderSprites("b");
 
     const hpBoxes = {
-      a: el("div", { class: "battle-hpbox you" + (sides.a.units.length > 1 ? " doubles" : "") }),
-      b: el("div", { class: "battle-hpbox foe" + (sides.b.units.length > 1 ? " doubles" : "") }),
+      a: el("div", { class: "battle-hpbox " + posOf("a") + (sides.a.units.length > 1 ? " doubles" : "") }),
+      b: el("div", { class: "battle-hpbox " + posOf("b") + (sides.b.units.length > 1 ? " doubles" : "") }),
     };
     function paintHp(u) {
       if (!u._fill) return;
@@ -235,7 +243,7 @@
     const overlay = el("div", { class: "battle" }, [
       el("div", { class: "battle-arena" }, [
         el("div", { class: "battle-platform foe" }), el("div", { class: "battle-platform you" }),
-        hpBoxes.b, sprites.b, sprites.a, hpBoxes.a,
+        hpBoxes[other(myView)], sprites[other(myView)], sprites[myView], hpBoxes[myView],
       ]),
       msg, menu,
     ]);
@@ -445,7 +453,7 @@
     function partyPanel(u, ptr, kind, allowBack) {
       // pick a replacement (kind "next") or a voluntary switch (kind "switch")
       menu.innerHTML = "";
-      menu.appendChild(el("div", { class: "duel-turn " + (ptr.side === "a" ? "you" : "foe") },
+      menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
         kind === "next" ? "💫 " + u.name + " — choose your next Pokémon!" : "🔄 " + u.name + " — switch to who?"));
       menu.appendChild(el("div", { class: "duel-party-row" }, bench(u).map((x) =>
         el("button", { class: "duel-bench", onClick: () => {
@@ -462,7 +470,7 @@
       const foes = livingEnemies(ptr.side);
       if (foes.length <= 1) { doMove(u, ptr, mIdx, foes.length ? foes[0].i : 0); return; }
       menu.innerHTML = "";
-      menu.appendChild(el("div", { class: "duel-turn " + (ptr.side === "a" ? "you" : "foe") }, "🎯 Which target?"));
+      menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) }, "🎯 Which target?"));
       menu.appendChild(el("div", { class: "battle-menu-row" }, foes.map((x) =>
         el("button", { class: "btn primary", onClick: () => doMove(u, ptr, mIdx, x.i) },
           mon(x.u).name + " (" + x.u.name + ")"))));
@@ -495,7 +503,7 @@
       }
       if (S.pending) { partyPanel(u, ptr, "next", false); return; }
       const m = mon(u);
-      menu.appendChild(el("div", { class: "duel-turn " + (ptr.side === "a" ? "you" : "foe") },
+      menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
         "🎮 " + u.name + " — what will " + m.name + " do?" + (u.armed ? " (🍺 crit armed!)" : "")));
       menu.appendChild(el("div", { class: "duel-moves" }, m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)))));
       const row = [
@@ -531,7 +539,7 @@
         el("div", { class: "vs-name" }, label(s)),
       ]);
     }
-    const vs = el("div", { class: "battle-vs" }, [vsPanel("a", "a"), el("div", { class: "vs-badge" }, "VS"), vsPanel("b", "b")]);
+    const vs = el("div", { class: "battle-vs" }, [vsPanel("a", myView), el("div", { class: "vs-badge" }, "VS"), vsPanel("b", other(myView))]);
     document.body.appendChild(overlay);
     overlay.appendChild(vs);
     sfx("blip");
