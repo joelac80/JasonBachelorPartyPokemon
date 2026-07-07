@@ -1,5 +1,5 @@
 /* tracker.js — the Pokédex Tracker: every trainer's team of 6 and dex
-   progress on one page, plus the Type Gym Leaders — one leader per Pokémon
+   progress on one page, plus the Type Masters — one crown per Pokémon
    type, held by whoever has caught the most of it. */
 (function () {
   const { el, energyIcon } = U;
@@ -40,7 +40,7 @@
       teamRow(a.id),
       myTypes.length ? el("div", { class: "trk-gyms" }, myTypes.map((l) => {
         const ico = energyIcon(l.type);
-        return el("span", { class: "trk-gym", title: l.type + " Gym Leader — " + l.n + " caught" },
+        return el("span", { class: "trk-gym", title: l.type + " Type Master — " + l.n + " caught" },
           [ico ? el("img", { src: ico, alt: l.type }) : null, " ×" + l.n]);
       })) : null,
     ]);
@@ -51,7 +51,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔬 Pokédex Tracker"),
-      el("p", { class: "page-sub" }, "Every trainer's team and dex progress, live — and the Type Gym Leaders, one crown per type." ),
+      el("p", { class: "page-sub" }, "Every trainer's team and dex progress, live — and the Type Masters, one crown per type." ),
     ]));
 
     const leaders = Store.typeLeaders();
@@ -61,9 +61,9 @@
     const ranked = Store.state.attendees.slice().sort((a, b) => Store.dexCount(b.id) - Store.dexCount(a.id));
     root.appendChild(el("div", { class: "trk-grid" }, ranked.map((a) => trainerCard(a, leaders))));
 
-    // ---- type gym leaders ----
-    root.appendChild(el("h2", { class: "section-title" }, "⚡ Type Gym Leaders"));
-    root.appendChild(el("p", { class: "hint" }, "Catch the most of a type to claim its gym. Partners don't count — go earn it in the grass." ));
+    // ---- type masters ----
+    root.appendChild(el("h2", { class: "section-title" }, "⚡ Type Masters"));
+    root.appendChild(el("p", { class: "hint" }, "Catch the most of a type to claim its crown. Partners don't count — go earn it in the grass." ));
     root.appendChild(el("div", { class: "gym-lead-grid" }, leaders.map((l) => {
       const ico = energyIcon(l.type);
       return el("div", { class: "gym-lead" + (l.n > 0 ? " held" : ""),

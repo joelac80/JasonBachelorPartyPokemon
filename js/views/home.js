@@ -56,7 +56,7 @@
     { id: "tavern",   r: "drinks",      e: "🍺", t: "Lakeside Tavern", x: 32, y: 33 },
     { id: "safari", e: "🔴", t: "Safari Zone", x: 52, y: 11, sub: [
       { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
-      { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Gym Leaders" },
+      { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Masters" },
       { r: "trade",   e: "🔁", t: "Trading Post", d: "Swap caught Pokémon — some evolve when traded!" },
     ] },
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Rd",      x: 84, y: 40 },
@@ -72,7 +72,7 @@
       { r: "cards",       e: "🃏", t: "Card Table", d: "President, Euchre, King's Cup…" },
       { r: "challenges",  e: "🎣", t: "The Dock",   d: "Catch of the Day challenges" },
     ] },
-    { id: "fame", e: "🏅", t: "Hall of Fame", x: 67, y: 52, sub: [
+    { id: "fame", e: "🏅", t: "Honors Hall", x: 67, y: 52, sub: [
       { r: "badges",       e: "🏅", t: "Weekend Badges",    d: "8 party badges + the live trophies" },
       { r: "superlatives", e: "🗳️", t: "Awards",            d: "Vote the superlatives" },
       { r: "hall",         e: "🌿", t: "Hall of Bulbasaur", d: "The gallery wall" },
