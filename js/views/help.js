@@ -24,7 +24,7 @@
     {
       title: "🎯 Games to play",
       items: [
-        { r: "safari", e: "🔴", t: "Pokédex Safari", d: "Pick a catcher, then earn boosts by doing dares/berries/rallies (chicken out = drink, and it might bolt!). Add a helper for a 2v2, or nail the Master Ball dare for a guaranteed catch." },
+        { r: "safari", e: "🔴", t: "Pokédex Safari", d: "Pick a catcher, then earn boosts by doing dares/berries/rallies (chicken out = drink, and it might bolt!). Add a helper for a 2v2, or nail the Master Ball dare for a guaranteed catch. ✨ 1-in-16 encounters are SHINY — different colors, DOUBLE payout, marked in your dex forever." },
         { r: "trade", e: "🔁", t: "Trading Post", d: "Swap caught Pokémon 1-for-1, link-cable style. Partners are untradeable — and Kadabra, Machoke, Graveler and Haunter EVOLVE when traded, just like the games." },
         { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "Every trainer's team of 6 and dex progress on one page — plus the Type Gym Leaders: catch the most of a type to claim its gym (partners don't count)." },
         { r: "drinks", e: "🍺", t: "Drink Tracker", d: "Log every round by trainer, type, and day. First Sip, Thirstiest, and a champion for each drink kind all earn badges." },

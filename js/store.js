@@ -277,6 +277,13 @@
         const top = Object.keys(w).sort((x, y) => w[y] - w[x])[0];
         if (top) out.push({ emoji: "⚔️", title: "Battle Champ", holder: top, sub: w[top] + " win" + (w[top] > 1 ? "s" : "") });
       }
+      const shinyN = (id) => {
+        const t = tr[id]; if (!t || !t.caught) return 0;
+        let n = 0; for (const k in t.caught) if (t.caught[k].shiny) n++;
+        return n;
+      };
+      const shiner = this._topAttendee(shinyN);
+      if (shiner) out.push({ emoji: "✨", title: "Shiny Hunter", holder: shiner.a.name, sub: shiner.n + " shin" + (shiner.n > 1 ? "ies" : "y") + " caught" });
       // Champion's Belt — held by the last trainer to win/defend a singles duel.
       const belt = (this.state.battles && this.state.battles.belt) || null;
       if (belt && belt.attId) {
@@ -642,22 +649,22 @@
         if (!A || !B) return;
         const give = (T, monId) => {
           const r = T.caught[monId];
-          const ball = r.ball || "poke";
+          const keep = { ball: r.ball || "poke", shiny: !!r.shiny };   // ✨ travels too
           if ((r.count || 1) > 1) r.count--;
           else { delete T.caught[monId]; T.team = (T.team || []).filter((x) => +x !== monId); }
-          return ball;
+          return keep;
         };
-        const recv = (T, monId, ball) => {
+        const recv = (T, monId, keep) => {
           const id = EV[monId] || monId;
           T.seen = T.seen || {}; T.seen[monId] = 1; T.seen[id] = 1;
           const r = T.caught[id];
-          if (r) r.count = (r.count || 1) + 1;
-          else T.caught[id] = { count: 1, ball: ball };
+          if (r) { r.count = (r.count || 1) + 1; if (keep.shiny) r.shiny = true; }
+          else T.caught[id] = { count: 1, ball: keep.ball, shiny: keep.shiny || undefined };
           return id;
         };
-        const aBall = give(A, aMon), bBall = give(B, bMon);
-        const toB = recv(B, aMon, aBall);      // B receives what A gave
-        const toA = recv(A, bMon, bBall);      // A receives what B gave
+        const aKeep = give(A, aMon), bKeep = give(B, bMon);
+        const toB = recv(B, aMon, aKeep);      // B receives what A gave
+        const toA = recv(A, bMon, bKeep);      // A receives what B gave
         result = { toA: toA, toB: toB, evoA: toA !== bMon, evoB: toB !== aMon };
         const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
         const an = (this.attendee(aId) || {}).name || aId, bn = (this.attendee(bId) || {}).name || bId;

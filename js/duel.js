@@ -18,7 +18,17 @@
   const { el } = U;
   const DEX = window.DEX || {};
   const SP = window.DEX_SPRITES || {};
-  const BACK = window.SPRITES_BACK || {};
+  const BACKS = window.DEX_SPRITES_BACK || {};          // full 251 rear views
+  const SPS = window.DEX_SPRITES_SHINY || {};           // ✨ shiny fronts
+  const BACKS_S = window.DEX_SPRITES_BACK_SHINY || {};  // ✨ shiny rear views
+  const BACK = window.SPRITES_BACK || {};               // legacy squad set (fallback)
+  // A mon instance is shiny if that trainer's dex record says so.
+  function isShinyFor(attId, monId) {
+    const t = ((Store.state.pokedex || {}).trainers || {})[attId];
+    return !!(t && t.caught && t.caught[monId] && t.caught[monId].shiny);
+  }
+  function frontSprite(id, shiny) { return (shiny && SPS[id]) || SP[id] || (window.Store && Store.sprite(id)) || ""; }
+  function backSprite(id, shiny) { return (shiny && BACKS_S[id]) || BACKS[id] || BACK[id] || ""; }
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
   function now() { try { return Date.now(); } catch (_) { return 0; } }
 
@@ -98,13 +108,15 @@
       pool.forEach((id) => {
         const st = statsFor(id);
         const idx = picked.indexOf(id);
-        const src = SP[id] || Store.sprite(id);
-        grid.appendChild(el("button", { class: "duel-pick" + (idx >= 0 ? " on" : ""), title: st.name, onClick: () => {
+        const shiny = isShinyFor(opts.attId, id);
+        const src = frontSprite(id, shiny);
+        grid.appendChild(el("button", { class: "duel-pick" + (idx >= 0 ? " on" : "") + (shiny ? " is-shiny" : ""), title: st.name + (shiny ? " \u2728 SHINY" : ""), onClick: () => {
           const i = picked.indexOf(id);
           if (i >= 0) picked.splice(i, 1); else if (picked.length < max) picked.push(id);
           paint();
         } }, [
           src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
+          shiny ? el("span", { class: "duel-pick-shiny" }, "\u2728") : null,
           idx >= 0 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
         ]));
       });
@@ -153,7 +165,9 @@
     function makeUnit(u) {
       const at = Store.attendee(u.attId) || { name: "Trainer", team: "" };
       const party = (u.monIds || []).filter(Boolean).map((id) => {
-        const m = statsFor(id); m.hp = m.hpMax; return m;
+        const m = statsFor(id); m.hp = m.hpMax;
+        m.shiny = isShinyFor(u.attId, id);          // ✨ carried into battle
+        return m;
       });
       if (!party.length) { const m = statsFor(1); m.hp = m.hpMax; party.push(m); }
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
@@ -199,9 +213,9 @@
       b: el("div", { class: "battle-sprite " + posOf("b") + (sides.b.units.length > 1 ? " doubles" : "") }),
     };
     function monImg(s, u) {
-      const id = mon(u).id;
-      const back = s === myView ? BACK[id] : "";
-      const src = back || SP[id] || (window.Store && Store.sprite(id)) || "";
+      const m = mon(u);
+      const back = s === myView ? backSprite(m.id, m.shiny) : "";
+      const src = back || frontSprite(m.id, m.shiny);
       return src
         ? el("img", { class: "battle-sprite-img", src: src, alt: "",
             style: s === myView && !back ? { transform: "scaleX(-1)" } : {} })
@@ -237,7 +251,7 @@
         u._num = el("span", { class: "duel-hp-num" });
         const left = u.party.filter((x) => x.hp > 0).length;
         box.appendChild(el("div", { class: "battle-hp-mem" }, [
-          el("div", { class: "battle-hp-name" }, [m.name + " ", el("span", { class: "duel-lv" }, "Lv50")]),
+          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv50")]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
             el("div", { class: "battle-hp-track" }, [u._fill]),
@@ -535,7 +549,7 @@
         el("button", { class: "duel-bench", onClick: () => {
           sendAct({ seq: S.seq + 1, kind: kind, side: ptr.side, unit: ptr.unit, to: x.i });
         } }, [
-          SP[x.m.id] ? el("img", { src: SP[x.m.id], alt: x.m.name }) : el("span", { class: "draft-thumb-ball" }),
+          frontSprite(x.m.id, x.m.shiny) ? el("img", { src: frontSprite(x.m.id, x.m.shiny), alt: x.m.name }) : el("span", { class: "draft-thumb-ball" }),
           el("span", { class: "duel-bench-txt" }, x.m.name + " · " + x.m.hp + "/" + x.m.hpMax),
         ]))));
       if (allowBack) menu.appendChild(el("div", { class: "battle-menu-row" },
@@ -639,8 +653,9 @@
     function vsPanel(cls, s) {
       return el("div", { class: "vs-panel " + cls }, [
         el("div", { class: "vs-mons" }, sides[s].units.map((u) => {
-          const id = mon(u).id;
-          return SP[id] ? el("img", { class: "vs-mon", src: SP[id], alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" });
+          const m = mon(u);
+          const src = frontSprite(m.id, m.shiny);
+          return src ? el("img", { class: "vs-mon", src: src, alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" });
         })),
         el("div", { class: "vs-name" }, label(s)),
       ]);
