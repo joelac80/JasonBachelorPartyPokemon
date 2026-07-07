@@ -59,6 +59,7 @@
       stat(Store.evoCount(attId), "🎉 Evolutions"),
       stat(beltNow ? "👊 now" : Store.beltReigns(attId), "🥇 Belt reigns"),
       stat(Store.gymBadgeCount(attId) + " / 16", "🏟 Gym badges"),
+      stat(Store.leagueWins(attId).length + " / 6", "👑 League"),
       stat(wins + "–" + losses, "Battle W–L"),
       stat(helpsN, "Assists"),
       stat(masterN, "Master catches"),

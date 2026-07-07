@@ -287,6 +287,12 @@
       const crusher = this._topAttendee((id) => this.gymBadgeCount(id));
       if (crusher) out.push({ emoji: "🏟", title: crusher.n >= 16 ? "CHAMPION" : "Gym Crusher", holder: crusher.a.name,
         sub: crusher.n >= 16 ? "swept ALL 16 gyms!" : crusher.n + "/16 gym badges" });
+      const league = this._topAttendee((id) => this.leagueWins(id).length);
+      if (league) {
+        const beatRed = this.leagueWins(league.a.id).indexOf("red") >= 0;
+        out.push({ emoji: beatRed ? "🗻" : "👑", title: beatRed ? "Conquered Mt. Silver" : "League Contender",
+          holder: league.a.name, sub: beatRed ? "defeated RED — nothing left to prove" : league.n + "/6 league battles won" });
+      }
       // Champion's Belt — held by the last trainer to win/defend a singles duel.
       const belt = (this.state.battles && this.state.battles.belt) || null;
       if (belt && belt.attId) {
@@ -394,6 +400,7 @@
         logged: this.logCount(attId), photosIn: this.photosOf(attId), photosTaken: this.photosTakenBy(attId),
         duel: this.duelRecord(attId), kos: this.koLife(attId), shinies: this.shinyCount(attId),
         trades: this.tradeCount(attId), evolutions: this.evoCount(attId), gymBadges: this.gymBadgeCount(attId),
+        league: this.leagueWins(attId).length,
         beltReigns: this.beltReigns(attId), elo: this.eloOf(attId),
         beltNow: !!(this.state.battles && this.state.battles.belt && this.state.battles.belt.attId === attId),
       };
@@ -732,6 +739,11 @@
       const c = this.state.gymCircuit || {};
       let n = 0; for (const k in c) if ((c[k] || []).indexOf(attId) >= 0) n++;
       return n;
+    },
+    // Pokémon League progress: stage keys this trainer has beaten
+    // (will/koga/bruno/karen/lance/red).
+    leagueWins(attId) {
+      return ((this.state.league || {})[attId] || []).slice();
     },
 
     // Nickname a caught mon (per trainer). Blank clears it.
