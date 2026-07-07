@@ -57,6 +57,7 @@
     { id: "safari", e: "🔴", t: "Safari Zone", x: 52, y: 11, sub: [
       { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
       { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Gym Leaders" },
+      { r: "trade",   e: "🔁", t: "Trading Post", d: "Swap caught Pokémon — some evolve when traded!" },
     ] },
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Rd",      x: 84, y: 40 },
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [

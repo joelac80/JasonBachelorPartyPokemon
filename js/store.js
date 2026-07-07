@@ -614,6 +614,60 @@
       });
     },
 
+    // ---- Trading Post -------------------------------------------------------
+    // Classic link-cable trades evolve on arrival.
+    TRADE_EVOS: { 64: 65, 67: 68, 75: 76, 93: 94 },   // Kadabra, Machoke, Graveler, Haunter
+    // Can this trainer give this mon away? Partners are untradeable — unless
+    // they also caught a wild one (the extra copy can go, the partner stays).
+    canTrade(attId, monId) {
+      const a = this.attendee(attId);
+      const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
+      const rec = t && t.caught && t.caught[monId];
+      if (!rec) return false;
+      if (a && a.favoriteId === +monId && (rec.count || 1) <= 1) return false;
+      return true;
+    },
+    // 1-for-1 swap: A's aMon ⇄ B's bMon. Balls travel with their mons; a mon
+    // fully given away leaves the giver's team; trade evolutions fire for the
+    // receiver. Returns { toA, toB, evoA, evoB } or null if invalid.
+    trade(aId, aMon, bId, bMon, by) {
+      aMon = +aMon; bMon = +bMon;
+      if (!aId || !bId || aId === bId) return null;
+      if (!this.canTrade(aId, aMon) || !this.canTrade(bId, bMon)) return null;
+      const EV = this.TRADE_EVOS;
+      let result = null;
+      this.update((s) => {
+        const tr = s.pokedex.trainers;
+        const A = tr[aId], B = tr[bId];
+        if (!A || !B) return;
+        const give = (T, monId) => {
+          const r = T.caught[monId];
+          const ball = r.ball || "poke";
+          if ((r.count || 1) > 1) r.count--;
+          else { delete T.caught[monId]; T.team = (T.team || []).filter((x) => +x !== monId); }
+          return ball;
+        };
+        const recv = (T, monId, ball) => {
+          const id = EV[monId] || monId;
+          T.seen = T.seen || {}; T.seen[monId] = 1; T.seen[id] = 1;
+          const r = T.caught[id];
+          if (r) r.count = (r.count || 1) + 1;
+          else T.caught[id] = { count: 1, ball: ball };
+          return id;
+        };
+        const aBall = give(A, aMon), bBall = give(B, bMon);
+        const toB = recv(B, aMon, aBall);      // B receives what A gave
+        const toA = recv(A, bMon, bBall);      // A receives what B gave
+        result = { toA: toA, toB: toB, evoA: toA !== bMon, evoB: toB !== aMon };
+        const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
+        const an = (this.attendee(aId) || {}).name || aId, bn = (this.attendee(bId) || {}).name || bId;
+        this.chron(s, "🔁", an + " traded " + nm(aMon) + " to " + bn + " for " + nm(bMon) + "!", by);
+        if (result.evoB) this.chron(s, "⚡", "Whoa — the traded " + nm(aMon) + " evolved into " + nm(toB) + " for " + bn + "!", by);
+        if (result.evoA) this.chron(s, "⚡", "Whoa — the traded " + nm(bMon) + " evolved into " + nm(toA) + " for " + an + "!", by);
+      });
+      return result;
+    },
+
     drinkTypes() { return DRINKS.slice(); },
     drinkEmoji: drinkEmoji,
     drinkCount(trainerId, type) {
