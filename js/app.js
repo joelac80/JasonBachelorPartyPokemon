@@ -149,33 +149,63 @@
         (ch.fromName || "Someone") + (isDuel ? " wants a Pokémon Duel" : " wants to battle") + (ch.event ? " · " + ch.event : ""));
       if (window.SFX && SFX.select) SFX.select();
       let ctrl;
+      const isDouble = isDuel && !!ch.pairAtt;
+      // A partner signed in on their own phone plays their own turns —
+      // otherwise their side's lead phone drives both units.
+      const clientOf = (attId, fallback) => {
+        const p = (Sync.presence() || []).find((x) => x.attId === attId);
+        return (p && p.clientId) || fallback;
+      };
+      const launch = (bUnits) => {
+        Sync.respondChallenge(ch, true);
+        const aUnits = [{ attId: ch.fromAtt, client: ch.fromClient, monIds: ch.party || [] }];
+        if (isDouble) aUnits.push({ attId: ch.pairAtt, client: clientOf(ch.pairAtt, ch.fromClient), monIds: ch.pairParty || [] });
+        const aLead = Duel.statsFor((ch.party || [])[0] || 1).x, bLead = Duel.statsFor(bUnits[0].monIds[0]).x;
+        const setup = {
+          title: ch.event || "Duel",
+          first: aLead === bLead ? (Math.random() < 0.5 ? "a" : "b") : (aLead > bLead ? "a" : "b"),
+          a: { units: aUnits }, b: { units: bUnits },
+        };
+        const names = (us) => us.map((u) => (Store.attendee(u.attId) || {}).name || "?").join(" & ");
+        Sync.startRemoteDuel(setup);
+        Sync.startLiveBattle({ aName: names(aUnits), bName: names(bUnits),
+          event: setup.title, aClient: ch.fromClient, bClient: Sync.myClientId(), mode: "duel-remote" });
+      };
       const accept = () => {
         if (ctrl) ctrl.close();
         if (!isDuel) { Sync.respondChallenge(ch, true); return; }
         const me = Sync.getMe();
         if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
-        Duel.pickParty({ attId: me, title: "Choose your party",
-          hint: (ch.fromName || "They") + " brought " + ((ch.party || []).length || 1) + ". Tap Pokémon in order — the first is your lead.",
-          onDone: (ids) => {
-            Sync.respondChallenge(ch, true);
-            const aLead = Duel.statsFor((ch.party || [])[0] || 1).x, bLead = Duel.statsFor(ids[0]).x;
-            const setup = {
-              title: ch.event || "Duel",
-              first: aLead === bLead ? (Math.random() < 0.5 ? "a" : "b") : (aLead > bLead ? "a" : "b"),
-              a: { units: [{ attId: ch.fromAtt, client: ch.fromClient, monIds: ch.party || [] }] },
-              b: { units: [{ attId: me, client: Sync.myClientId(), monIds: ids }] },
-            };
-            Sync.startRemoteDuel(setup);
-            Sync.startLiveBattle({ aName: ch.fromName, bName: (Store.attendee(me) || {}).name || "You",
-              event: setup.title, aClient: ch.fromClient, bClient: Sync.myClientId(), mode: "duel-remote" });
-          } });
+        if (!isDouble) {
+          Duel.pickParty({ attId: me, title: "Choose your party",
+            hint: (ch.fromName || "They") + " brought " + ((ch.party || []).length || 1) + ". Tap Pokémon in order — the first is your lead.",
+            onDone: (ids) => launch([{ attId: me, client: Sync.myClientId(), monIds: ids }]) });
+          return;
+        }
+        Duel.pickParty({ attId: me, max: 1, title: "Your Pokémon (double battle)", onDone: (mine) => {
+          Duel.pickTrainer({ exclude: [me, ch.fromAtt, ch.pairAtt].filter(Boolean), title: "Pick your partner",
+            hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.",
+            onDone: (ally) => {
+              const allyName = (Store.attendee(ally) || {}).name || "Partner";
+              Duel.pickParty({ attId: ally, max: 1, title: allyName + "'s Pokémon", onDone: (theirs) => {
+                launch([
+                  { attId: me, client: Sync.myClientId(), monIds: mine },
+                  { attId: ally, client: clientOf(ally, Sync.myClientId()), monIds: theirs },
+                ]);
+              } });
+            } });
+        } });
       };
+      const pairName = isDouble ? ((Store.attendee(ch.pairAtt) || {}).name || "a partner") : "";
       const body = el("div", { class: "chal-modal" }, [
         el("div", { class: "chal-line" }, (isDuel ? "🎮 " : "⚔ ") + (ch.fromName || "Someone") +
-          (isDuel ? " challenges you to a Pokémon Duel! (bringing " + ((ch.party || []).length || 1) + ")" : " challenges you to a battle!")),
+          (isDouble ? " & " + pairName + " challenge you to a DOUBLE battle — grab a partner!"
+            : isDuel ? " challenges you to a Pokémon Duel! (bringing " + ((ch.party || []).length || 1) + ")"
+            : " challenges you to a battle!")),
         ch.event ? el("div", { class: "chal-ev" }, "Event: " + ch.event) : null,
         el("div", { class: "toolbar" }, [
-          el("button", { class: "btn primary", onClick: accept }, isDuel ? "✅ Accept & pick your party" : "✅ Accept & battle"),
+          el("button", { class: "btn primary", onClick: accept },
+            isDouble ? "✅ Accept & pick your pair" : isDuel ? "✅ Accept & pick your party" : "✅ Accept & battle"),
           el("button", { class: "btn subtle", onClick: () => { Sync.respondChallenge(ch, false); if (ctrl) ctrl.close(); } }, "Decline"),
         ]),
       ]);

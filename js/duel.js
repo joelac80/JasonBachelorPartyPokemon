@@ -115,6 +115,26 @@
     const ref = Modal.open(opts.title || "Choose your party", body, null, {});
   }
 
+  // Simple trainer picker (modal) — used to choose a double-battle partner.
+  function pickTrainer(opts) {
+    const skip = opts.exclude || [];
+    const grid = el("div", { class: "sl-vote-grid" }, Store.state.attendees
+      .filter((a) => skip.indexOf(a.id) < 0)
+      .map((a) => {
+        const f = Store.currentForm(a);
+        const src = f.id ? Store.sprite(f.id) : "";
+        return el("button", { class: "sl-vote-pick", onClick: () => { ref.close(); opts.onDone(a.id); } }, [
+          src ? el("img", { class: "sl-thumb", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
+          el("span", { class: "sl-vote-name" }, a.name),
+        ]);
+      }));
+    const body = el("div", { class: "modal-form" }, [
+      opts.hint ? el("p", { class: "hint" }, opts.hint) : null,
+      grid,
+    ]);
+    const ref = Modal.open(opts.title || "Pick a trainer", body, null, {});
+  }
+
   // ---------------- the battle itself ----------------
   function start(opts) {
     opts = opts || {};
@@ -530,5 +550,5 @@
     return { receiveActs: receiveActs, close: close };
   }
 
-  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty };
+  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer };
 })();

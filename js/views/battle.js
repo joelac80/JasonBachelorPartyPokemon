@@ -161,16 +161,37 @@
           const nm = p.name || (a && a.name) || "Trainer";
           const src = a ? Store.sprite(Store.currentForm(a).id) : "";
           // 🎮 Duel: a REAL remote duel — they pick their party and play
-          // their turns on their own phone.
+          // their turns on their own phone. Double battles bring a partner:
+          // if the partner is here on their own phone, THEY play their turns.
           const duelBtn = el("button", { class: "btn primary sm" }, "🎮 Duel");
+          const sent = (extra) => {
+            Sync.sendChallenge(p.clientId, p.attId, nm, (eventLabel || "").trim(), extra);
+            duelBtn.disabled = true; duelBtn.textContent = "Waiting…";
+            setTimeout(() => { if (duelBtn.isConnected) { duelBtn.disabled = false; duelBtn.textContent = "🎮 Duel"; } }, 15000);
+          };
           duelBtn.addEventListener("click", () => {
             const me = Sync.getMe();
             if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
-            Duel.pickParty({ attId: me, title: "Challenge " + nm + " — your party", onDone: (ids) => {
-              Sync.sendChallenge(p.clientId, p.attId, nm, (eventLabel || "").trim(), { kind: "duel", party: ids });
-              duelBtn.disabled = true; duelBtn.textContent = "Waiting…";
-              setTimeout(() => { if (duelBtn.isConnected) { duelBtn.disabled = false; duelBtn.textContent = "🎮 Duel"; } }, 15000);
-            } });
+            let fmt;
+            const body = el("div", { class: "chal-modal" }, [
+              el("div", { class: "chal-line" }, "Challenge " + nm + " to…"),
+              el("div", { class: "toolbar" }, [
+                el("button", { class: "btn primary", onClick: () => { fmt.close();
+                  Duel.pickParty({ attId: me, title: "Your party vs " + nm, onDone: (ids) => sent({ kind: "duel", party: ids }) });
+                } }, "⚔ Single — party up to 6"),
+                el("button", { class: "btn primary", onClick: () => { fmt.close();
+                  Duel.pickParty({ attId: me, max: 1, title: "Your Pokémon (double battle)", hint: "One mon each in doubles.", onDone: (mine) => {
+                    Duel.pickTrainer({ exclude: [me], title: "Pick your partner", hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.", onDone: (ally) => {
+                      const allyName = (Store.attendee(ally) || {}).name || "Partner";
+                      Duel.pickParty({ attId: ally, max: 1, title: allyName + "'s Pokémon", onDone: (theirs) => {
+                        sent({ kind: "duel", party: mine, pairAtt: ally, pairParty: theirs });
+                      } });
+                    } });
+                  } });
+                } }, "🤝 Double — bring a partner"),
+              ]),
+            ]);
+            fmt = Modal.open("🎮 Pokémon Duel", body, null, {});
           });
           // ⚔ Quick call: the old referee battle (you tap who won).
           const btn = el("button", { class: "btn subtle sm" }, "⚔ Quick call");
