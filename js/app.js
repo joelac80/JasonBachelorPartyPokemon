@@ -119,6 +119,8 @@
     },
     // Delayed test so you can background the app and see it arrive.
     test() { setTimeout(() => { try { showNote("🔔 It works!", "Notifications are live — see you at the lake."); } catch (_) {} }, 4000); },
+    // Visibility-guarded ping for app code (e.g. "your move" in remote duels).
+    ping(title, body) { notify(title, body); },
   };
 
   Router.start();
@@ -241,16 +243,22 @@
           onEnd: () => { delete duelScreens[data.id]; },
         }));
       }
-      if (duelScreens[data.id]) duelScreens[data.id].receiveActs(data.acts || []);
+      const h = duelScreens[data.id];
+      if (h) {
+        h.receiveActs(data.acts || []);
+        if (h.receiveRx) h.receiveRx(data.rx || []);
+      }
     });
     function openDuelWatch() {
       const d = latestDuel;
       if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id]) return;
       let setup; try { setup = JSON.parse(d.setupJson); } catch (_) { return; }
       duelScreens[d.id] = Duel.start(Object.assign({}, setup, {
-        mode: "watch", onEnd: () => { delete duelScreens[d.id]; },
+        mode: "watch", rx: Sync.sendDuelReaction,
+        onEnd: () => { delete duelScreens[d.id]; },
       }));
       duelScreens[d.id].receiveActs(d.acts || []);
+      duelScreens[d.id].receiveRx(d.rx || []);
     }
 
     // A live battle → the challenger referees (interactive), the opponent

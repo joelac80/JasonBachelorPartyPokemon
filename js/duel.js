@@ -240,17 +240,50 @@
 
     const msg = el("div", { class: "battle-msg" }, title + " — " + label("a") + " VS " + label("b") + "!");
     const menu = el("div", { class: "battle-menu" });
-    const overlay = el("div", { class: "battle" }, [
-      el("div", { class: "battle-arena" }, [
-        el("div", { class: "battle-platform foe" }), el("div", { class: "battle-platform you" }),
-        hpBoxes[other(myView)], sprites[other(myView)], sprites[myView], hpBoxes[myView],
-      ]),
-      msg, menu,
+    const arena = el("div", { class: "battle-arena" }, [
+      el("div", { class: "battle-platform foe" }), el("div", { class: "battle-platform you" }),
+      hpBoxes[other(myView)], sprites[other(myView)], sprites[myView], hpBoxes[myView],
     ]);
+    const overlay = el("div", { class: "battle" }, [arena, msg, menu]);
     function close() {
+      if (window.SFX && SFX.battleMusic) SFX.battleMusic(false);
       overlay.classList.add("out");
       setTimeout(() => overlay.remove(), 350);
       if (opts.onEnd) try { opts.onEnd(); } catch (_) {}
+    }
+
+    // Type-colored impact burst on the defender (+ a screen shake on crits).
+    function spawnHit(monEl, color, crit) {
+      const fx = el("div", { class: "duel-hit", style: { "--hc": color } }, [el("b")]);
+      for (let i = 0; i < 8; i++) {
+        const p = el("i");
+        const ang = (Math.PI * 2 * i) / 8 + Math.random() * 0.6;
+        const d = 32 + Math.random() * 28;
+        p.style.setProperty("--dx", (Math.cos(ang) * d).toFixed(0) + "px");
+        p.style.setProperty("--dy", (Math.sin(ang) * d).toFixed(0) + "px");
+        fx.appendChild(p);
+      }
+      monEl.appendChild(fx);
+      setTimeout(() => fx.remove(), 700);
+      if (crit) { overlay.classList.add("shake"); setTimeout(() => overlay.classList.remove("shake"), 450); }
+    }
+
+    // Spectator reactions — everyone's taps float up on every screen.
+    let rxSeen = -1;
+    function spawnRx(item) {
+      const n = el("div", { class: "duel-rx" }, [
+        el("span", { class: "duel-rx-e" }, item.e || "🔥"),
+        item.by ? el("span", { class: "duel-rx-by" }, item.by) : null,
+      ]);
+      n.style.left = (8 + Math.random() * 74).toFixed(0) + "%";
+      arena.appendChild(n);
+      setTimeout(() => n.remove(), 2400);
+    }
+    function receiveRx(list) {
+      list = list || [];
+      if (rxSeen < 0) { rxSeen = list.length; return; }   // don't replay history on join
+      for (let i = rxSeen; i < list.length; i++) spawnRx(list[i]);
+      rxSeen = Math.max(rxSeen, list.length);
     }
 
     // Broadcast hot-seat duels on the old channel so the room's Watch alert
@@ -382,6 +415,7 @@
         tm.hp = Math.max(0, tm.hp - act.dmg);
         tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
         setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
+        spawnHit(tu._monEl, TYPE_COLOR[mv.type] || "#fff", act.crit);
         paintHp(tu); sfx("coin");
       }]);
       if (act.crit) steps.push([act.armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
@@ -390,7 +424,10 @@
       steps.push(["−" + act.dmg + " HP!", 650]);
       beats(steps, () => {
         if (tm.hp <= 0) {
-          beats([[tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }]], afterDamage);
+          beats([
+            [tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
+            ["🍺 KO! " + tu.name + " takes 2 sips!", 1150],
+          ], afterDamage);
         } else afterDamage();
       });
     }
@@ -404,7 +441,8 @@
       const record = mode === "local" || (mode === "remote" && act.by === myClient);
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (sides[other(winSide)].units.length > 1 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
-        ["🏆 " + wLabel + " win" + (sides[winSide].units.length > 1 ? "" : "s") + " the duel!", 1900, () => sfx("fanfare")],
+        ["🏆 " + wLabel + " win" + (sides[winSide].units.length > 1 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
+        ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
       ], () => { close(); if (opts.onResult) opts.onResult(winSide); if (done) done(); });
       if (!record) return;
       try {
@@ -419,6 +457,22 @@
           if (Store.chron) Store.chron(s, "⚔️", doubles
             ? wLabel + " out-dueled " + lLabel + " in a double battle!"
             : wLabel + "'s " + wMons + " KO'd " + lLabel + "'s " + lMons + " in a duel!");
+          // Champion's Belt — singles only. Unclaimed → winner takes it;
+          // the holder loses → it changes hands; the holder wins → a defense.
+          // A duel that doesn't involve the holder leaves the belt alone.
+          if (!doubles) {
+            const w = sides[winSide].units[0], l = sides[other(winSide)].units[0];
+            const belt = s.battles.belt;
+            if (!belt || !belt.attId) {
+              s.battles.belt = { attId: w.attId, name: w.name, streak: 1, ts: now() };
+              if (Store.chron) Store.chron(s, "🥇", w.name + " claimed the Champion's Belt!");
+            } else if (belt.attId === w.attId) {
+              belt.streak = (belt.streak || 1) + 1; belt.name = w.name;
+            } else if (belt.attId === l.attId) {
+              s.battles.belt = { attId: w.attId, name: w.name, streak: 1, ts: now() };
+              if (Store.chron) Store.chron(s, "🥇", w.name + " took the Champion's Belt from " + l.name + "!");
+            }
+          }
         });
       } catch (_) {}
       try {
@@ -499,7 +553,20 @@
         menu.appendChild(el("div", { class: "duel-wait" },
           (mode === "watch" ? "👀 " : "⏳ ") + u.name +
           (S.pending ? " is choosing the next Pokémon…" : " is choosing…")));
+        // spectators heckle: reactions float up on EVERY screen
+        if (mode === "watch" && opts.rx) {
+          menu.appendChild(el("div", { class: "duel-rx-bar" }, ["🔥", "👏", "😱", "💀", "🍺"].map((e) =>
+            el("button", { class: "duel-rx-btn", onClick: () => { try { opts.rx(e); } catch (_) {} } }, e))));
+        }
         return;
+      }
+      // it's this phone's pick — ping if the app is backgrounded (once per turn)
+      if (mode === "remote" && window.AppNotify && AppNotify.ping) {
+        const k = S.seq + (S.pending ? "p" : "m");
+        if (S.pinged !== k) {
+          S.pinged = k;
+          AppNotify.ping("🎮 Your move!", S.pending ? "Choose your next Pokémon" : "What will " + mon(u).name + " do?");
+        }
       }
       if (S.pending) { partyPanel(u, ptr, "next", false); return; }
       const m = mon(u);
@@ -542,6 +609,7 @@
     const vs = el("div", { class: "battle-vs" }, [vsPanel("a", myView), el("div", { class: "vs-badge" }, "VS"), vsPanel("b", other(myView))]);
     document.body.appendChild(overlay);
     overlay.appendChild(vs);
+    if (window.SFX && SFX.battleMusic) SFX.battleMusic(true);
     sfx("blip");
     requestAnimationFrame(() => vs.classList.add("go"));
     setTimeout(() => sfx("select"), 300);
@@ -555,7 +623,7 @@
       setTimeout(() => { if (!S.done) { S.ready = true; renderMenu(); pump(); } }, 900);
     }, 1700);
 
-    return { receiveActs: receiveActs, close: close };
+    return { receiveActs: receiveActs, receiveRx: receiveRx, close: close };
   }
 
   window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer };

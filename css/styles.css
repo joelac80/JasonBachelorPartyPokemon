@@ -1339,3 +1339,28 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .duel-wait { color: #fff; font-family: var(--pixel); font-size: 12px; padding: 8px 4px; text-align: center;
   animation: duelWaitPulse 1.6s ease infinite; }
 @keyframes duelWaitPulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+/* ---- duel v3: hit FX, reactions, belt ---- */
+.duel-hit { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 5; }
+.duel-hit b { width: 26px; height: 26px; border: 4px solid var(--hc, #fff); border-radius: 50%; animation: duelRing .5s ease-out forwards; }
+@keyframes duelRing { from { transform: scale(.4); opacity: .95; } to { transform: scale(2.7); opacity: 0; } }
+.duel-hit i { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--hc, #fff);
+  box-shadow: 0 0 6px var(--hc, #fff); animation: duelSpark .55s ease-out forwards; }
+@keyframes duelSpark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx, 30px), var(--dy, -30px)) scale(.25); opacity: 0; } }
+.battle.shake { animation: duelShake .4s ease; }
+@keyframes duelShake { 0%,100% { transform: none; } 20% { transform: translate(-9px, 5px); } 40% { transform: translate(8px, -4px); } 60% { transform: translate(-6px, 3px); } 80% { transform: translate(4px, -2px); } }
+/* floating spectator reactions */
+.duel-rx { position: absolute; bottom: 6%; z-index: 6; display: flex; flex-direction: column; align-items: center;
+  pointer-events: none; animation: rxRise 2.3s ease-out forwards; }
+.duel-rx-e { font-size: 34px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+.duel-rx-by { font-family: var(--pixel); font-size: 9px; font-weight: 800; color: #fff; text-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+@keyframes rxRise { 0% { transform: translateY(0) scale(.7); opacity: 0; } 12% { opacity: 1; transform: translateY(-6vh) scale(1.1); } 75% { opacity: 1; } 100% { transform: translateY(-46vh) scale(1); opacity: 0; } }
+.duel-rx-bar { display: flex; gap: 12px; justify-content: center; }
+.duel-rx-btn { font-size: 26px; background: #fffdf2; border: 2.5px solid #fff; border-radius: 12px; padding: 4px 10px;
+  cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,.35); }
+.duel-rx-btn:active { transform: translateY(1px); box-shadow: none; }
+/* Champion's Belt banner */
+.duel-belt { background: linear-gradient(90deg, #fff2c4, #ffe08a); border: 2.5px solid #b8860b; border-radius: 12px;
+  padding: 10px 12px; font-weight: 700; font-size: 14px; color: #5a4200; margin: 6px 0 10px; cursor: pointer;
+  box-shadow: var(--shadow); }
+.duel-belt.open { background: var(--paper); border-style: dashed; color: var(--ink-dim); cursor: default; }

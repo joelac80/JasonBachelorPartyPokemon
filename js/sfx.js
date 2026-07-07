@@ -58,6 +58,14 @@
   const LEAD = [523, 659, 784, 659, 587, 698, 880, 698, 659, 831, 988, 831, 587, 494, 440, 494];
   const BASS = [131, 0, 196, 0, 175, 0, 196, 0, 165, 0, 208, 0, 175, 0, 147, 0];
   const MSTEP = 0.17;
+  // Battle theme — faster, minor, driving. Plays during duels (respects the
+  // SFX mute, not the background-music toggle: a battle IS the moment).
+  let battleOn = false;
+  const BLEAD = [330, 392, 440, 392, 494, 440, 392, 330, 294, 330, 392, 440, 494, 440, 392, 294,
+                 330, 392, 440, 494, 523, 494, 440, 392, 587, 523, 494, 440, 392, 330, 294, 0];
+  const BBASS = [82, 82, 0, 82, 98, 0, 82, 0, 73, 73, 0, 73, 98, 0, 110, 0,
+                 82, 82, 0, 82, 98, 0, 82, 0, 110, 0, 98, 0, 73, 0, 82, 0];
+  const BSTEP = 0.125;
   function noteAt(freq, t0, dur, type, gain) {
     const a = ac(); if (!a) return;
     const osc = a.createOscillator(), g = a.createGain();
@@ -68,12 +76,13 @@
     osc.connect(g); g.connect(a.destination); osc.start(t0); osc.stop(t0 + dur + 0.03);
   }
   function musicTick() {
-    const a = ac(); if (!a || !musicOn) return;
+    const a = ac(); if (!a || (!musicOn && !battleOn)) return;
+    const lead = battleOn ? BLEAD : LEAD, bass = battleOn ? BBASS : BASS, step = battleOn ? BSTEP : MSTEP;
     while (mNext < a.currentTime + 0.25) {
-      const i = mStep % LEAD.length;
-      if (LEAD[i]) noteAt(LEAD[i], mNext, MSTEP * 0.9, "square", 0.04);
-      if (BASS[i]) noteAt(BASS[i], mNext, MSTEP * 0.95, "triangle", 0.05);
-      mNext += MSTEP; mStep++;
+      const i = mStep % lead.length;
+      if (lead[i]) noteAt(lead[i], mNext, step * 0.9, "square", battleOn ? 0.05 : 0.04);
+      if (bass[i]) noteAt(bass[i], mNext, step * 0.95, "triangle", battleOn ? 0.06 : 0.05);
+      mNext += step; mStep++;
     }
     mTimer = setTimeout(musicTick, 45);
   }
@@ -92,8 +101,18 @@
     toggleMusic() {
       musicOn = !musicOn;
       try { localStorage.setItem("jasonBachHub.music", musicOn ? "1" : "0"); } catch (_) {}
-      if (musicOn) startMusicInternal(); else stopMusicInternal();
+      if (musicOn) startMusicInternal(); else if (!battleOn) stopMusicInternal();
       return musicOn;
+    },
+
+    // Duel battle theme: on for the fight, then back to whatever was playing.
+    battleMusic(on) {
+      if (on && muted) return;                    // respect the mute button
+      if (battleOn === !!on) return;
+      battleOn = !!on;
+      if (battleOn) startMusicInternal();
+      else if (musicOn) startMusicInternal();
+      else stopMusicInternal();
     },
 
     setMuted(v) {
