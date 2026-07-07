@@ -1404,3 +1404,8 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .duel-pick.is-shiny { box-shadow: 0 0 8px rgba(230,184,0,.65); border-color: #e6b800; }
 .duel-pick-shiny { position: absolute; top: -6px; left: -6px; font-size: 12px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.3)); }
 .trk-slot.shiny { border-radius: 6px; box-shadow: 0 0 6px rgba(230,184,0,.8); background: #fff7d6; }
+
+/* battle-EXP evolution prompt */
+.evo-prompt-head { display: flex; align-items: center; gap: 10px; }
+.evo-prompt-img { width: 72px; height: 72px; image-rendering: pixelated; flex: 0 0 auto; }
+.evo-opt-img { width: 34px; height: 34px; image-rendering: pixelated; vertical-align: middle; }

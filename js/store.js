@@ -675,6 +675,44 @@
       return result;
     },
 
+    // ---- Battle-EXP evolution ------------------------------------------------
+    // A mon that personally lands 3 KOs in duels has enough battle EXP to
+    // evolve (branched lines choose). The dex remembers the base form; spare
+    // EXP carries over to the evolved form; shiny stays shiny.
+    KO_TO_EVOLVE: 3,
+    evoTargets(monId) {
+      const t = (window.DEX_EVOS || {})[monId];
+      return t && t.length ? t.slice() : [];
+    },
+    evoReady(attId, monId) {
+      const t = (this.state.pokedex.trainers || {})[attId];
+      const r = t && t.caught && t.caught[monId];
+      return !!(r && (r.kos || 0) >= this.KO_TO_EVOLVE && this.evoTargets(monId).length);
+    },
+    evolveMon(attId, monId, targetId, by) {
+      monId = +monId; targetId = +targetId;
+      if (!this.evoReady(attId, monId)) return false;
+      if (this.evoTargets(monId).indexOf(targetId) < 0) return false;
+      let ok = false;
+      this.update((s) => {
+        const t = s.pokedex.trainers[attId]; if (!t) return;
+        const r = t.caught[monId]; if (!r) return;
+        const spare = (r.kos || 0) - this.KO_TO_EVOLVE;
+        r.kos = 0;
+        const ex = t.caught[targetId];
+        if (ex) { ex.count = (ex.count || 1) + 1; if (r.shiny) ex.shiny = true; ex.kos = (ex.kos || 0) + spare; }
+        else t.caught[targetId] = { count: 1, ball: r.ball || "poke", shiny: r.shiny || undefined, kos: spare || undefined };
+        t.seen = t.seen || {}; t.seen[targetId] = 1;
+        const i = (t.team || []).indexOf(monId);
+        if (i >= 0 && t.team.indexOf(targetId) < 0) t.team[i] = targetId;
+        const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
+        const an = (this.attendee(attId) || {}).name || attId;
+        this.chron(s, "🎉", "What?! " + an + "'s " + nm(monId) + " evolved into " + nm(targetId) + " — " + this.KO_TO_EVOLVE + " KOs of battle EXP!", by);
+        ok = true;
+      });
+      return ok;
+    },
+
     drinkTypes() { return DRINKS.slice(); },
     drinkEmoji: drinkEmoji,
     drinkCount(trainerId, type) {

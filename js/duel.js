@@ -167,6 +167,11 @@
       const party = (u.monIds || []).filter(Boolean).map((id) => {
         const m = statsFor(id); m.hp = m.hpMax;
         m.shiny = isShinyFor(u.attId, id);          // ✨ carried into battle
+        // battle EXP: KOs banked before this battle (this mon must land the
+        // blow itself to earn more)
+        const t0 = ((Store.state.pokedex || {}).trainers || {})[u.attId];
+        m.kos0 = (t0 && t0.caught && t0.caught[id] && t0.caught[id].kos) || 0;
+        m.kos = 0;
         return m;
       });
       if (!party.length) { const m = statsFor(1); m.hp = m.hpMax; party.push(m); }
@@ -405,6 +410,26 @@
       done();
     }
 
+    // The KO'ing mon earns battle EXP (3 KOs = an evolution). Every screen
+    // applies the same acts, so every phone increments identically — that
+    // keeps the count safe under last-write-wins state sync.
+    function creditKO(u, m) {
+      m.kos = (m.kos || 0) + 1;
+      try {
+        Store.update((s) => {
+          const t = s.pokedex.trainers[u.attId];
+          const r = t && t.caught && t.caught[m.id];
+          if (r) r.kos = (r.kos || 0) + 1;
+        });
+      } catch (_) {}
+      if (!(window.DEX_EVOS || {})[m.id]) return null;
+      const need = Store.KO_TO_EVOLVE || 3;
+      const total = (m.kos0 || 0) + m.kos;
+      return total >= need
+        ? "⚡ " + m.name + " has enough battle EXP to EVOLVE after the battle!"
+        : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + " KOs to evolve)";
+    }
+
     function applyMove(act, u, instant, done) {
       S.moved++;
       const dSide = other(act.side);
@@ -423,7 +448,10 @@
         finish(act.side, act, "faint", instant, done);
       };
       if (instant) {
-        if (!act.miss) { tm.hp = Math.max(0, tm.hp - act.dmg); paintHp(tu); if (tm.hp <= 0 && tu._monEl) tu._monEl.classList.add("fainted"); }
+        if (!act.miss) {
+          tm.hp = Math.max(0, tm.hp - act.dmg); paintHp(tu);
+          if (tm.hp <= 0) { creditKO(u, m); if (tu._monEl) tu._monEl.classList.add("fainted"); }
+        }
         afterDamage();
         return;
       }
@@ -447,6 +475,7 @@
       const steps = chug.concat([[m.name + " used " + mv.name + "!", 800, () => sfx("select")]]);
       steps.push([null, 500, () => {
         tm.hp = Math.max(0, tm.hp - act.dmg);
+        if (tm.hp <= 0) act._exp = creditKO(u, m);
         tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
         setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
         spawnHit(tu._monEl, TYPE_COLOR[mv.type] || "#fff", act.crit);
@@ -463,9 +492,66 @@
           beats([
             [tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
             ["🍺 KO! " + tu.name + " takes 2 sips!", 1150],
-          ], afterDamage);
+          ].concat(act._exp ? [[act._exp, 1300, () => sfx("coin")]] : []), afterDamage);
         } else afterDamage();
       });
+    }
+
+    // ---- battle-EXP evolutions (after the battle, classic style) ----
+    // Prompts appear on the phone that controls the mon; branched lines
+    // (Eevee!) get a choice. Declining keeps the EXP for next time.
+    function promptEvolutions() {
+      if (mode === "watch" || !window.Modal) return;
+      const pend = [], seen = {};
+      ["a", "b"].forEach((sd) => sides[sd].units.forEach((un) => {
+        if (!(mode === "local" || isMine(un))) return;
+        un.party.forEach((mn) => {
+          const key = un.attId + ":" + mn.id;
+          if (seen[key]) return; seen[key] = 1;
+          if (Store.evoReady(un.attId, mn.id)) pend.push({ attId: un.attId, owner: un.name, mon: mn });
+        });
+      }));
+      (function next() {
+        const p = pend.shift(); if (!p) return;
+        showEvoPrompt(p, next);
+      })();
+    }
+    function showEvoPrompt(p, onDone) {
+      const targets = Store.evoTargets(p.mon.id);
+      const nm = (id) => (DEX[id] && DEX[id].n) || ("#" + id);
+      let ctrl;
+      const evolveTo = (tid) => {
+        if (!Store.evolveMon(p.attId, p.mon.id, tid)) { if (ctrl) ctrl.close(); onDone(); return; }
+        if (ctrl) ctrl.close();
+        // evolution cinematic (reuses the trade overlay styling)
+        const img = el("img", { class: "trade-fly evo", src: frontSprite(p.mon.id, p.mon.shiny), alt: "" });
+        const txt = el("div", { class: "trade-anim-txt" }, "What?! " + p.mon.name + " is evolving…");
+        const lay = el("div", { class: "trade-anim" }, [el("div", { class: "trade-anim-row" }, [img]), txt]);
+        document.body.appendChild(lay);
+        sfx("evolve");
+        setTimeout(() => {
+          img.src = frontSprite(tid, p.mon.shiny);
+          img.classList.remove("evo"); void img.offsetWidth; img.classList.add("evo");
+          txt.textContent = "🎉 Congratulations! " + p.owner + "'s " + p.mon.name + " evolved into " + nm(tid) + "!";
+          sfx("fanfare");
+        }, 1700);
+        setTimeout(() => { lay.remove(); onDone(); }, 4200);
+      };
+      const body = el("div", { class: "modal-form" }, [
+        el("div", { class: "evo-prompt-head" }, [
+          el("img", { class: "evo-prompt-img", src: frontSprite(p.mon.id, p.mon.shiny), alt: "" }),
+          el("p", { class: "hint" }, "⚡ " + p.owner + "'s " + (p.mon.shiny ? "✨" : "") + p.mon.name +
+            " has enough battle EXP to evolve (" + (Store.KO_TO_EVOLVE || 3) + " KOs — it landed them itself)!"),
+        ]),
+        el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, targets.map((tid) =>
+          el("button", { class: "btn primary", onClick: () => evolveTo(tid) }, [
+            frontSprite(tid, p.mon.shiny) ? el("img", { class: "evo-opt-img", src: frontSprite(tid, p.mon.shiny), alt: "" }) : null,
+            " Evolve into " + nm(tid),
+          ])).concat([
+          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); onDone(); } }, "Not now (keep the EXP)"),
+        ])),
+      ]);
+      ctrl = Modal.open("🎉 " + p.mon.name + " is ready to evolve!", body, null, { noFooter: true });
     }
 
     function finish(winSide, act, how, instant, done) {
@@ -479,7 +565,7 @@
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
-      ], () => { close(); if (opts.onResult) opts.onResult(winSide); if (done) done(); });
+      ], () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(promptEvolutions, 700); if (done) done(); });
       if (!record) return;
       try {
         Store.update((s) => {
