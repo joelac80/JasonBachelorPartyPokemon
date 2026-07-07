@@ -92,6 +92,43 @@
     });
   }
 
+  // 🏛 Battle of Fame — a champion's enshrined team steps down from its
+  // plaque (Stadium-style ghost team, AI-controlled). Pure exhibition.
+  function challengeFame(h, attId) {
+    const a = Store.attendee(h.attId);
+    const champ = (a && a.name) || h.attId;
+    const size = (h.party || []).length;
+    if (!size) return;
+    if (Duel.poolFor(attId).length < size) { alert("This Hall of Fame team runs " + size + " — you need " + size + " of your own."); return; }
+    const lay = el("div", { class: "league-intro fame" }, [
+      el("div", { class: "league-intro-inner" }, [
+        el("div", { class: "league-intro-mt" }, "🏛"),
+        el("div", { class: "league-intro-rank" }, "HALL OF FAME"),
+        el("div", { class: "league-intro-name" }, champ.toUpperCase()),
+        el("div", { class: "league-intro-quote" }, "“The plaque gleams… and the team that conquered the League steps down from legend.”"),
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => {
+            lay.remove();
+            Duel.pickParty({ attId: attId, min: size, max: size,
+              title: "vs " + champ + "'s Hall of Fame team — pick EXACTLY " + size,
+              hint: "Battle of Fame: " + size + " vs " + size + ". Exhibition — glory only.",
+              onDone: (ids) => {
+                Duel.start({ mode: "local", title: "the Hall of Fame",
+                  hof: { attId: h.attId, name: champ },
+                  a: { units: [{ attId: attId, monIds: ids }] },
+                  b: { units: [{ npc: "HOF " + champ, ai: true, monIds: h.party.slice() }] },
+                  onResult: () => Router.render() });
+              } });
+          } }, "⚔ ANSWER THE LEGEND"),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    sfx("fanfare");
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
+
   // The leader's ace, silhouetted until this stage has been beaten by anyone.
   function aceSprite(idx, beaten) {
     const st = LEAGUE[idx];
@@ -180,6 +217,8 @@
       const hof = (Store.state.hof || []).slice();
       if (hof.length) {
         host.appendChild(el("h2", { class: "section-title" }, "🏛 Hall of Fame"));
+        host.appendChild(el("p", { class: "hint" },
+          "⚔ Battle of Fame: any enshrined team can be challenged — the exact lineup that beat the League, AI-controlled, Stadium-style. Exhibition only (no Elo, no belt)."));
         host.appendChild(el("div", { class: "hof-list" }, hof.map((h) => {
           const a = Store.attendee(h.attId);
           const beatRed = Store.leagueWins(h.attId).indexOf("red") >= 0;
@@ -191,6 +230,8 @@
               const src = (shiny && window.DEX_SPRITES_SHINY && DEX_SPRITES_SHINY[id]) || SP[id] || Store.sprite(id);
               return src ? el("img", { class: "hof-mon", src: src, alt: "" }) : null;
             })),
+            el("button", { class: "btn primary sm hof-fight", onClick: () => challengeFame(h, attId) },
+              "⚔ Battle this team (" + (h.party || []).length + "v" + (h.party || []).length + ")"),
           ]);
         })));
       }

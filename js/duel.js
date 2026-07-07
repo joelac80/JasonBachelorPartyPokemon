@@ -681,6 +681,29 @@
         } catch (_) {}
         return;
       }
+      // 🏛 Battle of Fame: a Hall of Fame team steps down from its plaque.
+      // Pure exhibition — no leaderboard, no Elo, no belt. Glory and sips.
+      if (opts.hof) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const ghost = opts.hof;
+          const ownGhost = player.attId === ghost.attId;
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              Store.grantPoints(s, "battle", player.teamId, 4);
+              Store.chron(s, "🏛", ownGhost
+                ? player.name + " defeated the ghost of their own championship team. Growth."
+                : player.name + " took down " + ghost.name + "'s Hall of Fame team! The plaque still shines… but so does " + player.name + ".");
+            } else {
+              Store.chron(s, "🏛", ownGhost
+                ? player.name + " lost to their own past self. 3 sips of humility."
+                : ghost.name + "'s Hall of Fame team stands eternal — " + player.name + " toasts the champion with 3 sips.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
       try {
         Store.update((s) => {
           s.battles = s.battles || { log: [] }; s.battles.log = s.battles.log || [];
