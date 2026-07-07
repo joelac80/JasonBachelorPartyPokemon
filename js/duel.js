@@ -184,6 +184,9 @@
         m.kos0 = rec0.kos || 0;
         m.kos = 0;
         m.atk = m.atk * (1 + Math.min(0.2, 0.02 * m.kos0));
+        // League-calibre foes (Elite Four/Champion/RED) hit and endure
+        // harder than any gym — rank boost keeps the ladder a ladder.
+        if (u.boost) { m.atk *= u.boost; m.hpMax = Math.round(m.hpMax * u.boost); m.hp = m.hpMax; }
         m.species = m.name;
         if (rec0.nick) m.name = rec0.nick;          // nicknames scream in battle text
         return m;
