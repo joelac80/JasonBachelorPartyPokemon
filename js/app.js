@@ -400,14 +400,16 @@
           notify("⚔ Your battle is on!", "vs " + data.aName + (data.event ? " · " + data.event : ""));
           openSpectator(data);
         } else {                                       // everyone else — offer to watch
-          notify("⚔ Battle starting!", data.aName + " vs " + data.bName + (data.event ? " · " + data.event : ""));
+          notify("⚔ Battle starting!", data.aName + " vs " + data.bName +
+            (data.stakes ? " · " + data.stakes : data.event ? " · " + data.event : ""));
           if (window.SFX && SFX.blip) SFX.blip();
           let ctrl;
           const body = el("div", { class: "chal-modal" }, [
             el("div", { class: "chal-line" }, "⚔ " + data.aName + " vs " + data.bName + " — the battle is on!"),
+            data.stakes ? el("div", { class: "chal-ev" }, data.stakes) : null,
             data.event ? el("div", { class: "chal-ev" }, "Event: " + data.event) : null,
             el("div", { class: "toolbar" }, [
-              el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); openSpectator(data); } }, "👀 Watch"),
+              el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); openSpectator(data); } }, "👀 Watch & cheer"),
               el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Dismiss"),
             ]),
           ]);
@@ -417,6 +419,12 @@
       if (data.state === "done" && specHandle) {
         specHandle.finish(data.winner || data.aName);
         specHandle = null;
+      }
+      // Stakes battles (badges, League chambers, Mt. Silver) ping the room
+      // with the result — even the phones that didn't watch.
+      if (data.state === "done" && data.stakes && data.winner && !handledLive[data.id + ":res"]) {
+        handledLive[data.id + ":res"] = 1;
+        if (Sync.myClientId() !== data.aClient) notify("🏁 " + data.stakes, data.winner + " wins!");
       }
     });
   }
