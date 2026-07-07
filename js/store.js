@@ -284,6 +284,9 @@
       };
       const shiner = this._topAttendee(shinyN);
       if (shiner) out.push({ emoji: "✨", title: "Shiny Hunter", holder: shiner.a.name, sub: shiner.n + " shin" + (shiner.n > 1 ? "ies" : "y") + " caught" });
+      const crusher = this._topAttendee((id) => this.gymBadgeCount(id));
+      if (crusher) out.push({ emoji: "🏟", title: crusher.n >= 16 ? "CHAMPION" : "Gym Crusher", holder: crusher.a.name,
+        sub: crusher.n >= 16 ? "swept ALL 16 gyms!" : crusher.n + "/16 gym badges" });
       // Champion's Belt — held by the last trainer to win/defend a singles duel.
       const belt = (this.state.battles && this.state.battles.belt) || null;
       if (belt && belt.attId) {
@@ -390,7 +393,7 @@
         euchre: this.euchreWins(attId), oracle: this.oracleScore(attId),
         logged: this.logCount(attId), photosIn: this.photosOf(attId), photosTaken: this.photosTakenBy(attId),
         duel: this.duelRecord(attId), kos: this.koLife(attId), shinies: this.shinyCount(attId),
-        trades: this.tradeCount(attId), evolutions: this.evoCount(attId),
+        trades: this.tradeCount(attId), evolutions: this.evoCount(attId), gymBadges: this.gymBadgeCount(attId),
         beltReigns: this.beltReigns(attId), elo: this.eloOf(attId),
         beltNow: !!(this.state.battles && this.state.battles.belt && this.state.battles.belt.attId === attId),
       };
@@ -720,6 +723,15 @@
     },
     eloOf(attId) {
       return ((this.state.battles && this.state.battles.elo) || {})[attId] || 1000;
+    },
+    // Gym Circuit: 16 leaders, EVERYONE can earn every badge.
+    gymHolders(idx) {
+      return ((this.state.gymCircuit || {})[idx] || []).slice();
+    },
+    gymBadgeCount(attId) {
+      const c = this.state.gymCircuit || {};
+      let n = 0; for (const k in c) if ((c[k] || []).indexOf(attId) >= 0) n++;
+      return n;
     },
 
     // Nickname a caught mon (per trainer). Blank clears it.
