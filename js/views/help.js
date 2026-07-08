@@ -9,7 +9,7 @@
     {
       title: "🚀 Set up (before the party)",
       items: [
-        { r: null, e: "👋", t: "The welcome tour", d: "Every fresh phone gets a six-slide walkthrough on first open — picking your trainer and the room code happens right in it. Skippable; replay it any time from the bottom of this guide." },
+        { r: null, e: "👋", t: "The welcome tour", d: "Every fresh phone gets a seven-slide walkthrough on first open — picking your trainer and the room code happens right in it. Skippable; replay it any time from the bottom of this guide." },
         { r: "victoryroad", e: "🎡", t: "Draft teams", d: "Split the crew into teams — find it under Victory Road’s Setup row." },
         { r: "roster", e: "🎴", t: "The Squad", d: "Everyone’s trainer card + their favorite Pokémon. Tap ⓘ for a profile, ✎ to edit." },
         { r: "activities", e: "🗓️", t: "Game Plan", d: "The weekend itinerary — also under Victory Road’s Setup row." },
@@ -36,7 +36,7 @@
         { r: "league", e: "👑", t: "Pokémon League", d: "The cinematic climb: Victory Road gate (8 Johto badges to pass), the Elite Four chambers in order — running their full HGSS rematch squads, 6 deep, so bring an evolved team — then Champion LANCE, the Hall of Fame with every champion’s winning team (challenge any enshrined team in a ⚔ Battle of Fame — exhibition only)… and beating Lance wakes something on Mt. Silver." },
         { r: null, e: "🗺", t: "The road to RED", d: "The full ladder, Gen 2 style: ① the 8 JOHTO badges (Falkner → Clair) open Victory Road → ② the Elite Four fall IN ORDER (Will, Koga, Bruno, Karen) → ③ Champion LANCE — win and you’re in the Hall of Fame, and Mt. Silver appears for everyone → ④ collect the 8 KANTO badges (Brock → Blue) for all 16 → ⑤ only then will RED face you at the summit." },
         { r: "jeopardy", e: "❓", t: "Jeopardy", d: "Bulbasaur-themed trivia with Daily Bulbas. Award (or dock) clue values to teams." },
-        { r: "predictions", e: "🔮", t: "Predictions (Oracle)", d: "Call outcomes before they happen — who wins, how many drinks, will the groom cry. Nail your calls to climb the Oracle board; right calls score for your team." },
+        { r: "predictions", e: "🔮", t: "The Oracle", d: "Call outcomes before they happen — who wins, how many drinks, will the groom cry. Nail your calls to climb the Oracle board; right calls score for your team." },
       ],
     },
     {

@@ -89,8 +89,8 @@
 
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
-      el("h1", {}, "🎣 Catch of the Day"),
-      el("p", { class: "page-sub" }, "Daily photo & dare challenges. Catch 'em all."),
+      el("h1", {}, "🎣 Daily Dares"),
+      el("p", { class: "page-sub" }, "The Dock's Catch of the Day — daily photo & dare challenges. Reel 'em all in."),
     ]));
 
     const progress = el("div", { class: "cotd-progress" });

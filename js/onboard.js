@@ -1,4 +1,4 @@
-/* onboard.js — the first-open tour. Six quick slides that walk a fresh
+/* onboard.js — the first-open tour. Seven quick slides that walk a fresh
    phone through the whole weekend: who you are, the room code, catching,
    battling, and how everything scores. Skippable at any moment; picking a
    trainer + room happens INSIDE the tour so nobody has to find Settings.
@@ -50,7 +50,7 @@
 
     const SLIDES = [
       { e: "👋", t: "Welcome to the world of Pokémon… bachelor parties!",
-        d: "Jason's last stand — July 9–12 at the lake house. This app is the scoreboard, the Pokédex, and the referee, all in one. Six quick slides and you're ready (or skip and wing it — the ? button always has your back)." },
+        d: "Jason's last stand — July 9–12 at the lake house. This app is the scoreboard, the Pokédex, and the referee, all in one. Seven quick slides and you're ready (or skip and wing it — the ? button always has your back)." },
       { e: "🎴", t: "Who are you, trainer?",
         d: "Tap yourself. Everything you log — catches, duel wins, drinks, dares — follows YOU all weekend, on leaderboards, your profile, and the final poster.",
         body: () => { paintGrid(); return grid; } },

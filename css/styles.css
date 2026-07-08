@@ -1495,12 +1495,17 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .league-intro.fame .league-intro-mt { filter: drop-shadow(0 0 22px rgba(255,208,64,.65)); }
 /* 👋 first-open onboarding tour */
 .onb { position: fixed; inset: 0; z-index: 300; background: linear-gradient(160deg, rgba(10,16,14,.97), rgba(16,26,40,.97));
-  display: flex; align-items: center; justify-content: center; padding: 18px; opacity: 0; transition: opacity .35s ease; overflow-y: auto; }
+  display: flex; opacity: 0; transition: opacity .35s ease; overflow-y: auto;
+  /* top padding reserves room for the fixed Skip chip + the iPhone notch */
+  padding: calc(56px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px)); }
 .onb.go { opacity: 1; }
-.onb-skip { position: absolute; top: 12px; right: 14px; background: none; border: none; color: #9db2c9;
-  font-family: var(--pixel); font-size: 12px; cursor: pointer; padding: 8px; }
+/* fixed chip: visible below the notch, and it stays put when a tall slide scrolls */
+.onb-skip { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: 14px; z-index: 2;
+  background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.4); border-radius: 999px;
+  color: #e8eef6; font-family: var(--pixel); font-size: 12px; cursor: pointer; padding: 9px 14px; }
+.onb-skip:active { background: rgba(255,255,255,.25); }
 .onb-card { max-width: 480px; width: 100%; text-align: center; display: flex; flex-direction: column;
-  align-items: center; gap: 12px; }
+  align-items: center; gap: 12px; margin: auto; }
 .onb-card.pop { animation: onbPop .4s cubic-bezier(.2,1.4,.4,1); }
 @keyframes onbPop {
   0% { transform: scale(.92); opacity: .25; }
