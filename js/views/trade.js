@@ -58,10 +58,50 @@
       el("p", { class: "page-sub" }, "Swap caught Pokémon 1-for-1, link-cable style. Partners are NOT for sale — and yes, certain Pokémon evolve when traded…"),
     ]));
 
+    const inboxHost = el("div", {});
+    root.appendChild(inboxHost);
     const host = el("div", {});
     root.appendChild(host);
     const recentHost = el("div", {});
     root.appendChild(recentHost);
+
+    // 📬 The trade inbox: open offers live in shared state, so they wait for
+    // the other trainer — no need to be in the room when one is sent.
+    function renderInbox() {
+      inboxHost.innerHTML = "";
+      const offers = Store.tradeOffers();
+      if (!offers.length) return;
+      const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+      inboxHost.appendChild(el("h2", { class: "section-title" }, "📬 Trade Inbox"));
+      inboxHost.appendChild(el("div", { class: "trade-inbox" }, offers.map((o) => {
+        const fromN = (Store.attendee(o.from) || {}).name || "?", toN = (Store.attendee(o.to) || {}).name || "?";
+        const forMe = me && o.to === me, byMe = me && o.from === me;
+        const row = el("div", { class: "trade-offer" + (forMe ? " mine" : "") }, [
+          el("div", { class: "trade-offer-mons" }, [
+            el("img", { src: spriteOf(o.give, shinyOf(o.from, o.give)), alt: "" }),
+            el("span", { class: "trade-offer-arrow" }, "⇄"),
+            el("img", { src: spriteOf(o.want, shinyOf(o.to, o.want)), alt: "" }),
+          ]),
+          el("div", { class: "trade-offer-txt" },
+            fromN + " offers " + nameOf(o.give) + " for " + toN + "'s " + nameOf(o.want)),
+          el("div", { class: "toolbar" },
+            forMe ? [
+              el("button", { class: "btn primary sm", onClick: () => {
+                const gSh = shinyOf(o.from, o.give), wSh = shinyOf(o.to, o.want);
+                const r = Store.resolveTradeOffer(o.id, true);
+                if (!r.ok) { alert(r.why); renderInbox(); renderRecent(); return; }
+                sfx("win");
+                playTrade(fromN, o.give, gSh, toN, o.want, wSh, r.result, () => { renderInbox(); render(); renderRecent(); });
+              } }, "✅ Accept"),
+              el("button", { class: "btn subtle sm", onClick: () => { Store.resolveTradeOffer(o.id, false); sfx("error"); renderInbox(); } }, "❌ Decline"),
+            ] : byMe ? [
+              el("span", { class: "hint" }, "waiting on " + toN + "…"),
+              el("button", { class: "btn subtle sm", onClick: () => { Store.cancelTradeOffer(o.id); renderInbox(); } }, "↩ Cancel"),
+            ] : [el("span", { class: "hint" }, "waiting on " + toN + "…")]),
+        ]);
+        return row;
+      })));
+    }
 
     function sideCard(key, title, cls) {
       const d = pick[key];
@@ -108,23 +148,21 @@
       ]));
       const ready = pick.a.attId && pick.b.attId && pick.a.mon && pick.b.mon;
       // Consent rule: in a LIVE room, a trade involving another trainer is
-      // ALWAYS an offer their phone must accept — never instant. If they're
-      // not in the room (or you're brokering someone else's trade), it's
-      // blocked, not silently executed. Only an unsynced phone (hot-seat,
-      // pass-the-phone mode) trades instantly, behind a confirm.
+      // ALWAYS an offer — it lands in their 📬 inbox (shared state), so
+      // they DON'T have to be in the room right now: they accept or decline
+      // from their own phone whenever they next open the app. Brokering
+      // someone else's trade stays blocked. Only an unsynced phone
+      // (hot-seat, pass-the-phone mode) trades instantly, behind a confirm.
       const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
       const live = window.Sync && Sync.isLive && Sync.isLive();
       let gate = { kind: "local" };
       if (live && ready) {
         const mine = pick.a.attId === me ? "a" : (pick.b.attId === me ? "b" : "");
-        if (!me) gate = { kind: "blocked", why: "🔒 Live room: pick who YOU are first (Settings → You are) — the other trainer then gets this as an offer on their phone." };
-        else if (!mine) gate = { kind: "blocked", why: "🔒 Live room: trades need consent — sign in as one of the two traders. The other side accepts on their own phone." };
+        if (!me) gate = { kind: "blocked", why: "🔒 Live room: pick who YOU are first (Settings → You are) — the other trainer then gets this as an offer in their inbox." };
+        else if (!mine) gate = { kind: "blocked", why: "🔒 Live room: trades need consent — sign in as one of the two traders. The other side accepts from their own phone." };
         else {
           const them = mine === "a" ? pick.b : pick.a;
-          const themName = (Store.attendee(them.attId) || {}).name || "They";
-          const p = (Sync.presence() || []).find((x) => x.attId === them.attId && x.clientId !== Sync.myClientId());
-          if (p) gate = { kind: "offer", mine: mine, them: them, themName: themName, client: p.clientId };
-          else gate = { kind: "blocked", why: "🔒 " + themName + " isn't in the room right now — they need the app open to accept your offer. No consent, no trade!" };
+          gate = { kind: "offer", mine: mine, them: them, themName: (Store.attendee(them.attId) || {}).name || "They" };
         }
       }
       host.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
@@ -134,9 +172,12 @@
           const an = (Store.attendee(pick.a.attId) || {}).name, bn = (Store.attendee(pick.b.attId) || {}).name;
           if (gate.kind === "offer") {
             const my = gate.mine === "a" ? pick.a : pick.b;
-            Sync.sendChallenge(gate.client, gate.them.attId, gate.themName, "",
-              { kind: "trade", party: [my.mon], pairParty: [gate.them.mon] });
-            alert("📨 Trade offer sent — " + gate.themName + " accepts (or declines) on their phone.");
+            const o = Store.sendTradeOffer(me, my.mon, gate.them.attId, gate.them.mon);
+            if (!o) { alert("That offer isn't allowed — partners stay home."); return; }
+            sfx("coin");
+            alert("📬 Offer dropped in " + gate.themName + "'s inbox — they accept (or decline) on their phone, even if they open the app later.");
+            pick.a.mon = 0; pick.b.mon = 0;
+            render(); renderInbox();
             return;
           }
           if (!confirm("🔁 " + an + "'s " + nameOf(pick.a.mon) + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + " — deal?")) return;
@@ -146,10 +187,10 @@
           const aM = pick.a.mon, bM = pick.b.mon;
           pick.a.mon = 0; pick.b.mon = 0;
           playTrade(an, aM, aSh, bn, bM, bSh, result, () => { render(); renderRecent(); });
-        } }, gate.kind === "offer" ? "📨 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
+        } }, gate.kind === "offer" ? "📬 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
       ]));
       if (gate.kind === "offer") host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } },
-        "🔒 " + gate.themName + " is on their own phone — they'll get this as an offer to accept."));
+        "📬 Goes to " + gate.themName + "'s trade inbox — no need for them to be in the room right now."));
       if (gate.kind === "blocked") host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } }, gate.why));
     }
 
@@ -162,6 +203,7 @@
         el("div", { class: "battle-log-row" }, c.icon + " " + c.text))));
     }
 
+    renderInbox();
     render();
     renderRecent();
   }
