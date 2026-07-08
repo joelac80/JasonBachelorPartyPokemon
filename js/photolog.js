@@ -83,6 +83,30 @@
   }
   function reactorName() { const me = window.Sync && Sync.getMe && Sync.getMe(); const a = me && Store.attendee(me); return a ? a.name : "Someone"; }
 
+  // Save a photo to the device. The image is a data: URI (JPEG), so an <a
+  // download> works everywhere except iOS Safari, which ignores the download
+  // attribute — there we open the image full-screen so a long-press → "Save
+  // to Photos" works (the platform-native way to save on iPhone).
+  function download(p) {
+    if (!p || !p.img) return;
+    const iOS = /iP(hone|od|ad)/.test(navigator.userAgent || "") ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const stampName = (function () {
+      const who = (p.by || "photo").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+      return "bachparty-" + who + "-" + (p.ts || 0) + ".jpg";
+    })();
+    if (iOS) {
+      const w = window.open();
+      if (w) { w.document.write('<img src="' + p.img + '" style="max-width:100%">' +
+        '<p style="font:14px sans-serif;text-align:center">Long-press the photo → “Save to Photos”.</p>'); }
+      else { alert("Long-press the photo to save it to your camera roll."); }
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = p.img; a.download = stampName;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
   function openDetail(photoId, onChange) {
     const rid = reactorId(), rname = reactorName();
     const host = el("div", {});
@@ -107,6 +131,9 @@
         el("img", { class: "photo-detail-img", src: p.img, alt: p.caption || "" }),
         (p.caption || p.by) ? el("div", { class: "photo-detail-cap" }, (p.caption || "") + (p.by ? " — " + p.by : "")) : null,
         reactRow,
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn subtle sm", onClick: () => download(p) }, "⬇️ Save photo"),
+        ]),
         el("div", { class: "section-title" }, "Comments"),
         (p.comments && p.comments.length) ? comments : el("p", { class: "hint" }, "No comments yet — add the first caption."),
         el("div", { class: "photo-add-row" }, [cin, cadd]),
@@ -117,6 +144,6 @@
     ctrl = Modal.open("Photo moment", host, null, {});
   }
 
-  window.PhotoLog = { capture: capture, openDetail: openDetail,
+  window.PhotoLog = { capture: capture, openDetail: openDetail, download: download,
     REACTIONS: REACTIONS, reactorId: reactorId, reactorName: reactorName };
 })();
