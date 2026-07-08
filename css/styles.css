@@ -1524,6 +1524,17 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .onb-dot.on { background: #ffd166; box-shadow: 0 0 8px rgba(255,209,102,.7); }
 .onb-toolbar { justify-content: center; }
 .onb .btn.primary.off { opacity: .55; }
+/* 📸 Home snapshots strip (horizontal scroll) */
+.snap-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; cursor: pointer; }
+.snap-all { font-size: 12px; font-weight: 700; color: var(--pokered); white-space: nowrap; }
+.snap-strip { display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: 2px 2px 10px; scroll-snap-type: x proximity; }
+.snap-strip::-webkit-scrollbar { height: 6px; }
+.snap-strip::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 3px; }
+.snap-shot { flex: 0 0 auto; width: 132px; margin: 0; cursor: pointer; scroll-snap-align: start;
+  background: var(--paper); border: 2px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.snap-img { width: 132px; height: 132px; object-fit: cover; display: block; }
+.snap-by { padding: 5px 7px; font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* 📸 Snapshots feed */
 .feed { display: flex; flex-direction: column; gap: 16px; max-width: 520px; margin: 0 auto; }
 .feed-card { background: var(--paper); border: 2.5px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }

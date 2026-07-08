@@ -224,6 +224,22 @@
     if (oak) { root.appendChild(el("h2", { class: "section-title" }, "Oak's Tip")); root.appendChild(oak); }
     root.appendChild(el("h2", { class: "section-title" }, "Explore the Region"));
     root.appendChild(overworld());
+
+    // 📸 Snapshots strip — the latest photo moments, scroll sideways; tap one
+    // to open it, or the header to jump to the full feed.
+    const photos = (Store.state.photos || []).slice(0, 20);
+    const head = el("h2", { class: "section-title snap-head", onClick: () => { location.hash = "#/feed"; } },
+      [el("span", {}, "📸 Snapshots"), el("span", { class: "snap-all" }, "See all →")]);
+    root.appendChild(head);
+    if (!photos.length) {
+      root.appendChild(el("p", { class: "hint" }, "No photos yet — tap 📸 above (or the Snapshots feed) to start the weekend's roll."));
+    } else {
+      root.appendChild(el("div", { class: "snap-strip" }, photos.map((ph) =>
+        el("figure", { class: "snap-shot", onClick: () => window.PhotoLog && PhotoLog.openDetail(ph.id, () => Router.render()) }, [
+          el("img", { class: "snap-img", src: ph.img, alt: ph.caption || "" }),
+          ph.by ? el("figcaption", { class: "snap-by" }, ph.by) : null,
+        ]))));
+    }
   }
 
   window.Views = window.Views || {};
