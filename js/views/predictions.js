@@ -11,7 +11,7 @@
       (Store.state.attendees[0] && Store.state.attendees[0].id) || "";
 
     root.appendChild(el("div", { class: "page-head" }, [
-      el("h1", {}, "🔮 Predictions"),
+      el("h1", {}, "🔮 The Oracle"),
       el("p", { class: "page-sub" }, "Call it before it happens. Nail your calls to climb the Oracle board — no athletic ability required." ),
     ]));
 
