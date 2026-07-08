@@ -35,7 +35,7 @@
         opts.push(o); optWrap.appendChild(o);
       } }, "+ option");
       const post = el("button", { class: "btn primary", onClick: () => {
-        const ok = Store.addPrediction(q.value, opts.map((o) => o.value), nameOf(me));
+        const ok = Store.addPrediction(q.value, opts.map((o) => o.value), nameOf(me), me);
         if (!ok) { alert("Add a question and at least two options."); return; }
         sfx("blip"); renderAll();
       } }, "🔮 Post prediction");
@@ -76,12 +76,26 @@
         const winners = Object.keys(p.votes || {}).filter((a) => p.votes[a] === p.answer).map(nameOf);
         parts.push(el("div", { class: "pred-result" }, winners.length ? "🔮 Nailed it: " + winners.join(", ") : "Nobody called it."));
       } else {
-        // settle control (host action) — pick the correct option
-        const settle = el("div", { class: "pred-settle" }, [el("span", { class: "pred-settle-l" }, "Settle it:")].concat(
-          p.options.map((o) => el("button", { class: "btn subtle sm", onClick: () => {
-            if (confirm("Mark “" + o.text + "” as the winner? This scores everyone who called it.")) { Store.resolvePrediction(p.id, o.id); sfx("correct"); renderAll(); }
-          } }, "✓ " + o.text))));
-        parts.push(settle);
+        // Tap the bars to vote. Only the trainer who POSTED the call can
+        // settle it — and the settle picker stays hidden behind a button so
+        // voters just see the bars (no confusing option-buttons underneath).
+        const mine = p.byId ? p.byId === me : (p.by && p.by === nameOf(me));
+        if (mine) {
+          const picker = el("div", { class: "pred-settle", style: { display: "none" } },
+            [el("span", { class: "pred-settle-l" }, "Which one won?")].concat(
+              p.options.map((o) => el("button", { class: "btn subtle sm", onClick: () => {
+                if (confirm("Mark “" + o.text + "” as the winner? This scores everyone who called it.")) { Store.resolvePrediction(p.id, o.id); sfx("correct"); renderAll(); }
+              } }, "✓ " + o.text))));
+          const toggle = el("button", { class: "btn subtle sm pred-settle-btn", onClick: () => {
+            const open = picker.style.display !== "none";
+            picker.style.display = open ? "none" : "flex";
+            toggle.textContent = open ? "⚖️ Settle this call" : "✕ Cancel";
+          } }, "⚖️ Settle this call");
+          parts.push(el("div", { class: "pred-settle-wrap" }, [toggle, picker]));
+        } else {
+          parts.push(el("div", { class: "pred-hint" }, "👆 Tap a bar to call it" +
+            (p.by ? " · " + p.by + " settles this one" : "")));
+        }
       }
       return el("div", { class: "pred-card" + (p.closed ? " closed" : "") }, parts);
     }

@@ -770,8 +770,11 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .pred-opt.winner { border-color: #2e8b3d; background: #e7f7ec; color: #226b30; }
 .pred-opt.dim { opacity: 0.6; }
 .pred-opt-n { font-family: var(--pixel); font-size: 13px; color: var(--ink-dim); }
-.pred-settle { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-top: 1px dashed var(--line); padding-top: 8px; }
+.pred-settle-wrap { display: flex; flex-direction: column; gap: 6px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.pred-settle-btn { align-self: flex-start; }
+.pred-settle { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .pred-settle-l { font-family: var(--pixel); font-size: 10px; color: var(--ink-dim); }
+.pred-hint { font-size: 11px; color: var(--ink-dim); border-top: 1px dashed var(--line); padding-top: 8px; }
 .pred-result { font-family: var(--pixel); font-size: 12px; color: #226b30; }
 /* card table */
 .card-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }

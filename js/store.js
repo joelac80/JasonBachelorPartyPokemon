@@ -449,14 +449,14 @@
     },
 
     // ---- Predictions / Oracle --------------------------------------------
-    addPrediction(q, options, byName) {
+    addPrediction(q, options, byName, byId) {
       q = (q || "").trim();
       const opts = (options || []).map((t) => ({ id: "o" + Math.random().toString(36).slice(2), text: (t || "").trim() })).filter((o) => o.text);
       if (!q || opts.length < 2) return false;
       const stamp = function () { try { return Date.now(); } catch (_) { return 0; } };
       this.update((s) => {
         s.predictions = s.predictions || [];
-        s.predictions.unshift({ id: "pr" + Math.random().toString(36).slice(2), q: q, options: opts, votes: {}, closed: false, answer: "", by: byName || "", ts: stamp() });
+        s.predictions.unshift({ id: "pr" + Math.random().toString(36).slice(2), q: q, options: opts, votes: {}, closed: false, answer: "", by: byName || "", byId: byId || "", ts: stamp() });
         this.chron(s, "🔮", "New prediction: " + q);
       });
       return true;
