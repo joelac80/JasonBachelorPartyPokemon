@@ -407,9 +407,9 @@ body {
   60%  { filter: brightness(0.15) blur(1.5px); opacity: .95; }
   100% { filter: none; opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
-.safari-wild-scene.caught-anim { animation: safariShrink 1.9s ease forwards; }
-.safari-wild-scene.pop { animation: evoPop .5s cubic-bezier(.2,1.5,.4,1); }
-.safari-wild-scene.fled { animation: safariFled .6s ease forwards; }
+.safari-wild-scene.caught-anim { animation: safariShrinkX 1.9s ease forwards; }
+.safari-wild-scene.pop { animation: popInX .5s cubic-bezier(.2,1.5,.4,1); }
+.safari-wild-scene.fled { animation: safariFledX .6s ease forwards; }
 .safari-scene-grass { position: absolute; bottom: 6px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; font-size: 26px; }
 .safari-scene-grass span { display: inline-block; transform-origin: bottom center; }
 .safari-scene.rustle .safari-scene-grass span { animation: grassRustle .45s ease 2; }
@@ -427,9 +427,18 @@ body {
 .safari-wild { width: 130px; height: 130px; image-rendering: pixelated; filter: drop-shadow(0 8px 6px rgba(0,0,0,.25)); }
 .safari-wild.caught-anim { animation: safariShrink 1.6s ease forwards; }
 @keyframes safariShrink { 0%{transform:scale(1);opacity:1;} 25%{transform:scale(.2) translateY(-10px);opacity:.2;} 30%{opacity:0;} 100%{opacity:0;transform:scale(.2);} }
-.safari-wild.pop { animation: evoPop .5s cubic-bezier(.2,1.5,.4,1); }
+.safari-wild.pop { animation: popIn .5s cubic-bezier(.2,1.5,.4,1); }
 .safari-wild.fled { animation: safariFled .6s ease forwards; }
 @keyframes safariFled { to { transform: translateX(60px) scale(.7); opacity: 0; } }
+/* Keyframes that CLOBBER an element's resting transform make it snap (the
+   "top-left flash" family). In-flow sprites pop with scale only; the
+   X-anchored encounter sprite (.safari-wild-scene, translateX(-50%)) gets
+   variants that keep its anchor in every frame. evoPop stays reserved for
+   absolutely-centered evolution sprites. */
+@keyframes popIn { 0% { transform: scale(.35); } 100% { transform: scale(1); } }
+@keyframes popInX { 0% { transform: translateX(-50%) scale(.35); } 100% { transform: translateX(-50%) scale(1); } }
+@keyframes safariShrinkX { 0% { transform: translateX(-50%) scale(1); opacity: 1; } 25% { transform: translateX(-50%) scale(.2) translateY(-10px); opacity: .2; } 30% { opacity: 0; } 100% { opacity: 0; transform: translateX(-50%) scale(.2); } }
+@keyframes safariFledX { to { transform: translateX(calc(-50% + 60px)) scale(.7); opacity: 0; } }
 .safari-ball-throw { position: absolute; bottom: 10px; left: 50%; width: 30px; height: 30px; border-radius: 50%; opacity: 0;
   background: linear-gradient(var(--ball-top, #ee1515) 0 46%,#111 46% 54%,#fff 54% 100%); border: 3px solid #111; }
 /* ball tier icon */
@@ -1390,7 +1399,7 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .trade-fly.right { animation: tradeRight 1.6s ease; }
 @keyframes tradeLeft { 0% { transform: translateX(-40vw); opacity: 0; } 55% { transform: translateX(24vw); opacity: 1; } 100% { transform: translateX(0); } }
 @keyframes tradeRight { 0% { transform: translateX(40vw); opacity: 0; } 55% { transform: translateX(-24vw); opacity: 1; } 100% { transform: translateX(0); } }
-.trade-fly.evo { animation: evoPop .6s cubic-bezier(.2,1.5,.4,1); }
+.trade-fly.evo { animation: popIn .6s cubic-bezier(.2,1.5,.4,1); }
 .trade-arrows { font-size: 40px; color: #ffcb05; text-shadow: 0 2px 0 rgba(0,0,0,.5); }
 .trade-anim-txt { font-family: var(--pixel); font-size: 14px; color: #fff; text-align: center; line-height: 1.6; max-width: 92%; }
 
