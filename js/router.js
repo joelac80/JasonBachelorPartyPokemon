@@ -21,6 +21,10 @@
     render() {
       const root = document.getElementById("view");
       if (!root) return;
+      // Safety net: if no battle overlay is up, the page must be scrollable
+      // (a directly-removed .battle would otherwise leave the lock stuck).
+      if (!document.querySelector(".battle"))
+        document.documentElement.classList.remove("scroll-lock");
       const { path, param } = this.current();
       const view = routes[path] || notFound || routes["home"];
       root.innerHTML = "";

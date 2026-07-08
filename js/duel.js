@@ -315,6 +315,9 @@
       if (window.SFX && SFX.battleMusic) SFX.battleMusic(false);
       overlay.classList.add("out");
       setTimeout(() => overlay.remove(), 350);
+      // release the page-scroll lock unless another battle screen is still up
+      if (document.querySelectorAll(".battle").length <= 1)
+        document.documentElement.classList.remove("scroll-lock");
       if (opts.onEnd) try { opts.onEnd(); } catch (_) {}
     }
 
@@ -970,6 +973,7 @@
       ]);
     }
     const vs = el("div", { class: "battle-vs" }, [vsPanel("a", myView), el("div", { class: "vs-badge" }, "VS"), vsPanel("b", other(myView))]);
+    document.documentElement.classList.add("scroll-lock");
     document.body.appendChild(overlay);
     overlay.appendChild(vs);
     if (window.SFX && SFX.battleMusic) SFX.battleMusic(true);

@@ -143,7 +143,11 @@
       ]),
       msg, menu,
     ]);
-    function close() { overlay.classList.add("out"); setTimeout(() => overlay.remove(), 350); }
+    function close() {
+      overlay.classList.add("out"); setTimeout(() => overlay.remove(), 350);
+      if (document.querySelectorAll(".battle").length <= 1)
+        document.documentElement.classList.remove("scroll-lock");
+    }
 
     function fight(winnerKey) {
       if (done) return; done = true;
@@ -236,6 +240,7 @@
       vsPanel("b", bLabels, bMembers),
     ]);
 
+    document.documentElement.classList.add("scroll-lock");
     document.body.appendChild(overlay);
     overlay.appendChild(vs);
     sfx("blip");
