@@ -1470,8 +1470,8 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
   align-items: center; justify-content: center; padding: 24px; opacity: 0; transition: opacity .5s ease; }
 .league-intro.go { opacity: 1; }
 .league-intro-inner { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 480px; }
-.league-intro-ico { width: 74px; height: 74px; filter: drop-shadow(0 0 18px rgba(255,255,255,.35)); animation: evoPop .7s cubic-bezier(.2,1.5,.4,1); }
-.league-intro-mt { font-size: 72px; filter: drop-shadow(0 0 22px rgba(230,53,47,.6)); animation: evoPop .7s cubic-bezier(.2,1.5,.4,1); }
+.league-intro-ico { width: 74px; height: 74px; filter: drop-shadow(0 0 18px rgba(255,255,255,.35)); animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }
+.league-intro-mt { font-size: 72px; filter: drop-shadow(0 0 22px rgba(230,53,47,.6)); animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }
 .league-intro-rank { font-family: var(--pixel); font-size: 13px; letter-spacing: 3px; color: #a9a9c4; }
 .league-intro-name { font-family: var(--pixel); font-size: 34px; font-weight: 900; color: #fff; text-shadow: 3px 3px 0 rgba(238,21,21,.55); }
 .league-intro-quote { color: #d8d8ea; font-size: 15px; line-height: 1.55; font-style: italic; }
@@ -1484,7 +1484,15 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .onb-skip { position: absolute; top: 12px; right: 14px; background: none; border: none; color: #9db2c9;
   font-family: var(--pixel); font-size: 12px; cursor: pointer; padding: 8px; }
 .onb-card { max-width: 480px; width: 100%; text-align: center; display: flex; flex-direction: column;
-  align-items: center; gap: 12px; animation: evoPop .45s cubic-bezier(.2,1.4,.4,1); }
+  align-items: center; gap: 12px; }
+.onb-card.pop { animation: onbPop .4s cubic-bezier(.2,1.4,.4,1); }
+@keyframes onbPop {
+  0% { transform: scale(.92); opacity: .25; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.sl-vote-pick.on { border-color: var(--pokered); background: #fff1ec;
+  box-shadow: 0 0 0 3px rgba(238,21,21,.35); }
+.sl-vote-pick.on .sl-vote-name::after { content: " ✓"; color: var(--pokered); }
 .onb-hero { font-size: 64px; filter: drop-shadow(0 0 20px rgba(255,255,255,.25)); }
 .onb-title { font-family: var(--pixel); font-size: 19px; font-weight: 900; color: #fff; line-height: 1.4; }
 .onb-text { color: #d5dde8; font-size: 15px; line-height: 1.6; margin: 0; }

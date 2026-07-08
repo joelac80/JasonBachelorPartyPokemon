@@ -16,14 +16,18 @@
     const conf0 = (window.Sync && Sync.getConf && Sync.getConf()) || {};
     const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. GARZA26)", value: conf0.room || "" });
 
-    // trainer picker (slide 2)
+    // trainer picker (slide 2) — picking only repaints the grid (no full
+    // slide rebuild, no re-animation), so the tap feels instant.
     const grid = el("div", { class: "sl-vote-grid onb-grid" });
     function paintGrid() {
       grid.innerHTML = "";
       Store.state.attendees.forEach((a) => {
         const f = Store.currentForm(a);
         const src = f.id ? Store.sprite(f.id) : "";
-        grid.appendChild(el("button", { class: "sl-vote-pick" + (sel === a.id ? " on" : ""), onClick: () => { sel = a.id; paint(); } }, [
+        grid.appendChild(el("button", { class: "sl-vote-pick" + (sel === a.id ? " on" : ""), onClick: () => {
+          sel = a.id; paintGrid(); syncNext();
+          if (window.SFX && SFX.select) SFX.select();
+        } }, [
           src ? el("img", { class: "sl-thumb", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
           el("span", { class: "sl-vote-name" }, a.name),
         ]));
@@ -47,8 +51,16 @@
         d: "Jeopardy, the Oracle, the Card Table, drinks, dares — every win feeds your team's total on Victory Road, and Sunday's Ceremony crowns the champion. Lost later? Tap the ? up top for the Field Guide. Now go." },
     ];
 
+    // Static overlay + skip button; only the card's CONTENT changes per
+    // slide (rebuilding the whole overlay per tap restarted the entrance
+    // animation — the "flash" — and reset grid scroll).
     const lay = el("div", { class: "onb" });
+    const card = el("div", { class: "onb-card" });
+    lay.appendChild(el("button", { class: "onb-skip", onClick: () => finish(true) }, "Skip tour ▸▸"));
+    lay.appendChild(card);
     document.body.appendChild(lay);
+    let nextBtn = null;
+    function syncNext() { if (nextBtn) nextBtn.classList.toggle("off", idx === 1 && !sel); }
 
     function finish(apply) {
       markSeen();
@@ -70,10 +82,14 @@
     function paint() {
       const s = SLIDES[idx];
       const last = idx === SLIDES.length - 1;
-      const needPick = idx === 1 && !sel;
-      lay.innerHTML = "";
-      lay.appendChild(el("button", { class: "onb-skip", onClick: () => finish(true) }, "Skip tour ▸▸"));
-      lay.appendChild(el("div", { class: "onb-card" }, [
+      card.innerHTML = "";
+      nextBtn = el("button", { class: "btn primary", onClick: () => {
+        if (idx === 1 && !sel) { alert("Tap your trainer first! (Or use “Skip tour” up top.)"); return; }
+        if (last) { finish(true); return; }
+        idx++; paint();
+        if (window.SFX && SFX.blip) SFX.blip();
+      } }, last ? "🚀 LET'S GO" : "Next ▸");
+      [
         el("div", { class: "onb-hero" }, s.e),
         el("div", { class: "onb-title" }, s.t),
         el("p", { class: "onb-text" }, s.d),
@@ -82,17 +98,15 @@
           el("span", { class: "onb-dot" + (i === idx ? " on" : "") }))),
         el("div", { class: "toolbar onb-toolbar" }, [
           idx > 0 ? el("button", { class: "btn subtle", onClick: () => { idx--; paint(); } }, "◂ Back") : null,
-          el("button", { class: "btn primary" + (needPick ? " off" : ""), onClick: () => {
-            if (needPick) { alert("Tap your trainer first! (Or use “Skip tour” up top.)"); return; }
-            if (last) { finish(true); return; }
-            idx++; paint();
-            if (window.SFX && SFX.click) SFX.click();
-          } }, last ? "🚀 LET'S GO" : "Next ▸"),
+          nextBtn,
         ]),
-      ]));
-      requestAnimationFrame(() => lay.classList.add("go"));
+      ].forEach((n) => { if (n) card.appendChild(n); });
+      syncNext();
+      // pop the card on slide change only (scale-in; never translates)
+      card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
     }
     paint();
+    requestAnimationFrame(() => lay.classList.add("go"));
   }
 
   window.Onboard = { start: start, seen: seen };
