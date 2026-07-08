@@ -235,7 +235,15 @@
         el("label", { class: "field" }, [el("span", {}, "You are (your trainer)"), meSel]),
         el("label", { class: "field" }, [el("span", {}, "Your name"), nameIn]),
       ]),
-      el("div", { class: "toolbar" }, [enableBtn, saveBtn]),
+      el("div", { class: "toolbar" }, [enableBtn, saveBtn,
+        el("button", { class: "btn subtle", onClick: () => {
+          if (!confirm("👋 Log out of this trainer? The phone goes back to a fresh start (welcome tour included) — the room code stays filled in, and no scores are touched.")) return;
+          try { Sync.setMe(""); } catch (_) {}
+          try { localStorage.removeItem("jasonBachHub.onboarded"); } catch (_) {}
+          location.hash = "#/home";
+          location.reload();
+        } }, "👋 Log out trainer"),
+      ]),
       el("h2", { class: "section-title" }, "🔔 Phone alerts"),
       el("p", { class: "hint" }, "Get pinged when you're challenged or a battle starts. iPhone REQUIRES the app on your Home Screen first (Share → Add to Home Screen), opened from that icon."),
       noteStatus,

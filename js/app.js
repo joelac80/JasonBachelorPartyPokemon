@@ -20,6 +20,7 @@
     .add("superlatives", V.superlatives)
     .add("challenges", V.challenges)
     .add("badges", V.badges)
+    .add("feed", V.feed)
     .add("hall", V.hall)
     .add("ceremony", V.ceremony)
     .add("timeline", V.timeline)

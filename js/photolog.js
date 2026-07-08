@@ -117,5 +117,6 @@
     ctrl = Modal.open("Photo moment", host, null, {});
   }
 
-  window.PhotoLog = { capture: capture, openDetail: openDetail };
+  window.PhotoLog = { capture: capture, openDetail: openDetail,
+    REACTIONS: REACTIONS, reactorId: reactorId, reactorName: reactorName };
 })();

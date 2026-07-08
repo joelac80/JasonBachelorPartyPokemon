@@ -74,6 +74,7 @@
     ] },
     { id: "fame", e: "🏅", t: "Honors Hall", x: 67, y: 52, sub: [
       { r: "badges",       e: "🏅", t: "Weekend Badges",    d: "8 party badges + the live trophies" },
+      { r: "feed",         e: "📸", t: "Snapshots",         d: "The photo feed — react + comment as your trainer" },
       { r: "superlatives", e: "🗳️", t: "Awards",            d: "Vote the superlatives" },
       { r: "hall",         e: "🌿", t: "Hall of Bulbasaur", d: "The gallery wall" },
       { r: "messages",     e: "💌", t: "Message Wall",      d: "Notes for the groom (sealed!)" },
