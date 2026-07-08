@@ -85,7 +85,6 @@ window.SEED = {
     { id: "joseph", name: "Joseph Thomas",      nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "fire",     favorite: "Vulpix", favoriteId: 37, photo: "", catchphrase: "" },
     { id: "sid",    name: "Sid Suresh",         nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "ghost",    favorite: "Mimikyu", favoriteId: 778, photo: "", catchphrase: "" },
     { id: "matt",   name: "Matt Spicer",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "flying",   favorite: "Tranquill", favoriteId: 520, photo: "", catchphrase: "" },
-    { id: "tyler",  name: "Tyler Logan",        nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "water",    favorite: "Feraligatr", favoriteId: 160, photo: "", catchphrase: "" },
     { id: "brian",  name: "Brian Mallon",       nickname: "", rank: "Gym Leader", role: "The Squad", team: "", type: "grass",    favorite: "Serperior", favoriteId: 497, photo: "", catchphrase: "" },
   ],
 
@@ -144,11 +143,6 @@ window.SEED = {
     brian:  { mode: "grow", stages: [
       { name: "Serperior", id: 497, scale: 1 },
       { name: "Big Serperior", id: 497, scale: 1.3, req: "Win a Victory Road event." },
-    ] },
-    tyler:  { mode: "evolve", stages: [
-      { name: "Feraligatr", id: 160, scale: 1 },
-      // Mega Feraligatr — introduced in Pokémon Legends: Z-A (2025).
-      { name: "Mega Feraligatr", id: 10283, scale: 1.22, mega: true, req: "MEGA (Legends: Z-A) — win a Victory Road event." },
     ] },
   },
 
@@ -238,16 +232,6 @@ window.SEED = {
       ],
       power: { name: "Tailwind", text: "Skips one PBR run — the wind's always at his back." },
       weakness: "Ground Game ×2", resistance: "Stress −20", retreat: 1,
-    },
-    tyler: {
-      dex: "No.160", number: "16/034", stage: "Basic Pokémon", hp: 100, type: "water", holo: false, illus: "The Squad",
-      flavor: "The Squad Pokémon. Big jaws, bigger pours — Mega Evolves the moment the party peaks.",
-      attacks: [
-        { name: "Chomp Chug", cost: 2, dmg: "40", text: "One bite, one beer, gone." },
-        { name: "Aqua Tail Slam", cost: 3, dmg: "70", text: "A Mega-sized tail swing that clears the whole table." },
-      ],
-      power: { name: "Torrent", text: "The lower the cooler gets, the harder he goes." },
-      weakness: "Electric Eel ×2", resistance: "Cold Water −20", retreat: 3,
     },
     brian: {
       dex: "No.497", number: "12/034", stage: "Basic Pokémon", hp: 90, type: "grass", holo: false, illus: "The Squad",

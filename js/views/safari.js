@@ -238,6 +238,12 @@
     ]));
 
     // ---- trainer selector ----
+    // Default to whoever THIS phone is signed in as — not just the first
+    // name in the list. Only auto-set when nothing's been chosen yet.
+    const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+    if (!P().active && meId && Store.attendee(meId)) {
+      Store.update((s) => { s.pokedex.active = meId; });
+    }
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
       Store.state.attendees.map((a) => el("option", { value: a.id, selected: P().active === a.id ? "true" : null }, a.name))));
     sel.addEventListener("change", () => {
