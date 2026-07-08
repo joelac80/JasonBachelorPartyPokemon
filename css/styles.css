@@ -1503,6 +1503,10 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .onb-dot.on { background: #ffd166; box-shadow: 0 0 8px rgba(255,209,102,.7); }
 .onb-toolbar { justify-content: center; }
 .onb .btn.primary.off { opacity: .55; }
+/* 👀 persistent spectator bar (react + leave any time) */
+.duel-watch-bar { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); background: #0d1b17; border-top: 2px solid rgba(255,255,255,.12); }
+.duel-watch-bar .duel-rx-bar { margin: 0; }
 .league-intro.fame .league-intro-name { text-shadow: 3px 3px 0 rgba(184,134,11,.6); }
 /* 🏛 Hall of Fame */
 .hof-list { display: flex; flex-direction: column; gap: 10px; }

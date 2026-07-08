@@ -15,7 +15,7 @@ optional Firebase layer for live multiplayer._
 - Retro SFX + offline chiptune music; energy-symbol & gym-badge iconography.
 
 **Games**
-- **Pokédex Safari** — silhouette encounters, dares/berries/rallies (with chicken-out spook), helper double-battles, Master Ball dare, ball tiers, per-catch ball record, ✨ **shinies (1/16, real sprites)**, 🍓 **Sitrus Berry drops**, **nicknames**, 🌩 **roaming legendaries** (room-wide race).
+- **Pokédex Safari** — silhouette encounters, dares/berries/rallies (with chicken-out spook), helper double-battles, Master Ball dare, ball tiers, per-catch ball record, ✨ **shinies (1/16, real sprites)**, 🍓 **Sitrus Berry drops**, **nicknames**, 🌩 **roaming legendaries** (rare organic storms — no button; room-wide race, first claim wins).
 - **Pokémon Duels** — real turn-based Lv50 battles: singles & doubles, **each trainer on their own phone** (partners too), perspective-correct back sprites, exact type chart (immunities, ×4), switching, 🧪 Potion = 3 sips, 🍺 Liquid Courage = same-turn Z-move crit, KO = 2 sips / loss = 4, **battle-EXP evolution** (3 KOs by the mon itself; trade-evo species excluded), veteran KO bonus, Sitrus auto-heal, instant rematch, 📈 **Elo**, 🥇 **Champion's Belt**.
 - **🏟 Gym Circuit** — the 16 canon Gen 2 leaders (Johto at **HGSS rematch strength**), even matches, hidden lineups, multi-holder badges, AI-controlled.
 - **👑 Pokémon League** — its own cinematic page: Victory Road gate (8 Johto badges) → Elite Four (**HGSS rematch teams**, in order, rank-boosted) → Champion LANCE → **Hall of Fame** (champions enshrined WITH their team; ⚔ **Battle of Fame** vs any enshrined squad) → hidden **RED** on Mt. Silver (needs Lance + all 16 badges).

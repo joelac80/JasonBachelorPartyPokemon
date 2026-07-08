@@ -25,7 +25,7 @@
     {
       title: "🎯 Games to play",
       items: [
-        { r: "safari", e: "🔴", t: "Pokédex Safari", d: "Pick a catcher, then earn boosts by doing dares/berries/rallies (chicken out = drink, and it might bolt!). Add a helper for a 2v2, or nail the Master Ball dare for a guaranteed catch. ✨ 1-in-16 encounters are SHINY — different colors, DOUBLE payout, marked in your dex forever. ~30% of catches drop a 🍓 Sitrus Berry (auto-heals in duels), tap any caught mon for nicknames, and when the room is synced anyone can unleash a 🌩 ROAMING LEGENDARY the whole house races to catch." },
+        { r: "safari", e: "🔴", t: "Pokédex Safari", d: "Pick a catcher, then earn boosts by doing dares/berries/rallies (chicken out = drink, and it might bolt!). Add a helper for a 2v2, or nail the Master Ball dare for a guaranteed catch. ✨ 1-in-16 encounters are SHINY — different colors, DOUBLE payout, marked in your dex forever. ~30% of catches drop a 🍓 Sitrus Berry (auto-heals in duels), tap any caught mon for nicknames — and every so often, with the room synced, the sky breaks and a 🌩 ROAMING LEGENDARY appears out of nowhere: the whole house races to catch it, first claim wins." },
         { r: "trade", e: "🔁", t: "Trading Post", d: "Swap caught Pokémon 1-for-1, link-cable style. Partners are untradeable — and Kadabra, Machoke, Graveler and Haunter EVOLVE when traded, just like the games." },
         { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "Every trainer's team of 6 and dex progress on one page — plus the Type Masters: catch the most of a type to claim its crown (partners don't count). Not to be confused with the Gym Leaders, who you battle in the Frontier." },
         { r: "drinks", e: "🍺", t: "Drink Tracker", d: "Log every round by trainer, type, and day. First Sip, Thirstiest, and a champion for each drink kind all earn badges." },
@@ -55,7 +55,7 @@
       items: [
         { r: "superlatives", e: "🗳️", t: "Superlatives", d: "The crew votes on end-of-weekend awards. One tap = one vote." },
         { r: "badges", e: "🏅", t: "Weekend Badges", d: "The 8 hand-awarded party badges — each earned by weekend deeds and carrying a real ⚡ power the holder can invoke — plus the glossy badge case and the live trophies. (Gym Leader battles moved to the Battle Frontier → 🏟 Gym Circuit.)" },
-        { r: "challenges", e: "🎣", t: "Catch of the Day", d: "Daily photo / dare challenges — check them off as you go." },
+        { r: "challenges", e: "🎣", t: "Daily Dares (Catch of the Day)", d: "The Dock's daily photo / dare board — check them off as you go. (Nothing to do with catching Pokémon — that's the Safari.)" },
         { r: "hall", e: "🌿", t: "Hall of Bulbasaur", d: "Your gallery wall — add photos and art from the weekend." },
         { r: "messages", e: "💌", t: "Message Wall", d: "Everyone leaves a note/advice/roast for the groom — sealed from his own phone until the closing ceremony unlocks it." },
         { r: "ceremony", e: "👑", t: "Champion Ceremony", d: "The grand finale. Crowns the champion, then “Roll the Closing Credits” plays a movie-style send-off through the whole squad, ending on the groom — and unlocks his Message Wall." },

@@ -82,12 +82,14 @@
   const STRUGGLE = { name: "Struggle", pow: 50, acc: 100, type: "none" };
 
   // A trainer's pickable Pokémon: team of 6 first, then the rest of their
-  // caught dex. Everyone at least has their partner.
+  // caught dex — and the partner is ALWAYS in the pool (it used to vanish
+  // as soon as you caught anything, so "you need 6" miscounted by one).
   function poolFor(attId) {
     const t = ((Store.state.pokedex || {}).trainers || {})[attId] || {};
     const ids = (t.team || []).filter(Boolean).slice();
     Object.keys(t.caught || {}).map(Number).forEach((id) => { if (ids.indexOf(id) < 0) ids.push(id); });
-    if (!ids.length) { const a = Store.attendee(attId); if (a && a.favoriteId) ids.push(a.favoriteId); }
+    const a = Store.attendee(attId);
+    if (a && a.favoriteId && ids.indexOf(a.favoriteId) < 0) ids.push(a.favoriteId);
     return ids;
   }
 
@@ -299,6 +301,16 @@
       hpBoxes[other(myView)], sprites[other(myView)], sprites[myView], hpBoxes[myView],
     ]);
     const overlay = el("div", { class: "battle" }, [arena, msg, menu]);
+    // Watchers get a PERSISTENT bar — reactions were buried in the turn
+    // menu (cleared during every animation, i.e. most of the battle) and
+    // there was no way to leave at all.
+    if (mode === "watch") {
+      overlay.appendChild(el("div", { class: "duel-watch-bar" }, [
+        opts.rx ? el("div", { class: "duel-rx-bar" }, ["🔥", "👏", "😱", "💀", "🍺"].map((e) =>
+          el("button", { class: "duel-rx-btn", onClick: () => { try { opts.rx(e); } catch (_) {} } }, e))) : null,
+        el("button", { class: "btn subtle sm", onClick: () => close() }, "✕ Stop watching"),
+      ]));
+    }
     function close() {
       if (window.SFX && SFX.battleMusic) SFX.battleMusic(false);
       overlay.classList.add("out");
@@ -878,14 +890,10 @@
         return;
       }
       if (mode === "watch" || !isMine(u)) {
+        // (watchers' reactions + leave live in the persistent duel-watch-bar)
         menu.appendChild(el("div", { class: "duel-wait" },
           (mode === "watch" ? "👀 " : "⏳ ") + u.name +
           (S.pending ? " is choosing the next Pokémon…" : " is choosing…")));
-        // spectators heckle: reactions float up on EVERY screen
-        if (mode === "watch" && opts.rx) {
-          menu.appendChild(el("div", { class: "duel-rx-bar" }, ["🔥", "👏", "😱", "💀", "🍺"].map((e) =>
-            el("button", { class: "duel-rx-btn", onClick: () => { try { opts.rx(e); } catch (_) {} } }, e))));
-        }
         return;
       }
       // it's this phone's pick — ping if the app is backgrounded (once per turn)
