@@ -107,30 +107,36 @@
         sideCard("b", "🔴 Trainer B gives…", "red"),
       ]));
       const ready = pick.a.attId && pick.b.attId && pick.a.mon && pick.b.mon;
-      // Remote consent: when I'm one side and the OTHER trainer is signed in
-      // on their own phone in the room, the trade becomes an OFFER they
-      // accept over there. Otherwise (same table / not synced) it's instant.
+      // Consent rule: in a LIVE room, a trade involving another trainer is
+      // ALWAYS an offer their phone must accept — never instant. If they're
+      // not in the room (or you're brokering someone else's trade), it's
+      // blocked, not silently executed. Only an unsynced phone (hot-seat,
+      // pass-the-phone mode) trades instantly, behind a confirm.
       const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
       const live = window.Sync && Sync.isLive && Sync.isLive();
-      let remote = null;
-      if (live && me && ready) {
+      let gate = { kind: "local" };
+      if (live && ready) {
         const mine = pick.a.attId === me ? "a" : (pick.b.attId === me ? "b" : "");
-        if (mine) {
+        if (!me) gate = { kind: "blocked", why: "🔒 Live room: pick who YOU are first (Settings → You are) — the other trainer then gets this as an offer on their phone." };
+        else if (!mine) gate = { kind: "blocked", why: "🔒 Live room: trades need consent — sign in as one of the two traders. The other side accepts on their own phone." };
+        else {
           const them = mine === "a" ? pick.b : pick.a;
+          const themName = (Store.attendee(them.attId) || {}).name || "They";
           const p = (Sync.presence() || []).find((x) => x.attId === them.attId && x.clientId !== Sync.myClientId());
-          if (p) remote = { mine: mine, them: them, client: p.clientId };
+          if (p) gate = { kind: "offer", mine: mine, them: them, themName: themName, client: p.clientId };
+          else gate = { kind: "blocked", why: "🔒 " + themName + " isn't in the room right now — they need the app open to accept your offer. No consent, no trade!" };
         }
       }
       host.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-        el("button", { class: "btn spin-btn", onClick: () => {
+        el("button", { class: "btn spin-btn" + (gate.kind === "blocked" ? " off" : ""), onClick: () => {
           if (!ready) { alert("Pick both trainers and the Pokémon they're each giving up."); return; }
+          if (gate.kind === "blocked") { alert(gate.why); return; }
           const an = (Store.attendee(pick.a.attId) || {}).name, bn = (Store.attendee(pick.b.attId) || {}).name;
-          if (remote) {
-            const my = remote.mine === "a" ? pick.a : pick.b;
-            const themName = (Store.attendee(remote.them.attId) || {}).name || "them";
-            Sync.sendChallenge(remote.client, remote.them.attId, themName, "",
-              { kind: "trade", party: [my.mon], pairParty: [remote.them.mon] });
-            alert("📨 Trade offer sent — " + themName + " accepts (or declines) on their phone.");
+          if (gate.kind === "offer") {
+            const my = gate.mine === "a" ? pick.a : pick.b;
+            Sync.sendChallenge(gate.client, gate.them.attId, gate.themName, "",
+              { kind: "trade", party: [my.mon], pairParty: [gate.them.mon] });
+            alert("📨 Trade offer sent — " + gate.themName + " accepts (or declines) on their phone.");
             return;
           }
           if (!confirm("🔁 " + an + "'s " + nameOf(pick.a.mon) + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + " — deal?")) return;
@@ -140,10 +146,11 @@
           const aM = pick.a.mon, bM = pick.b.mon;
           pick.a.mon = 0; pick.b.mon = 0;
           playTrade(an, aM, aSh, bn, bM, bSh, result, () => { render(); renderRecent(); });
-        } }, remote ? "📨 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
+        } }, gate.kind === "offer" ? "📨 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
       ]));
-      if (remote) host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } },
-        "🔒 " + ((Store.attendee(remote.them.attId) || {}).name || "They") + " is on their own phone — they'll get this as an offer to accept."));
+      if (gate.kind === "offer") host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } },
+        "🔒 " + gate.themName + " is on their own phone — they'll get this as an offer to accept."));
+      if (gate.kind === "blocked") host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } }, gate.why));
     }
 
     function renderRecent() {

@@ -373,6 +373,7 @@
         title: data.event || "Challenge",
         a: { label: data.aName, names: [data.aName] },
         b: { label: data.bName, names: [data.bName] },
+        onClose: () => { specHandle = null; },
       });
       if (latestLive && latestLive.id === data.id && latestLive.state === "done") {
         setTimeout(() => { if (specHandle) { specHandle.finish(latestLive.winner || data.aName); specHandle = null; } }, 1900);

@@ -206,6 +206,12 @@
 
     if (opts.spectator) {
       menu.appendChild(el("div", { class: "battle-menu-q" }, "👀 Spectating — waiting for the winner…"));
+      menu.appendChild(el("div", { class: "battle-menu-row" }, [
+        el("button", { class: "btn subtle sm", onClick: () => {
+          if (!done) close();
+          if (opts.onClose) try { opts.onClose(); } catch (_) {}
+        } }, "✕ Stop watching"),
+      ]));
     } else {
       menu.appendChild(el("div", { class: "battle-menu-q" }, "Who takes it?"));
       menu.appendChild(el("div", { class: "battle-menu-row" }, [

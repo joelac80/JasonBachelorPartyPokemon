@@ -410,6 +410,17 @@
 
     function findOne() {
       current = null; revealId = null; busy = false; status = ""; clearBoosts();
+      // 🌩 No buttons, no summons — once in a rare while the sky just breaks:
+      // a fresh rustle in the grass can stir a ROAMING LEGENDARY the whole
+      // room races for (live rooms only; one storm at a time).
+      if (window.Sync && Sync.isLive && Sync.isLive() && Sync.startRoam && !(Sync.roam && Sync.roam()) && Math.random() < 1 / 40) {
+        const wild = IDS.filter((x) => DEX[x].leg && !legendaryOwner(x));
+        if (wild.length) {
+          const pickId = wild[(Math.random() * wild.length) | 0];
+          Sync.startRoam(pickId);
+          Store.logEvent("🌩", "The sky darkens over the lake — a wild " + DEX[pickId].n + " is ROAMING! First to catch it claims it!");
+        }
+      }
       current = randomEncounter();
       shiny = Math.random() < SHINY_RATE;
       // Pokédex "seen": it appeared in front of the active trainer.
@@ -687,17 +698,6 @@
           }
         } }, "Reset Safari"),
       ];
-      // 🌩 room event: release a roaming legendary the whole room races for.
-      if (window.Sync && Sync.isLive && Sync.isLive() && !(Sync.roam && Sync.roam())) {
-        tools.unshift(el("button", { class: "btn subtle sm", onClick: () => {
-          const wild = IDS.filter((x) => DEX[x].leg && !legendaryOwner(x));
-          if (!wild.length) { alert("Every legendary is already claimed!"); return; }
-          const pickId = wild[(Math.random() * wild.length) | 0];
-          Sync.startRoam(pickId);
-          Store.logEvent("🌩", "A wild " + DEX[pickId].n + " is ROAMING — first to catch it claims it!");
-          renderEncounter(); renderDex();
-        } }, "🌩 Unleash a roaming legendary"));
-      }
       dexHost.appendChild(el("div", { class: "toolbar" }, tools));
     }
 

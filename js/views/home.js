@@ -70,7 +70,7 @@
       { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
       { r: "predictions", e: "🔮", t: "Oracle",     d: "Call it before it happens" },
       { r: "cards",       e: "🃏", t: "Card Table", d: "President, Euchre, King's Cup…" },
-      { r: "challenges",  e: "🎣", t: "The Dock",   d: "Catch of the Day challenges" },
+      { r: "challenges",  e: "🎣", t: "The Dock",   d: "Daily dares — reel in the Catch of the Day" },
     ] },
     { id: "fame", e: "🏅", t: "Honors Hall", x: 67, y: 52, sub: [
       { r: "badges",       e: "🏅", t: "Weekend Badges",    d: "8 party badges + the live trophies" },

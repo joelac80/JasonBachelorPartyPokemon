@@ -28,6 +28,9 @@
 
     function logDrink(type) {
       if (!active) return;
+      const who = (Store.attendee(active) || {}).name || "them";
+      const what = whichIn.value.trim() ? whichIn.value.trim() + " (" + type + ")" : type;
+      if (!confirm(Store.drinkEmoji(type) + " Log a " + what + " for " + who + "?")) return;
       Store.logDrink(active, type, whichIn.value);
       whichIn.value = "";
       sfx("coin");
