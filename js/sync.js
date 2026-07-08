@@ -162,8 +162,18 @@
       if (list.length) { applying = true; try { Store.mergePhotos(list); } finally { applying = false; } }   // upsert (adds + reaction/comment updates)
     }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
-    // Freshen our heartbeat the moment the tab comes back to the foreground.
-    try { document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") writePresence(); }); } catch (_) {}
+    // When the app returns to the foreground (unlocked phone / switched back),
+    // the socket may have slept — freshen the heartbeat AND force-pull the
+    // room so nothing logged while away is missed. Also on window focus.
+    try {
+      const wake = function () {
+        if (document.visibilityState !== "visible" || !ref) return;
+        writePresence();
+        ref.get({ source: "server" }).then(function (doc) { if (doc.exists) onSnap(doc); }).catch(function () {});
+      };
+      document.addEventListener("visibilitychange", wake);
+      window.addEventListener("focus", wake);
+    } catch (_) {}
   }
   function writePresence() {
     if (!myPresRef) return;
@@ -279,6 +289,22 @@
     onPresence(fn) { presenceSubs.push(fn); fn(presenceList.slice()); return () => { const i = presenceSubs.indexOf(fn); if (i >= 0) presenceSubs.splice(i, 1); }; },
     isLive() { return statusState === "live" || statusState === "connecting"; },
     myClientId() { return clientId; },
+    // Force-pull the room doc right now (belt-and-suspenders on top of the
+    // live listener — for when a phone woke from sleep and the socket lagged).
+    // Returns a promise; resolves false if not connected.
+    refresh() {
+      if (!ref) return Promise.resolve(false);
+      writePresence();
+      return ref.get({ source: "server" }).then(function (doc) {
+        if (doc.exists) onSnap(doc);
+        setStatus("live", "Refreshed");
+        return true;
+      }).catch(function () {
+        // fall back to the cache/whatever the listener has
+        try { setStatus("live", "Synced"); } catch (_) {}
+        return false;
+      });
+    },
     // Challenge a present device (by its clientId) to a battle. `extra` can
     // carry { kind: "duel", party: [monIds] } for a real remote duel, plus
     // { pairAtt, pairParty } to make it a DOUBLE battle (bring a partner).

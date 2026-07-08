@@ -129,6 +129,66 @@
 
   Router.start();
 
+  // ---- Pull-to-refresh -----------------------------------------------------
+  // The room already streams live (Firestore listeners), but a phone waking
+  // from sleep can lag — so let anyone pull DOWN from the top to force-pull
+  // the latest. Works everywhere (we contain the browser's native gesture so
+  // behavior is identical installed or in a tab).
+  (function () {
+    const ind = document.createElement("div");
+    ind.id = "ptr"; ind.className = "ptr";
+    ind.innerHTML = '<span class="ptr-spin">🔄</span>';
+    document.body.appendChild(ind);
+    let startY = 0, pulling = false, dist = 0, busy = false;
+    const THRESH = 70, MAX = 110;
+    const atTop = () => (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+    function begin(y) { startY = y; pulling = true; dist = 0; }
+    function move(y) {
+      if (!pulling || busy) return;
+      dist = y - startY;
+      if (dist <= 0) { ind.style.transform = "translateX(-50%) translateY(-100%)"; ind.classList.remove("ready"); return; }
+      const d = Math.min(dist * 0.5, MAX);
+      ind.style.transform = "translateX(-50%) translateY(" + (d - 44) + "px)";
+      ind.classList.toggle("ready", dist >= THRESH);
+    }
+    function end() {
+      if (!pulling) return;
+      pulling = false;
+      if (dist >= THRESH && !busy) {
+        busy = true;
+        ind.classList.add("go"); ind.classList.remove("ready");
+        ind.style.transform = "translateX(-50%) translateY(16px)";
+        const done = () => {
+          if (window.Router) Router.render();
+          setTimeout(() => {
+            ind.classList.remove("go");
+            ind.style.transform = "translateX(-50%) translateY(-100%)";
+            busy = false;
+          }, 350);
+        };
+        if (window.Sync && Sync.isLive && Sync.isLive() && Sync.refresh) Sync.refresh().then(done, done);
+        else setTimeout(done, 400);
+      } else {
+        ind.style.transform = "translateX(-50%) translateY(-100%)";
+        ind.classList.remove("ready");
+      }
+    }
+    document.addEventListener("touchstart", (e) => {
+      if (busy || !atTop() || document.querySelector(".battle, .modal-overlay, .onb")) return;
+      if (e.touches && e.touches.length === 1) begin(e.touches[0].clientY);
+    }, { passive: true });
+    document.addEventListener("touchmove", (e) => {
+      if (!pulling) return;
+      const y = e.touches[0].clientY;
+      // only hijack a genuine downward pull that starts at the very top
+      if (y - startY > 0 && atTop()) { if (e.cancelable) e.preventDefault(); move(y); }
+      else if (y - startY <= 0) { pulling = false; ind.style.transform = "translateX(-50%) translateY(-100%)"; }
+    }, { passive: false });
+    document.addEventListener("touchend", end, { passive: true });
+    // expose for a manual/programmatic trigger (and tests)
+    window.pullRefresh = () => { busy = true; ind.classList.add("go"); const done = () => { if (window.Router) Router.render(); ind.classList.remove("go"); busy = false; }; if (window.Sync && Sync.isLive && Sync.isLive() && Sync.refresh) return Sync.refresh().then(done, done); done(); return Promise.resolve(); };
+  })();
+
   // Optional live sync — connects only if a room was configured + enabled.
   if (window.Sync && Sync.init) {
     const dot = document.getElementById("sync-dot");
