@@ -323,6 +323,39 @@
         if (h.receiveRx) h.receiveRx(data.rx || []);
       }
     });
+    // 📬 Trade inbox pings: when a synced update brings a new open offer
+    // addressed to me, ping once per offer — no need to be watching.
+    const OSEEN_KEY = "jasonBachHub.offersSeen";
+    function checkTradeInbox() {
+      try {
+        const me = Sync.getMe && Sync.getMe();
+        if (!me || !Store.tradeOffers) return;
+        let seen = [];
+        try { seen = JSON.parse(localStorage.getItem(OSEEN_KEY) || "[]"); } catch (_) {}
+        const mine = Store.tradeOffers().filter((o) => o.to === me && seen.indexOf(o.id) < 0);
+        if (!mine.length) return;
+        mine.forEach((o) => seen.push(o.id));
+        try { localStorage.setItem(OSEEN_KEY, JSON.stringify(seen.slice(-60))); } catch (_) {}
+        const o = mine[0];
+        const fromN = (Store.attendee(o.from) || {}).name || "Someone";
+        const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
+        notify("📬 Trade offer!", fromN + " offers " + nm(o.give) + " for your " + nm(o.want));
+        if (window.SFX && SFX.blip) SFX.blip();
+        let ctrl;
+        const body = el("div", { class: "chal-modal" }, [
+          el("div", { class: "chal-line" }, "📬 " + fromN + " offers their " + nm(o.give) + " for your " + nm(o.want) + "!" +
+            (mine.length > 1 ? " (+" + (mine.length - 1) + " more offer" + (mine.length > 2 ? "s" : "") + " waiting)" : "")),
+          el("div", { class: "toolbar" }, [
+            el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); location.hash = "#/trade"; } }, "📬 Open Trading Post"),
+            el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Later"),
+          ]),
+        ]);
+        ctrl = Modal.open("Trade offer!", body, null, {});
+      } catch (_) {}
+    }
+    if (Sync.onStateApplied) Sync.onStateApplied(checkTradeInbox);
+    setTimeout(checkTradeInbox, 1500);   // catch offers that arrived while away
+
     // 🌩 roaming legendary — alert every phone, first catch wins.
     const handledRoam = {};
     Sync.onRoam((data) => {

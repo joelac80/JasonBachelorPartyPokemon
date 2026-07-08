@@ -37,7 +37,7 @@
   let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
   let presenceList = [], roamLast = null;
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [];
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   // Generous TTL: phones suspend background tabs (heartbeats pause), so give
   // people 3 minutes before they drop off the "here now" list.
@@ -212,6 +212,7 @@
     try { Store.applyRemote(obj); } finally { applying = false; }
     if (window.Router && Router.render) Router.render();
     setStatus("live", "Updated" + (data.by ? " · " + data.by : ""));
+    stateSubs.forEach((f) => { try { f(); } catch (_) {} });   // e.g. 📬 inbox pings
   }
 
   function schedulePush() {
@@ -354,6 +355,8 @@
       duelRef.set({ rx: firebase.firestore.FieldValue.arrayUnion({ e: emoji, by: conf.name || "", t: nowMs() }) }, { merge: true }).catch(function () {});
     },
     onDuel(fn) { duelSubs.push(fn); return () => { const i = duelSubs.indexOf(fn); if (i >= 0) duelSubs.splice(i, 1); }; },
+    // fires after a REMOTE state doc is applied (not on local edits)
+    onStateApplied(fn) { stateSubs.push(fn); return () => { const i = stateSubs.indexOf(fn); if (i >= 0) stateSubs.splice(i, 1); }; },
 
     // Share a photo moment to the room (its own doc — keeps the state doc lean).
     sharePhoto(entry) { if (photosRef && entry && entry.id) photosRef.doc(entry.id).set(entry).catch(function () {}); },

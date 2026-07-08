@@ -693,6 +693,42 @@
       return result;
     },
 
+    // ---- 📬 trade offer inbox ------------------------------------------------
+    // Offers persist in the shared state, so the other trainer accepts (or
+    // declines) later from THEIR phone — nobody has to be in the room when
+    // it's sent. status: open → accepted / declined / cancelled / expired.
+    tradeOffers() { return ((this.state.pokedex || {}).offers || []).filter((o) => o.status === "open"); },
+    sendTradeOffer(fromAtt, give, toAtt, want, by) {
+      if (!this.canTrade(fromAtt, give)) return null;
+      let offer = null;
+      this.update((s) => {
+        s.pokedex.offers = s.pokedex.offers || [];
+        offer = { id: U.uid(), from: fromAtt, give: +give, to: toAtt, want: +want,
+          ts: (function () { try { return Date.now(); } catch (_) { return 0; } })(), status: "open" };
+        s.pokedex.offers.unshift(offer);
+        if (s.pokedex.offers.length > 40) s.pokedex.offers.length = 40;
+        const nm = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
+        this.chron(s, "📬", ((this.attendee(fromAtt) || {}).name || "?") + " offered their " + nm(give) + " to " +
+          ((this.attendee(toAtt) || {}).name || "?") + " for their " + nm(want) + " — it's waiting in the Trading Post inbox.", by);
+      });
+      return offer;
+    },
+    resolveTradeOffer(id, accept, by) {
+      const o = ((this.state.pokedex || {}).offers || []).find((x) => x.id === id);
+      if (!o || o.status !== "open") return { ok: false, why: "That offer is gone." };
+      if (!accept) {
+        this.update((s) => { const x = (s.pokedex.offers || []).find((q) => q.id === id); if (x) x.status = "declined"; });
+        return { ok: true, declined: true };
+      }
+      const result = this.trade(o.from, o.give, o.to, o.want, by);
+      this.update((s) => { const x = (s.pokedex.offers || []).find((q) => q.id === id); if (x) x.status = result ? "accepted" : "expired"; });
+      if (!result) return { ok: false, why: "That trade is no longer valid — one of the Pokémon has moved on." };
+      return { ok: true, result: result, offer: o };
+    },
+    cancelTradeOffer(id) {
+      this.update((s) => { const x = (s.pokedex.offers || []).find((q) => q.id === id); if (x && x.status === "open") x.status = "cancelled"; });
+    },
+
     // ---- battle & collecting analytics --------------------------------------
     // Duel win/loss from the battle log (name-matched; doubles count for
     // both partners on a side).
