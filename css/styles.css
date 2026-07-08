@@ -1510,6 +1510,21 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .onb-dot.on { background: #ffd166; box-shadow: 0 0 8px rgba(255,209,102,.7); }
 .onb-toolbar { justify-content: center; }
 .onb .btn.primary.off { opacity: .55; }
+/* 📸 Snapshots feed */
+.feed { display: flex; flex-direction: column; gap: 16px; max-width: 520px; margin: 0 auto; }
+.feed-card { background: var(--paper); border: 2.5px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.feed-head { display: flex; align-items: center; gap: 9px; padding: 9px 12px; }
+.feed-ava { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: #fff; border: 2px solid var(--line); image-rendering: pixelated; }
+.feed-ava.ball { display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+.feed-name { font-weight: 800; font-size: 14px; }
+.feed-time { font-size: 11px; color: var(--ink-soft, #7a7a6a); font-family: var(--pixel); }
+.feed-img { width: 100%; display: block; cursor: pointer; }
+.feed-cap { padding: 8px 12px 0; font-size: 14px; }
+.feed-react { padding: 8px 12px; }
+.feed-cmts { padding: 0 12px 6px; display: flex; flex-direction: column; gap: 3px; }
+.feed-more { background: none; border: none; color: var(--ink-soft, #7a7a6a); font-size: 12px; text-align: left; padding: 0; cursor: pointer; }
+.feed-comment-btn { background: none; border: none; border-top: 1.5px solid var(--line); width: 100%; text-align: left;
+  padding: 9px 12px; font-size: 13px; color: var(--ink-soft, #7a7a6a); cursor: pointer; }
 /* 📬 topbar inbox badge */
 .inbox-btn { position: relative; text-decoration: none; }
 .inbox-btn.hidden { display: none; }
