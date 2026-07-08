@@ -16,6 +16,20 @@
     const conf0 = (window.Sync && Sync.getConf && Sync.getConf()) || {};
     const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. GARZA26)", value: conf0.room || "" });
 
+    // notifications (slide 4) — enable right in the tour; repaints in place
+    const noteHost = el("div", { class: "onb-note" });
+    function paintNote() {
+      noteHost.innerHTML = "";
+      const A = window.AppNotify;
+      const p = (A && A.supported && A.supported()) ? A.permission() : "unsupported";
+      if (p === "granted") noteHost.appendChild(el("p", { class: "hint" }, "🔔 Notifications are ON — you're set."));
+      else if (p === "denied") noteHost.appendChild(el("p", { class: "hint" }, "🔕 Blocked by the browser — you can turn them on later in iOS Settings → Notifications."));
+      else if (p === "unsupported") noteHost.appendChild(el("p", { class: "hint" }, "📱 On iPhone, notifications need the Home Screen app: Share → Add to Home Screen, open from that icon, then enable alerts in ⚙️ Settings."));
+      else noteHost.appendChild(el("button", { class: "btn primary", onClick: () => {
+        try { AppNotify.request(() => paintNote()); } catch (_) {}
+      } }, "🔔 Enable notifications"));
+    }
+
     // trainer picker (slide 2) — picking only repaints the grid (no full
     // slide rebuild, no re-animation), so the tap feels instant.
     const grid = el("div", { class: "sl-vote-grid onb-grid" });
@@ -43,6 +57,9 @@
       { e: "🔗", t: "Join the crew's room",
         d: "Type the room code the crew is using and every phone shares ONE live scoreboard — battles, catches and drinks sync in real time. Leave it blank to run solo; you can join any time in ⚙️ Settings.",
         body: () => el("div", { class: "field" }, [roomIn]) },
+      { e: "🔔", t: "Turn on alerts",
+        d: "Get pinged when you're challenged, when a badge battle kicks off, when a trade offer lands in your inbox, and when it's YOUR move in a duel. iPhone: this works best from the Home Screen app (Share → Add to Home Screen).",
+        body: () => { paintNote(); return noteHost; } },
       { e: "🔴", t: "Catch Pokémon in the Safari",
         d: "The Safari Zone is the engine: do dares to earn boosts, then throw. ✨ 1-in-16 encounters are SHINY. Swap at the Trading Post (some Pokémon ONLY evolve by trade), and your caught team fights for you everywhere else." },
       { e: "⚔️", t: "Battle on your own phones",

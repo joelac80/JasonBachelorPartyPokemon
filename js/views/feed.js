@@ -44,10 +44,25 @@
     }
 
     const rid = PhotoLog.reactorId(), rname = PhotoLog.reactorName();
+    // Refresh without losing scroll position (Router.render jumps to top).
+    const refresh = () => { const y = window.scrollY; Router.render(); window.scrollTo(0, y); };
     root.appendChild(el("div", { class: "feed" }, photos.map((p) => {
-      const counts = {}; (p.reactions || []).forEach((r) => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
-      const openIt = () => window.PhotoLog && PhotoLog.openDetail(p.id, () => Router.render());
+      const openIt = () => window.PhotoLog && PhotoLog.openDetail(p.id, refresh);
       const cmts = p.comments || [];
+      // reactions repaint IN PLACE — a tap must not rebuild the page
+      const row = el("div", { class: "photo-react-row feed-react" });
+      function paintRow() {
+        row.innerHTML = "";
+        const cur = Store._photo(p.id) || p;
+        const counts = {}; (cur.reactions || []).forEach((r) => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+        PhotoLog.REACTIONS.forEach((em) => {
+          const mine = (cur.reactions || []).some((r) => r.by === rid && r.emoji === em);
+          row.appendChild(el("button", { class: "photo-react" + (mine ? " on" : ""),
+            onClick: () => { Store.reactPhoto(p.id, em, rid, rname); paintRow(); } },
+            [em, counts[em] ? el("span", { class: "photo-react-n" }, String(counts[em])) : null]));
+        });
+      }
+      paintRow();
       return el("article", { class: "feed-card" }, [
         el("div", { class: "feed-head" }, [
           avatarFor(p.by),
@@ -58,12 +73,7 @@
         ]),
         el("img", { class: "feed-img", src: p.img, alt: p.caption || "", onClick: openIt }),
         p.caption ? el("div", { class: "feed-cap" }, p.caption) : null,
-        el("div", { class: "photo-react-row feed-react" }, PhotoLog.REACTIONS.map((em) => {
-          const mine = (p.reactions || []).some((r) => r.by === rid && r.emoji === em);
-          return el("button", { class: "photo-react" + (mine ? " on" : ""),
-            onClick: () => { Store.reactPhoto(p.id, em, rid, rname); Router.render(); } },
-            [em, counts[em] ? el("span", { class: "photo-react-n" }, String(counts[em])) : null]);
-        })),
+        row,
         cmts.length ? el("div", { class: "feed-cmts" }, [
           cmts.length > 2 ? el("button", { class: "feed-more", onClick: openIt }, "View all " + cmts.length + " comments") : null,
         ].concat(cmts.slice(-2).map((c) =>

@@ -700,6 +700,9 @@
     tradeOffers() { return ((this.state.pokedex || {}).offers || []).filter((o) => o.status === "open"); },
     sendTradeOffer(fromAtt, give, toAtt, want, by) {
       if (!this.canTrade(fromAtt, give)) return null;
+      // an identical offer already waiting? don't stack duplicates
+      const dupe = this.tradeOffers().find((o) => o.from === fromAtt && o.to === toAtt && o.give === +give && o.want === +want);
+      if (dupe) return dupe;
       let offer = null;
       this.update((s) => {
         s.pokedex.offers = s.pokedex.offers || [];
