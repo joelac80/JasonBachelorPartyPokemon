@@ -356,6 +356,24 @@
     if (Sync.onStateApplied) Sync.onStateApplied(checkTradeInbox);
     setTimeout(checkTradeInbox, 1500);   // catch offers that arrived while away
 
+    // 📬 topbar inbox badge: shows (with a count) while offers addressed to
+    // ME are waiting — tap it to land on the Trading Post.
+    function updateInboxBadge() {
+      try {
+        const btn = document.getElementById("inbox-btn"), num = document.getElementById("inbox-count");
+        if (!btn || !num) return;
+        const me = Sync.getMe && Sync.getMe();
+        const n = (me && Store.tradeOffers) ? Store.tradeOffers().filter((o) => o.to === me).length : 0;
+        btn.classList.toggle("hidden", n === 0);
+        num.textContent = n > 9 ? "9+" : String(n || "");
+      } catch (_) {}
+    }
+    window.updateInboxBadge = updateInboxBadge;
+    Store.subscribe(updateInboxBadge);
+    if (Sync.onStateApplied) Sync.onStateApplied(updateInboxBadge);
+    window.addEventListener("hashchange", updateInboxBadge);
+    updateInboxBadge();
+
     // 🌩 roaming legendary — alert every phone, first catch wins.
     const handledRoam = {};
     Sync.onRoam((data) => {
