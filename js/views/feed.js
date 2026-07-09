@@ -27,19 +27,62 @@
     return el("span", { class: "feed-ava ball" }, "◓");
   }
 
+  // selection mode persists across the in-view re-render
+  let selecting = false;
+  const picked = {};   // photoId -> true
+
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "📸 Snapshots"),
       el("p", { class: "page-sub" }, "The weekend's feed — every photo moment, who posted it, and when. React and comment as your trainer." ),
     ]));
 
-    root.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-      el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render()); } }, "📸 Add a photo moment"),
-    ]));
-
     const photos = (Store.state.photos || []).slice();
+
+    // top toolbar: add a photo, and (when there are photos) select-to-save
+    const tools = [el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render()); } }, "📸 Add a photo moment")];
+    if (photos.length) tools.push(el("button", { class: "btn subtle", onClick: () => { selecting = !selecting; Router.render(); } },
+      selecting ? "✕ Done selecting" : "⬇️ Select & save"));
+    root.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, tools));
+
     if (!photos.length) {
       root.appendChild(el("p", { class: "empty" }, "No snapshots yet — be the first. Every photo lands here, on the Weekend Log, and on the Poster."));
+      return;
+    }
+
+    // ---- SELECT & SAVE grid ----
+    if (selecting) {
+      const countLbl = el("span", { class: "sel-count" });
+      const grid = el("div", { class: "sel-grid" });
+      function paintCount() {
+        const n = Object.keys(picked).filter((k) => picked[k]).length;
+        countLbl.textContent = n + " selected";
+        saveBtn.disabled = n ? null : "true";
+        saveBtn.textContent = n ? "⬇️ Save " + n + " photo" + (n > 1 ? "s" : "") : "⬇️ Save";
+      }
+      const saveBtn = el("button", { class: "btn primary" });
+      saveBtn.onclick = () => {
+        const chosen = photos.filter((p) => picked[p.id]);
+        if (chosen.length && window.PhotoLog) PhotoLog.saveMany(chosen);
+      };
+      root.appendChild(el("p", { class: "hint" }, "Tap the photos you want, then Save. On iPhone this opens the share sheet (choose “Save Images”); elsewhere it downloads a zip." ));
+      root.appendChild(el("div", { class: "toolbar sel-bar" }, [
+        el("button", { class: "btn subtle sm", onClick: () => { photos.forEach((p) => { picked[p.id] = true; }); Router.render(); } }, "Select all"),
+        el("button", { class: "btn subtle sm", onClick: () => { Object.keys(picked).forEach((k) => delete picked[k]); Router.render(); } }, "Clear"),
+        countLbl,
+      ]));
+      photos.forEach((p) => {
+        const cell = el("button", { class: "sel-cell" + (picked[p.id] ? " on" : ""), onClick: () => {
+          picked[p.id] = !picked[p.id]; cell.classList.toggle("on", !!picked[p.id]); paintCount();
+        } }, [
+          el("img", { class: "sel-img", src: p.img, alt: "" }),
+          el("span", { class: "sel-check" }, "✓"),
+        ]);
+        grid.appendChild(cell);
+      });
+      root.appendChild(grid);
+      root.appendChild(el("div", { class: "sel-save" }, [saveBtn]));
+      paintCount();
       return;
     }
 
