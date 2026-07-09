@@ -138,16 +138,47 @@
     if (d.leg) w *= 0.7;
     return w;
   }
-  function randomEncounter() {
-    let total = 0; const cum = [];
-    IDS.forEach((id) => { total += weightFor(id); cum.push([total, id]); });
-    const r = Math.random() * total;
-    for (let i = 0; i < cum.length; i++) if (r <= cum[i][0]) return cum[i][1];
-    return IDS[0];
-  }
-
   function P() { return Store.state.pokedex; }
   function rec(id) { return (P().trainers && P().trainers[id]) || { caught: {}, team: [], catches: 0 }; }
+
+  // Per-variant ownership. Normal and shiny are SEPARATE dex entries (502
+  // total). Back-compat: a legacy caught record counts as its own variant via
+  // the .shiny flag; the have/haveShiny maps carry the rest (so owning both is
+  // possible once you catch the second form).
+  function ownsNormal(tid, id) {
+    const t = rec(tid);
+    if (t.have && t.have[id]) return true;
+    return !!(t.caught && t.caught[id] && !t.caught[id].shiny);
+  }
+  function ownsShiny(tid, id) {
+    const t = rec(tid);
+    if (t.haveShiny && t.haveShiny[id]) return true;
+    return !!(t.caught && t.caught[id] && t.caught[id].shiny);
+  }
+
+  // The encounter table is 502 slots — a normal AND a shiny of every species —
+  // minus the (species, variant) pairs THIS trainer already owns. So once you
+  // catch a normal Totodile you stop meeting regular Totodile, but a shiny one
+  // is still out there. Shinies keep their ~1/16 rarity via the weight factor.
+  function randomEncounter(tid) {
+    let total = 0; const cum = [];
+    IDS.forEach((id) => {
+      const w = weightFor(id);
+      if (!ownsNormal(tid, id)) { total += w; cum.push([total, id, false]); }
+      if (!ownsShiny(tid, id)) { total += w * SHINY_RATE; cum.push([total, id, true]); }
+    });
+    if (!cum.length) {   // living dex complete — never stall; re-offer the full table
+      let t2 = 0; const c2 = [];
+      IDS.forEach((id) => { t2 += weightFor(id); c2.push([t2, id]); });
+      const rr = Math.random() * t2;
+      for (let i = 0; i < c2.length; i++) if (rr <= c2[i][0]) return { id: c2[i][1], shiny: Math.random() < SHINY_RATE };
+      return { id: IDS[0], shiny: false };
+    }
+    const r = Math.random() * total;
+    for (let i = 0; i < cum.length; i++) if (r <= cum[i][0]) return { id: cum[i][1], shiny: cum[i][2] };
+    const last = cum[cum.length - 1];
+    return { id: last[1], shiny: last[2] };
+  }
   function caughtCount(id) { return Store.dexCount(id); }   // partner freebie excluded
   function attendeeName(id) { const a = Store.attendee(id); return a ? a.name : id; }
 
@@ -163,6 +194,7 @@
   let berryDone = false, rallyDone = false, masterDone = false;   // boost earned
   let dareLocked = false, berryLost = false, rallyLost = false, masterLost = false;  // bailed
   let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
+  let dexMode = "normal";                               // dex grid: normal | shiny
 
   function view(root) {
     // While you're on the Safari, a remote sync (someone else walking/catching)
@@ -439,12 +471,13 @@
           Store.logEvent("🌩", "The sky darkens over the lake — a wild " + DEX[pickId].n + " is ROAMING! Everyone go catch one!");
         }
       }
-      current = randomEncounter();
-      shiny = Math.random() < SHINY_RATE;
+      // Draw from the 502-slot table (un-owned normals + un-owned shinies).
+      const tid = active();
+      const draw = randomEncounter(tid);
+      current = draw.id; shiny = draw.shiny;
       // Pokédex "seen": it appeared in front of the active trainer. Only write
       // (and thus sync) if it's genuinely new — re-walking to an already-seen
       // mon shouldn't churn the room.
-      const tid = active();
       const t0 = tid && ((Store.state.pokedex || {}).trainers || {})[tid];
       if (tid && !(t0 && t0.seen && t0.seen[current])) Store.update((s) => {
         const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
@@ -496,7 +529,17 @@
         Store.update((s) => {
           const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
           const prev = t.caught[id];
-          // Keep the ball that first landed it (best-catch keepsake).
+          // Record which VARIANT you now own (normal vs shiny are separate dex
+          // entries). Preserve the other variant if you already had it, so the
+          // 502-slot encounter table keeps offering only what you're missing.
+          if (isShiny) { t.haveShiny = t.haveShiny || {}; t.haveShiny[id] = 1; }
+          else { t.have = t.have || {}; t.have[id] = 1; }
+          if (prev) {
+            if (prev.shiny) { t.haveShiny = t.haveShiny || {}; t.haveShiny[id] = 1; }
+            else { t.have = t.have || {}; t.have[id] = 1; }
+          }
+          // Keep the ball that first landed it (best-catch keepsake); showcase
+          // the shiny if either the old or new copy is shiny (it's the prize).
           t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed,
             shiny: ((prev && prev.shiny) || isShiny) || undefined,
             nick: (prev && prev.nick) || undefined, kos: (prev && prev.kos) || undefined };
@@ -686,25 +729,35 @@
       teamHost.appendChild(slots);
     }
 
-    // ---- dex grid (active trainer) ----
+    // ---- dex grid (active trainer) — Regular ⇄ Shiny (502 total) ----
     function renderDex() {
       dexHost.innerHTML = "";
-      if (!active()) return;
-      dexHost.appendChild(el("h2", { class: "section-title" }, "Pokédex (" + caughtCount(active()) + " / 251)"));
-      const caught = rec(active()).caught || {};
+      const tid = active();
+      if (!tid) return;
+      const caught = rec(tid).caught || {};
+      const shinyMode = dexMode === "shiny";
+      const nNorm = IDS.reduce((n, id) => n + (ownsNormal(tid, id) ? 1 : 0), 0);
+      const nShiny = IDS.reduce((n, id) => n + (ownsShiny(tid, id) ? 1 : 0), 0);
+      dexHost.appendChild(el("h2", { class: "section-title" },
+        (shinyMode ? "✨ Shiny Pokédex (" + nShiny + " / 251)" : "Pokédex (" + nNorm + " / 251)")));
+      // toggle between the two 251 halves of the 502-entry dex
+      dexHost.appendChild(el("div", { class: "dex-toggle" }, [
+        el("button", { class: "btn sm" + (shinyMode ? " subtle" : " primary"), onClick: () => { dexMode = "normal"; renderDex(); } }, "Regular · " + nNorm),
+        el("button", { class: "btn sm" + (shinyMode ? " primary" : " subtle"), onClick: () => { dexMode = "shiny"; renderDex(); } }, "✨ Shiny · " + nShiny),
+      ]));
       const grid = el("div", { class: "safari-dex" });
       IDS.forEach((id) => {
-        const got = !!caught[id];
-        const ballKey = got && caught[id].ball;
-        const isShiny = got && !!caught[id].shiny;
-        const src = (isShiny && SPS[id]) || SP[id];
-        grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : "") + (isShiny ? " shiny" : ""),
-          title: got ? DEX[id].n + (isShiny ? " ✨ SHINY" : "") + (ballKey === "partner" ? " — your partner ❤" : (ballKey ? " — caught with a " + ballByKey(ballKey).name : "")) + " — tap for team & nickname" : "#" + id + " — not caught",
+        const got = shinyMode ? ownsShiny(tid, id) : ownsNormal(tid, id);
+        const rc = caught[id];
+        const ballKey = got && rc && rc.ball;
+        const src = shinyMode ? SPS[id] : SP[id];
+        grid.appendChild(el("div", { class: "safari-dex-cell" + (got ? " got" : "") + (inTeam(id) ? " team" : "") + (shinyMode ? " shiny" : ""),
+          title: got ? DEX[id].n + (shinyMode ? " ✨ SHINY" : "") + " — tap for team & nickname" : "#" + id + " — " + (shinyMode ? "no shiny yet" : "not caught"),
           onClick: got ? () => openMonSheet(id) : null }, [
           src ? el("img", { src: src, alt: got ? DEX[id].n : "", loading: "lazy" }) : null,
           el("span", { class: "safari-dex-num" }, "#" + id),
-          isShiny ? el("span", { class: "safari-dex-shiny" }, "✨") : null,
-          ballKey ? el("span", { class: "safari-dex-ball" }, ballIcon(ballByKey(ballKey))) : null,
+          shinyMode && got ? el("span", { class: "safari-dex-shiny" }, "✨") : null,
+          (got && ballKey && !shinyMode) ? el("span", { class: "safari-dex-ball" }, ballIcon(ballByKey(ballKey))) : null,
         ]));
       });
       dexHost.appendChild(grid);
@@ -729,5 +782,6 @@
   // Set THIS phone's catcher (e.g. from a profile's "Catch as" button) — local,
   // never synced. Clears any in-progress encounter so the new trainer starts fresh.
   window.Safari = { catchAs: function (id) { if (myCatcher !== id) { myCatcher = id; current = null; status = ""; } } };
-  window.SafariDebug = { info: info, weightFor: weightFor, legendaryOwner: legendaryOwner };
+  window.SafariDebug = { info: info, weightFor: weightFor, legendaryOwner: legendaryOwner,
+    randomEncounter: randomEncounter, ownsNormal: ownsNormal, ownsShiny: ownsShiny };
 })();
