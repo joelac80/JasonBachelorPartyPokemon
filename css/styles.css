@@ -407,7 +407,13 @@ body {
   60%  { filter: brightness(0.15) blur(1.5px); opacity: .95; }
   100% { filter: none; opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
-.safari-wild-scene.caught-anim { animation: safariShrinkX 1.9s ease forwards; }
+.safari-wild-scene.caught-anim { animation: safariShrinkX .5s ease forwards; }
+.safari-wild-scene.burst { animation: safariBurst .45s cubic-bezier(.2,1.5,.4,1) forwards; }
+@keyframes safariBurst {
+  0% { transform: translateX(-50%) scale(.2); opacity: 0; }
+  60% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
 .safari-wild-scene.pop { animation: popInX .5s cubic-bezier(.2,1.5,.4,1); }
 .safari-wild-scene.fled { animation: safariFledX .6s ease forwards; }
 .safari-scene-grass { position: absolute; bottom: 6px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; font-size: 26px; }
@@ -446,14 +452,34 @@ body {
   background: linear-gradient(var(--ball-top, #ee1515) 0 46%, #111 46% 54%, #fff 54% 100%); position: relative; }
 .ball-ico.master::after { content: "M"; position: absolute; inset: -1px 0 auto 0; top: 0; text-align: center; font-size: 7px; line-height: 8px; font-weight: 900; color: #ff8fce; }
 .safari-ball-chip { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-weight: 800; }
-.safari-ball-throw.go { animation: safariThrow 1.7s ease forwards; }
+/* Ball arc in (lands and settles — the shakes are separate now) */
+.safari-ball-throw.go { animation: safariThrow .85s ease forwards; }
 @keyframes safariThrow {
   0% { opacity: 1; transform: translate(-50%, 60px) scale(.7); }
-  22% { transform: translate(-50%, -70px) scale(1); }
-  30% { transform: translate(-50%, -20px) scale(1); }
-  33%,44%,55% { transform: translate(-50%, -20px) rotate(-24deg); }
-  38%,49%,60% { transform: translate(-50%, -20px) rotate(24deg); }
-  62%,100% { transform: translate(-50%, -20px) rotate(0); opacity: 1; }
+  55% { transform: translate(-50%, -84px) scale(1.05); }
+  100% { transform: translate(-50%, -20px) scale(1); opacity: 1; }
+}
+/* one wobble (re-triggered per shake) */
+.safari-ball-throw.wobble { animation: safariWobble .55s ease; }
+@keyframes safariWobble {
+  0%,100% { transform: translate(-50%, -20px) rotate(0); }
+  20% { transform: translate(-50%, -20px) rotate(-24deg); }
+  55% { transform: translate(-50%, -20px) rotate(20deg); }
+  80% { transform: translate(-50%, -20px) rotate(-8deg); }
+}
+/* caught — the lock-in click (gold pulse) */
+.safari-ball-throw.click { animation: safariClick .5s ease forwards; }
+@keyframes safariClick {
+  0% { transform: translate(-50%, -20px) scale(1); box-shadow: 0 0 0 0 rgba(255,203,5,.7); }
+  40% { transform: translate(-50%, -20px) scale(1.22); box-shadow: 0 0 0 8px rgba(255,203,5,.55); }
+  100% { transform: translate(-50%, -20px) scale(1); box-shadow: 0 0 0 14px rgba(255,203,5,0); }
+}
+/* missed — the ball flashes open as the mon bursts back out */
+.safari-ball-throw.open { animation: safariOpen .45s ease forwards; }
+@keyframes safariOpen {
+  0% { transform: translate(-50%, -20px) scale(1); opacity: 1; }
+  40% { transform: translate(-50%, -20px) scale(1.3); opacity: 1; filter: brightness(2.2); }
+  100% { transform: translate(-50%, -20px) scale(1.5); opacity: 0; }
 }
 .safari-wild-meta { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
 .safari-tier { font-family: var(--pixel); font-size: 10px; color: #fff; padding: 2px 8px; border-radius: 999px; }
