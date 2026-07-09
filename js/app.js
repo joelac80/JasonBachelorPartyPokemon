@@ -464,16 +464,23 @@
       }
     });
 
-    // 📸 New photo in the room feed → ping phones that opted in (Settings).
-    // Skips your own uploads and, like every notify(), only fires when the
-    // app is backgrounded and permission is granted.
+    // 📸 New photo in the room feed → alert phones that opted in (Settings).
+    // Two surfaces: an OS notification when the app is BACKGROUNDED, and an
+    // in-app toast when you're looking at the app (an OS notification is
+    // suppressed in the foreground, so without this you'd see nothing). Skips
+    // your own uploads either way.
     if (Sync.onPhotoAdded) Sync.onPhotoAdded((p) => {
       if (!p || !window.AppNotify || !AppNotify.photoAlerts()) return;
       const meId = (Sync.getMe && Sync.getMe()) || "";
-      if (p.loggedBy && meId && p.loggedBy === meId) return;   // don't ping my own post
+      if (p.loggedBy && meId && p.loggedBy === meId) return;   // don't alert my own post
       const who = p.by || (p.loggedBy && (Store.attendee(p.loggedBy) || {}).name) || "Someone";
       const cap = p.caption ? " — “" + p.caption + "”" : "";
-      notify("📸 New photo!", who + " just posted a moment" + cap);
+      if (document.visibilityState === "visible") {
+        if (window.SFX && SFX.blip) SFX.blip();
+        U.toast("📸 " + who + " posted a photo" + cap, "View", () => { location.hash = "#/feed"; });
+      } else {
+        notify("📸 New photo!", who + " just posted a moment" + cap);
+      }
     });
 
     function openDuelWatch() {
