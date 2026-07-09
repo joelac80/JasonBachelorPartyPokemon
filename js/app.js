@@ -125,6 +125,9 @@
     test() { setTimeout(() => { try { showNote("🔔 It works!", "Notifications are live — see you at the lake."); } catch (_) {} }, 4000); },
     // Visibility-guarded ping for app code (e.g. "your move" in remote duels).
     ping(title, body) { notify(title, body); },
+    // Opt-in: ping this phone every time a new photo lands in the room feed.
+    photoAlerts() { try { return localStorage.getItem("jasonBachHub.notifyPhotos") === "1"; } catch (_) { return false; } },
+    setPhotoAlerts(on) { try { localStorage.setItem("jasonBachHub.notifyPhotos", on ? "1" : "0"); } catch (_) {} },
   };
 
   Router.start();
@@ -459,6 +462,18 @@
         handledRoam[data.id + "d"] = 1;
         notify("🌩 Claimed!", data.claimedBy + " caught the roaming legendary!");
       }
+    });
+
+    // 📸 New photo in the room feed → ping phones that opted in (Settings).
+    // Skips your own uploads and, like every notify(), only fires when the
+    // app is backgrounded and permission is granted.
+    if (Sync.onPhotoAdded) Sync.onPhotoAdded((p) => {
+      if (!p || !window.AppNotify || !AppNotify.photoAlerts()) return;
+      const meId = (Sync.getMe && Sync.getMe()) || "";
+      if (p.loggedBy && meId && p.loggedBy === meId) return;   // don't ping my own post
+      const who = p.by || (p.loggedBy && (Store.attendee(p.loggedBy) || {}).name) || "Someone";
+      const cap = p.caption ? " — “" + p.caption + "”" : "";
+      notify("📸 New photo!", who + " just posted a moment" + cap);
     });
 
     function openDuelWatch() {
