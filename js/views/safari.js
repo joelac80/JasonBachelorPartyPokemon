@@ -23,9 +23,11 @@
   const DEX = window.DEX || {};
   const SP = window.DEX_SPRITES || {};
   const SPS = window.DEX_SPRITES_SHINY || {};
-  // ✨ Shiny odds — Gen 2 would be proud. Every encounter rolls; a shiny
-  // catch scores DOUBLE points and is marked forever in the dex.
-  const SHINY_RATE = 1 / 16;
+  // ✨ Shiny odds — bumped from the Gen-2 ~1/16 to a party-friendly ~1/8 so a
+  // shiny actually shows up over a weekend (still special, ~11% fresh and
+  // climbing as your normal dex fills). A shiny catch scores DOUBLE points and
+  // is marked forever in the dex.
+  const SHINY_RATE = 1 / 8;
   const IDS = Object.keys(DEX).map(Number);
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
   function now() { try { return Date.now(); } catch (_) { return 0; } }
