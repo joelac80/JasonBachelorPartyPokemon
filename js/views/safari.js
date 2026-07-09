@@ -164,6 +164,11 @@
   let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
 
   function view(root) {
+    // While you're on the Safari, a remote sync (someone else walking/catching)
+    // must NOT re-render and yank your screen. Your own taps keep it fresh, and
+    // the one-of-one guard keeps the roaming race correct. Router clears this on
+    // navigation away.
+    window.__deferRender = function () { return true; };
 
     // Wipe all this-encounter boost state (called on new find / trainer swap / run).
     function clearBoosts() {
@@ -435,9 +440,12 @@
       }
       current = randomEncounter();
       shiny = Math.random() < SHINY_RATE;
-      // Pokédex "seen": it appeared in front of the active trainer.
+      // Pokédex "seen": it appeared in front of the active trainer. Only write
+      // (and thus sync) if it's genuinely new — re-walking to an already-seen
+      // mon shouldn't churn the room.
       const tid = active();
-      if (tid) Store.update((s) => {
+      const t0 = tid && ((Store.state.pokedex || {}).trainers || {})[tid];
+      if (tid && !(t0 && t0.seen && t0.seen[current])) Store.update((s) => {
         const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
         t.seen = t.seen || {}; t.seen[current] = 1;
       });
