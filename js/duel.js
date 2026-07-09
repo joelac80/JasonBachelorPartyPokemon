@@ -930,7 +930,7 @@
           AppNotify.ping("🎮 Your move!", S.pending ? "Choose your next Pokémon" : "What will " + mon(u).name + " do?");
         }
       }
-      if (S.pending) { try { console.log("DBG partyPanel next for " + u.name + " bench=" + JSON.stringify(bench(u).map(function(x){return x.m.name;}))); } catch(e){ console.log("DBG bench THREW", e.message); } partyPanel(u, ptr, "next", false); return; }
+      if (S.pending) { partyPanel(u, ptr, "next", false); return; }
       const m = mon(u);
       // Everything immune against everything standing? Struggle keeps the
       // fight alive (typeless, always usable).
