@@ -823,11 +823,12 @@
       this.update((s) => {
         const t = s.pokedex.trainers[attId]; if (!t) return;
         const r = t.caught[monId]; if (!r) return;
-        const spare = (r.kos || 0) - this.KO_TO_EVOLVE;
+        // Battle EXP is SPENT on the evolution — the evolved form starts fresh
+        // (no spare carried over, so no surprise chain-evolutions).
         r.kos = 0;
         const ex = t.caught[targetId];
-        if (ex) { ex.count = (ex.count || 1) + 1; if (r.shiny) ex.shiny = true; ex.kos = (ex.kos || 0) + spare; }
-        else t.caught[targetId] = { count: 1, ball: r.ball || "poke", shiny: r.shiny || undefined, kos: spare || undefined };
+        if (ex) { ex.count = (ex.count || 1) + 1; if (r.shiny) ex.shiny = true; }
+        else t.caught[targetId] = { count: 1, ball: r.ball || "poke", shiny: r.shiny || undefined };
         t.seen = t.seen || {}; t.seen[targetId] = 1;
         const i = (t.team || []).indexOf(monId);
         if (i >= 0 && t.team.indexOf(targetId) < 0) t.team[i] = targetId;

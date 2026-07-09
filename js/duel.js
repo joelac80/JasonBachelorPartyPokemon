@@ -69,6 +69,7 @@
       moves.push({ name: m[0], pow: m[1], acc: m[2], type: t })));
     if (types.length === 1 && types[0] !== "normal") moves.push({ name: "Tackle", pow: 50, acc: 100, type: "normal" });
     return { id: monId, name: d.n, x: x, types: types,
+      spe: (window.DEX_SPEED && DEX_SPEED[monId]) || 50,   // Gen-2 base Speed → turn order
       hpMax: 120 + Math.round(x * 0.5), atk: 0.55 + x / 500, moves: moves.slice(0, 4) };
   }
 
@@ -245,9 +246,10 @@
     const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null, zmove: false,
       first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null };
     if (!S.first) {
-      // Deterministic tie-break (challenger first) so every phone —
-      // players, partners, and watchers — agrees who leads.
-      const ax = mon(sides.a.units[0]).x, bx = mon(sides.b.units[0]).x;
+      // The faster lead goes first (real Gen-2 base Speed). Deterministic
+      // tie-break (challenger first) so every phone — players, partners, and
+      // watchers — agrees who leads.
+      const ax = mon(sides.a.units[0]).spe, bx = mon(sides.b.units[0]).spe;
       S.first = ax >= bx ? "a" : "b";
     }
     S.actor = { side: S.first, unit: firstLiving(S.first) };
