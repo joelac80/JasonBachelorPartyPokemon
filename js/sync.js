@@ -40,6 +40,7 @@
   const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
+  let renderTimer = null;                     // pending coalesced re-render (debounces remote-update flicker)
   // Generous TTL: phones suspend background tabs (heartbeats pause), so give
   // people 3 minutes before they drop off the "here now" list.
   const PRESENCE_TTL = 180000, HEARTBEAT = 25000;
@@ -195,6 +196,7 @@
   function removePresence() { if (myPresRef) myPresRef.delete().catch(function () {}); }
   function stopPresence() {
     clearInterval(hbTimer); hbTimer = null;
+    clearTimeout(renderTimer); renderTimer = null;   // drop any pending coalesced re-render
     if (presUnsub) { presUnsub(); presUnsub = null; }
     if (chalUnsub) { chalUnsub(); chalUnsub = null; }
     if (liveUnsub) { liveUnsub(); liveUnsub = null; }
@@ -225,6 +227,21 @@
     });
   }
 
+  // A full Router.render() rebuilds the whole page. Firing one per remote
+  // write makes the app flicker when the room is busy, so we COALESCE: apply
+  // the fresh state immediately (data is never stale), but debounce the
+  // re-render — a burst of updates collapses into a single rebuild, and none
+  // fires while the tab is hidden (a focus refresh catches you up).
+  function scheduleRender() {
+    if (renderTimer) return;                       // one already pending — coalesce
+    renderTimer = setTimeout(() => {
+      renderTimer = null;
+      if (document.visibilityState === "hidden") return;
+      const hold = window.__deferRender && window.__deferRender();
+      if (!hold && window.Router && Router.render) Router.render({ keepScroll: true });
+    }, 350);
+  }
+
   function onSnap(doc) {
     if (!doc.exists) { push(); return; }          // first in the room: seed it
     const data = doc.data(); if (!data) return;
@@ -233,12 +250,11 @@
     let obj; try { obj = JSON.parse(data.stateJson); } catch (_) { return; }
     applying = true;
     try { Store.applyRemote(obj); } finally { applying = false; }
-    // The state is now current in the Store. Re-render the page to reflect it —
-    // UNLESS the active view is mid-interaction and asked us to hold off (e.g.
-    // you're battling a wild Pokémon in the Safari; a re-render would yank the
-    // screen). Their next action re-renders with the fresh data anyway.
-    const hold = window.__deferRender && window.__deferRender();
-    if (!hold && window.Router && Router.render) Router.render({ keepScroll: true });
+    // The state is now current in the Store. Schedule a (debounced) re-render
+    // to reflect it — unless the active view is mid-interaction and asked us
+    // to hold off (e.g. mid-catch in the Safari); their next action re-renders
+    // with the fresh data anyway. That hold is re-checked when the timer fires.
+    scheduleRender();
     setStatus("live", "Updated" + (data.by ? " · " + data.by : ""));
     stateSubs.forEach((f) => { try { f(); } catch (_) {} });   // e.g. 📬 inbox pings (run regardless)
   }
