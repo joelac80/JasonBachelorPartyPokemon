@@ -88,7 +88,7 @@
     const links = el("div", { class: "pf-links" }, [
       el("a", { class: "btn subtle sm", href: "#/roster", onClick: () => ctrl.close() }, "🎴 Squad"),
       el("a", { class: "btn subtle sm", href: "#/safari",
-        onClick: () => { Store.update((s) => { s.pokedex.active = attId; }); ctrl.close(); } }, "🔴 Catch as " + a.name.split(" ")[0]),
+        onClick: () => { if (window.Safari) Safari.catchAs(attId); ctrl.close(); } }, "🔴 Catch as " + a.name.split(" ")[0]),
     ]);
 
     const body = el("div", { class: "pf-body" }, [head, stats, troRow, gymRow, links]);
