@@ -499,12 +499,41 @@
       const suspense = enc.querySelector(".safari-suspense");
       const throwRow = enc.querySelector(".safari-throw-row");
       if (throwRow) throwRow.style.visibility = "hidden";
-      if (ball) ball.classList.add("go");
-      if (wild && outcome !== "break") wild.classList.add("caught-anim");
+
+      // Classic wobble: the mon ALWAYS gets sucked in, the ball rocks a few
+      // times, then it CLICKS (caught) or bursts back open (missed). A catch
+      // always reaches 3 shakes then clicks; a miss breaks out after 1–3.
+      const shakes = outcome === "catch" ? 3 : (1 + Math.floor(Math.random() * 3));
+      const T_IN = 1000, T_SHAKE = 560;
+
+      if (ball) ball.classList.add("go");                 // arc to the mon
       sfx("select");
-      const beats = ["The ball shakes…", "…and shakes…", "…and shakes…"];
-      beats.forEach((t, i) => setTimeout(() => { if (suspense) suspense.textContent = t; sfx("blip"); }, 500 + i * 400));
-      setTimeout(() => resolveThrow(outcome, nfo, ballUsed, viaMaster), 1900);
+      if (suspense) suspense.textContent = "Gotcha…?";
+      setTimeout(() => { if (wild) wild.classList.add("caught-anim"); }, 430);   // sucked in
+
+      for (let i = 0; i < shakes; i++) {
+        setTimeout(() => {
+          if (!ball || !document.body.contains(ball)) return;
+          ball.classList.remove("wobble"); void ball.offsetWidth; ball.classList.add("wobble");
+          sfx("blip");
+          if (suspense) suspense.textContent = "…shake " + (i + 1) + "…";
+        }, T_IN + i * T_SHAKE);
+      }
+
+      const endT = T_IN + shakes * T_SHAKE;
+      setTimeout(() => {
+        if (outcome === "catch") {
+          if (ball) { ball.classList.remove("wobble"); ball.classList.add("click"); }
+          sfx("coin");                                     // the lock-in *click*
+          if (suspense) suspense.textContent = "✨ Click!";
+          setTimeout(() => resolveThrow(outcome, nfo, ballUsed, viaMaster), 520);
+        } else {
+          if (ball) { ball.classList.remove("wobble"); ball.classList.add("open"); }
+          if (wild) { wild.classList.remove("caught-anim"); wild.classList.add("burst"); }   // pops back out
+          if (suspense) suspense.textContent = outcome === "break" ? "It broke free!" : "It got loose!";
+          setTimeout(() => resolveThrow(outcome, nfo, ballUsed, viaMaster), 680);
+        }
+      }, endT);
     }
 
     function resolveThrow(outcome, nfo, ballUsed, viaMaster) {
