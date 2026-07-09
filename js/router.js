@@ -18,9 +18,14 @@
 
     go(path) { location.hash = "#/" + path; },
 
-    render() {
+    // opts.keepScroll — rebuild the view WITHOUT jumping back to the top.
+    // Used for live-sync refreshes (a roommate's catch/drink shouldn't yank
+    // your scroll position). Real navigation scrolls to top as usual.
+    render(opts) {
       const root = document.getElementById("view");
       if (!root) return;
+      const keepScroll = !!(opts && opts.keepScroll);
+      const prevY = keepScroll ? (window.scrollY || window.pageYOffset || 0) : 0;
       // Safety net: if no battle overlay is up, the page must be scrollable
       // (a directly-removed .battle would otherwise leave the lock stuck).
       if (!document.querySelector(".battle"))
@@ -39,7 +44,8 @@
         root.textContent = "Something went wrong rendering this page.";
       }
       this._highlightNav(path);
-      window.scrollTo(0, 0);
+      // Restore the reader's place on a live-sync refresh; otherwise top.
+      window.scrollTo(0, keepScroll ? prevY : 0);
     },
 
     _highlightNav(path) {
