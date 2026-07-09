@@ -174,7 +174,15 @@
       root.appendChild(el("h2", { class: "section-title" }, "⚡ Quick log — " + me.name));
       root.appendChild(whichIn);
       root.appendChild(el("div", { class: "drink-btns" }, Store.drinkTypes().map((d) =>
-        el("button", { class: "drink-btn", onClick: () => { Store.logDrink(meId, d.type, whichIn.value); whichIn.value = ""; if (window.SFX) SFX.coin(); } }, [
+        el("button", { class: "drink-btn", onClick: () => {
+          const label = whichIn.value.trim();
+          Store.logDrink(meId, d.type, label);
+          whichIn.value = "";
+          if (window.SFX) SFX.coin();
+          const added = (Store.state.drinks || []).slice(-1)[0];
+          U.toast(d.emoji + " " + d.type + (label ? " (" + label + ")" : "") + " logged for " + me.name,
+            "Undo", () => { if (added && added.id) { Store.update((s) => { s.drinks = (s.drinks || []).filter((x) => x.id !== added.id); }); } });
+        } }, [
           el("span", { class: "drink-e" }, d.emoji), el("span", {}, d.type),
         ]))));
       root.appendChild(el("div", { class: "toolbar" }, [

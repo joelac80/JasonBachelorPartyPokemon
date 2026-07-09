@@ -265,18 +265,7 @@
     ]);
   }
 
-  let toastTimer = null;
-  function toast(msg) {
-    let t = document.getElementById("toast");
-    if (!t) {
-      t = el("div", { id: "toast", class: "toast" });
-      document.body.appendChild(t);
-    }
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
-  }
+  function toast(msg) { U.toast(msg); }
 
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
