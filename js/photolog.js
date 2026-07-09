@@ -144,6 +144,62 @@
     ctrl = Modal.open("Photo moment", host, null, {});
   }
 
-  window.PhotoLog = { capture: capture, openDetail: openDetail, download: download,
+  // ---- bulk save (select many → one download) -----------------------------
+  function fileName(p, i) {
+    const who = (p.by || "photo").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    return "bachparty-" + String(i + 1).padStart(2, "0") + "-" + who + ".jpg";
+  }
+  function dataUriToBytes(uri) {
+    const b64 = String(uri || "").split(",")[1] || "";
+    let bin = ""; try { bin = atob(b64); } catch (_) { return new Uint8Array(0); }
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i) & 255;
+    return out;
+  }
+  function crc32(bytes) {
+    if (!crc32.t) { const t = crc32.t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; } }
+    let crc = 0xFFFFFFFF; const t = crc32.t;
+    for (let i = 0; i < bytes.length; i++) crc = t[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  // Minimal STORE-mode ZIP (JPEGs are already compressed, so no deflate).
+  function makeZip(files) {
+    const u16 = (n) => [n & 255, (n >> 8) & 255];
+    const u32 = (n) => [n & 255, (n >> 8) & 255, (n >> 16) & 255, (n >>> 24) & 255];
+    const enc = (s) => { const a = []; for (let i = 0; i < s.length; i++) a.push(s.charCodeAt(i) & 255); return a; };
+    const chunks = [], central = []; let offset = 0;
+    files.forEach((f) => {
+      const nb = enc(f.name), crc = crc32(f.bytes), sz = f.bytes.length;
+      const local = [].concat(u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(crc), u32(sz), u32(sz), u16(nb.length), u16(0), nb);
+      chunks.push(new Uint8Array(local), f.bytes);
+      central.push({ nb: nb, crc: crc, sz: sz, offset: offset });
+      offset += local.length + sz;
+    });
+    const cdStart = offset; let cd = [];
+    central.forEach((c) => { cd = cd.concat(u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(c.crc), u32(c.sz), u32(c.sz), u16(c.nb.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(c.offset), c.nb); });
+    chunks.push(new Uint8Array(cd));
+    chunks.push(new Uint8Array([].concat(u32(0x06054b50), u16(0), u16(0), u16(central.length), u16(central.length), u32(cd.length), u32(cdStart), u16(0))));
+    return new Blob(chunks, { type: "application/zip" });
+  }
+  // Save many photos at once: native share sheet where supported (iPhone can
+  // "Save N Images" to the camera roll), else a single .zip download.
+  function saveMany(photos) {
+    photos = (photos || []).filter((p) => p && p.img);
+    if (!photos.length) return;
+    try {
+      const fileObjs = photos.map((p, i) => new File([dataUriToBytes(p.img)], fileName(p, i), { type: "image/jpeg" }));
+      if (navigator.canShare && navigator.canShare({ files: fileObjs })) {
+        navigator.share({ files: fileObjs, title: "Bachelor Party photos" }).catch(function () {});
+        return;
+      }
+    } catch (_) {}
+    const blob = makeZip(photos.map((p, i) => ({ name: fileName(p, i), bytes: dataUriToBytes(p.img) })));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "bachparty-photos.zip";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (_) {} }, 5000);
+  }
+
+  window.PhotoLog = { capture: capture, openDetail: openDetail, download: download, saveMany: saveMany,
     REACTIONS: REACTIONS, reactorId: reactorId, reactorName: reactorName };
 })();
