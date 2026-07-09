@@ -211,7 +211,19 @@
       toast(photoChk.checked ? "📸 You'll be pinged for new photos" : "Photo alerts off");
     });
     const photoAlertRow = el("label", { class: "note-toggle" }, [
-      photoChk, el("span", {}, "📸 Alert me whenever someone posts a photo"),
+      photoChk, el("span", {}, "📸 Alert me when someone else posts a photo"),
+    ]);
+    // Fire the exact alert a real photo triggers, so you can confirm it works
+    // on THIS phone without waiting for someone else to post. (You never get
+    // alerted for your own uploads — that's why testing solo looks silent.)
+    const photoTestRow = el("div", { class: "toolbar" }, [
+      el("button", { class: "btn subtle sm", onClick: () => {
+        if (!window.AppNotify || !AppNotify.photoAlerts()) { toast("Turn on photo alerts first ☝️"); return; }
+        if (window.SFX && SFX.blip) SFX.blip();
+        U.toast("📸 Chris posted a photo — “sample shot” (test)", "View", () => { location.hash = "#/feed"; });
+        if (AppNotify.permission() === "granted") setTimeout(() => { if (window.AppNotify) AppNotify.ping("📸 New photo!", "Chris just posted a moment (test)"); }, 4000);
+      } }, "Send a test photo alert"),
+      el("span", { class: "hint" }, "Fires the toast now; background the app within ~4s to see the phone banner too."),
     ]);
 
     const enableBtn = el("button", { class: "btn primary" });
@@ -263,6 +275,7 @@
       noteStatus,
       noteBtns,
       photoAlertRow,
+      photoTestRow,
       el("details", { class: "sync-help" }, [
         el("summary", {}, "How to join (every guest)"),
         el("ol", { class: "sync-steps" }, [
