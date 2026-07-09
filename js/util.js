@@ -102,5 +102,23 @@
       : el("span", {}, (team && team.emoji) || "🎽");
   }
 
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon };
+  // Fleeting bottom toast. Optional action shows a tappable button (e.g. Undo).
+  let toastTimer = null;
+  function toast(msg, actionLabel, actionFn) {
+    let t = document.getElementById("toast");
+    if (!t) { t = el("div", { id: "toast", class: "toast" }); document.body.appendChild(t); }
+    t.innerHTML = "";
+    t.appendChild(el("span", {}, msg));
+    if (actionLabel && actionFn) {
+      t.appendChild(el("button", { class: "toast-act", onClick: function () {
+        try { actionFn(); } catch (_) {}
+        t.classList.remove("show");
+      } }, actionLabel));
+    }
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, actionLabel ? 4000 : 1800);
+  }
+
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast };
 })();

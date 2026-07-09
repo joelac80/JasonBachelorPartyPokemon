@@ -27,14 +27,23 @@
     [logRow, statHost, favesHost, boardHost, awardHost, recentHost].forEach((h) => root.appendChild(h));
 
     function logDrink(type) {
-      if (!active) return;
+      if (!active) { alert("Pick who you're logging for first."); return; }
       const who = (Store.attendee(active) || {}).name || "them";
-      const what = whichIn.value.trim() ? whichIn.value.trim() + " (" + type + ")" : type;
-      if (!confirm(Store.drinkEmoji(type) + " Log a " + what + " for " + who + "?")) return;
-      Store.logDrink(active, type, whichIn.value);
+      const label = whichIn.value.trim();
+      const before = ((Store.state.drinks || []).slice(-1)[0] || {}).id;
+      Store.logDrink(active, type, label);
       whichIn.value = "";
       sfx("coin");
       renderAll();
+      // instant + obvious, with a safety Undo (replaces the old blocking confirm)
+      const added = (Store.state.drinks || []).slice(-1)[0];
+      U.toast(Store.drinkEmoji(type) + " " + type + (label ? " (" + label + ")" : "") + " logged for " + who,
+        "Undo", function () {
+          if (added && added.id && added.id !== before) {
+            Store.update((s) => { s.drinks = (s.drinks || []).filter((x) => x.id !== added.id); });
+            renderAll();
+          }
+        });
     }
 
     function renderLog() {
