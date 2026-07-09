@@ -480,6 +480,9 @@ body {
   100% { opacity: 1; transform: translate(-50%, -20px) scale(1); box-shadow: 0 0 0 14px rgba(255,203,5,0); }
 }
 /* missed — the ball flashes open as the mon bursts back out */
+/* opt-in toggle row (Settings → Phone alerts) */
+.note-toggle { display: flex; align-items: center; gap: 10px; margin: 8px 0 2px; font-weight: 700; cursor: pointer; }
+.note-toggle input { width: 20px; height: 20px; accent-color: var(--accent, #ee1515); flex: none; }
 .safari-ball-throw.open { animation: safariOpen .45s ease forwards; }
 @keyframes safariOpen {
   0% { transform: translate(-50%, -20px) scale(1); opacity: 1; }

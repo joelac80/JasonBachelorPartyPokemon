@@ -200,6 +200,20 @@
       } }, "Send a test"),
     ]);
 
+    // Opt-in: a ping for every new photo dropped in the room feed.
+    const photoChk = el("input", { type: "checkbox" });
+    try { photoChk.checked = !!(window.AppNotify && AppNotify.photoAlerts()); } catch (_) {}
+    photoChk.addEventListener("change", () => {
+      if (window.AppNotify) AppNotify.setPhotoAlerts(photoChk.checked);
+      if (photoChk.checked && window.AppNotify && AppNotify.permission() !== "granted") {
+        AppNotify.request(() => paintNote());
+      }
+      toast(photoChk.checked ? "📸 You'll be pinged for new photos" : "Photo alerts off");
+    });
+    const photoAlertRow = el("label", { class: "note-toggle" }, [
+      photoChk, el("span", {}, "📸 Alert me whenever someone posts a photo"),
+    ]);
+
     const enableBtn = el("button", { class: "btn primary" });
     function paintBtn() {
       const on = Sync.getConf().enabled;
@@ -248,6 +262,7 @@
       el("p", { class: "hint" }, "Get pinged when you're challenged or a battle starts. iPhone REQUIRES the app on your Home Screen first (Share → Add to Home Screen), opened from that icon."),
       noteStatus,
       noteBtns,
+      photoAlertRow,
       el("details", { class: "sync-help" }, [
         el("summary", {}, "How to join (every guest)"),
         el("ol", { class: "sync-steps" }, [

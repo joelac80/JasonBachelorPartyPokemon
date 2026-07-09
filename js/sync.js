@@ -37,8 +37,9 @@
   let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
   let presenceList = [], roamLast = null;
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [];
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
+  let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
   // Generous TTL: phones suspend background tabs (heartbeats pause), so give
   // people 3 minutes before they drop off the "here now" list.
   const PRESENCE_TTL = 180000, HEARTBEAT = 25000;
@@ -157,9 +158,21 @@
     // Photo log channel — one small doc per downscaled photo.
     photosRef = db.collection("rooms").doc(room).collection("photos");
     if (photosUnsub) photosUnsub();
+    photoSeen = null;
     photosUnsub = photosRef.onSnapshot((snap) => {
       const list = []; snap.forEach((d) => { const x = d.data(); if (x && x.id) list.push(x); });
       if (list.length) { applying = true; try { Store.mergePhotos(list); } finally { applying = false; } }   // upsert (adds + reaction/comment updates)
+      // Detect genuinely NEW photos (not reaction/comment edits) so listeners can
+      // ping. The first snapshot is the existing backlog — prime the set silently.
+      if (photoSeen === null) {
+        photoSeen = {}; list.forEach((p) => { photoSeen[p.id] = 1; });
+      } else {
+        list.forEach((p) => {
+          if (photoSeen[p.id]) return;
+          photoSeen[p.id] = 1;
+          photoSubs.forEach((f) => { try { f(p); } catch (_) {} });
+        });
+      }
     }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
     // When the app returns to the foreground (unlocked phone / switched back),
@@ -185,7 +198,7 @@
     if (presUnsub) { presUnsub(); presUnsub = null; }
     if (chalUnsub) { chalUnsub(); chalUnsub = null; }
     if (liveUnsub) { liveUnsub(); liveUnsub = null; }
-    if (photosUnsub) { photosUnsub(); photosUnsub = null; }
+    if (photosUnsub) { photosUnsub(); photosUnsub = null; } photoSeen = null;
     if (duelUnsub) { duelUnsub(); duelUnsub = null; }
     if (roamUnsub) { roamUnsub(); roamUnsub = null; }
     removePresence();
@@ -388,6 +401,8 @@
     onDuel(fn) { duelSubs.push(fn); return () => { const i = duelSubs.indexOf(fn); if (i >= 0) duelSubs.splice(i, 1); }; },
     // fires after a REMOTE state doc is applied (not on local edits)
     onStateApplied(fn) { stateSubs.push(fn); return () => { const i = stateSubs.indexOf(fn); if (i >= 0) stateSubs.splice(i, 1); }; },
+    // Fires with each NEW photo that lands from the room (backlog excluded).
+    onPhotoAdded(fn) { photoSubs.push(fn); return () => { const i = photoSubs.indexOf(fn); if (i >= 0) photoSubs.splice(i, 1); }; },
 
     // Share a photo moment to the room (its own doc — keeps the state doc lean).
     sharePhoto(entry) { if (photosRef && entry && entry.id) photosRef.doc(entry.id).set(entry).catch(function () {}); },
