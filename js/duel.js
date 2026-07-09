@@ -244,7 +244,12 @@
     function livingEnemies(s) { return sides[other(s)].units.map((u, i) => ({ u: u, i: i })).filter((x) => unitAlive(x.u)); }
 
     const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null, zmove: false,
-      first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null };
+      first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null,
+      // Simultaneous turns: every active slot picks an action (an "order") without
+      // seeing the others; then all orders resolve fastest-first (real-Pokémon
+      // style). phase: "select" (picking) | "resolve" (playing out) | "replace"
+      // (sending out fainted slots at end of turn).
+      phase: "select", orders: {}, sel: [], res: [], repl: [] };
     if (!S.first) {
       // The faster lead goes first (real Gen-2 base Speed). Deterministic
       // tie-break (challenger first) so every phone — players, partners, and
@@ -443,45 +448,130 @@
       applyAct(act, instant, () => { S.busy = false; pump(); });
     }
 
+    // ---- selection phase: prompt each living slot for its action ----
+    // Slots are prompted one at a time over the synced act stream (fast side
+    // first) so seq stays monotonic — but a chosen action is only RECORDED,
+    // not played out, and nobody sees the others' picks until they resolve.
+    function beginSelect() {
+      if (S.done) return;
+      S.phase = "select"; S.orders = {}; S.pending = null; S.zmove = false; S.res = []; S.repl = [];
+      S.sel = [];
+      [S.first, other(S.first)].forEach((sd) => sides[sd].units.forEach((u, i) => { if (unitAlive(u)) S.sel.push({ side: sd, unit: i }); }));
+      if (!S.sel.length) return;
+      S.actor = S.sel[0];
+      renderMenu();
+    }
+    // During selection, move to the next slot that still needs to choose.
+    // (Resolution and replacement drive themselves; advance is a no-op there.)
     function advance() {
-      const s = S.actor.side, units = sides[s].units;
-      let u = S.actor.unit + 1;
-      while (u < units.length && !unitAlive(units[u])) u++;
-      if (u < units.length) S.actor = { side: s, unit: u };
-      else { const o = other(s); S.actor = { side: o, unit: firstLiving(o) }; }
+      if (S.phase !== "select") return;
+      if (S.sel.length) { S.actor = S.sel[0]; renderMenu(); }
+    }
+
+    // ---- resolution phase: play out every order, fastest first ----
+    function beginResolve() {
+      S.phase = "resolve";
+      const list = [];
+      Object.keys(S.orders).forEach((k) => {
+        const i = k.indexOf(":"); const side = k.slice(0, i), unit = +k.slice(i + 1);
+        list.push(Object.assign({ side: side, unit: unit }, S.orders[k]));
+      });
+      // Switches go first, then potions, then attacks by Speed (desc). Ties break
+      // deterministically (side, then slot) so every phone resolves identically.
+      const rank = (o) => o.kind === "switch" ? 0 : o.kind === "potion" ? 1 : 2;
+      list.sort((a, b) => {
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        const sa = mon(sides[a.side].units[a.unit]).spe, sb = mon(sides[b.side].units[b.unit]).spe;
+        if (sa !== sb) return sb - sa;
+        if (a.side !== b.side) return a.side < b.side ? -1 : 1;
+        return a.unit - b.unit;
+      });
+      S.res = list;
+      resolveNext();
+    }
+    function resolveNext() {
+      if (S.done) return;
+      const o = S.res.shift();
+      if (!o) { endTurn(); return; }
+      const u = sides[o.side].units[o.unit];
+      if (mon(u).hp <= 0) { resolveNext(); return; }   // fainted before it could act → skip
+      if (o.kind === "switch") return resolveSwitch(o, u);
+      if (o.kind === "potion") return resolvePotion(o, u);
+      return resolveMove(o, u);
+    }
+    function resolveSwitch(o, u) {
+      if (!bench(u).some((x) => x.i === o.to)) { resolveNext(); return; }   // no longer valid
+      const old = mon(u).name; u.cur = o.to; S.moved++;
+      renderSprites(o.side); renderHp(o.side); menu.innerHTML = "";
+      beats([[u.name + " withdrew " + old + " — go, " + mon(u).name + "!", 1100, () => sfx("blip")]], resolveNext);
+    }
+    function resolvePotion(o, u) {
+      u.potions = Math.max(0, u.potions - 1); S.moved++;
+      const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 60); paintHp(u); menu.innerHTML = "";
+      beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+60 HP)", 1200, () => sfx("coin")]], resolveNext);
+    }
+    function resolveMove(o, u) {
+      const dSide = other(o.side);
+      let tUnit = o.tUnit, tu = sides[dSide].units[tUnit];
+      if (!tu || mon(tu).hp <= 0) {                    // chosen target fainted → re-target
+        const foes = livingEnemies(o.side);
+        if (!foes.length) { resolveNext(); return; }   // no one left to hit → the move fizzles
+        tUnit = foes[0].i; tu = sides[dSide].units[tUnit];
+      }
+      // Damage's random roll was baked in at pick time (o.base); type effect is
+      // applied now against the ACTUAL target so re-targeting stays deterministic.
+      const m = mon(u), mv = o.move === 99 ? STRUGGLE : (m.moves[o.move] || m.moves[0]);
+      const eff = effFor(mv.type, mon(tu).types), immune = eff === 0;
+      const miss = immune ? false : o.miss;
+      const dmg = (miss || immune) ? 0 : Math.max(1, Math.round(o.base * eff));
+      applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
+        miss: miss, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg, by: o.by },
+        u, false, resolveNext);
+    }
+
+    // ---- end of turn: send out any fainted slots, then next turn ----
+    function endTurn() {
+      if (S.done) return;
+      S.repl = [];
+      ["a", "b"].forEach((sd) => sides[sd].units.forEach((u, i) => {
+        if (mon(u).hp <= 0 && bench(u).length > 0) S.repl.push({ side: sd, unit: i });
+      }));
+      promptReplace();
+    }
+    function promptReplace() {
+      if (S.done) return;
+      if (!S.repl.length) { beginSelect(); return; }
+      S.phase = "replace";
+      S.pending = S.repl[0]; S.actor = S.repl[0];
       renderMenu();
     }
 
     function applyAct(act, instant, done) {
       const u = sides[act.side].units[act.unit];
-      if (act.kind === "move") return applyMove(act, u, instant, done);
-      if (act.kind === "potion") {
-        u.potions = Math.max(0, u.potions - 1); S.moved++;
-        const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 60); paintHp(u);
-        if (instant) { advance(); done(); return; }
-        menu.innerHTML = "";
-        beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+60 HP)", 1200, () => sfx("coin")]],
-          () => { advance(); done(); });
+      // An "order" is a slot's chosen action — recorded, not yet played out.
+      // When the last living slot has ordered, the whole turn resolves by Speed.
+      if (act.kind === "order") {
+        S.orders[act.side + ":" + act.unit] = act.order;
+        S.sel = S.sel.filter((s) => !(s.side === act.side && s.unit === act.unit));
+        // Resolution + replacement are a local animated chain (no acts arrive
+        // mid-turn), so release the pump lock now and let it self-drive.
+        done();
+        if (S.sel.length) { S.actor = S.sel[0]; renderMenu(); }
+        else beginResolve();
         return;
       }
-      if (act.kind === "courage") {
-        u.courage = false; u.armed = true; S.moved++;
-        if (instant) { advance(); done(); return; }
-        menu.innerHTML = "";
-        beats([["🍺 " + u.name + " chugs half the drink — " + mon(u).name + " is fired up!", 1200, () => sfx("correct")]],
-          () => { advance(); done(); });
-        return;
-      }
-      if (act.kind === "switch" || act.kind === "next") {
-        const old = mon(u).name;
+      // End-of-turn replacement of a fainted slot.
+      if (act.kind === "next") {
         u.cur = act.to; S.moved++;
         renderSprites(act.side); renderHp(act.side);
-        const isNext = act.kind === "next";
-        const fin = () => { if (isNext) { S.pending = null; advance(); } else advance(); done(); };
+        const fin = () => {
+          S.repl = S.repl.filter((s) => !(s.side === act.side && s.unit === act.unit));
+          promptReplace();
+        };
+        done();
         if (instant) { fin(); return; }
         menu.innerHTML = "";
-        beats([[isNext ? u.name + " sent out " + mon(u).name + "!" : u.name + " withdrew " + old + " — go, " + mon(u).name + "!",
-          1100, () => sfx("blip")]], fin);
+        beats([[u.name + " sent out " + mon(u).name + "!", 1100, () => sfx("blip")]], fin);
         return;
       }
       if (act.kind === "forfeit") {
@@ -528,12 +618,9 @@
       const chug = act.courage ? [["🍺 " + u.name + " chugs — LIQUID COURAGE!", 950, () => sfx("correct")]] : [];
       const afterDamage = () => {
         if (tm.hp > 0) { advance(); done(); return; }
-        // fainted — replacement, drop the unit, or end the battle
-        if (unitAlive(tu)) {                       // bench remains → owner picks
-          S.pending = { side: dSide, unit: act.tUnit };
-          renderMenu(); done(); return;
-        }
-        if (sides[dSide].units.some(unitAlive)) { renderHp(dSide); advance(); done(); return; }  // doubles partner fights on
+        // Fainted. Replacements are sent out at END of turn (real-Pokémon style),
+        // so here we just carry on — unless the whole side is down, which ends it.
+        if (sides[dSide].units.some(unitAlive)) { renderHp(dSide); advance(); done(); return; }
         finish(act.side, act, "faint", instant, done);
       };
       // 🍓 auto-berry: survive a hit below 30% and the trainer's Sitrus kicks in
@@ -843,7 +930,8 @@
         kind === "next" ? "💫 " + u.name + " — choose your next Pokémon!" : "🔄 " + u.name + " — switch to who?"));
       menu.appendChild(el("div", { class: "duel-party-row" }, bench(u).map((x) =>
         el("button", { class: "duel-bench", onClick: () => {
-          sendAct({ seq: S.seq + 1, kind: kind, side: ptr.side, unit: ptr.unit, to: x.i });
+          if (kind === "next") sendAct({ seq: S.seq + 1, kind: "next", side: ptr.side, unit: ptr.unit, to: x.i });
+          else sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "switch", to: x.i } });
         } }, [
           frontSprite(x.m.id, x.m.shiny) ? el("img", { src: frontSprite(x.m.id, x.m.shiny), alt: x.m.name }) : el("span", { class: "draft-thumb-ball" }),
           el("span", { class: "duel-bench-txt" }, x.m.name + " · " + x.m.hp + "/" + x.m.hpMax),
@@ -866,16 +954,16 @@
 
     function doMove(u, ptr, mIdx, tIdx, z) {
       const m = mon(u), mv = mIdx === 99 ? STRUGGLE : m.moves[mIdx];
-      const tm = mon(sides[other(ptr.side)].units[tIdx]);
       const armed = !!z;                               // Liquid Courage: unleashed on THIS hit
       S.zmove = false;
-      const eff = effFor(mv.type, tm.types);
-      const immune = eff === 0;                        // type trumps everything, even beer
-      const miss = !immune && !armed && Math.random() * 100 >= mv.acc;
-      const crit = !immune && !miss && (armed || Math.random() < 0.08);
-      const dmg = (miss || immune) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * eff * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
-      sendAct({ seq: S.seq + 1, kind: "move", side: ptr.side, unit: ptr.unit, move: mIdx, tUnit: tIdx,
-        miss: miss, crit: crit, armed: armed, courage: armed, eff: eff, dmg: dmg });
+      // Roll accuracy, crit and the damage spread NOW (so it's baked into the
+      // synced order); type effect is applied at resolution against whoever's
+      // actually standing there, keeping re-targets deterministic.
+      const miss = !armed && Math.random() * 100 >= mv.acc;
+      const crit = !miss && (armed || Math.random() < 0.08);
+      const base = miss ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
+        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, armed: armed, courage: armed } });
     }
 
     // ---- gym-leader AI: picks the hardest-hitting move vs the best target,
@@ -953,8 +1041,8 @@
       menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
       const row = [
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
-          confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP.",
-            "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "potion", side: ptr.side, unit: ptr.unit }));
+          confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP. (Takes this turn.)",
+            "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "potion" } }));
         } }, "🧪 Potion ×" + u.potions),
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
           confirmPanel("🍺 Liquid Courage — " + u.name + " finishes half their drink, then UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT.",
@@ -1009,8 +1097,8 @@
       overlay.classList.add("go", "ready");
       sfx("blip");
       const lead = sides[S.first].units[0];
-      msg.textContent = mon(lead).name + " is faster — " + label(S.first) + " go" + (label(S.first).indexOf(" & ") >= 0 ? "" : "es") + " first!";
-      setTimeout(() => { if (!S.done) { S.ready = true; renderMenu(); pump(); } }, 900);
+      msg.textContent = "Choose your moves — the fastest strikes first!";
+      setTimeout(() => { if (!S.done) { S.ready = true; beginSelect(); pump(); } }, 900);
     }, 1700);
 
     return { receiveActs: receiveActs, receiveRx: receiveRx, close: close };
