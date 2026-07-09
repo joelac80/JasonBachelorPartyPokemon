@@ -3,6 +3,10 @@
    (stored in this browser). No art ships with the app — you curate it. */
 (function () {
   const { el, uid } = U;
+  // The sprite-rain intro should fire ONCE per session — not on every render.
+  // (Live-sync re-renders the page on each room update; without this guard a
+  // busy room would stack a new intro overlay every few seconds = flicker.)
+  let introShown = false;
 
   // Inject the intro animation styles once.
   function ensureIntroStyles() {
@@ -104,7 +108,7 @@
   }
 
   function view(root) {
-    playIntro();
+    if (!introShown) { introShown = true; playIntro(); }
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🌿 Hall of Bulbasaur"),
