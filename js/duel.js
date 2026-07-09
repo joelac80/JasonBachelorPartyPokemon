@@ -2,8 +2,9 @@
    Duel.start({ mode, title, first, a, b, myClient, net, onResult, onEnd })
      a/b: { units: [{ attId, monIds: [...], client? }, ...] }
        1 unit per side = singles (bring a party of up to 6, switch on faint
-       or spend a turn to switch voluntarily); 2 units = a DOUBLE battle
-       (two trainers per side, one mon each, pick your target).
+       or spend a turn to switch voluntarily); 2 units = a DOUBLE battle (2v2 —
+       each unit fields one active mon and switches to its own bench; the two
+       units can be two trainers, or the same trainer running both slots).
    Everything fights at Lv50: HP/attack come from the species power stat,
    moves from its types. Drink actions (per trainer, each takes the turn):
      🧪 Drink Potion   — take 3 sips → heal 60 HP (2 per battle)

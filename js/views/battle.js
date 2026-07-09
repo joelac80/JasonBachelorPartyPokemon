@@ -56,7 +56,8 @@
 
     // ---- Duel Mode: real turn-based battles at Lv50 ----
     // Singles = 1 trainer per side with a party of up to 6 (switch on faint,
-    // or spend a turn to switch). Doubles = 2 trainers per side, 1 mon each.
+    // or spend a turn to switch). Doubles = 2 field slots per side (2v2), each
+    // slot a party of up to 3 that switches to its own bench.
     let format = "single";
     const duel = { a: [{ attId: "", party: [] }], b: [{ attId: "", party: [] }] };
     function blankUnits() { return format === "double" ? [{ attId: "", party: [] }, { attId: "", party: [] }] : [{ attId: "", party: [] }]; }
@@ -73,7 +74,7 @@
     root.appendChild(duelHost);
 
     function unitEditor(side, cls, u, slotLabel) {
-      const maxParty = format === "double" ? 1 : 6;
+      const maxParty = format === "double" ? 3 : 6;
       const sel = el("select", { class: "in" }, [el("option", { value: "" }, slotLabel || "Pick a trainer…")]
         .concat(Store.state.attendees.map((a) => el("option", { value: a.id }, a.name))));
       sel.value = u.attId;
@@ -131,7 +132,7 @@
         el("button", { class: "chip" + (format === "double" ? " on" : ""), onClick: () => { if (format !== "double") { format = "double"; duel.a = blankUnits(); duel.b = blankUnits(); renderDuel(); } } }, "🐾 Double — 2 on the field"),
       ]));
       if (format === "double") duelHost.appendChild(el("p", { class: "hint" },
-        "Two trainers team up — or pick the SAME trainer in both slots to run two of their Pokémon at once."));
+        "2v2 on the field. Two trainers team up — each brings up to 3 (one fights, the rest are bench). Pick the SAME trainer in both slots to run a solo double from one party."));
       duelHost.appendChild(el("div", { class: "arena-grid" }, [
         duelSide("a", "🔵 Blue Corner", "blue"),
         el("div", { class: "arena-vs" }, "VS"),
@@ -141,8 +142,8 @@
         el("button", { class: "btn spin-btn", onClick: () => {
           const ok = (us) => us.every((u) => u.attId && u.party.length);
           if (!ok(duel.a) || !ok(duel.b)) { alert("Every trainer needs to be picked and have at least one Pokémon."); return; }
-          const dup = (us) => us.length === 2 && us[0].attId === us[1].attId && us[0].party[0] === us[1].party[0];
-          if (dup(duel.a) || dup(duel.b)) { alert("Same trainer twice is fine — but pick two DIFFERENT Pokémon."); return; }
+          const dup = (us) => us.length === 2 && us[0].attId === us[1].attId && us[0].party.some((id) => us[1].party.indexOf(id) >= 0);
+          if (dup(duel.a) || dup(duel.b)) { alert("Same trainer twice is fine — but the two field slots must use DIFFERENT Pokémon."); return; }
           Duel.start({ mode: "local", title: (eventLabel || "").trim() || "Duel",
             a: { units: duel.a.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) },
             b: { units: duel.b.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) },
@@ -197,20 +198,20 @@
                   Duel.pickParty({ attId: me, title: "Your party vs " + nm, onDone: (ids) => sent({ kind: "duel", party: ids }) });
                 } }, "⚔ Single — party up to 6"),
                 el("button", { class: "btn primary", onClick: () => { fmt.close();
-                  Duel.pickParty({ attId: me, max: 1, title: "Your Pokémon (double battle)", hint: "One mon each in doubles.", onDone: (mine) => {
+                  Duel.pickParty({ attId: me, min: 3, max: 3, title: "Your 3 Pokémon (pair battle)", hint: "You and your partner each bring 3 — one each on the field, 2v2, switch to your bench.", onDone: (mine) => {
                     Duel.pickTrainer({ exclude: [me], title: "Pick your partner", hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.", onDone: (ally) => {
                       const allyName = (Store.attendee(ally) || {}).name || "Partner";
-                      Duel.pickParty({ attId: ally, max: 1, title: allyName + "'s Pokémon", onDone: (theirs) => {
+                      Duel.pickParty({ attId: ally, min: 3, max: 3, title: allyName + "'s 3 Pokémon", onDone: (theirs) => {
                         sent({ kind: "duel", party: mine, pairAtt: ally, pairParty: theirs });
                       } });
                     } });
                   } });
-                } }, "🤝 Double — bring a partner"),
+                } }, "🤝 Pair — bring a partner (3 each)"),
                 el("button", { class: "btn primary", onClick: () => { fmt.close();
-                  Duel.pickParty({ attId: me, min: 2, max: 2, title: "Pick TWO Pokémon (solo double)", hint: "Both fight at the same time.", onDone: (ids) => {
+                  Duel.pickParty({ attId: me, min: 4, max: 4, title: "Pick FOUR Pokémon (double battle)", hint: "Your first two lead the field (2v2); the other two ride the bench. Tap in order.", onDone: (ids) => {
                     sent({ kind: "duel", party: ids, solo2: true });
                   } });
-                } }, "🐾 Double — solo, 2 Pokémon"),
+                } }, "🐾 Double — solo (4 Pokémon)"),
               ]),
             ]);
             fmt = Modal.open("🎮 Pokémon Duel", body, null, {});
