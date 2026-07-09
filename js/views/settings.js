@@ -213,6 +213,19 @@
     const photoAlertRow = el("label", { class: "note-toggle" }, [
       photoChk, el("span", {}, "📸 Alert me when someone else posts a photo"),
     ]);
+    // Opt-in: a ping when someone reacts to one of YOUR photos.
+    const reactChk = el("input", { type: "checkbox" });
+    try { reactChk.checked = !!(window.AppNotify && AppNotify.reactAlerts()); } catch (_) {}
+    reactChk.addEventListener("change", () => {
+      if (window.AppNotify) AppNotify.setReactAlerts(reactChk.checked);
+      if (reactChk.checked && window.AppNotify && AppNotify.permission() !== "granted") {
+        AppNotify.request(() => paintNote());
+      }
+      toast(reactChk.checked ? "💛 You'll be pinged when someone reacts to your photos" : "Reaction alerts off");
+    });
+    const reactAlertRow = el("label", { class: "note-toggle" }, [
+      reactChk, el("span", {}, "💛 Alert me when someone reacts to my photo"),
+    ]);
     // Fire the exact alert a real photo triggers, so you can confirm it works
     // on THIS phone without waiting for someone else to post. (You never get
     // alerted for your own uploads — that's why testing solo looks silent.)
@@ -275,6 +288,7 @@
       noteStatus,
       noteBtns,
       photoAlertRow,
+      reactAlertRow,
       photoTestRow,
       el("details", { class: "sync-help" }, [
         el("summary", {}, "How to join (every guest)"),
