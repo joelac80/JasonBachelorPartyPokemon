@@ -1,8 +1,9 @@
 /* safari.js — Pokédex Safari drinking game (per-trainer competition).
    Encounter odds are near-flat (legendaries show up!), but catch rates are
    drastically tiered: Common 55% → Legendary 4% base, and legendaries take
-   boosts at half strength — so landing one is a genuine celebration. Each
-   legendary is ONE OF ONE: first catch claims the only one in the region.
+   boosts at half strength — so landing one is a genuine celebration. Everyone
+   can catch their OWN of every Pokémon (legendaries included) — no one-of-one
+   contention; each trainer builds their own dex.
    Earn boosts by DOING things — each is a random action you must perform;
    chicken out and you take a sip + forfeit that boost, and the wild one may
    spook and bolt (up to 50% for legendaries):
@@ -100,8 +101,8 @@
     return { name: d.n, x: x, leg: leg, base: base, sips: sips, flee: flee, tier: tier, color: TIER_COLOR[tier] };
   }
 
-  // Legendaries are ONE OF ONE: once anyone in the room catches it, it's out
-  // of the wild pool for everyone. Returns the owner's attendee id, or "".
+  // Who (if anyone) has caught this species — used only for flavor now
+  // (everyone can catch their own). Returns an owner's attendee id, or "".
   function legendaryOwner(id) {
     const trs = P().trainers || {};
     for (const tid in trs) { if (trs[tid].caught && trs[tid].caught[id]) return tid; }
@@ -130,11 +131,11 @@
   function comboBonus(id) { return Math.min(0.25, 0.05 * comboOf(id)); }
 
   // Near-flat encounter odds — cool Pokémon show up almost as often as commons;
-  // the drama lives in the catch rate, not the sighting. Claimed legendaries
-  // leave the wild pool entirely (one of one).
+  // the drama lives in the catch rate, not the sighting. Legendaries stay rare
+  // but are NOT one-of-one anymore: everyone can catch their own.
   function weightFor(id) {
     const d = DEX[id]; let w = 1 / Math.pow(d.x, 0.30);
-    if (d.leg) { if (legendaryOwner(id)) return 0; w *= 0.7; }
+    if (d.leg) w *= 0.7;
     return w;
   }
   function randomEncounter() {
@@ -291,11 +292,11 @@
       enc.innerHTML = "";
       if (!active()) { enc.appendChild(el("div", { class: "safari-idle" }, el("p", { class: "empty" }, "👆 Pick a trainer to start catching."))); return; }
       if (!current) {
-        // 🌩 roaming legendary: room-wide race — jump it to the front of the grass
+        // 🌩 roaming legendary: a room-wide event — everyone can go grab one
         const roam = window.Sync && Sync.roam && Sync.roam();
-        if (roam && DEX[roam.monId] && !legendaryOwner(roam.monId)) {
+        if (roam && DEX[roam.monId]) {
           enc.appendChild(el("div", { class: "roam-banner" }, [
-            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the lake house — first catch claims it!"),
+            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the lake house — go catch it!"),
             el("button", { class: "btn primary sm", onClick: () => {
               current = roam.monId; shiny = false; revealId = null; status = ""; clearBoosts();
               const tid = active();
@@ -337,7 +338,7 @@
         el("span", { class: "safari-tier", style: { background: nfo.color } }, nfo.tier),
         el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
         shiny ? el("span", { class: "safari-shiny-chip" }, "✨ SHINY — double payout!") : null,
-        nfo.leg ? el("span", { class: "safari-oneof" }, "✨ ONE OF ONE") : null,
+        nfo.leg ? el("span", { class: "safari-oneof" }, "🌟 LEGENDARY") : null,
         owned ? el("span", { class: "safari-owned" }, "✓ already in dex") : null,
       ]);
       // Human-readable breakdown of every active boost.
@@ -431,11 +432,11 @@
       // a fresh rustle in the grass can stir a ROAMING LEGENDARY the whole
       // room races for (live rooms only; one storm at a time).
       if (window.Sync && Sync.isLive && Sync.isLive() && Sync.startRoam && !(Sync.roam && Sync.roam()) && Math.random() < 1 / 40) {
-        const wild = IDS.filter((x) => DEX[x].leg && !legendaryOwner(x));
+        const wild = IDS.filter((x) => DEX[x].leg);
         if (wild.length) {
           const pickId = wild[(Math.random() * wild.length) | 0];
           Sync.startRoam(pickId);
-          Store.logEvent("🌩", "The sky darkens over the lake — a wild " + DEX[pickId].n + " is ROAMING! First to catch it claims it!");
+          Store.logEvent("🌩", "The sky darkens over the lake — a wild " + DEX[pickId].n + " is ROAMING! Everyone go catch one!");
         }
       }
       current = randomEncounter();
@@ -480,23 +481,6 @@
         busy = false; renderEncounter(); return;
       }
       if (outcome === "catch") {
-        // 🏁 One-of-one race: if someone else claimed this legendary while your
-        // ball was in the air (Suicune with three of you throwing), you lost —
-        // no double catches of the region's only one.
-        if (nfo.leg && legendaryOwner(id) && legendaryOwner(id) !== tid) {
-          const owner = attendeeName(legendaryOwner(id));
-          sfx("error");
-          enc.innerHTML = "";
-          enc.appendChild(el("div", { class: "safari-card result miss" }, [
-            el("img", { class: "safari-wild fled", src: SP[id], alt: nfo.name }),
-            el("div", { class: "safari-result-msg" }, owner + " already caught " + nfo.name + "!"),
-            el("div", { class: "safari-payout miss" }, "🏁 Beaten to the only one in the region — take a sip." ),
-            el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
-          ]));
-          current = null; busy = false; status = ""; shiny = false; clearBoosts();
-          renderStats(); renderBoard(); renderTeam(); renderDex();
-          return;
-        }
         let newCombo = 0;
         const isShiny = shiny;
         // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
@@ -534,16 +518,13 @@
           s.pokedex.log = s.pokedex.log || [];
           s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, shiny: isShiny || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
-          if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY, the only one in the region!!" : " — double payout!"));
-          else if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + " — the only one in the region!" + (viaMaster ? " (Master Ball dare!)" : ""));
+          if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY!!" : " — double payout!"));
+          else if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : ""));
           else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
         });
-        // Roaming legendary landed → the race is over, tell the room.
-        try {
-          const roam = window.Sync && Sync.roam && Sync.roam();
-          if (roam && roam.monId === id) Sync.claimRoam(attendeeName(tid));
-        } catch (_) {}
+        // A roaming legendary stays out for the whole room (everyone can grab
+        // their own) — it just wanders off on its own timer, no exclusive claim.
         const catcherTeam = Store.team(Store.teamOf(tid));
         sfx(isShiny ? "fanfare" : "win");
         const nextBonus = Math.min(0.25, 0.05 * newCombo);
@@ -552,7 +533,7 @@
           el("img", { class: "safari-wild pop", src: (isShiny && SPS[id]) || SP[id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + (isShiny ? "a ✨ SHINY " : "") + nfo.name + "!"),
           isShiny ? el("div", { class: "safari-legend-note" }, "✨ SHINY — its colors are different! Double payout, marked in the dex forever.") : null,
-          nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 ONE OF ONE — the only " + nfo.name + " in the region belongs to " + attendeeName(tid) + "!") : null,
+          nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 LEGENDARY — " + nfo.name + " joins " + attendeeName(tid) + "'s team!") : null,
           el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
           el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + sips + " sip" + (sips > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + "!"),
           catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
