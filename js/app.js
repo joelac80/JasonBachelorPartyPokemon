@@ -128,6 +128,9 @@
     // Opt-in: ping this phone every time a new photo lands in the room feed.
     photoAlerts() { try { return localStorage.getItem("jasonBachHub.notifyPhotos") === "1"; } catch (_) { return false; } },
     setPhotoAlerts(on) { try { localStorage.setItem("jasonBachHub.notifyPhotos", on ? "1" : "0"); } catch (_) {} },
+    // Opt-in: ping when someone reacts to one of YOUR photos.
+    reactAlerts() { try { return localStorage.getItem("jasonBachHub.notifyReacts") === "1"; } catch (_) { return false; } },
+    setReactAlerts(on) { try { localStorage.setItem("jasonBachHub.notifyReacts", on ? "1" : "0"); } catch (_) {} },
   };
 
   Router.start();
@@ -480,6 +483,24 @@
         U.toast("📸 " + who + " posted a photo" + cap, "View", () => { location.hash = "#/feed"; });
       } else {
         notify("📸 New photo!", who + " just posted a moment" + cap);
+      }
+    });
+
+    // 💛 Someone reacted to YOUR photo → alert (opt-in). Same two surfaces as
+    // above; only fires for reactions on a photo you posted, by someone else.
+    if (Sync.onPhotoReaction) Sync.onPhotoReaction((p, r) => {
+      if (!p || !r || !window.AppNotify || !AppNotify.reactAlerts()) return;
+      const meId = (Sync.getMe && Sync.getMe()) || "";
+      if (!meId || p.loggedBy !== meId) return;                 // only MY photos
+      const myClient = Sync.myClientId && Sync.myClientId();
+      if (myClient && r.by === myClient) return;                // not my own reaction
+      const who = r.name || "Someone";
+      const cap = p.caption ? " (“" + p.caption + "”)" : "";
+      if (document.visibilityState === "visible") {
+        if (window.SFX && SFX.blip) SFX.blip();
+        U.toast(r.emoji + " " + who + " reacted to your photo" + cap, "View", () => { location.hash = "#/feed"; });
+      } else {
+        notify(r.emoji + " Reaction!", who + " reacted to your photo" + cap);
       }
     });
 

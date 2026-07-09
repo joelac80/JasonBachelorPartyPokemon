@@ -37,9 +37,10 @@
   let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
   let presenceList = [], roamLast = null;
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [];
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [], photoReactSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
+  let photoReactKeys = null;                  // photoId -> { "reactorClient|emoji": 1 } already seen (new ones ping)
   let renderTimer = null;                     // pending coalesced re-render (debounces remote-update flicker)
   // Generous TTL: phones suspend background tabs (heartbeats pause), so give
   // people 3 minutes before they drop off the "here now" list.
@@ -159,19 +160,34 @@
     // Photo log channel — one small doc per downscaled photo.
     photosRef = db.collection("rooms").doc(room).collection("photos");
     if (photosUnsub) photosUnsub();
-    photoSeen = null;
+    photoSeen = null; photoReactKeys = null;
+    const reactKeysOf = (p) => (p.reactions || []).map((r) => (r.by || "") + "|" + r.emoji);
     photosUnsub = photosRef.onSnapshot((snap) => {
       const list = []; snap.forEach((d) => { const x = d.data(); if (x && x.id) list.push(x); });
       if (list.length) { applying = true; try { Store.mergePhotos(list); } finally { applying = false; } }   // upsert (adds + reaction/comment updates)
-      // Detect genuinely NEW photos (not reaction/comment edits) so listeners can
-      // ping. The first snapshot is the existing backlog — prime the set silently.
+      // Detect genuinely NEW photos AND new reactions so listeners can ping. The
+      // first snapshot is the existing backlog — prime the sets silently.
       if (photoSeen === null) {
-        photoSeen = {}; list.forEach((p) => { photoSeen[p.id] = 1; });
+        photoSeen = {}; photoReactKeys = {};
+        list.forEach((p) => { photoSeen[p.id] = 1; const s = photoReactKeys[p.id] = {}; reactKeysOf(p).forEach((k) => { s[k] = 1; }); });
       } else {
         list.forEach((p) => {
-          if (photoSeen[p.id]) return;
-          photoSeen[p.id] = 1;
-          photoSubs.forEach((f) => { try { f(p); } catch (_) {} });
+          if (!photoSeen[p.id]) {
+            // brand-new photo — announce it, and seed its reactions as seen so a
+            // reaction already on it doesn't also ping.
+            photoSeen[p.id] = 1;
+            const s = photoReactKeys[p.id] = {}; reactKeysOf(p).forEach((k) => { s[k] = 1; });
+            photoSubs.forEach((f) => { try { f(p); } catch (_) {} });
+          } else {
+            // existing photo — fire for each newly added reaction key.
+            const seen = photoReactKeys[p.id] = photoReactKeys[p.id] || {};
+            (p.reactions || []).forEach((r) => {
+              const k = (r.by || "") + "|" + r.emoji;
+              if (seen[k]) return;
+              seen[k] = 1;
+              photoReactSubs.forEach((f) => { try { f(p, r); } catch (_) {} });
+            });
+          }
         });
       }
     }, function () {});
@@ -200,7 +216,7 @@
     if (presUnsub) { presUnsub(); presUnsub = null; }
     if (chalUnsub) { chalUnsub(); chalUnsub = null; }
     if (liveUnsub) { liveUnsub(); liveUnsub = null; }
-    if (photosUnsub) { photosUnsub(); photosUnsub = null; } photoSeen = null;
+    if (photosUnsub) { photosUnsub(); photosUnsub = null; } photoSeen = null; photoReactKeys = null;
     if (duelUnsub) { duelUnsub(); duelUnsub = null; }
     if (roamUnsub) { roamUnsub(); roamUnsub = null; }
     removePresence();
@@ -419,6 +435,8 @@
     onStateApplied(fn) { stateSubs.push(fn); return () => { const i = stateSubs.indexOf(fn); if (i >= 0) stateSubs.splice(i, 1); }; },
     // Fires with each NEW photo that lands from the room (backlog excluded).
     onPhotoAdded(fn) { photoSubs.push(fn); return () => { const i = photoSubs.indexOf(fn); if (i >= 0) photoSubs.splice(i, 1); }; },
+    // Fires (photo, reaction) when a NEW reaction lands on any photo.
+    onPhotoReaction(fn) { photoReactSubs.push(fn); return () => { const i = photoReactSubs.indexOf(fn); if (i >= 0) photoReactSubs.splice(i, 1); }; },
 
     // Share a photo moment to the room (its own doc — keeps the state doc lean).
     sharePhoto(entry) { if (photosRef && entry && entry.id) photosRef.doc(entry.id).set(entry).catch(function () {}); },
