@@ -619,19 +619,17 @@
       const evolveTo = (tid) => {
         if (!Store.evolveMon(p.attId, p.mon.id, tid)) { if (ctrl) ctrl.close(); onDone(); return; }
         if (ctrl) ctrl.close();
-        // evolution cinematic (reuses the trade overlay styling)
-        const img = el("img", { class: "trade-fly evo", src: frontSprite(p.mon.id, p.mon.shiny), alt: "" });
-        const txt = el("div", { class: "trade-anim-txt" }, "What?! " + p.mon.name + " is evolving…");
-        const lay = el("div", { class: "trade-anim" }, [el("div", { class: "trade-anim-row" }, [img]), txt]);
-        document.body.appendChild(lay);
-        sfx("evolve");
-        setTimeout(() => {
-          img.src = frontSprite(tid, p.mon.shiny);
-          img.classList.remove("evo"); void img.offsetWidth; img.classList.add("evo");
-          txt.textContent = "🎉 Congratulations! " + p.owner + "'s " + p.mon.name + " evolved into " + nm(tid) + "!";
-          sfx("fanfare");
-        }, 1700);
-        setTimeout(() => { lay.remove(); onDone(); }, 4200);
+        // The full "Squad evolution" cinematic: silhouette flicker → flash →
+        // color reveal → energy fireworks, with the evolve + win music.
+        const type = (window.DEX && DEX[tid] && DEX[tid].t && DEX[tid].t[0]) || "";
+        if (window.EvoFX && EvoFX.play) {
+          EvoFX.play({
+            beforeSrc: frontSprite(p.mon.id, p.mon.shiny),
+            afterSrc: frontSprite(tid, p.mon.shiny),
+            beforeName: p.mon.name, afterName: nm(tid),
+            type: type, shiny: p.mon.shiny, onComplete: onDone,
+          });
+        } else { onDone(); }
       };
       const body = el("div", { class: "modal-form" }, [
         el("div", { class: "evo-prompt-head" }, [

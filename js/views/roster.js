@@ -25,93 +25,20 @@
     if (node && a) node.replaceWith(card(a));
   }
 
-  // A firework burst of the type's energy symbol, radiating from the center.
-  function energyBurst(overlay, type) {
-    const src = energyIcon(type);
-    if (!src) return;
-    const layer = el("div", { class: "evo-burst" });
-    const N = 28;
-    for (let i = 0; i < N; i++) {
-      const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-      const dist = 120 + Math.random() * 190;
-      const size = (18 + Math.random() * 24) | 0;
-      const p = el("img", { class: "evo-burst-ico", src: src, alt: "" });
-      p.style.setProperty("--tx", (Math.cos(ang) * dist).toFixed(0) + "px");
-      p.style.setProperty("--ty", (Math.sin(ang) * dist).toFixed(0) + "px");
-      p.style.setProperty("--rot", ((Math.random() * 720 - 360) | 0) + "deg");
-      p.style.width = size + "px"; p.style.height = size + "px";
-      p.style.animationDuration = (0.9 + Math.random() * 0.7).toFixed(2) + "s";
-      p.style.animationDelay = (Math.random() * 0.12).toFixed(2) + "s";
-      layer.appendChild(p);
-    }
-    overlay.appendChild(layer);
-    setTimeout(() => layer.remove(), 2100);
-  }
-
-  // The classic evolution animation: dark silhouettes flicker old↔new,
-  // accelerating, then a white flash and the new form reveals in full color.
-  function playEvolution(before, after, type, onComplete) {
-    let done = false;
-    const finish = () => { if (done) return; done = true; onComplete && onComplete(); };
-    const isMega = !!after.mega;
-
-    const imgOld = el("img", { class: "evo-anim-sprite sil", src: before.id ? Store.sprite(before.id) : "", alt: "" });
-    const imgNew = el("img", { class: "evo-anim-sprite sil hidden", src: after.id ? Store.sprite(after.id) : "", alt: "" });
-    if (after.scale && after.scale !== 1) imgNew.style.setProperty("--s", after.scale);
-    const flash = el("div", { class: "evo-anim-flash" });
-    const cap = el("div", { class: "evo-anim-cap" });
-    const overlay = el("div", { class: "evo-anim" }, [
-      el("div", { class: "evo-anim-stage" }, [imgOld, imgNew]), flash, cap,
-    ]);
-
-    function close() { overlay.classList.add("out"); setTimeout(() => overlay.remove(), 380); finish(); }
-    overlay.addEventListener("click", close);
-    document.body.appendChild(overlay);
-
-    if (window.SFX && SFX.evolve) SFX.evolve();
-
-    const intervals = [300, 280, 250, 220, 190, 165, 145, 125, 110, 95, 85, 78, 72];
-    let i = 0, showNew = false;
-    function toggle() {
-      if (done) return;
-      showNew = !showNew;
-      imgOld.classList.toggle("hidden", showNew);
-      imgNew.classList.toggle("hidden", !showNew);
-      if (i < intervals.length) setTimeout(toggle, intervals[i++]);
-      else reveal();
-    }
-    setTimeout(toggle, 380);
-
-    function reveal() {
-      if (done) return;
-      imgOld.classList.add("hidden");
-      imgNew.classList.remove("hidden");
-      flash.classList.add("go");
-      if (window.SFX) (isMega ? (SFX.fanfare && SFX.fanfare()) : (SFX.win && SFX.win()));
-      setTimeout(() => {
-        imgNew.classList.remove("sil");
-        imgNew.classList.add("reveal");
-        if (isMega) imgNew.classList.add("mega");
-        const verb = isMega ? "Mega Evolved into" : (before.mode === "grow" ? "grew into" : "evolved into");
-        cap.textContent = (isMega ? "⚡ " : "✨ ") + before.name + " " + verb + " " + after.name + "!";
-        cap.classList.add("show");
-        // Fireworks of the type's energy symbol, after the official reveal.
-        energyBurst(overlay, type);
-        setTimeout(() => energyBurst(overlay, type), 550);
-        if (isMega) setTimeout(() => energyBurst(overlay, type), 1050);
-      }, 200);
-      setTimeout(close, isMega ? 2800 : 2300);
-    }
-  }
-
   function doEvolve(a) {
     const before = Store.currentForm(a);
     if (!before.next) return;
-    const after = {
-      name: before.next.name, id: before.next.id, scale: before.next.scale || 1,
-      mega: !!before.next.mega, mode: before.mode,
-    };
-    playEvolution(before, after, a.type, () => { Store.evolve(a.id); refreshCard(a.id); });
+    const isMega = !!before.next.mega;
+    const verb = isMega ? "Mega Evolved into" : (before.mode === "grow" ? "grew into" : "evolved into");
+    // The shared "Squad evolution" cinematic — same silhouette flicker, flash,
+    // reveal, energy fireworks and music the caught-Pokémon evolutions use.
+    EvoFX.play({
+      beforeSrc: before.id ? Store.sprite(before.id) : "",
+      afterSrc: before.next.id ? Store.sprite(before.next.id) : "",
+      beforeName: before.name, afterName: before.next.name,
+      type: a.type, mega: isMega, scale: before.next.scale || 1, verb: verb,
+      onComplete: () => { Store.evolve(a.id); refreshCard(a.id); },
+    });
   }
 
   // ---- evolution strip on a trainer card ----------------------------------
