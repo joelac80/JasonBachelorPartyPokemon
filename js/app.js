@@ -265,15 +265,15 @@
         const p = (Sync.presence() || []).find((x) => x.attId === attId);
         return (p && p.clientId) || fallback;
       };
-      // A SOLO double: one trainer fields 2v2 from a party of 4 — split into two
-      // field slots, each a lead + one bench mon (leads are the first two picks).
+      // A SOLO double: one trainer fields 2v2 from a party of 4 — two field
+      // slots sharing ONE bench (the first two picks lead). Both units carry the
+      // full party; the engine points slot 0/1 at it and shares the bench.
       const soloUnits = (ids, attId, client) => {
-        ids = (ids || []).filter(Boolean);
-        const out = [{ attId: attId, client: client, monIds: [ids[0], ids[2]].filter(Boolean) }];
-        if (ids[1]) out.push({ attId: attId, client: client, monIds: [ids[1], ids[3]].filter(Boolean) });
-        return out;
+        ids = (ids || []).filter(Boolean).slice(0, 4);
+        const u = { attId: attId, client: client, monIds: ids };
+        return ids.length > 1 ? [u, { attId: attId, client: client, monIds: ids }] : [u];
       };
-      const launch = (bUnits) => {
+      const launch = (bUnits, bShared) => {
         Sync.respondChallenge(ch, true);
         let aUnits;
         if (ch.solo2) {          // one trainer running both field slots (party of 4)
@@ -286,7 +286,7 @@
         const setup = {
           title: ch.event || "Duel",
           first: aLead === bLead ? (Math.random() < 0.5 ? "a" : "b") : (aLead > bLead ? "a" : "b"),
-          a: { units: aUnits }, b: { units: bUnits },
+          a: { units: aUnits, shared: !!ch.solo2 }, b: { units: bUnits, shared: !!bShared },
         };
         const names = (us) => us.map((u) => (Store.attendee(u.attId) || {}).name || "?").join(" & ");
         Sync.startRemoteDuel(setup);
@@ -301,7 +301,7 @@
         if (!isDouble) {
           Duel.pickParty({ attId: me, title: "Choose your party",
             hint: (ch.fromName || "They") + " brought " + ((ch.party || []).length || 1) + ". Tap Pokémon in order — the first is your lead.",
-            onDone: (ids) => launch([{ attId: me, client: Sync.myClientId(), monIds: ids }]) });
+            onDone: (ids) => launch([{ attId: me, client: Sync.myClientId(), monIds: ids }], false) });
           return;
         }
         // Double battle: fight with a partner, or run two of your own.
@@ -316,14 +316,14 @@
                   launch([
                     { attId: me, client: Sync.myClientId(), monIds: mine },
                     { attId: ally, client: clientOf(ally, Sync.myClientId()), monIds: theirs },
-                  ]);
+                  ], false);
                 } });
               } });
           } });
         };
         const solo = () => {
           Duel.pickParty({ attId: me, min: 4, max: 4, title: "Pick FOUR Pokémon", hint: "Your first two lead the field (2v2); the other two ride the bench.",
-            onDone: (ids) => launch(soloUnits(ids, me, Sync.myClientId())) });
+            onDone: (ids) => launch(soloUnits(ids, me, Sync.myClientId()), true) });
         };
         const sBody = el("div", { class: "chal-modal" }, [
           el("div", { class: "chal-line" }, "How does your side fight?"),

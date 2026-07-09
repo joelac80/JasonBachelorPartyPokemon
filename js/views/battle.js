@@ -144,9 +144,18 @@
           if (!ok(duel.a) || !ok(duel.b)) { alert("Every trainer needs to be picked and have at least one Pokémon."); return; }
           const dup = (us) => us.length === 2 && us[0].attId === us[1].attId && us[0].party.some((id) => us[1].party.indexOf(id) >= 0);
           if (dup(duel.a) || dup(duel.b)) { alert("Same trainer twice is fine — but the two field slots must use DIFFERENT Pokémon."); return; }
+          // Same trainer in both slots = a SOLO double: merge both slots into ONE
+          // shared party (leads first) so either slot can field any of them.
+          const buildSide = (us) => {
+            if (format === "double" && us.length === 2 && us[0].attId && us[0].attId === us[1].attId) {
+              const monIds = [us[0].party[0], us[1].party[0]].concat(us[0].party.slice(1), us[1].party.slice(1)).filter(Boolean);
+              const unit = { attId: us[0].attId, monIds: monIds };
+              return { units: [unit, { attId: us[0].attId, monIds: monIds }], shared: true };
+            }
+            return { units: us.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) };
+          };
           Duel.start({ mode: "local", title: (eventLabel || "").trim() || "Duel",
-            a: { units: duel.a.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) },
-            b: { units: duel.b.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) },
+            a: buildSide(duel.a), b: buildSide(duel.b),
             onResult: () => { renderLog(); } });
         } }, "🎮 START DUEL"),
       ]));
