@@ -11,17 +11,20 @@
      • Berry      +15%   (also halves flee chance)
      • Squad rally +10%
      • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
-                        payout — half the sips, or the full haul on a legendary)
+                        points — half, or the full haul on a legendary)
      • Master Ball dare — one EPIC challenge = a guaranteed catch outright
-   Then throw. Catches go into that trainer's own Pokédex. Leaderboard +
-   Ash Ketchum cap for the top catcher. State in Store.pokedex. */
+   Then throw. Catches go into that trainer's own Pokédex and score points for
+   their team on Victory Road (rarer = more; a shiny doubles). No drinks are
+   handed out for a catch — just the small self-inflicted sip if you chicken
+   out of a boost or the wild one bolts. Leaderboard + Ash Ketchum cap for the
+   top catcher. State in Store.pokedex. */
 (function () {
   const { el } = U;
   const DEX = window.DEX || {};
   const SP = window.DEX_SPRITES || {};
   const SPS = window.DEX_SPRITES_SHINY || {};
   // ✨ Shiny odds — Gen 2 would be proud. Every encounter rolls; a shiny
-  // catch pays out DOUBLE sips and is marked forever in the dex.
+  // catch scores DOUBLE points and is marked forever in the dex.
   const SHINY_RATE = 1 / 16;
   const IDS = Object.keys(DEX).map(Number);
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
@@ -94,10 +97,10 @@
     const d = DEX[id] || { x: 60 }; const x = d.x, leg = !!d.leg;
     const tier = leg ? "Legendary" : x >= 200 ? "Elite" : x >= 140 ? "Strong" : x >= 90 ? "Evolved" : "Common";
     const base = TIER_BASE[tier];
-    let sips = 1 + Math.round(x / 70); sips = Math.min(7, Math.max(1, sips));
-    if (leg) sips = 8;                       // a legendary catch is a big payout
+    let pts = 1 + Math.round(x / 70); pts = Math.min(7, Math.max(1, pts));
+    if (leg) pts = 8;                        // a legendary catch is a big score
     const flee = leg ? 0.06 : 0.12;
-    return { name: d.n, x: x, leg: leg, base: base, sips: sips, flee: flee, tier: tier, color: TIER_COLOR[tier] };
+    return { name: d.n, x: x, leg: leg, base: base, pts: pts, flee: flee, tier: tier, color: TIER_COLOR[tier] };
   }
 
   // Who (if anyone) has caught this species — used only for flavor now
@@ -266,7 +269,7 @@
       const grid = el("div", { class: "sl-vote-grid" }, others.map((a) =>
         el("button", { class: "sl-vote-pick", onClick: () => { helper = a.id; sfx("select"); ref.close(); renderEncounter(); } },
           el("span", { class: "sl-vote-name" }, a.name))));
-      const body = el("div", { class: "modal-form" }, [el("div", { class: "field" }, [el("span", {}, "Who's teaming up? (+15% — earns them an assist + a share of the sips)"), grid])]);
+      const body = el("div", { class: "modal-form" }, [el("div", { class: "field" }, [el("span", {}, "Who's teaming up? (+15% — earns them an assist + a share of the points)"), grid])]);
       const ref = Modal.open("🤝 Double-battle catch", body, null, {});
     }
 
@@ -305,7 +308,7 @@
       const id = active();
       const stat = (v, l) => el("div", { class: "safari-stat" }, [el("div", { class: "safari-stat-v" }, String(v)), el("div", { class: "safari-stat-l" }, l)]);
       stats.appendChild(stat(id ? caughtCount(id) + " / 251" : "—", id ? attendeeName(id) + "'s dex" : "No trainer"));
-      stats.appendChild(stat("🍺 " + (P().given || 0), "Sips dealt"));
+      stats.appendChild(stat("🏆 " + (id ? (rec(id).safariPts || 0) : 0), "Pts scored"));
       stats.appendChild(stat(Store.state.pokedex.log ? Store.state.pokedex.log.length : 0, "Catches logged"));
     }
 
@@ -358,7 +361,7 @@
       const meta = el("div", { class: "safari-wild-meta" }, [
         el("span", { class: "safari-tier", style: { background: nfo.color } }, nfo.tier),
         el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
-        shiny ? el("span", { class: "safari-shiny-chip" }, "✨ SHINY — double payout!") : null,
+        shiny ? el("span", { class: "safari-shiny-chip" }, "✨ SHINY — double points!") : null,
         nfo.leg ? el("span", { class: "safari-oneof" }, "🌟 LEGENDARY") : null,
         owned ? el("span", { class: "safari-owned" }, "✓ already in dex") : null,
       ]);
@@ -376,7 +379,7 @@
       }
       const odds = el("div", { class: "safari-odds" }, [
         el("span", { class: "safari-odds-big" }, Math.round(chance * 100) + "%"),
-        el("span", {}, " catch chance" + breakdown + " · catch deals " + nfo.sips + " sip" + (nfo.sips > 1 ? "s" : "") + (nfo.leg ? " · resists boosts (½ effect)" : "")),
+        el("span", {}, " catch chance" + breakdown + " · worth " + nfo.pts + " pt" + (nfo.pts > 1 ? "s" : "") + (nfo.leg ? " · resists boosts (½ effect)" : "")),
         el("span", { class: "safari-ball-chip" }, [ballIcon(ball), " " + ball.name + (ball.key === "master" ? " — sure catch!" : "")]),
       ]);
       const pips = el("div", { class: "safari-pips" }, [0, 1, 2].map((i) => el("span", { class: "safari-pip" + (i < level ? " on" : "") })));
@@ -534,13 +537,13 @@
         // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
         // auto-eaten in duels when a mon drops below 30% HP.
         const berryDrop = Math.random() < 0.3;
-        // ✨ A shiny pays out DOUBLE sips.
-        const sips = isShiny ? nfo.sips * 2 : nfo.sips;
+        // ✨ A shiny scores DOUBLE points. (No drinks are handed out for a catch.)
+        const pts = isShiny ? nfo.pts * 2 : nfo.pts;
         const helperId = helper && helper !== tid ? helper : "";
         const helperName = helperId ? attendeeName(helperId) : "";
-        // Helper shares the reward: half the sips on a normal catch, the full
+        // Helper shares the reward: half the points on a normal catch, the full
         // haul when the assist lands a legendary.
-        const helperSips = helperId ? (nfo.leg ? sips : Math.max(1, Math.round(sips / 2))) : 0;
+        const helperPts = helperId ? (nfo.leg ? pts : Math.max(1, Math.round(pts / 2))) : 0;
         Store.update((s) => {
           const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
           const prev = t.caught[id];
@@ -561,20 +564,20 @@
           if (berryDrop) t.berries = (t.berries || 0) + 1;
           t.catches = Object.keys(t.caught).length;
           if (viaMaster) t.masterCatches = (t.masterCatches || 0) + 1;   // 🟣 Master Catcher
-          if (helperId) {                              // credit the helper's assist + payout
+          t.safariPts = (t.safariPts || 0) + pts;      // this trainer's own Safari points
+          if (helperId) {                              // credit the helper's assist + share
             const h = s.pokedex.trainers[helperId] = s.pokedex.trainers[helperId] || { caught: {}, team: [], catches: 0 };
             h.helps = (h.helps || 0) + 1;
-            h.assistSips = (h.assistSips || 0) + helperSips;
+            h.assistPts = (h.assistPts || 0) + helperPts;
           }
-          s.pokedex.given = (s.pokedex.given || 0) + sips + helperSips;
-          // Feed the championship: a catch scores its sip-value for the
+          // Feed the championship: a catch scores its point-value for the
           // catcher's team; the helper's team banks their share too.
-          Store.grantPoints(s, "safari", Store.teamOf(tid), sips);
-          if (helperId) Store.grantPoints(s, "safari", Store.teamOf(helperId), helperSips);
+          Store.grantPoints(s, "safari", Store.teamOf(tid), pts);
+          if (helperId) Store.grantPoints(s, "safari", Store.teamOf(helperId), helperPts);
           s.pokedex.log = s.pokedex.log || [];
           s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, shiny: isShiny || undefined, ts: now() });
           if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
-          if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY!!" : " — double payout!"));
+          if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY!!" : " — double points!"));
           else if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : ""));
           else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
@@ -587,12 +590,11 @@
         enc.appendChild(el("div", { class: "safari-card result win" + (isShiny ? " shiny" : "") }, [
           el("img", { class: "safari-wild pop", src: (isShiny && SPS[id]) || SP[id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + (isShiny ? "a ✨ SHINY " : "") + nfo.name + "!"),
-          isShiny ? el("div", { class: "safari-legend-note" }, "✨ SHINY — its colors are different! Double payout, marked in the dex forever.") : null,
+          isShiny ? el("div", { class: "safari-legend-note" }, "✨ SHINY — its colors are different! Double points, marked in the dex forever.") : null,
           nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 LEGENDARY — " + nfo.name + " joins " + attendeeName(tid) + "'s team!") : null,
           el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
-          el("div", { class: "safari-payout" }, "🍺 " + attendeeName(tid) + " hands out " + sips + " sip" + (sips > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + "!"),
-          catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
-          helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
+          el("div", { class: "safari-payout" }, "🏆 +" + pts + " pt" + (pts > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + (catcherTeam ? " → " + catcherTeam.name + " on Victory Road!" : "!")),
+          helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — +" + helperPts + " pt" + (helperPts > 1 ? "s" : "") + " to their team" + (nfo.leg ? " (full legendary share!)" : "") + "!") : null,
           berryDrop ? el("div", { class: "safari-combo-note" }, "🍓 It dropped a Sitrus Berry! (auto-heals your Pokémon in duels — 🍓×" + ((rec(tid).berries) || 1) + " in the bag)") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
@@ -642,7 +644,7 @@
             onClick: () => window.Profile && Profile.open(r.a.id) }, [
             el("span", { class: "safari-board-rank" }, i === 0 ? "🤝" : "#" + (i + 1)),
             el("span", { class: "safari-board-name" }, r.a.name),
-            el("span", { class: "safari-board-n" }, r.n + " assist" + (r.n > 1 ? "s" : "") + (assistSipsOf(r.a.id) ? " · 🍺 " + assistSipsOf(r.a.id) : "")),
+            el("span", { class: "safari-board-n" }, r.n + " assist" + (r.n > 1 ? "s" : "") + (assistPtsOf(r.a.id) ? " · 🏆 " + assistPtsOf(r.a.id) + " pts" : "")),
           ]))));
         boardHost.appendChild(el("p", { class: "hint" }, "🤝 = Best Helper — most assists on catches wins the badge."));
       }
@@ -665,7 +667,7 @@
       }
     }
     function helpsOf(id) { return rec(id).helps || 0; }
-    function assistSipsOf(id) { return rec(id).assistSips || 0; }
+    function assistPtsOf(id) { return rec(id).assistPts || 0; }
     function masterCatchesOf(id) { return rec(id).masterCatches || 0; }
 
     // ---- mon action sheet: team, nickname, battle record ----
