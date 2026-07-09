@@ -150,11 +150,20 @@
   function caughtCount(id) { return Store.dexCount(id); }   // partner freebie excluded
   function attendeeName(id) { const a = Store.attendee(id); return a ? a.name : id; }
 
+  // ── Per-phone Safari session — deliberately NOT synced ──────────────────
+  // The catcher this DEVICE is playing as, plus the in-progress wild encounter
+  // and its boosts. Kept at module scope (not inside view()) so that a remote
+  // sync re-render — triggered when anyone else logs a drink, catches, etc. —
+  // RESTORES the same encounter instead of wiping it, and so every phone
+  // catches independently. The old design synced the catcher in shared state,
+  // which made three phones fight over one encounter (Suicune kept resetting).
+  let myCatcher = "";
+  let current = null, busy = false, status = "", level = 0, helper = "", shiny = false, revealId = null;
+  let berryDone = false, rallyDone = false, masterDone = false;   // boost earned
+  let dareLocked = false, berryLost = false, rallyLost = false, masterLost = false;  // bailed
+  let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
+
   function view(root) {
-    let current = null, busy = false, status = "", level = 0, helper = "", shiny = false;
-    let berryDone = false, rallyDone = false, masterDone = false;   // boost earned
-    let dareLocked = false, berryLost = false, rallyLost = false, masterLost = false;  // bailed
-    let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
 
     // Wipe all this-encounter boost state (called on new find / trainer swap / run).
     function clearBoosts() {
@@ -237,17 +246,15 @@
       el("p", { class: "page-sub" }, "Pick your trainer, find a wild one, then earn boosts by pulling off dares, berries and rallies — chicken out and you drink (and it might bolt!). Then throw."),
     ]));
 
-    // ---- trainer selector ----
-    // Default to whoever THIS phone is signed in as — not just the first
-    // name in the list. Only auto-set when nothing's been chosen yet.
+    // ---- trainer selector (per-phone, NOT synced) ----
+    // Default to whoever THIS phone is signed in as. Each device catches as
+    // its own trainer — switching here never touches anyone else's screen.
     const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
-    if (!P().active && meId && Store.attendee(meId)) {
-      Store.update((s) => { s.pokedex.active = meId; });
-    }
+    if (!myCatcher && meId && Store.attendee(meId)) myCatcher = meId;
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
-      Store.state.attendees.map((a) => el("option", { value: a.id, selected: P().active === a.id ? "true" : null }, a.name))));
+      Store.state.attendees.map((a) => el("option", { value: a.id, selected: myCatcher === a.id ? "true" : null }, a.name))));
     sel.addEventListener("change", () => {
-      Store.update((s) => { s.pokedex.active = sel.value; });
+      myCatcher = sel.value;
       current = null; status = ""; clearBoosts();
       renderAll();
     });
@@ -261,7 +268,7 @@
     root.appendChild(stats); root.appendChild(enc); root.appendChild(boardHost);
     root.appendChild(teamHost); root.appendChild(dexHost);
 
-    function active() { return P().active; }
+    function active() { return myCatcher; }
 
     // ---- stats ----
     function renderStats() {
@@ -275,7 +282,6 @@
     }
 
     // ---- encounter (wild-battle scene with a silhouette that focuses in) ----
-    let revealId = null;
     function renderEncounter() {
       enc.innerHTML = "";
       if (!active()) { enc.appendChild(el("div", { class: "safari-idle" }, el("p", { class: "empty" }, "👆 Pick a trainer to start catching."))); return; }
@@ -466,6 +472,23 @@
         busy = false; renderEncounter(); return;
       }
       if (outcome === "catch") {
+        // 🏁 One-of-one race: if someone else claimed this legendary while your
+        // ball was in the air (Suicune with three of you throwing), you lost —
+        // no double catches of the region's only one.
+        if (nfo.leg && legendaryOwner(id) && legendaryOwner(id) !== tid) {
+          const owner = attendeeName(legendaryOwner(id));
+          sfx("error");
+          enc.innerHTML = "";
+          enc.appendChild(el("div", { class: "safari-card result miss" }, [
+            el("img", { class: "safari-wild fled", src: SP[id], alt: nfo.name }),
+            el("div", { class: "safari-result-msg" }, owner + " already caught " + nfo.name + "!"),
+            el("div", { class: "safari-payout miss" }, "🏁 Beaten to the only one in the region — take a sip." ),
+            el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+          ]));
+          current = null; busy = false; status = ""; shiny = false; clearBoosts();
+          renderStats(); renderBoard(); renderTeam(); renderDex();
+          return;
+        }
         let newCombo = 0;
         const isShiny = shiny;
         // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
@@ -714,5 +737,8 @@
   window.Views = window.Views || {};
   window.Views.safari = view;
   // Tuning/debug hook (used by tests; harmless in production).
+  // Set THIS phone's catcher (e.g. from a profile's "Catch as" button) — local,
+  // never synced. Clears any in-progress encounter so the new trainer starts fresh.
+  window.Safari = { catchAs: function (id) { if (myCatcher !== id) { myCatcher = id; current = null; status = ""; } } };
   window.SafariDebug = { info: info, weightFor: weightFor, legendaryOwner: legendaryOwner };
 })();
