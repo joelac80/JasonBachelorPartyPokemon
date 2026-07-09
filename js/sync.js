@@ -238,7 +238,7 @@
     // you're battling a wild Pokémon in the Safari; a re-render would yank the
     // screen). Their next action re-renders with the fresh data anyway.
     const hold = window.__deferRender && window.__deferRender();
-    if (!hold && window.Router && Router.render) Router.render();
+    if (!hold && window.Router && Router.render) Router.render({ keepScroll: true });
     setStatus("live", "Updated" + (data.by ? " · " + data.by : ""));
     stateSubs.forEach((f) => { try { f(); } catch (_) {} });   // e.g. 📬 inbox pings (run regardless)
   }
