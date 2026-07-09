@@ -206,6 +206,19 @@
       a: { key: "a", units: ((opts.a || {}).units || []).slice(0, 2).map(makeUnit) },
       b: { key: "b", units: ((opts.b || {}).units || []).slice(0, 2).map(makeUnit) },
     };
+    // SOLO double (one trainer, 2v2): both field slots draw from ONE shared
+    // party — any of the four can go into either slot (just not the same mon
+    // on both at once). We build the party once (slot 0's) and point slot 1 at
+    // it, so switching/fainting is a single shared bench.
+    ["a", "b"].forEach((sd) => {
+      const us = sides[sd].units;
+      us.forEach((u) => { u._side = sd; });
+      if ((opts[sd] || {}).shared && us.length === 2) {
+        us[1].party = us[0].party;               // one party, two field pointers
+        us[0].cur = 0; us[1].cur = 1;
+        sides[sd].shared = true;
+      }
+    });
     const doubles = sides.a.units.length > 1 || sides.b.units.length > 1;
     function other(s) { return s === "a" ? "b" : "a"; }
     // One trainer running both slots of a double reads as one name, not "X & X".
@@ -215,9 +228,18 @@
       return seen.join(" & ");
     }
     function mon(u) { return u.party[u.cur]; }
-    function unitAlive(u) { return u.party.some((m) => m.hp > 0); }
+    // A slot's bench = its living party members that AREN'T the slot's own
+    // active and aren't currently fielded by a sibling slot sharing the party
+    // (a shared-party solo double can't put the same mon in both slots).
+    function bench(u) {
+      const taken = {};
+      sides[u._side].units.forEach((o) => { if (o !== u && o.party === u.party) taken[o.cur] = 1; });
+      return u.party.map((m, i) => ({ m: m, i: i })).filter((x) => x.i !== u.cur && !taken[x.i] && x.m.hp > 0);
+    }
+    // A slot is "alive" (still fighting) if its active is up, or it has a
+    // usable mon on the bench to send in.
+    function unitAlive(u) { return mon(u).hp > 0 || bench(u).length > 0; }
     function firstLiving(s) { const us = sides[s].units; for (let i = 0; i < us.length; i++) if (unitAlive(us[i])) return i; return 0; }
-    function bench(u) { return u.party.map((m, i) => ({ m: m, i: i })).filter((x) => x.i !== u.cur && x.m.hp > 0); }
     function livingEnemies(s) { return sides[other(s)].units.map((u, i) => ({ u: u, i: i })).filter((x) => unitAlive(x.u)); }
 
     const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null, zmove: false,
@@ -906,7 +928,7 @@
           AppNotify.ping("🎮 Your move!", S.pending ? "Choose your next Pokémon" : "What will " + mon(u).name + " do?");
         }
       }
-      if (S.pending) { partyPanel(u, ptr, "next", false); return; }
+      if (S.pending) { try { console.log("DBG partyPanel next for " + u.name + " bench=" + JSON.stringify(bench(u).map(function(x){return x.m.name;}))); } catch(e){ console.log("DBG bench THREW", e.message); } partyPanel(u, ptr, "next", false); return; }
       const m = mon(u);
       // Everything immune against everything standing? Struggle keeps the
       // fight alive (typeless, always usable).
@@ -948,7 +970,7 @@
         if (confirm("Give up? " + label(other(ptr.side)) + " take" + (sides[other(ptr.side)].units.length > 1 ? "" : "s") + " the win.")) {
           sendAct({ seq: S.seq + 1, kind: "forfeit", side: ptr.side, unit: ptr.unit });
         }
-      } }, "🏳️"));
+      } }, "🏳️ Forfeit"));
       menu.appendChild(el("div", { class: "battle-menu-row duel-items" }, row));
     }
 
