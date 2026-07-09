@@ -787,6 +787,10 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .photo-react { display: inline-flex; align-items: center; gap: 4px; font-size: 20px; padding: 6px 10px; border: 2px solid var(--line); border-radius: 999px; background: var(--panel); cursor: pointer; }
 .photo-react.on { border-color: var(--pokered); background: #fdeaea; }
 .photo-react-n { font-size: 13px; font-weight: 800; }
+.photo-reactors { display: flex; flex-direction: column; gap: 3px; }
+.photo-reactor-line { display: flex; align-items: baseline; gap: 7px; font-size: 13px; }
+.photo-reactor-emoji { font-size: 15px; flex: none; }
+.photo-reactor-names { color: var(--ink-dim); font-weight: 600; }
 .photo-comments { display: flex; flex-direction: column; gap: 5px; }
 .photo-comment { font-size: 14px; background: var(--paper); border-radius: 8px; padding: 5px 9px; }
 .photo-add-row { display: flex; gap: 8px; }

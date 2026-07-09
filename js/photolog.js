@@ -121,6 +121,16 @@
           onClick: () => { Store.reactPhoto(photoId, em, rid, rname); refresh(); if (onChange) onChange(); } },
           [em, counts[em] ? el("span", { class: "photo-react-n" }, String(counts[em])) : null]);
       }));
+      // Who reacted — names grouped by emoji, so you can see who ❤️'d your shot.
+      const byEmoji = {};
+      (p.reactions || []).forEach((r) => { (byEmoji[r.emoji] = byEmoji[r.emoji] || []).push(r.name || "Someone"); });
+      const reactedBy = (p.reactions || []).length
+        ? el("div", { class: "photo-reactors" }, REACTIONS.filter((em) => byEmoji[em]).map((em) =>
+            el("div", { class: "photo-reactor-line" }, [
+              el("span", { class: "photo-reactor-emoji" }, em),
+              el("span", { class: "photo-reactor-names" }, byEmoji[em].join(", ")),
+            ])))
+        : null;
       const comments = el("div", { class: "photo-comments" }, (p.comments || []).map((c) =>
         el("div", { class: "photo-comment" }, [el("b", {}, (c.name || "Someone") + ": "), c.text])));
       const cin = el("input", { class: "in", placeholder: "Add a caption / comment…" });
@@ -131,6 +141,7 @@
         el("img", { class: "photo-detail-img", src: p.img, alt: p.caption || "" }),
         (p.caption || p.by) ? el("div", { class: "photo-detail-cap" }, (p.caption || "") + (p.by ? " — " + p.by : "")) : null,
         reactRow,
+        reactedBy,
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
           el("button", { class: "btn subtle sm", onClick: () => download(p) }, "⬇️ Save photo"),
         ]),
