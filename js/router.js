@@ -25,6 +25,9 @@
       // (a directly-removed .battle would otherwise leave the lock stuck).
       if (!document.querySelector(".battle"))
         document.documentElement.classList.remove("scroll-lock");
+      // Each render rebuilds the view; the outgoing view's "hold remote
+      // re-renders" request is void. Views that still want it re-set it.
+      window.__deferRender = null;
       const { path, param } = this.current();
       const view = routes[path] || notFound || routes["home"];
       root.innerHTML = "";

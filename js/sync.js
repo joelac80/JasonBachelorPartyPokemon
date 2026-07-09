@@ -220,9 +220,14 @@
     let obj; try { obj = JSON.parse(data.stateJson); } catch (_) { return; }
     applying = true;
     try { Store.applyRemote(obj); } finally { applying = false; }
-    if (window.Router && Router.render) Router.render();
+    // The state is now current in the Store. Re-render the page to reflect it —
+    // UNLESS the active view is mid-interaction and asked us to hold off (e.g.
+    // you're battling a wild Pokémon in the Safari; a re-render would yank the
+    // screen). Their next action re-renders with the fresh data anyway.
+    const hold = window.__deferRender && window.__deferRender();
+    if (!hold && window.Router && Router.render) Router.render();
     setStatus("live", "Updated" + (data.by ? " · " + data.by : ""));
-    stateSubs.forEach((f) => { try { f(); } catch (_) {} });   // e.g. 📬 inbox pings
+    stateSubs.forEach((f) => { try { f(); } catch (_) {} });   // e.g. 📬 inbox pings (run regardless)
   }
 
   function schedulePush() {
