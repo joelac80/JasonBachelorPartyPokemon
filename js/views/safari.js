@@ -12,7 +12,6 @@
      • Squad rally +10%
      • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
                         payout — half the sips, or the full haul on a legendary)
-     • Catch combo +5%/link, cap +25% — carries between encounters, a flee breaks it
      • Master Ball dare — one EPIC challenge = a guaranteed catch outright
    Then throw. Catches go into that trainer's own Pokédex. Leaderboard +
    Ash Ketchum cap for the top catcher. State in Store.pokedex. */
@@ -126,10 +125,6 @@
   function ballByKey(k) { return BALLS[k] || BALLS.poke; }
   function ballIcon(tier) { return el("span", { class: "ball-ico " + tier.key, style: { "--ball-top": tier.top } }); }
 
-  // Catch combo (Let's Go-style hot streak): +5% per consecutive catch, cap +25%.
-  function comboOf(id) { return (rec(id).combo || 0); }
-  function comboBonus(id) { return Math.min(0.25, 0.05 * comboOf(id)); }
-
   // Near-flat encounter odds — cool Pokémon show up almost as often as commons;
   // the drama lives in the catch rate, not the sighting. Legendaries stay rare
   // but are NOT one-of-one anymore: everyone can catch their own.
@@ -214,7 +209,7 @@
     // stacked they're ~65% — only the Master Ball dare guarantees one.
     function chanceFor(nfo) {
       if (masterDone) return 1;
-      const boosts = 0.2 * level + (berryDone ? 0.15 : 0) + (rallyDone ? 0.10 : 0) + (helper ? 0.15 : 0) + comboBonus(active());
+      const boosts = 0.2 * level + (berryDone ? 0.15 : 0) + (rallyDone ? 0.10 : 0) + (helper ? 0.15 : 0);
       return Math.min(1, nfo.base + boosts * (nfo.leg ? 0.5 : 1));
     }
 
@@ -238,10 +233,9 @@
       if (current) {
         const nfo0 = info(current);
         if (Math.random() < spookChance(nfo0)) {
-          const id = current, lost = comboOf(active());
+          const id = current;
           wildEscaped(id, nfo0, nfo0.name + " spooked and bolted!",
-            "🐔 You hesitated on the " + verb + " — take a sip, and it's gone!",
-            lost > 1 ? "💔 Catch combo of " + lost + " broken!" : null);
+            "🐔 You hesitated on the " + verb + " — take a sip, and it's gone!");
           return;
         }
       }
@@ -251,17 +245,14 @@
       sfx("error"); renderEncounter();
     }
 
-    // Wild one leaves for good (a flee, or a spook from hesitating). Breaks combo.
-    function wildEscaped(id, nfo, headline, sub, note) {
-      const tid = active();
-      Store.update((s) => { const t = s.pokedex.trainers[tid]; if (t) t.combo = 0; });
+    // Wild one leaves for good (a flee, or a spook from hesitating).
+    function wildEscaped(id, nfo, headline, sub) {
       sfx("error");
       enc.innerHTML = "";
       enc.appendChild(el("div", { class: "safari-card result miss" }, [
         el("img", { class: "safari-wild fled", src: SP[id], alt: nfo.name }),
         el("div", { class: "safari-result-msg" }, headline),
         el("div", { class: "safari-payout miss" }, sub),
-        note ? el("div", { class: "safari-combo-note broke" }, note) : null,
         el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
       ]));
       current = null; busy = false; status = ""; shiny = false; clearBoosts();
@@ -315,8 +306,7 @@
       const stat = (v, l) => el("div", { class: "safari-stat" }, [el("div", { class: "safari-stat-v" }, String(v)), el("div", { class: "safari-stat-l" }, l)]);
       stats.appendChild(stat(id ? caughtCount(id) + " / 251" : "—", id ? attendeeName(id) + "'s dex" : "No trainer"));
       stats.appendChild(stat("🍺 " + (P().given || 0), "Sips dealt"));
-      stats.appendChild(stat(id && comboOf(id) ? "🔥 " + comboOf(id) : (Store.state.pokedex.log ? Store.state.pokedex.log.length : 0),
-        id && comboOf(id) ? "Catch combo" : "Catches logged"));
+      stats.appendChild(stat(Store.state.pokedex.log ? Store.state.pokedex.log.length : 0, "Catches logged"));
     }
 
     // ---- encounter (wild-battle scene with a silhouette that focuses in) ----
@@ -349,7 +339,6 @@
       const nfo = info(current);
       const chance = chanceFor(nfo);
       const ball = ballTier(chance);
-      const combo = comboOf(active());
       const owned = !!rec(active()).caught[current];
       const firstShow = revealId !== current && !status;
 
@@ -383,7 +372,6 @@
         if (berryDone) parts.push("berry");
         if (rallyDone) parts.push("rally");
         if (helper) parts.push("helper");
-        if (combo) parts.push("combo ×" + combo);
         breakdown = parts.length ? " (base " + Math.round(nfo.base * 100) + "% + " + parts.join(" + ") + ")" : "";
       }
       const odds = el("div", { class: "safari-odds" }, [
@@ -393,13 +381,12 @@
       ]);
       const pips = el("div", { class: "safari-pips" }, [0, 1, 2].map((i) => el("span", { class: "safari-pip" + (i < level ? " on" : "") })));
 
-      // Active-boost chips (berry / rally / combo) shown alongside the dare pips.
+      // Active-boost chips (berry / rally / helper) shown alongside the dare pips.
       const activeChips = [];
       if (masterDone) activeChips.push(el("span", { class: "safari-boost-chip master" }, "🟣 Master Ball dare"));
       if (berryDone) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓 Berry +15%"));
       if (rallyDone) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "📣 Rally +10%"));
       if (helper) activeChips.push(el("span", { class: "safari-boost-chip helper" }, "🤝 " + attendeeName(helper) + " +15%"));
-      if (combo) activeChips.push(el("span", { class: "safari-boost-chip combo" }, "🔥 Combo ×" + combo + " (+" + Math.round(comboBonus(active()) * 100) + "%)"));
 
       let challengeArea;
       if (pending) {
@@ -543,7 +530,6 @@
         busy = false; renderEncounter(); return;
       }
       if (outcome === "catch") {
-        let newCombo = 0;
         const isShiny = shiny;
         // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
         // auto-eaten in duels when a mon drops below 30% HP.
@@ -574,8 +560,6 @@
             nick: (prev && prev.nick) || undefined, kos: (prev && prev.kos) || undefined };
           if (berryDrop) t.berries = (t.berries || 0) + 1;
           t.catches = Object.keys(t.caught).length;
-          t.combo = (t.combo || 0) + 1;               // extend the catch combo
-          newCombo = t.combo;
           if (viaMaster) t.masterCatches = (t.masterCatches || 0) + 1;   // 🟣 Master Catcher
           if (helperId) {                              // credit the helper's assist + payout
             const h = s.pokedex.trainers[helperId] = s.pokedex.trainers[helperId] || { caught: {}, team: [], catches: 0 };
@@ -599,7 +583,6 @@
         // their own) — it just wanders off on its own timer, no exclusive claim.
         const catcherTeam = Store.team(Store.teamOf(tid));
         sfx(isShiny ? "fanfare" : "win");
-        const nextBonus = Math.min(0.25, 0.05 * newCombo);
         enc.innerHTML = "";
         enc.appendChild(el("div", { class: "safari-card result win" + (isShiny ? " shiny" : "") }, [
           el("img", { class: "safari-wild pop", src: (isShiny && SPS[id]) || SP[id], alt: nfo.name }),
@@ -611,23 +594,16 @@
           catcherTeam ? el("div", { class: "safari-team-pts" }, "🏆 +" + sips + " pts → " + catcherTeam.name + " (Victory Road)") : null,
           helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — they hand out " + helperSips + (nfo.leg ? " sip" + (helperSips > 1 ? "s" : "") + " (full legendary share!)" : " sip" + (helperSips > 1 ? "s" : "") + " too!")) : null,
           berryDrop ? el("div", { class: "safari-combo-note" }, "🍓 It dropped a Sitrus Berry! (auto-heals your Pokémon in duels — 🍓×" + ((rec(tid).berries) || 1) + " in the bag)") : null,
-          newCombo > 1 ? el("div", { class: "safari-combo-note" }, "🔥 Catch combo ×" + newCombo + " — +" + Math.round(nextBonus * 100) + "% on your next throw!") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
       } else {
-        const lostCombo = comboOf(tid);              // grab it before we reset
-        Store.update((s) => {
-          s.pokedex.taken = (s.pokedex.taken || 0) + 1;
-          const t = s.pokedex.trainers[tid];
-          if (t) t.combo = 0;                          // a runaway breaks the combo
-        });
+        Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });
         sfx("error");
         enc.innerHTML = "";
         enc.appendChild(el("div", { class: "safari-card result miss" }, [
           el("img", { class: "safari-wild fled", src: SP[id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, nfo.name + " slipped away!"),
           el("div", { class: "safari-payout miss" }, "😅 It got away. Take a sip." ),
-          lostCombo > 1 ? el("div", { class: "safari-combo-note broke" }, "💔 Catch combo of " + lostCombo + " broken!") : null,
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
       }
