@@ -325,7 +325,9 @@
           enc.appendChild(el("div", { class: "roam-banner" }, [
             el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the lake house — go catch it!"),
             el("button", { class: "btn primary sm", onClick: () => {
-              current = roam.monId; shiny = false; revealId = null; status = ""; clearBoosts();
+              // Each hunter rolls their own shiny shot at the roaming legendary
+              // (~1/8) — the only realistic way to land a shiny legendary.
+              current = roam.monId; shiny = Math.random() < SHINY_RATE; revealId = null; status = ""; clearBoosts();
               const tid = active();
               if (tid) Store.update((s) => {
                 const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
