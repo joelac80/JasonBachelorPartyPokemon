@@ -1554,6 +1554,14 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .league-intro-name { font-family: var(--pixel); font-size: 34px; font-weight: 900; color: #fff; text-shadow: 3px 3px 0 rgba(238,21,21,.55); }
 .league-intro-quote { color: #d8d8ea; font-size: 15px; line-height: 1.55; font-style: italic; }
 .league-intro.red .league-intro-name { text-shadow: 3px 3px 0 rgba(120,120,200,.5); }
+/* 🎹 Cynthia's finale: the piano cue, and a deep amethyst wash. */
+.league-intro-flair { font-family: var(--pixel, monospace); font-size: 15px; letter-spacing: 1px; color: #c9b8ff;
+  font-style: italic; text-shadow: 0 0 14px rgba(150,110,255,.6); animation: onbPop .8s cubic-bezier(.2,1.5,.4,1); }
+.league-intro.final { background: radial-gradient(circle at 50% 40%, rgba(40,26,70,.97), rgba(10,8,20,.98)); }
+.league-intro.final .league-intro-mt { filter: drop-shadow(0 0 22px rgba(160,120,255,.7)); }
+.league-intro.final .league-intro-name { text-shadow: 3px 3px 0 rgba(150,110,255,.55); }
+.league-stage.final .league-stage-card { background: linear-gradient(rgba(24,16,40,.92), rgba(48,30,78,.92)); border-color: #9a6cff; }
+.league-stage.final .gymc-badge { color: #e7dbff; }
 .league-intro.fame .league-intro-mt { filter: drop-shadow(0 0 22px rgba(255,208,64,.65)); }
 /* 👋 first-open onboarding tour */
 .onb { position: fixed; inset: 0; z-index: 300; background: linear-gradient(160deg, rgba(10,16,14,.97), rgba(16,26,40,.97));

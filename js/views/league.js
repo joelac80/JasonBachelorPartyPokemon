@@ -17,21 +17,53 @@
   // (Koga), Lucario→Heracross and Onix grows into Steelix (Bruno),
   // Weavile/Spiritomb/Absol→Sneasel/Gengar/Tyranitar (Karen). LANCE's
   // triple-Dragonite six is already his ceiling; RED is RED.
+  // A long cinematic ladder: Johto E4 → LANCE → (Mt. Silver RED, a secret side
+  // summit) → the HOENN Elite Four → Champion STEVEN → the SINNOH Elite Four →
+  // and, at the very end, a Cynthia rematch. Each stage carries its own gating
+  // (needs = the key you must have beaten), reveal (un-fogs for everyone once
+  // ANY trainer beats that key), mystery (name hidden until beaten), boost and
+  // point value. Later-gen teams use the real rematch squads now that the dex
+  // reaches #493.
   const LEAGUE = [
-    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [122, 124, 97, 196, 80, 178], pts: 6,
+    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [122, 124, 97, 196, 80, 178], pts: 6, boost: 1.15,
       quote: "I have trained my mind to see all that is coming… and I foresee your defeat." },
-    { key: "koga",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 110, 89, 169], pts: 6,
+    { key: "koga",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 110, 89, 169], pts: 6, boost: 1.15, needs: "will",
       quote: "A ninja's poison lingers long after the strike. Can you endure it?" },
-    { key: "bruno", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 208, 214, 68], pts: 6,
+    { key: "bruno", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 208, 214, 68], pts: 6, boost: 1.15, needs: "koga",
       quote: "We will grind you down with our superior power. Hoo hah!" },
-    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [215, 45, 94, 248, 197, 229], pts: 6,
+    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [215, 45, 94, 248, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
       quote: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Show me YOUR favorites." },
-    { key: "lance", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8,
+    { key: "lance", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },
-    { key: "red",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10,
+    { key: "red",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
       quote: "……" },
+    // ---- The Hoenn Elite Four (rematch squads) → Champion STEVEN ----
+    { key: "sidney", name: "SIDNEY", rank: "Elite Four", type: "dark",   team: [359, 275, 332, 319, 342, 262], pts: 8, boost: 1.22, needs: "lance", reveal: "lance",
+      quote: "Well, well — a fresh challenger from another region! No holding back. Let's go all out!" },
+    { key: "phoebe", name: "PHOEBE", rank: "Elite Four", type: "ghost",  team: [477, 354, 302, 94, 429, 356], pts: 8, boost: 1.22, needs: "sidney", reveal: "lance",
+      quote: "I speak with the departed. They whisper that your team is about to join them…" },
+    { key: "glacia", name: "GLACIA", rank: "Elite Four", type: "ice",    team: [365, 362, 478, 461, 131, 87], pts: 8, boost: 1.22, needs: "phoebe", reveal: "lance",
+      quote: "Passion burns hotter than any blizzard. Show me a heart that won't freeze!" },
+    { key: "drake",  name: "DRAKE",  rank: "Elite Four", type: "dragon", team: [373, 330, 334, 230, 149, 372], pts: 8, boost: 1.22, needs: "glacia", reveal: "lance",
+      quote: "Dragons are the mightiest of all! Prove your bond is stronger — if you dare." },
+    { key: "steven", name: "STEVEN", rank: "Champion",   type: "steel",  team: [376, 306, 227, 344, 346, 348], pts: 10, boost: 1.3, needs: "drake", reveal: "lance",
+      quote: "I'm Steven — collector of rare stones, and Champion of Hoenn. Show me the power you've forged." },
+    // ---- The Sinnoh Elite Four (Platinum rematch) → CYNTHIA ----
+    { key: "aaron",  name: "AARON",  rank: "Elite Four", type: "bug",     team: [469, 212, 214, 416, 452, 267], pts: 10, boost: 1.32, needs: "steven", reveal: "steven",
+      quote: "The Bug Pokémon I raise are anything but weak. Prepare yourself!" },
+    { key: "bertha", name: "BERTHA", rank: "Elite Four", type: "ground",  team: [450, 472, 464, 340, 76, 232], pts: 10, boost: 1.32, needs: "aaron", reveal: "steven",
+      quote: "Hehe — a young one keeps this old woman on her toes. Let's see your grit." },
+    { key: "flint",  name: "FLINT",  rank: "Elite Four", type: "fire",    team: [392, 467, 78, 229, 136, 59], pts: 10, boost: 1.32, needs: "bertha", reveal: "steven",
+      quote: "My fire's been waiting for a challenger this bright. Don't you dare disappoint me!" },
+    { key: "lucian", name: "LUCIAN", rank: "Elite Four", type: "psychic", team: [65, 196, 475, 437, 122, 203], pts: 10, boost: 1.32, needs: "flint", reveal: "steven",
+      quote: "Few reach me. I'll read every move before you make it. Now — begin." },
+    { key: "cynthia", name: "CYNTHIA", rank: "Champion", type: "dragon",  team: [445, 442, 407, 448, 350, 468], pts: 14, boost: 1.5, needs: "lucian", reveal: "lucian", mystery: true, final: true,
+      intro: "🎹 piano ensues….",
+      quote: "There is no such thing as a battle whose outcome doesn't matter. Come — show me everything you have." },
   ];
   window.LEAGUE_STAGES = LEAGUE;
+  const idxOf = (key) => LEAGUE.findIndex((s) => s.key === key);
+  const stageByKey = (key) => LEAGUE[idxOf(key)];
 
   function johtoBadges(attId) {
     let n = 0; for (let i = 0; i < 8; i++) if (Store.gymHolders(i).indexOf(attId) >= 0) n++;
@@ -39,37 +71,52 @@
   }
   // Why can't this trainer fight stage idx yet? "" = clear to battle.
   function leagueBlocked(attId, idx) {
+    const st = LEAGUE[idx];
     const wins = Store.leagueWins(attId);
-    if (idx <= 3) {
-      if (johtoBadges(attId) < 8) return "The League only admits trainers holding all 8 JOHTO badges (" + johtoBadges(attId) + "/8).";
-      if (idx > 0 && wins.indexOf(LEAGUE[idx - 1].key) < 0) return "The Elite Four fall IN ORDER — beat " + LEAGUE[idx - 1].name + " first.";
-      return "";
+    // The whole League gates on the 8 Johto badges (Victory Road).
+    if (johtoBadges(attId) < 8) return "The League only admits trainers holding all 8 JOHTO badges (" + johtoBadges(attId) + "/8).";
+    // RED, the Mt. Silver summit, additionally demands all 16 badges.
+    if (st.key === "red" && Store.gymBadgeCount(attId) < 16) return "RED faces only trainers holding ALL 16 badges (" + Store.gymBadgeCount(attId) + "/16).";
+    // Linear climb: the previous stage (st.needs) must be beaten.
+    if (st.needs && wins.indexOf(st.needs) < 0) {
+      const prev = stageByKey(st.needs);
+      if (st.key === "red") return "…the summit is silent. (Beat Champion " + prev.name + " first.)";
+      if (st.rank === "Champion") return "Champion " + st.name + " only faces trainers who've toppled all four of the Elite Four.";
+      if (prev.rank === "Champion") return "A new region's Elite Four — first defeat Champion " + prev.name + " to earn the invitation.";
+      return "The Elite Four fall IN ORDER — beat " + prev.name + " first.";
     }
-    if (idx === 4) {
-      const e4 = ["will", "koga", "bruno", "karen"].every((k) => wins.indexOf(k) >= 0);
-      return e4 ? "" : "Champion LANCE only faces trainers who've toppled all four Elite Four.";
-    }
-    if (wins.indexOf("lance") < 0) return "…the summit is silent. (Beat Champion LANCE first.)";
-    if (Store.gymBadgeCount(attId) < 16) return "RED faces only trainers holding ALL 16 badges (" + Store.gymBadgeCount(attId) + "/16).";
     return "";
   }
   window.LeagueGate = { blocked: leagueBlocked, johtoBadges: johtoBadges };
+
+  // A stage's card is fogged for everyone until ANY trainer has beaten its
+  // `reveal` key (keeps later regions — and the final trainer — a surprise).
+  function revealed(st) {
+    if (!st.reveal) return true;
+    return Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf(st.reveal) >= 0);
+  }
 
   // Cinematic chamber entrance: doors part, the quote lands, then you choose
   // to step in. RED's chamber is snow and silence.
   function chamberIntro(idx, onGo) {
     const st = LEAGUE[idx];
-    const isRed = idx === 5;
+    const isRed = st.key === "red";
+    const isFinal = !!st.final;
     const ico = energyIcon(st.type);
-    const lay = el("div", { class: "league-intro" + (isRed ? " red" : "") }, [
+    const rankLabel = isRed ? "MT. SILVER" : isFinal ? "THE FINAL BATTLE" : st.rank.toUpperCase();
+    const lay = el("div", { class: "league-intro" + (isRed ? " red" : "") + (isFinal ? " final" : "") }, [
       el("div", { class: "league-intro-inner" }, [
         isRed ? el("div", { class: "league-intro-mt" }, "🗻") :
+          isFinal ? el("div", { class: "league-intro-mt" }, "🎹") :
           (ico ? el("img", { class: "league-intro-ico", src: ico, alt: "" }) : null),
-        el("div", { class: "league-intro-rank" }, isRed ? "MT. SILVER" : st.rank.toUpperCase()),
+        // Cynthia's cue: the famous theme's piano swells before the battle.
+        st.intro ? el("div", { class: "league-intro-flair" }, st.intro) : null,
+        el("div", { class: "league-intro-rank" }, rankLabel),
         el("div", { class: "league-intro-name" }, isRed ? "…" : st.name),
         el("div", { class: "league-intro-quote" }, "“" + st.quote + "”"),
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, isRed ? "🗻 STEP FORWARD" : "⚔ STEP INTO THE CHAMBER"),
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } },
+            isRed ? "🗻 STEP FORWARD" : isFinal ? "🎹 ANSWER THE FINALE" : "⚔ STEP INTO THE CHAMBER"),
           el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
         ]),
       ]),
@@ -82,20 +129,25 @@
   function challengeLeague(idx, attId) {
     const st = LEAGUE[idx];
     const size = st.team.length;
+    const isRed = st.key === "red";
+    const isFinal = !!st.final;
     const why = leagueBlocked(attId, idx);
     if (why) { alert(why); return; }
     if (Duel.poolFor(attId).length < size) { alert(st.name + " runs " + size + " Pokémon — you need " + size + " of your own."); return; }
+    const foeName = isRed ? "RED" : st.rank + " " + st.name;
     chamberIntro(idx, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
-        title: "vs " + (idx === 5 ? "RED" : st.rank + " " + st.name) + " — pick EXACTLY " + size,
-        hint: idx === 5 ? "The silent trainer. " + size + " vs " + size + "." : "Even match: " + size + " vs " + size + ". The lineup is hidden.",
+        title: "vs " + foeName + " — pick EXACTLY " + size,
+        hint: isRed ? "The silent trainer. " + size + " vs " + size + "."
+          : isFinal ? "The final battle. " + size + " vs " + size + " — the lineup is hidden."
+          : "Even match: " + size + " vs " + size + ". The lineup is hidden.",
         onDone: (ids) => {
           Duel.start({ mode: "local",
-            title: idx === 5 ? "Mt. Silver" : "the Pokémon League",
-            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, pts: st.pts },
+            title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
+            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, pts: st.pts, final: isFinal },
             a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: idx === 5 ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
-              boost: idx === 5 ? 1.35 : idx === 4 ? 1.2 : 1.15 }] },
+            b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
+              boost: st.boost || 1.15 }] },
             onResult: () => Router.render() });
         } });
     });
@@ -150,7 +202,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "👑 Pokémon League"),
-      el("p", { class: "page-sub" }, "Victory Road ends here. Four Elite chambers, one Champion — and the stories whisper of a silent trainer beyond." ),
+      el("p", { class: "page-sub" }, "Victory Road is only the beginning. Elite chambers, Champions, a silent trainer on the mountain — and, far beyond, challengers from other regions await." ),
     ]));
 
     // whose journey are we looking at?
@@ -164,7 +216,8 @@
 
     function stageNode(idx) {
       const st = LEAGUE[idx];
-      const isRed = idx === 5;
+      const isRed = st.key === "red";
+      const isFinal = !!st.final;
       const wins = Store.leagueWins(attId);
       const mineBeat = wins.indexOf(st.key) >= 0;
       const anyBeat = Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0);
@@ -172,23 +225,29 @@
       const isNext = !mineBeat && !blocked;
       const ico = energyIcon(st.type);
       const beatenBy = Store.state.attendees.filter((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0);
-      return el("div", { class: "league-stage" + (mineBeat ? " cleared" : "") + (isNext ? " next" : "") + (isRed ? " red" : "") + (!mineBeat && blocked ? " locked" : "") }, [
+      // Mystery bosses (RED, CYNTHIA) stay "???" until someone unmasks them.
+      const nameLabel = st.mystery ? ((anyBeat || mineBeat) ? st.name : "???") : st.rank + " " + st.name;
+      const sub = isRed ? "the summit" : isFinal ? "the finale" : (st.rank === "Champion" ? "the Champion's hall" : "an Elite chamber");
+      const headIco = isRed ? el("span", { class: "league-mt" }, "🗻")
+        : isFinal ? el("span", { class: "league-mt" }, "🎹")
+        : (ico ? el("img", { class: "gymc-ico", src: ico, alt: "" }) : null);
+      return el("div", { class: "league-stage" + (mineBeat ? " cleared" : "") + (isNext ? " next" : "") + (isRed ? " red" : "") + (isFinal ? " final" : "") + (!mineBeat && blocked ? " locked" : "") }, [
         el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, mineBeat ? "✅" : (isNext ? "⚔" : "🔒"))]),
         el("div", { class: "league-stage-card" }, [
           el("div", { class: "league-stage-head" }, [
-            isRed ? el("span", { class: "league-mt" }, "🗻") : (ico ? el("img", { class: "gymc-ico", src: ico, alt: "" }) : null),
+            headIco,
             el("div", {}, [
-              el("div", { class: "gymc-badge" }, isRed ? (anyBeat || mineBeat ? "RED" : "???") : st.rank + " " + st.name),
-              el("div", { class: "gymc-leader" }, (isRed ? "the summit" : "chamber " + (idx + 1)) + " · team of " + st.team.length + " (hidden)"),
+              el("div", { class: "gymc-badge" }, nameLabel),
+              el("div", { class: "gymc-leader" }, sub + " · team of " + st.team.length + " (hidden)"),
             ]),
             aceSprite(idx, mineBeat || anyBeat),
           ]),
-          isNext ? el("div", { class: "league-now" }, "⚔ YOUR NEXT CHALLENGE") : null,
+          isNext ? el("div", { class: "league-now" }, isFinal ? "🎹 THE FINAL BATTLE AWAITS" : "⚔ YOUR NEXT CHALLENGE") : null,
           (!mineBeat && blocked) ? el("div", { class: "league-lock" }, blocked) : null,
           beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
-            el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, (isRed ? "🗻 " : "👑 ") + a.name))) : null,
+            el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, ((isRed || isFinal) ? "🗻 " : "👑 ") + a.name))) : null,
           (!mineBeat) ? el("button", { class: "btn " + (isNext ? "primary" : "subtle") + " sm", onClick: () => challengeLeague(idx, attId) },
-            (isRed ? "🗻 Face what waits" : "⚔ Challenge " + st.name) + " (" + st.team.length + "v" + st.team.length + ")") :
+            (isRed ? "🗻 Face what waits" : isFinal ? "🎹 Face the finale" : "⚔ Challenge " + st.name) + " (" + st.team.length + "v" + st.team.length + ")") :
             el("button", { class: "btn subtle sm", onClick: () => challengeLeague(idx, attId) }, "🔁 Rematch (glory only)"),
         ]),
       ]);
@@ -209,17 +268,20 @@
           all >= 16 ? el("div", { class: "league-now" }, "🏟 ALL 16 BADGES — even the summit would accept you.") : null,
         ]),
       ]));
-      for (let i = 0; i < 5; i++) journey.appendChild(stageNode(i));
-      // Mt. Silver only exists once a Champion has been crowned
-      const anyLance = Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf("lance") >= 0);
-      if (anyLance) journey.appendChild(stageNode(5));
-      else journey.appendChild(el("div", { class: "league-stage locked fog" }, [
-        el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, "🌫")]),
-        el("div", { class: "league-stage-card" }, [
-          el("div", { class: "gymc-badge" }, "🌫 ﹖﹖﹖"),
-          el("div", { class: "gymc-leader" }, "Beyond the Champion's hall, clouds hide a mountain…"),
-        ]),
-      ]));
+      // Render each revealed stage in order; at the first still-fogged stage,
+      // drop a single teaser card and stop — later regions unmask as trainers
+      // climb (keeps Mt. Silver, and the final trainer, a surprise).
+      for (let i = 0; i < LEAGUE.length; i++) {
+        if (revealed(LEAGUE[i])) { journey.appendChild(stageNode(i)); continue; }
+        journey.appendChild(el("div", { class: "league-stage locked fog" }, [
+          el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, "🌫")]),
+          el("div", { class: "league-stage-card" }, [
+            el("div", { class: "gymc-badge" }, "🌫 ﹖﹖﹖"),
+            el("div", { class: "gymc-leader" }, "Beyond the last victory, the fog hides what comes next…"),
+          ]),
+        ]));
+        break;
+      }
       host.appendChild(journey);
 
       // 🏛 HALL OF FAME — every Champion, with the team that did it.
