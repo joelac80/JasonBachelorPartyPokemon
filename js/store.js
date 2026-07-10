@@ -618,6 +618,21 @@
       if (a && a.favoriteId && t.caught && t.caught[a.favoriteId]) n--;
       return Math.max(0, n);
     },
+    // Gen 5-9 stay hidden in the wild until a trainer completes the Gen 1-4
+    // NORMAL dex (all 493 base forms owned). GEN14_MAX is that gate.
+    GEN14_MAX: 493,
+    gen59Unlocked(attId) {
+      const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
+      if (!t) return false;
+      const ownsNormal = (id) => (t.have && t.have[id]) || (t.caught && t.caught[id] && !t.caught[id].shiny);
+      for (let id = 1; id <= this.GEN14_MAX; id++) if (!ownsNormal(id)) return false;
+      return true;
+    },
+    // How many species this trainer's dex is measured against right now — 493
+    // until the later gens unlock, then the whole National Dex.
+    dexTarget(attId) {
+      return this.gen59Unlocked(attId) ? (Object.keys(window.DEX || {}).length || this.GEN14_MAX) : this.GEN14_MAX;
+    },
 
     // Caught species of a given type (partner freebie excluded, same fairness
     // rule as dexCount). Types come from DEX[id].t.
