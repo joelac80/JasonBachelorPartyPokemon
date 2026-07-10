@@ -289,9 +289,15 @@
         sub: crusher.n >= 16 ? "swept ALL 16 gyms!" : crusher.n + "/16 gym badges" });
       const league = this._topAttendee((id) => this.leagueWins(id).length);
       if (league) {
-        const beatRed = this.leagueWins(league.a.id).indexOf("red") >= 0;
-        out.push({ emoji: beatRed ? "🗻" : "👑", title: beatRed ? "Conquered Mt. Silver" : "League Contender",
-          holder: league.a.name, sub: beatRed ? "defeated RED — nothing left to prove" : league.n + "/6 league battles won" });
+        const wins = this.leagueWins(league.a.id);
+        const beatCynthia = wins.indexOf("cynthia") >= 0;
+        const beatRed = wins.indexOf("red") >= 0;
+        const total = (window.LEAGUE_STAGES || []).length || 16;
+        out.push({
+          emoji: beatCynthia ? "🎹" : beatRed ? "🗻" : "👑",
+          title: beatCynthia ? "Champion of Champions" : beatRed ? "Conquered Mt. Silver" : "League Contender",
+          holder: league.a.name,
+          sub: beatCynthia ? "out-dueled CYNTHIA in the final battle" : beatRed ? "defeated RED — nothing left to prove" : league.n + "/" + total + " league battles won" });
       }
       // Champion's Belt — held by the last trainer to win/defend a singles duel.
       const belt = (this.state.battles && this.state.battles.belt) || null;
