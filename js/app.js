@@ -376,7 +376,20 @@
     // snapshot feeds the turn acts into any open duel screen (players and
     // spectators replay the exact same acts).
     const duelScreens = {};
-    const endedDuels = {};                 // duel ids we've already finished — never re-open/replay them
+    // Duel ids we've already finished/watched — never re-open or replay them.
+    // Persisted so closing + reopening the app can't force a rewatch of a
+    // battle this device already saw end (the shared doc can linger on "live").
+    const DUEL_ENDED_KEY = "jasonBachHub.endedDuels";
+    let endedList = [];
+    try { endedList = JSON.parse(localStorage.getItem(DUEL_ENDED_KEY) || "[]") || []; } catch (_) {}
+    const endedDuels = {};
+    endedList.forEach((id) => { endedDuels[id] = 1; });
+    function markDuelEnded(id) {
+      if (!id || endedDuels[id]) return;
+      endedDuels[id] = 1; endedList.push(id);
+      if (endedList.length > 50) endedList = endedList.slice(-50);
+      try { localStorage.setItem(DUEL_ENDED_KEY, JSON.stringify(endedList)); } catch (_) {}
+    }
     let latestDuel = null;
     Sync.onDuel((data) => {
       latestDuel = data;
@@ -393,7 +406,7 @@
         duelScreens[data.id] = Duel.start(Object.assign({}, setup, {
           mode: "remote", myClient: me,
           net: { send: Sync.sendDuelAct },
-          onEnd: () => { delete duelScreens[data.id]; endedDuels[data.id] = 1; },
+          onEnd: () => { delete duelScreens[data.id]; markDuelEnded(data.id); },
         }));
       }
       const h = duelScreens[data.id];
@@ -522,7 +535,7 @@
       let setup; try { setup = JSON.parse(d.setupJson); } catch (_) { return; }
       duelScreens[d.id] = Duel.start(Object.assign({}, setup, {
         mode: "watch", rx: Sync.sendDuelReaction,
-        onEnd: () => { delete duelScreens[d.id]; endedDuels[d.id] = 1; },
+        onEnd: () => { delete duelScreens[d.id]; markDuelEnded(d.id); },
       }));
       duelScreens[d.id].receiveActs(d.acts || []);
       duelScreens[d.id].receiveRx(d.rx || []);
