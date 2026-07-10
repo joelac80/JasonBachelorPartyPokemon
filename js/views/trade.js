@@ -186,15 +186,29 @@
       }
     }
 
-    function sideCard(key, title, cls) {
+    function sideCard(key, title, cls, opts) {
+      opts = opts || {};
       const d = pick[key];
       const other = pick[key === "a" ? "b" : "a"];
-      const sel = el("select", { class: "in" }, [el("option", { value: "" }, "Pick a trainer…")]
-        .concat(Store.state.attendees.map((a) =>
-          el("option", { value: a.id, disabled: a.id === other.attId ? "true" : null }, a.name))));
-      sel.value = d.attId;
-      sel.addEventListener("change", () => { d.attId = sel.value; d.mon = 0; d.shiny = false; render(); });
-      const kids = [el("div", { class: "arena-side-title" }, title), sel];
+      const kids = [el("div", { class: "arena-side-title" }, title)];
+      if (opts.fixedAttId) {
+        // Your side is locked to YOU — you can only ever give away your own
+        // Pokémon, so no picker here, just your badge.
+        d.attId = opts.fixedAttId;
+        const a = Store.attendee(d.attId) || {};
+        kids.push(el("div", { class: "trade-you-chip" }, [
+          a.favoriteId ? el("img", { class: "sl-thumb", src: Store.sprite(a.favoriteId), alt: "" }) : el("span", { class: "draft-thumb-ball" }),
+          el("span", {}, a.name || "You"),
+        ]));
+      } else {
+        const sel = el("select", { class: "in" }, [el("option", { value: "" }, "Pick a trainer…")]
+          .concat(Store.state.attendees
+            .filter((a) => a.id !== opts.excludeId)
+            .map((a) => el("option", { value: a.id, disabled: a.id === other.attId ? "true" : null }, a.name))));
+        sel.value = d.attId;
+        sel.addEventListener("change", () => { d.attId = sel.value; d.mon = 0; d.shiny = false; render(); });
+        kids.push(sel);
+      }
       if (d.attId) {
         const att = Store.attendee(d.attId);
         const pool = Duel.poolFor(d.attId);
@@ -240,11 +254,29 @@
 
     function render() {
       host.innerHTML = "";
-      host.appendChild(el("div", { class: "arena-grid" }, [
-        sideCard("a", "🔵 Trainer A gives…", "blue"),
-        el("div", { class: "arena-vs" }, "⇄"),
-        sideCard("b", "🔴 Trainer B gives…", "red"),
-      ]));
+      const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+      if (me) {
+        // Identity set → you always trade AS yourself: side A is locked to you,
+        // side B is whoever you want to trade with. Reset any stale picks that
+        // don't fit (e.g. you were previously on the other side).
+        if (pick.a.attId !== me) { pick.a.attId = me; pick.a.mon = 0; pick.a.shiny = false; }
+        if (pick.b.attId === me) { pick.b.attId = ""; pick.b.mon = 0; pick.b.shiny = false; }
+        host.appendChild(el("div", { class: "arena-grid" }, [
+          sideCard("a", "🔵 You give…", "blue", { fixedAttId: me }),
+          el("div", { class: "arena-vs" }, "⇄"),
+          sideCard("b", "🔴 You want… (from)", "red", { excludeId: me }),
+        ]));
+      } else {
+        // No identity chosen (hot-seat / pass-the-phone): keep the full picker,
+        // but nudge toward setting who you are for the simpler solo flow.
+        host.appendChild(el("p", { class: "hint", style: { marginTop: "0" } },
+          "Tip: set who you are in Settings → “You are” to trade as yourself with one tap."));
+        host.appendChild(el("div", { class: "arena-grid" }, [
+          sideCard("a", "🔵 Trainer A gives…", "blue", {}),
+          el("div", { class: "arena-vs" }, "⇄"),
+          sideCard("b", "🔴 Trainer B gives…", "red", {}),
+        ]));
+      }
       const ready = pick.a.attId && pick.b.attId && pick.a.mon && pick.b.mon;
       // Consent rule: in a LIVE room, a trade involving another trainer is
       // ALWAYS an offer — it lands in their 📬 inbox (shared state), so
@@ -252,7 +284,6 @@
       // from their own phone whenever they next open the app. Brokering
       // someone else's trade stays blocked. Only an unsynced phone
       // (hot-seat, pass-the-phone mode) trades instantly, behind a confirm.
-      const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
       const live = window.Sync && Sync.isLive && Sync.isLive();
       let gate = { kind: "local" };
       if (live && ready) {
@@ -266,7 +297,7 @@
       }
       host.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
         el("button", { class: "btn spin-btn" + (gate.kind === "blocked" ? " off" : ""), onClick: () => {
-          if (!ready) { alert("Pick both trainers and the Pokémon they're each giving up."); return; }
+          if (!ready) { alert(me ? "Pick the Pokémon you'll give, the trainer you want, and which of theirs you want." : "Pick both trainers and the Pokémon they're each giving up."); return; }
           if (gate.kind === "blocked") { alert(gate.why); return; }
           const an = (Store.attendee(pick.a.attId) || {}).name, bn = (Store.attendee(pick.b.attId) || {}).name;
           if (gate.kind === "offer") {
