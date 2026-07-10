@@ -593,6 +593,9 @@
           else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
         });
+        // 🌍 Did that catch complete the Gen 1-4 dex? If so, unlock Gen 5-9 for
+        // the whole room (the popup fires from the synced flag via app.js).
+        Store.checkGen59Unlock(tid);
         // A roaming legendary stays out for the whole room (everyone can grab
         // their own) — it just wanders off on its own timer, no exclusive claim.
         const catcherTeam = Store.team(Store.teamOf(tid));
@@ -772,13 +775,14 @@
         const locked = (IDS.length > GEN14_MAX) ? (IDS.length - GEN14_MAX) : 0;
         dexHost.appendChild(el("div", { class: "dex-lock" }, [
           el("div", { class: "dex-lock-title" }, "🔒 Gen 5-9 locked"),
-          el("div", { class: "dex-lock-sub" }, "Complete the Gen 1-4 Pokédex — all " + GEN14_MAX + " base forms — to unlock " + locked + " more Pokémon in the wild! (" + have + " / " + GEN14_MAX + ")"),
+          el("div", { class: "dex-lock-sub" }, "The FIRST trainer to complete the Gen 1-4 Pokédex — all " + GEN14_MAX + " base forms — unlocks " + locked + " more Pokémon in the wild for EVERYONE! " + attendeeName(tid) + ": " + have + " / " + GEN14_MAX + "."),
           el("div", { class: "dex-lock-bar" }, [el("div", { class: "dex-lock-fill", style: { width: Math.round(have / GEN14_MAX * 100) + "%" } })]),
         ]));
       } else if (IDS.length > GEN14_MAX) {
+        const by = (Store.state.pokedex && Store.state.pokedex.gen59By) || "a trainer";
         dexHost.appendChild(el("div", { class: "dex-lock open" }, [
           el("div", { class: "dex-lock-title" }, "🎉 Gen 5-9 UNLOCKED!"),
-          el("div", { class: "dex-lock-sub" }, "The Gen 1-4 dex is complete — the later generations now roam the Safari."),
+          el("div", { class: "dex-lock-sub" }, "Thanks to " + by + ", the Gen 1-4 dex is complete — Gen 5-9 now roam the Safari for the whole room."),
         ]));
       }
       const grid = el("div", { class: "safari-dex" });

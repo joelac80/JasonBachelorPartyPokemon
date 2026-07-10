@@ -519,6 +519,14 @@ body {
 .dex-lock-sub { font-size: 12px; color: var(--ink-dim); margin-top: 3px; line-height: 1.4; }
 .dex-lock-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,.12); overflow: hidden; margin-top: 8px; }
 .dex-lock-fill { height: 100%; background: linear-gradient(90deg, #4fa3ff, #2e8b3d); border-radius: 999px; transition: width .4s; }
+/* 🎉 Gen 5-9 unlock celebration */
+.gen59-pop { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.gen59-pop-emoji { font-size: 46px; animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }
+.gen59-pop-title { font-family: var(--pixel, monospace); font-weight: 900; font-size: 22px; color: #2e8b3d;
+  text-shadow: 2px 2px 0 #ffcb05; letter-spacing: 1px; }
+.gen59-pop-sub { font-size: 14px; line-height: 1.5; color: var(--ink); max-width: 420px; }
+.gen59-pop-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin: 6px 0 2px; }
+.gen59-pop-mon { width: 52px; height: 52px; image-rendering: pixelated; animation: onbPop .6s cubic-bezier(.2,1.5,.4,1); }
 .dex-toggle .btn { flex: 1; }
 .safari-dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; }
 .safari-dex-cell { position: relative; aspect-ratio: 1; background: var(--paper); border: 2px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
