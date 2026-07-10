@@ -158,7 +158,7 @@
     attendee(id) { return this.state.attendees.find((a) => a.id === id) || null; },
 
     // Offline Pokemon sprite (base64 data URI) for a National Dex id, or "".
-    sprite(id) { return (window.SPRITES && window.SPRITES[id]) || ""; },
+    sprite(id) { return (window.SPRITES && window.SPRITES[id]) || (window.DEX_SPRITES && window.DEX_SPRITES[id]) || ""; },
 
     // ---- Evolution -------------------------------------------------------
     evoConfig(attId) {
