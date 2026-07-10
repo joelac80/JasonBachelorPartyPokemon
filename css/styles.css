@@ -1650,6 +1650,9 @@ html, body { overscroll-behavior-y: contain; }
 .trade-history { margin: 2px 0 14px; }
 .trade-history summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--ink-dim); padding: 4px 0; }
 .trade-history .battle-log { margin-top: 6px; }
+.trade-you-chip { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 15px;
+  padding: 8px 10px; border: 2px solid var(--pokeblue, #3b6ea5); border-radius: 10px; background: var(--paper); }
+.trade-you-chip img, .trade-you-chip .draft-thumb-ball { width: 28px; height: 28px; image-rendering: pixelated; }
 /* 👀 persistent spectator bar (react + leave any time) */
 .duel-watch-bar { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
   padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); background: #0d1b17; border-top: 2px solid rgba(255,255,255,.12); }
