@@ -942,6 +942,21 @@
           Object.keys(src[k]).forEach((id) => { if (src[k][id]) dst[k][id] = 1; });
         });
       });
+      // 📬 trade offers: the inbox lives in the last-write-wins doc, so an offer
+      // one phone just sent would be wiped by the next phone's push. Union by id
+      // and let a TERMINAL status win (accepted/declined/cancelled beats open),
+      // so offers survive concurrent writes without ever re-opening a closed one.
+      const po = (prev && prev.pokedex && prev.pokedex.offers) || [];
+      const no = next.pokedex.offers = next.pokedex.offers || [];
+      const seen = {}; no.forEach((o) => { if (o && o.id) seen[o.id] = o; });
+      const rank = (st) => (st && st !== "open" ? 1 : 0);   // 0 open, 1 terminal
+      po.forEach((o) => {
+        if (!o || !o.id) return;
+        const ex = seen[o.id];
+        if (!ex) { no.push(o); seen[o.id] = o; }
+        else if (rank(o.status) > rank(ex.status)) ex.status = o.status;
+      });
+      if (no.length > 60) next.pokedex.offers = no.slice(0, 60);
     },
   };
 
