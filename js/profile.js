@@ -49,7 +49,7 @@
     const duel = Store.duelRecord(attId);
     const beltNow = Store.state.battles && Store.state.battles.belt && Store.state.battles.belt.attId === attId;
     const stats = el("div", { class: "pf-stats" }, [
-      stat(dexN + " / " + (Object.keys(window.DEX || {}).length || 251), "Safari dex"),
+      stat(dexN + " / " + (Store.dexTarget ? Store.dexTarget(attId) : (Object.keys(window.DEX || {}).length || 251)), "Safari dex"),
       stat(seenN, "👀 Seen"),
       stat(duel.w + "–" + duel.l, "🎮 Duels"),
       stat(Store.eloOf(attId), "📈 Rating"),

@@ -512,6 +512,13 @@ body {
 .safari-ash-score { margin-left: auto; font-family: var(--pixel); font-size: 26px; color: var(--gold); }
 /* dex grid */
 .dex-toggle { display: flex; gap: 6px; margin: 4px 0 10px; }
+/* 🔒 Gen 5-9 unlock teaser + progress */
+.dex-lock { border: 2px dashed var(--line); border-radius: 12px; padding: 10px 12px; margin: 4px 0 12px; background: var(--paper); }
+.dex-lock.open { border-style: solid; border-color: #e6b800; background: linear-gradient(#fff7d6, #fffdf2); }
+.dex-lock-title { font-family: var(--pixel, monospace); font-weight: 800; font-size: 13px; }
+.dex-lock-sub { font-size: 12px; color: var(--ink-dim); margin-top: 3px; line-height: 1.4; }
+.dex-lock-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,.12); overflow: hidden; margin-top: 8px; }
+.dex-lock-fill { height: 100%; background: linear-gradient(90deg, #4fa3ff, #2e8b3d); border-radius: 999px; transition: width .4s; }
 .dex-toggle .btn { flex: 1; }
 .safari-dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 6px; }
 .safari-dex-cell { position: relative; aspect-ratio: 1; background: var(--paper); border: 2px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; }

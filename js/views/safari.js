@@ -155,6 +155,10 @@
     if (t.haveShiny && t.haveShiny[id]) return true;
     return !!(t.caught && t.caught[id] && t.caught[id].shiny);
   }
+  // Gen 5-9 (#494+) only appear in the wild — and in the dex grid — once this
+  // trainer has completed the Gen 1-4 normal dex (all 493 base forms).
+  const GEN14_MAX = (window.Store && Store.GEN14_MAX) || 493;
+  function poolIds(tid) { return Store.gen59Unlocked(tid) ? IDS : IDS.filter((id) => id <= GEN14_MAX); }
 
   // The encounter table is 502 slots — a normal AND a shiny of every species —
   // minus the (species, variant) pairs THIS trainer already owns. So once you
@@ -162,17 +166,18 @@
   // is still out there. Shinies keep their ~1/16 rarity via the weight factor.
   function randomEncounter(tid) {
     let total = 0; const cum = [];
-    IDS.forEach((id) => {
+    const pool = poolIds(tid);
+    pool.forEach((id) => {
       const w = weightFor(id);
       if (!ownsNormal(tid, id)) { total += w; cum.push([total, id, false]); }
       if (!ownsShiny(tid, id)) { total += w * SHINY_RATE; cum.push([total, id, true]); }
     });
     if (!cum.length) {   // living dex complete — never stall; re-offer the full table
       let t2 = 0; const c2 = [];
-      IDS.forEach((id) => { t2 += weightFor(id); c2.push([t2, id]); });
+      pool.forEach((id) => { t2 += weightFor(id); c2.push([t2, id]); });
       const rr = Math.random() * t2;
       for (let i = 0; i < c2.length; i++) if (rr <= c2[i][0]) return { id: c2[i][1], shiny: Math.random() < SHINY_RATE };
-      return { id: IDS[0], shiny: false };
+      return { id: pool[0], shiny: false };
     }
     const r = Math.random() * total;
     for (let i = 0; i < cum.length; i++) if (r <= cum[i][0]) return { id: cum[i][1], shiny: cum[i][2] };
@@ -309,7 +314,7 @@
       stats.innerHTML = "";
       const id = active();
       const stat = (v, l) => el("div", { class: "safari-stat" }, [el("div", { class: "safari-stat-v" }, String(v)), el("div", { class: "safari-stat-l" }, l)]);
-      stats.appendChild(stat(id ? caughtCount(id) + " / " + IDS.length : "—", id ? attendeeName(id) + "'s dex" : "No trainer"));
+      stats.appendChild(stat(id ? caughtCount(id) + " / " + poolIds(id).length : "—", id ? attendeeName(id) + "'s dex" : "No trainer"));
       stats.appendChild(stat("🏆 " + (id ? (rec(id).safariPts || 0) : 0), "Pts scored"));
       stats.appendChild(stat(Store.state.pokedex.log ? Store.state.pokedex.log.length : 0, "Catches logged"));
     }
@@ -458,7 +463,9 @@
       // a fresh rustle in the grass can stir a ROAMING LEGENDARY the whole
       // room races for (live rooms only; one storm at a time).
       if (window.Sync && Sync.isLive && Sync.isLive() && Sync.startRoam && !(Sync.roam && Sync.roam()) && Math.random() < 1 / 40) {
-        const wild = IDS.filter((x) => DEX[x].leg);
+        // Roamers stay classic (Gen 1-4) so the room-wide event never hands a
+        // locked later-gen legendary to someone who hasn't unlocked them.
+        const wild = IDS.filter((x) => x <= GEN14_MAX && DEX[x].leg);
         if (wild.length) {
           const pickId = wild[(Math.random() * wild.length) | 0];
           Sync.startRoam(pickId);
@@ -747,17 +754,35 @@
       if (!tid) return;
       const caught = rec(tid).caught || {};
       const shinyMode = dexMode === "shiny";
-      const nNorm = IDS.reduce((n, id) => n + (ownsNormal(tid, id) ? 1 : 0), 0);
-      const nShiny = IDS.reduce((n, id) => n + (ownsShiny(tid, id) ? 1 : 0), 0);
+      const pool = poolIds(tid);
+      const unlocked = Store.gen59Unlocked(tid);
+      const nNorm = pool.reduce((n, id) => n + (ownsNormal(tid, id) ? 1 : 0), 0);
+      const nShiny = pool.reduce((n, id) => n + (ownsShiny(tid, id) ? 1 : 0), 0);
       dexHost.appendChild(el("h2", { class: "section-title" },
-        (shinyMode ? "✨ Shiny Pokédex (" + nShiny + " / " + IDS.length + ")" : "Pokédex (" + nNorm + " / " + IDS.length + ")")));
+        (shinyMode ? "✨ Shiny Pokédex (" + nShiny + " / " + pool.length + ")" : "Pokédex (" + nNorm + " / " + pool.length + ")")));
       // toggle between the two halves of the full (normal + shiny) dex
       dexHost.appendChild(el("div", { class: "dex-toggle" }, [
         el("button", { class: "btn sm" + (shinyMode ? " subtle" : " primary"), onClick: () => { dexMode = "normal"; renderDex(); } }, "Regular · " + nNorm),
         el("button", { class: "btn sm" + (shinyMode ? " primary" : " subtle"), onClick: () => { dexMode = "shiny"; renderDex(); } }, "✨ Shiny · " + nShiny),
       ]));
+      // 🔒 Gen 5-9 gate: show progress toward the unlock until the Gen 1-4 normal
+      // dex is complete, then celebrate the newly-opened later generations.
+      if (!unlocked) {
+        const have = IDS.reduce((n, id) => n + (id <= GEN14_MAX && ownsNormal(tid, id) ? 1 : 0), 0);
+        const locked = (IDS.length > GEN14_MAX) ? (IDS.length - GEN14_MAX) : 0;
+        dexHost.appendChild(el("div", { class: "dex-lock" }, [
+          el("div", { class: "dex-lock-title" }, "🔒 Gen 5-9 locked"),
+          el("div", { class: "dex-lock-sub" }, "Complete the Gen 1-4 Pokédex — all " + GEN14_MAX + " base forms — to unlock " + locked + " more Pokémon in the wild! (" + have + " / " + GEN14_MAX + ")"),
+          el("div", { class: "dex-lock-bar" }, [el("div", { class: "dex-lock-fill", style: { width: Math.round(have / GEN14_MAX * 100) + "%" } })]),
+        ]));
+      } else if (IDS.length > GEN14_MAX) {
+        dexHost.appendChild(el("div", { class: "dex-lock open" }, [
+          el("div", { class: "dex-lock-title" }, "🎉 Gen 5-9 UNLOCKED!"),
+          el("div", { class: "dex-lock-sub" }, "The Gen 1-4 dex is complete — the later generations now roam the Safari."),
+        ]));
+      }
       const grid = el("div", { class: "safari-dex" });
-      IDS.forEach((id) => {
+      pool.forEach((id) => {
         const got = shinyMode ? ownsShiny(tid, id) : ownsNormal(tid, id);
         const rc = caught[id];
         const ballKey = got && rc && rc.ball;
