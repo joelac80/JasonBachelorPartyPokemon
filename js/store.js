@@ -651,32 +651,47 @@
     // 1-for-1 swap: A's aMon ⇄ B's bMon. Balls travel with their mons; a mon
     // fully given away leaves the giver's team; trade evolutions fire for the
     // receiver. Returns { toA, toB, evoA, evoB } or null if invalid.
-    trade(aId, aMon, bId, bMon, by) {
+    trade(aId, aMon, bId, bMon, by, opts) {
       aMon = +aMon; bMon = +bMon;
       if (!aId || !bId || aId === bId) return null;
       if (!this.canTrade(aId, aMon) || !this.canTrade(bId, bMon)) return null;
+      // Which VARIANT each side is giving up. When a trainer owns both a normal
+      // and a shiny of the same species, the picker says which one travels;
+      // otherwise fall back to whatever the caught record shows.
+      const aWantShiny = opts && opts.aShiny !== undefined ? !!opts.aShiny : undefined;
+      const bWantShiny = opts && opts.bShiny !== undefined ? !!opts.bShiny : undefined;
       const EV = this.TRADE_EVOS;
       let result = null;
       this.update((s) => {
         const tr = s.pokedex.trainers;
         const A = tr[aId], B = tr[bId];
         if (!A || !B) return;
-        const give = (T, monId) => {
+        const give = (T, monId, wantShiny) => {
           const r = T.caught[monId];
-          const keep = { ball: r.ball || "poke", shiny: !!r.shiny };   // ✨ travels too
-          if ((r.count || 1) > 1) r.count--;
-          else { delete T.caught[monId]; T.team = (T.team || []).filter((x) => +x !== monId); }
+          const shinyGone = wantShiny === undefined ? !!r.shiny : !!wantShiny;
+          const keep = { ball: r.ball || "poke", shiny: shinyGone };   // ✨ travels too
+          if ((r.count || 1) > 1) {
+            r.count--;
+            // If exactly one copy remains and this trainer owned both variants,
+            // the survivor is the OPPOSITE of the one that just left — reflect
+            // that on the record so the kept mon shows the right form.
+            const mixed = !!(T.have && T.have[monId]) && !!(T.haveShiny && T.haveShiny[monId]);
+            if (mixed && (r.count || 1) === 1) r.shiny = !shinyGone;
+          } else { delete T.caught[monId]; T.team = (T.team || []).filter((x) => +x !== monId); }
           return keep;
         };
         const recv = (T, monId, keep) => {
           const id = EV[monId] || monId;
           T.seen = T.seen || {}; T.seen[monId] = 1; T.seen[id] = 1;
+          // Mark the received variant owned, so Safari's encounter table knows.
+          if (keep.shiny) { T.haveShiny = T.haveShiny || {}; T.haveShiny[id] = 1; }
+          else { T.have = T.have || {}; T.have[id] = 1; }
           const r = T.caught[id];
           if (r) { r.count = (r.count || 1) + 1; if (keep.shiny) r.shiny = true; }
           else T.caught[id] = { count: 1, ball: keep.ball, shiny: keep.shiny || undefined };
           return id;
         };
-        const aKeep = give(A, aMon), bKeep = give(B, bMon);
+        const aKeep = give(A, aMon, aWantShiny), bKeep = give(B, bMon, bWantShiny);
         const toB = recv(B, aMon, aKeep);      // B receives what A gave
         const toA = recv(A, bMon, bKeep);      // A receives what B gave
         s.pokedex.trades = s.pokedex.trades || [];
@@ -698,15 +713,16 @@
     // declines) later from THEIR phone — nobody has to be in the room when
     // it's sent. status: open → accepted / declined / cancelled / expired.
     tradeOffers() { return ((this.state.pokedex || {}).offers || []).filter((o) => o.status === "open"); },
-    sendTradeOffer(fromAtt, give, toAtt, want, by) {
+    sendTradeOffer(fromAtt, give, toAtt, want, by, giveShiny, wantShiny) {
       if (!this.canTrade(fromAtt, give)) return null;
       // an identical offer already waiting? don't stack duplicates
-      const dupe = this.tradeOffers().find((o) => o.from === fromAtt && o.to === toAtt && o.give === +give && o.want === +want);
+      const dupe = this.tradeOffers().find((o) => o.from === fromAtt && o.to === toAtt && o.give === +give && o.want === +want && !!o.giveShiny === !!giveShiny && !!o.wantShiny === !!wantShiny);
       if (dupe) return dupe;
       let offer = null;
       this.update((s) => {
         s.pokedex.offers = s.pokedex.offers || [];
         offer = { id: U.uid(), from: fromAtt, give: +give, to: toAtt, want: +want,
+          giveShiny: !!giveShiny, wantShiny: !!wantShiny,
           ts: (function () { try { return Date.now(); } catch (_) { return 0; } })(), status: "open" };
         s.pokedex.offers.unshift(offer);
         if (s.pokedex.offers.length > 40) s.pokedex.offers.length = 40;
@@ -723,7 +739,7 @@
         this.update((s) => { const x = (s.pokedex.offers || []).find((q) => q.id === id); if (x) x.status = "declined"; });
         return { ok: true, declined: true };
       }
-      const result = this.trade(o.from, o.give, o.to, o.want, by);
+      const result = this.trade(o.from, o.give, o.to, o.want, by, { aShiny: o.giveShiny, bShiny: o.wantShiny });
       this.update((s) => { const x = (s.pokedex.offers || []).find((q) => q.id === id); if (x) x.status = result ? "accepted" : "expired"; });
       if (!result) return { ok: false, why: "That trade is no longer valid — one of the Pokémon has moved on." };
       return { ok: true, result: result, offer: o };

@@ -9,9 +9,31 @@
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
   function nameOf(id) { return (window.DEX && DEX[id] && DEX[id].n) || ("#" + id); }
   function spriteOf(id, shiny) { return (shiny && SPS[id]) || SP[id] || Store.sprite(id); }
+  function trec(attId) { return ((Store.state.pokedex || {}).trainers || {})[attId] || {}; }
   function shinyOf(attId, id) {
-    const t = ((Store.state.pokedex || {}).trainers || {})[attId];
-    return !!(t && t.caught && t.caught[id] && t.caught[id].shiny);
+    const t = trec(attId);
+    return !!(t.caught && t.caught[id] && t.caught[id].shiny);
+  }
+  // Per-variant ownership (mirrors Safari): normal and shiny are distinct.
+  function ownsNormal(attId, id) {
+    const t = trec(attId);
+    if (t.have && t.have[id]) return true;
+    return !!(t.caught && t.caught[id] && !t.caught[id].shiny);
+  }
+  function ownsShiny(attId, id) {
+    const t = trec(attId);
+    if (t.haveShiny && t.haveShiny[id]) return true;
+    return !!(t.caught && t.caught[id] && t.caught[id].shiny);
+  }
+  // Which tradeable variants a trainer currently HOLDS for a species. Owning
+  // both a normal and a shiny (with 2+ copies on hand) yields two pickable
+  // entries so they choose which one to send; otherwise one, matching the
+  // form the caught record advertises.
+  function variantsFor(attId, id) {
+    const r = trec(attId).caught && trec(attId).caught[id];
+    if (!r) return [];
+    if (ownsNormal(attId, id) && ownsShiny(attId, id) && (r.count || 1) >= 2) return [false, true];
+    return [!!r.shiny];
   }
 
   // Cinematic swap overlay: sprites cross, evolutions flash.
@@ -51,7 +73,7 @@
   window.TradeFX = { play: playTrade, spriteOf: spriteOf, shinyOf: shinyOf, nameOf: nameOf };
 
   function view(root) {
-    const pick = { a: { attId: "", mon: 0 }, b: { attId: "", mon: 0 } };
+    const pick = { a: { attId: "", mon: 0, shiny: false }, b: { attId: "", mon: 0, shiny: false } };
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔁 Trading Post"),
@@ -78,16 +100,16 @@
         const forMe = me && o.to === me, byMe = me && o.from === me;
         const row = el("div", { class: "trade-offer" + (forMe ? " mine" : "") }, [
           el("div", { class: "trade-offer-mons" }, [
-            el("img", { src: spriteOf(o.give, shinyOf(o.from, o.give)), alt: "" }),
+            el("img", { src: spriteOf(o.give, o.giveShiny), alt: "" }),
             el("span", { class: "trade-offer-arrow" }, "⇄"),
-            el("img", { src: spriteOf(o.want, shinyOf(o.to, o.want)), alt: "" }),
+            el("img", { src: spriteOf(o.want, o.wantShiny), alt: "" }),
           ]),
           el("div", { class: "trade-offer-txt" },
-            fromN + " offers " + nameOf(o.give) + " for " + toN + "'s " + nameOf(o.want)),
+            fromN + " offers " + nameOf(o.give) + (o.giveShiny ? " ✨" : "") + " for " + toN + "'s " + nameOf(o.want) + (o.wantShiny ? " ✨" : "")),
           el("div", { class: "toolbar" },
             forMe ? [
               el("button", { class: "btn primary sm", onClick: () => {
-                const gSh = shinyOf(o.from, o.give), wSh = shinyOf(o.to, o.want);
+                const gSh = !!o.giveShiny, wSh = !!o.wantShiny;
                 const r = Store.resolveTradeOffer(o.id, true);
                 if (!r.ok) { alert(r.why); renderInbox(); renderRecent(); return; }
                 sfx("win");
@@ -110,29 +132,45 @@
         .concat(Store.state.attendees.map((a) =>
           el("option", { value: a.id, disabled: a.id === other.attId ? "true" : null }, a.name))));
       sel.value = d.attId;
-      sel.addEventListener("change", () => { d.attId = sel.value; d.mon = 0; render(); });
+      sel.addEventListener("change", () => { d.attId = sel.value; d.mon = 0; d.shiny = false; render(); });
       const kids = [el("div", { class: "arena-side-title" }, title), sel];
       if (d.attId) {
         const att = Store.attendee(d.attId);
         const pool = Duel.poolFor(d.attId);
         if (!pool.filter((id) => Store.canTrade(d.attId, id)).length)
           kids.push(el("p", { class: "hint" }, "Nothing tradeable yet — the partner stays, catch more in the Safari!"));
-        kids.push(el("div", { class: "duel-pick-row" }, pool.map((id) => {
+        // One entry per HELD variant — a normal and a shiny of the same species
+        // both appear so a trainer can send exactly the one they mean.
+        const entries = [];
+        pool.forEach((id) => {
+          const vs = variantsFor(d.attId, id);
+          if (vs.length) vs.forEach((sh) => entries.push({ id: id, shiny: sh }));
+          else entries.push({ id: id, shiny: shinyOf(d.attId, id) });   // partner / not-yet-caught → shows locked
+        });
+        kids.push(el("div", { class: "duel-pick-row trade-pick-grid" }, entries.map((e) => {
+          const id = e.id, shiny = e.shiny;
           const ok = Store.canTrade(d.attId, id);
           const locked = att && att.favoriteId === id && !ok;
-          const shiny = shinyOf(d.attId, id);
+          const bothVariants = variantsFor(d.attId, id).length > 1;
+          const on = d.mon === id && !!d.shiny === !!shiny;
           const src = spriteOf(id, shiny);
-          return el("button", { class: "duel-pick" + (d.mon === id ? " on" : "") + (ok ? "" : " locked") + (shiny ? " is-shiny" : ""),
+          const btn = el("button", { class: "duel-pick" + (on ? " on" : "") + (ok ? "" : " locked") + (shiny ? " is-shiny" : ""),
             title: nameOf(id) + (shiny ? " ✨ SHINY" : "") + (locked ? " — partner, untradeable ❤" : ""),
-            onClick: () => { if (!ok) { sfx("error"); return; } d.mon = id; render(); } }, [
+            onClick: () => { if (!ok) { sfx("error"); return; } d.mon = id; d.shiny = shiny; render(); } }, [
             src ? el("img", { src: src, alt: nameOf(id) }) : el("span", { class: "draft-thumb-ball" }),
             shiny ? el("span", { class: "duel-pick-shiny" }, "✨") : null,
             locked ? el("span", { class: "duel-pick-n lock" }, "🔒") : null,
           ]);
+          // Label disambiguates when both forms are shown; still flags a lone shiny.
+          const lab = bothVariants ? (shiny ? "✨ Shiny" : "Normal") : (shiny ? "✨ Shiny" : "");
+          return el("div", { class: "trade-pick-cell" }, [
+            btn,
+            lab ? el("div", { class: "trade-pick-lab" + (shiny ? " shiny" : "") }, lab) : null,
+          ]);
         })));
         if (d.mon) {
           const evo = Store.TRADE_EVOS[d.mon];
-          kids.push(el("div", { class: "duel-pick-meta" }, "Offering: " + nameOf(d.mon) +
+          kids.push(el("div", { class: "duel-pick-meta" }, "Offering: " + nameOf(d.mon) + (d.shiny ? " ✨ shiny" : "") +
             (evo ? " — ⚡ evolves into " + nameOf(evo) + " when traded!" : "")));
         }
       }
@@ -172,20 +210,20 @@
           const an = (Store.attendee(pick.a.attId) || {}).name, bn = (Store.attendee(pick.b.attId) || {}).name;
           if (gate.kind === "offer") {
             const my = gate.mine === "a" ? pick.a : pick.b;
-            const o = Store.sendTradeOffer(me, my.mon, gate.them.attId, gate.them.mon);
+            const o = Store.sendTradeOffer(me, my.mon, gate.them.attId, gate.them.mon, undefined, my.shiny, gate.them.shiny);
             if (!o) { alert("That offer isn't allowed — partners stay home."); return; }
             sfx("coin");
             alert("📬 Offer dropped in " + gate.themName + "'s inbox — they accept (or decline) on their phone, even if they open the app later.");
-            pick.a.mon = 0; pick.b.mon = 0;
+            pick.a.mon = 0; pick.b.mon = 0; pick.a.shiny = false; pick.b.shiny = false;
             render(); renderInbox();
             return;
           }
-          if (!confirm("🔁 " + an + "'s " + nameOf(pick.a.mon) + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + " — deal?")) return;
-          const aSh = shinyOf(pick.a.attId, pick.a.mon), bSh = shinyOf(pick.b.attId, pick.b.mon);
-          const result = Store.trade(pick.a.attId, pick.a.mon, pick.b.attId, pick.b.mon);
+          if (!confirm("🔁 " + an + "'s " + nameOf(pick.a.mon) + (pick.a.shiny ? " ✨" : "") + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + (pick.b.shiny ? " ✨" : "") + " — deal?")) return;
+          const aSh = !!pick.a.shiny, bSh = !!pick.b.shiny;
+          const result = Store.trade(pick.a.attId, pick.a.mon, pick.b.attId, pick.b.mon, undefined, { aShiny: aSh, bShiny: bSh });
           if (!result) { alert("That trade isn't allowed — partners stay home."); return; }
           const aM = pick.a.mon, bM = pick.b.mon;
-          pick.a.mon = 0; pick.b.mon = 0;
+          pick.a.mon = 0; pick.b.mon = 0; pick.a.shiny = false; pick.b.shiny = false;
           playTrade(an, aM, aSh, bn, bM, bSh, result, () => { render(); renderRecent(); });
         } }, gate.kind === "offer" ? "📬 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
       ]));
