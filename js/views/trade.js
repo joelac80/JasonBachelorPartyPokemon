@@ -88,41 +88,102 @@
     root.appendChild(recentHost);
 
     // 📬 The trade inbox: open offers live in shared state, so they wait for
-    // the other trainer — no need to be in the room when one is sent.
+    // the other trainer — no need to be in the room when one is sent. The
+    // section is ALWAYS shown (with a hint when empty) so it's discoverable,
+    // and split into what's offered to you vs. what you've sent.
+    function offerCard(o, kind) {
+      const fromN = (Store.attendee(o.from) || {}).name || "?", toN = (Store.attendee(o.to) || {}).name || "?";
+      let controls;
+      if (kind === "in") {
+        controls = [
+          el("button", { class: "btn primary sm", onClick: () => {
+            const gSh = !!o.giveShiny, wSh = !!o.wantShiny;
+            const r = Store.resolveTradeOffer(o.id, true);
+            if (!r.ok) { alert(r.why); renderInbox(); renderRecent(); return; }
+            sfx("win");
+            playTrade(fromN, o.give, gSh, toN, o.want, wSh, r.result, () => { renderInbox(); render(); renderRecent(); });
+          } }, "✅ Accept"),
+          el("button", { class: "btn subtle sm", onClick: () => { Store.resolveTradeOffer(o.id, false); sfx("error"); renderInbox(); } }, "❌ Decline"),
+        ];
+      } else if (kind === "out") {
+        controls = [
+          el("span", { class: "hint" }, "⏳ waiting on " + toN + "…"),
+          // ✏️ Edit = pull this offer back into the picker so you can tweak it,
+          // then re-send. (It's retracted first so it can't double-fire.)
+          el("button", { class: "btn subtle sm", onClick: () => {
+            pick.a.attId = o.from; pick.a.mon = o.give; pick.a.shiny = !!o.giveShiny;
+            pick.b.attId = o.to;   pick.b.mon = o.want; pick.b.shiny = !!o.wantShiny;
+            Store.cancelTradeOffer(o.id); sfx("select");
+            renderInbox(); render();
+            try { host.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
+          } }, "✏️ Edit"),
+          el("button", { class: "btn danger sm", onClick: () => {
+            if (!confirm("Retract your offer to " + toN + "?")) return;
+            Store.cancelTradeOffer(o.id); sfx("error"); renderInbox();
+          } }, "↩ Retract"),
+        ];
+      } else {
+        controls = [el("span", { class: "hint" }, fromN + " → " + toN + " · waiting")];
+      }
+      return el("div", { class: "trade-offer" + (kind === "in" ? " mine" : "") }, [
+        el("div", { class: "trade-offer-mons" }, [
+          el("img", { src: spriteOf(o.give, o.giveShiny), alt: "" }),
+          el("span", { class: "trade-offer-arrow" }, "⇄"),
+          el("img", { src: spriteOf(o.want, o.wantShiny), alt: "" }),
+        ]),
+        el("div", { class: "trade-offer-txt" },
+          fromN + " offers " + nameOf(o.give) + (o.giveShiny ? " ✨" : "") + " for " + toN + "'s " + nameOf(o.want) + (o.wantShiny ? " ✨" : "")),
+        el("div", { class: "toolbar" }, controls),
+      ]);
+    }
+
     function renderInbox() {
       inboxHost.innerHTML = "";
-      const offers = Store.tradeOffers();
-      if (!offers.length) return;
       const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+      const all = ((Store.state.pokedex || {}).offers) || [];
+      const open = all.filter((o) => o.status === "open");
       inboxHost.appendChild(el("h2", { class: "section-title" }, "📬 Trade Inbox"));
-      inboxHost.appendChild(el("div", { class: "trade-inbox" }, offers.map((o) => {
-        const fromN = (Store.attendee(o.from) || {}).name || "?", toN = (Store.attendee(o.to) || {}).name || "?";
-        const forMe = me && o.to === me, byMe = me && o.from === me;
-        const row = el("div", { class: "trade-offer" + (forMe ? " mine" : "") }, [
-          el("div", { class: "trade-offer-mons" }, [
-            el("img", { src: spriteOf(o.give, o.giveShiny), alt: "" }),
-            el("span", { class: "trade-offer-arrow" }, "⇄"),
-            el("img", { src: spriteOf(o.want, o.wantShiny), alt: "" }),
-          ]),
-          el("div", { class: "trade-offer-txt" },
-            fromN + " offers " + nameOf(o.give) + (o.giveShiny ? " ✨" : "") + " for " + toN + "'s " + nameOf(o.want) + (o.wantShiny ? " ✨" : "")),
-          el("div", { class: "toolbar" },
-            forMe ? [
-              el("button", { class: "btn primary sm", onClick: () => {
-                const gSh = !!o.giveShiny, wSh = !!o.wantShiny;
-                const r = Store.resolveTradeOffer(o.id, true);
-                if (!r.ok) { alert(r.why); renderInbox(); renderRecent(); return; }
-                sfx("win");
-                playTrade(fromN, o.give, gSh, toN, o.want, wSh, r.result, () => { renderInbox(); render(); renderRecent(); });
-              } }, "✅ Accept"),
-              el("button", { class: "btn subtle sm", onClick: () => { Store.resolveTradeOffer(o.id, false); sfx("error"); renderInbox(); } }, "❌ Decline"),
-            ] : byMe ? [
-              el("span", { class: "hint" }, "waiting on " + toN + "…"),
-              el("button", { class: "btn subtle sm", onClick: () => { Store.cancelTradeOffer(o.id); renderInbox(); } }, "↩ Cancel"),
-            ] : [el("span", { class: "hint" }, "waiting on " + toN + "…")]),
-        ]);
-        return row;
-      })));
+
+      if (!me) {
+        inboxHost.appendChild(el("p", { class: "hint" }, open.length
+          ? (open.length + " open offer" + (open.length > 1 ? "s" : "") + " below. Set who you are (Settings → “You are”) to accept or retract.")
+          : "Set who you are (Settings → “You are”) to send and receive trade offers."));
+      }
+
+      const forMe = open.filter((o) => me && o.to === me);
+      const byMe  = open.filter((o) => me && o.from === me);
+      const others = open.filter((o) => !me || (o.to !== me && o.from !== me));
+
+      if (forMe.length) {
+        inboxHost.appendChild(el("h3", { class: "trade-sub" }, "📥 Offered to you"));
+        inboxHost.appendChild(el("div", { class: "trade-inbox" }, forMe.map((o) => offerCard(o, "in"))));
+      }
+      if (byMe.length) {
+        inboxHost.appendChild(el("h3", { class: "trade-sub" }, "📤 You sent"));
+        inboxHost.appendChild(el("div", { class: "trade-inbox" }, byMe.map((o) => offerCard(o, "out"))));
+      }
+      if (others.length) {
+        if (me) inboxHost.appendChild(el("h3", { class: "trade-sub" }, "🌐 Other open offers"));
+        inboxHost.appendChild(el("div", { class: "trade-inbox" }, others.map((o) => offerCard(o, "other"))));
+      }
+      if (me && !forMe.length && !byMe.length && !others.length) {
+        inboxHost.appendChild(el("p", { class: "hint" }, "No open trade offers right now — make one below and it lands in their inbox."));
+      }
+
+      // 🕘 History: recently settled offers you were part of, so you can see
+      // what you sent / were offered even after it closes.
+      const settled = all.filter((o) => o.status !== "open" && (!me || o.from === me || o.to === me)).slice(0, 6);
+      if (settled.length) {
+        inboxHost.appendChild(el("details", { class: "trade-history" }, [
+          el("summary", {}, "🕘 Recent offer history"),
+          el("div", { class: "battle-log" }, settled.map((o) => {
+            const fromN = (Store.attendee(o.from) || {}).name || "?", toN = (Store.attendee(o.to) || {}).name || "?";
+            const icon = o.status === "accepted" ? "✅" : o.status === "declined" ? "❌" : o.status === "cancelled" ? "↩" : "⌛";
+            return el("div", { class: "battle-log-row" }, icon + " " + fromN + "'s " + nameOf(o.give) + (o.giveShiny ? " ✨" : "") +
+              " ⇄ " + toN + "'s " + nameOf(o.want) + (o.wantShiny ? " ✨" : "") + " — " + o.status);
+          })),
+        ]));
+      }
     }
 
     function sideCard(key, title, cls) {
