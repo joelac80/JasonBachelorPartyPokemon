@@ -887,12 +887,45 @@
     // doesn't echo back to the room).
     applyRemote(obj) {
       if (!obj || typeof obj !== "object") return;
-      const keepPhotos = this.state.photos || [];   // photos aren't in the synced doc
+      const prev = this.state;                       // local — may hold catches/badges not yet in `obj`
+      const keepPhotos = this.state.photos || [];    // photos aren't in the synced doc
       this.state = Object.assign(freshState(), obj);
       if (!obj.photos || !obj.photos.length) this.state.photos = keepPhotos;
+      // The synced doc is last-write-wins on the WHOLE state, so two phones
+      // catching/earning at once would clobber each other. Re-union the
+      // append-only records (dex variant ownership + gym badges) from our local
+      // copy so a concurrent shiny catch or badge is never lost.
+      this._mergeCumulative(prev, this.state);
       this.fixupPartners(this.state);               // heal partner ownership
       this.persist();
       this._subs.forEach((fn) => fn(this.state));
+    },
+    // Fold append-only local records into freshly-applied remote state. These
+    // structures are never deleted from (owning a variant / holding a badge is
+    // permanent), so a union can't resurrect a trade or undo anything.
+    _mergeCumulative(prev, next) {
+      // 🏅 gym badges: union the holder list per gym.
+      const pc = (prev && prev.gymCircuit) || {};
+      const nc = next.gymCircuit = next.gymCircuit || {};
+      Object.keys(pc).forEach((idx) => {
+        const arr = nc[idx] = nc[idx] || [];
+        (pc[idx] || []).forEach((att) => { if (arr.indexOf(att) < 0) arr.push(att); });
+      });
+      // ✨ dex variant ownership: union have / haveShiny / seen per trainer, so
+      // a shiny (or normal) you caught stays owned even if the catch record
+      // itself got last-write-clobbered — the dex + encounter table read these.
+      const pt = (prev && prev.pokedex && prev.pokedex.trainers) || {};
+      next.pokedex = next.pokedex || { active: "", trainers: {}, log: [], given: 0, taken: 0 };
+      next.pokedex.trainers = next.pokedex.trainers || {};
+      Object.keys(pt).forEach((tid) => {
+        const src = pt[tid]; if (!src) return;
+        const dst = next.pokedex.trainers[tid] = next.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+        ["have", "haveShiny", "seen"].forEach((k) => {
+          if (!src[k]) return;
+          dst[k] = dst[k] || {};
+          Object.keys(src[k]).forEach((id) => { if (src[k][id]) dst[k][id] = 1; });
+        });
+      });
     },
   };
 
