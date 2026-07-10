@@ -38,7 +38,7 @@
     { key: "red",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
       quote: "……" },
     // ---- The Hoenn Elite Four (rematch squads) → Champion STEVEN ----
-    { key: "sidney", name: "SIDNEY", rank: "Elite Four", type: "dark",   team: [359, 275, 332, 319, 342, 262], pts: 8, boost: 1.22, needs: "lance", reveal: "lance",
+    { key: "sidney", name: "SIDNEY", rank: "Elite Four", type: "dark",   team: [359, 275, 332, 319, 342, 262], pts: 8, boost: 1.22, needs: "lance", reveal: "lance", gymGate: { start: 16, count: 8, region: "Hoenn" },
       quote: "Well, well — a fresh challenger from another region! No holding back. Let's go all out!" },
     { key: "phoebe", name: "PHOEBE", rank: "Elite Four", type: "ghost",  team: [477, 354, 302, 94, 429, 356], pts: 8, boost: 1.22, needs: "sidney", reveal: "lance",
       quote: "I speak with the departed. They whisper that your team is about to join them…" },
@@ -49,7 +49,7 @@
     { key: "steven", name: "STEVEN", rank: "Champion",   type: "steel",  team: [376, 306, 227, 344, 346, 348], pts: 10, boost: 1.3, needs: "drake", reveal: "lance",
       quote: "I'm Steven — collector of rare stones, and Champion of Hoenn. Show me the power you've forged." },
     // ---- The Sinnoh Elite Four (Platinum rematch) → CYNTHIA ----
-    { key: "aaron",  name: "AARON",  rank: "Elite Four", type: "bug",     team: [469, 212, 214, 416, 452, 267], pts: 10, boost: 1.32, needs: "steven", reveal: "steven",
+    { key: "aaron",  name: "AARON",  rank: "Elite Four", type: "bug",     team: [469, 212, 214, 416, 452, 267], pts: 10, boost: 1.32, needs: "steven", reveal: "steven", gymGate: { start: 24, count: 8, region: "Sinnoh" },
       quote: "The Bug Pokémon I raise are anything but weak. Prepare yourself!" },
     { key: "bertha", name: "BERTHA", rank: "Elite Four", type: "ground",  team: [450, 472, 464, 340, 76, 232], pts: 10, boost: 1.32, needs: "aaron", reveal: "steven",
       quote: "Hehe — a young one keeps this old woman on her toes. Let's see your grit." },
@@ -75,8 +75,13 @@
     const wins = Store.leagueWins(attId);
     // The whole League gates on the 8 Johto badges (Victory Road).
     if (johtoBadges(attId) < 8) return "The League only admits trainers holding all 8 JOHTO badges (" + johtoBadges(attId) + "/8).";
-    // RED, the Mt. Silver summit, additionally demands all 16 badges.
-    if (st.key === "red" && Store.gymBadgeCount(attId) < 16) return "RED faces only trainers holding ALL 16 badges (" + Store.gymBadgeCount(attId) + "/16).";
+    // RED, the Mt. Silver summit, additionally demands all 16 Johto+Kanto badges.
+    if (st.key === "red" && Store.gymBadgesInRange(attId, 0, 16) < 16) return "RED faces only trainers holding ALL 16 Johto & Kanto badges (" + Store.gymBadgesInRange(attId, 0, 16) + "/16).";
+    // A new region's Elite Four demands that region's 8 gym badges first.
+    if (st.gymGate) {
+      const g = st.gymGate, have = Store.gymBadgesInRange(attId, g.start, g.count);
+      if (have < g.count) return "The " + g.region + " Elite Four admit only trainers holding all " + g.count + " " + g.region + " gym badges (" + have + "/" + g.count + " — earn them in the Gym Circuit).";
+    }
     // Linear climb: the previous stage (st.needs) must be beaten.
     if (st.needs && wins.indexOf(st.needs) < 0) {
       const prev = stageByKey(st.needs);
@@ -255,7 +260,7 @@
 
     function paint() {
       host.innerHTML = "";
-      const jb = johtoBadges(attId), all = Store.gymBadgeCount(attId);
+      const jb = johtoBadges(attId), all = Store.gymBadgesInRange(attId, 0, 16);
       const journey = el("div", { class: "league-journey" });
       // Victory Road gate
       journey.appendChild(el("div", { class: "league-stage gate" + (jb >= 8 ? " cleared" : " locked") }, [

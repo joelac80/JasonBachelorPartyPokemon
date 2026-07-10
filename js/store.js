@@ -285,8 +285,11 @@
       const shiner = this._topAttendee(shinyN);
       if (shiner) out.push({ emoji: "✨", title: "Shiny Hunter", holder: shiner.a.name, sub: shiner.n + " shin" + (shiner.n > 1 ? "ies" : "y") + " caught" });
       const crusher = this._topAttendee((id) => this.gymBadgeCount(id));
-      if (crusher) out.push({ emoji: "🏟", title: crusher.n >= 16 ? "CHAMPION" : "Gym Crusher", holder: crusher.a.name,
-        sub: crusher.n >= 16 ? "swept ALL 16 gyms!" : crusher.n + "/16 gym badges" });
+      if (crusher) {
+        const jk = this.gymBadgesInRange(crusher.a.id, 0, 16);   // Johto+Kanto sweep = CHAMPION
+        out.push({ emoji: "🏟", title: jk >= 16 ? "CHAMPION" : "Gym Crusher", holder: crusher.a.name,
+          sub: jk >= 16 ? "swept ALL 16 Johto & Kanto gyms!" : crusher.n + " gym badges earned" });
+      }
       const league = this._topAttendee((id) => this.leagueWins(id).length);
       if (league) {
         const wins = this.leagueWins(league.a.id);
@@ -799,6 +802,14 @@
     gymBadgeCount(attId) {
       const c = this.state.gymCircuit || {};
       let n = 0; for (const k in c) if ((c[k] || []).indexOf(attId) >= 0) n++;
+      return n;
+    },
+    // Badges earned within a contiguous gym range (region-aware). Johto = 0-7,
+    // Kanto = 8-15, Hoenn = 16-23, Sinnoh = 24-31. "16 badges" always means the
+    // original Johto+Kanto set, no matter how many regions exist.
+    gymBadgesInRange(attId, start, count) {
+      const c = this.state.gymCircuit || {};
+      let n = 0; for (let i = start; i < start + count; i++) if ((c[i] || []).indexOf(attId) >= 0) n++;
       return n;
     },
     // Pokémon League progress: stage keys this trainer has beaten

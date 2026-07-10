@@ -134,7 +134,7 @@
 
     // Pokémon battling lives in the Battle Frontier now.
     root.appendChild(el("div", { class: "duel-belt", onClick: () => { location.hash = "#/gyms"; } },
-      "⚔ Looking for the Gym Leaders? The 16-badge GYM CIRCUIT lives in the Battle Frontier →"));
+      "⚔ Looking for the Gym Leaders? The 32-leader GYM CIRCUIT lives in the Battle Frontier →"));
 
     root.appendChild(el("h2", { class: "section-title" }, "🏅 Party Badges (hand-awarded)"));
 

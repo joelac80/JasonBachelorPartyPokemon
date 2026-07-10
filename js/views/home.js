@@ -62,7 +62,7 @@
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
       { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Real turn-based duels — singles or doubles, sips on the line" },
-      { r: "gyms",    e: "🏟", t: "Gym Circuit", d: "16 canon leaders — even matches, hidden teams" },
+      { r: "gyms",    e: "🏟", t: "Gym Circuit", d: "32 leaders across 4 regions — even matches, hidden teams" },
       { r: "league",  e: "👑", t: "Pokémon League", d: "Elite Four → Champion LANCE → …the summit" },
       { r: "brackets", e: "🥊", t: "Brackets",     d: "Run a tournament — matchups launch real duels" },
     ] },

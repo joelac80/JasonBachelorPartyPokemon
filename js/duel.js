@@ -1033,8 +1033,12 @@
               if (fresh) hs.push(player.attId);
               Store.grantPoints(s, "battle", player.teamId, 5);
               Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (opts.gym.badge || "gym") + " Badge!" + (fresh ? "" : " (rematch flex)"));
-              if (fresh && Store.gymBadgeCount(player.attId) >= 16)
+              if (fresh && opts.gym.idx < 16 && Store.gymBadgesInRange(player.attId, 0, 16) >= 16)
                 Store.chron(s, "🏆", "ALL 16 BADGES — " + player.name + " has conquered Johto AND Kanto. CHAMPION!!");
+              else if (fresh && opts.gym.idx >= 16 && opts.gym.idx < 24 && Store.gymBadgesInRange(player.attId, 16, 8) >= 8)
+                Store.chron(s, "🌊", "ALL 8 HOENN BADGES — " + player.name + " may now challenge the Hoenn Elite Four!");
+              else if (fresh && opts.gym.idx >= 24 && Store.gymBadgesInRange(player.attId, 24, 8) >= 8)
+                Store.chron(s, "🏔", "ALL 8 SINNOH BADGES — " + player.name + " may now challenge the Sinnoh Elite Four!");
             } else {
               Store.chron(s, "🤖", "Leader " + opts.gym.leader + " defended the gym — " + player.name + " drinks 3 and trains harder.");
             }
