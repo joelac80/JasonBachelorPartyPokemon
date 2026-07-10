@@ -249,7 +249,7 @@
       // seeing the others; then all orders resolve fastest-first (real-Pokémon
       // style). phase: "select" (picking) | "resolve" (playing out) | "replace"
       // (sending out fainted slots at end of turn).
-      phase: "select", orders: {}, sel: [], res: [], repl: [] };
+      phase: "select", orders: {}, sel: [], res: [], repl: [], turnDone: null };
     if (!S.first) {
       // The faster lead goes first (real Gen-2 base Speed). Deterministic
       // tie-break (challenger first) so every phone — players, partners, and
@@ -537,6 +537,10 @@
         if (mon(u).hp <= 0 && bench(u).length > 0) S.repl.push({ side: sd, unit: i });
       }));
       promptReplace();
+      // Release the turn lock and re-pump: orders/replacements that arrived from
+      // another phone DURING this turn's resolution now apply against the new
+      // turn's state (this is what un-sticks "waiting for the other trainer").
+      const d = S.turnDone; S.turnDone = null; if (d) d();
     }
     function promptReplace() {
       if (S.done) return;
@@ -553,22 +557,23 @@
       if (act.kind === "order") {
         S.orders[act.side + ":" + act.unit] = act.order;
         S.sel = S.sel.filter((s) => !(s.side === act.side && s.unit === act.unit));
-        // Resolution + replacement are a local animated chain (no acts arrive
-        // mid-turn), so release the pump lock now and let it self-drive.
-        done();
-        if (S.sel.length) { S.actor = S.sel[0]; renderMenu(); }
-        else beginResolve();
+        if (S.sel.length) { S.actor = S.sel[0]; renderMenu(); done(); }
+        // Last pick in → HOLD the pump lock (don't call done) so a faster
+        // phone's next-turn order can't interleave with this turn's animated
+        // resolution; it's released + the queue re-pumped once the turn ends.
+        else { S.turnDone = done; beginResolve(); }
         return;
       }
-      // End-of-turn replacement of a fainted slot.
+      // End-of-turn replacement of a fainted slot. Hold the lock through the
+      // send-out animation; release + re-pump only after the next slot/turn is
+      // set up (so queued next-turn orders apply against fresh state).
       if (act.kind === "next") {
         u.cur = act.to; S.moved++;
         renderSprites(act.side); renderHp(act.side);
         const fin = () => {
           S.repl = S.repl.filter((s) => !(s.side === act.side && s.unit === act.unit));
-          promptReplace();
+          promptReplace(); done();
         };
-        done();
         if (instant) { fin(); return; }
         menu.innerHTML = "";
         beats([[u.name + " sent out " + mon(u).name + "!", 1100, () => sfx("blip")]], fin);
