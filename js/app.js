@@ -376,6 +376,7 @@
     // snapshot feeds the turn acts into any open duel screen (players and
     // spectators replay the exact same acts).
     const duelScreens = {};
+    const endedDuels = {};                 // duel ids we've already finished — never re-open/replay them
     let latestDuel = null;
     Sync.onDuel((data) => {
       latestDuel = data;
@@ -385,11 +386,14 @@
       const units = (setup.a.units || []).concat(setup.b.units || []);
       const mine = units.some((u) => u.client === me);
       const fresh = !data.t || (Date.now() - data.t) < 1800000;   // ignore stale docs (30 min)
-      if (data.state === "live" && mine && fresh && !duelScreens[data.id]) {
+      // Only spin up a fresh screen for a duel we haven't opened OR finished —
+      // otherwise a late act / focus refresh would restart a done battle and
+      // replay the whole thing from seq 0.
+      if (data.state === "live" && mine && fresh && !duelScreens[data.id] && !endedDuels[data.id]) {
         duelScreens[data.id] = Duel.start(Object.assign({}, setup, {
           mode: "remote", myClient: me,
           net: { send: Sync.sendDuelAct },
-          onEnd: () => { delete duelScreens[data.id]; },
+          onEnd: () => { delete duelScreens[data.id]; endedDuels[data.id] = 1; },
         }));
       }
       const h = duelScreens[data.id];
@@ -514,11 +518,11 @@
 
     function openDuelWatch() {
       const d = latestDuel;
-      if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id]) return;
+      if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id] || endedDuels[d.id]) return;
       let setup; try { setup = JSON.parse(d.setupJson); } catch (_) { return; }
       duelScreens[d.id] = Duel.start(Object.assign({}, setup, {
         mode: "watch", rx: Sync.sendDuelReaction,
-        onEnd: () => { delete duelScreens[d.id]; },
+        onEnd: () => { delete duelScreens[d.id]; endedDuels[d.id] = 1; },
       }));
       duelScreens[d.id].receiveActs(d.acts || []);
       duelScreens[d.id].receiveRx(d.rx || []);
