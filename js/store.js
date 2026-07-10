@@ -618,20 +618,41 @@
       if (a && a.favoriteId && t.caught && t.caught[a.favoriteId]) n--;
       return Math.max(0, n);
     },
-    // Gen 5-9 stay hidden in the wild until a trainer completes the Gen 1-4
-    // NORMAL dex (all 493 base forms owned). GEN14_MAX is that gate.
+    // Gen 5-9 stay hidden in the wild until SOMEONE completes the Gen 1-4 NORMAL
+    // dex (all 493 base forms) — then they unlock for the WHOLE ROOM. GEN14_MAX
+    // is that gate. The unlock is a synced, sticky flag on the pokedex.
     GEN14_MAX: 493,
-    gen59Unlocked(attId) {
+    // 🌍 Room-wide switch. (attId is accepted for call-site compat but ignored —
+    // once one person unlocks it, it's unlocked for everyone.)
+    gen59Unlocked() { return !!(this.state.pokedex && this.state.pokedex.gen59Unlocked); },
+    // Has THIS trainer personally caught all 493 base forms? (Drives the
+    // progress teaser and the unlock trigger.)
+    gen14DexComplete(attId) {
       const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
       if (!t) return false;
       const ownsNormal = (id) => (t.have && t.have[id]) || (t.caught && t.caught[id] && !t.caught[id].shiny);
       for (let id = 1; id <= this.GEN14_MAX; id++) if (!ownsNormal(id)) return false;
       return true;
     },
-    // How many species this trainer's dex is measured against right now — 493
-    // until the later gens unlock, then the whole National Dex.
-    dexTarget(attId) {
-      return this.gen59Unlocked(attId) ? (Object.keys(window.DEX || {}).length || this.GEN14_MAX) : this.GEN14_MAX;
+    // Call after a catch — if this trainer just finished the Gen 1-4 dex and the
+    // room hasn't unlocked yet, flip the global switch and credit them. Returns
+    // true only on the fresh unlock (so the caller can celebrate).
+    checkGen59Unlock(attId) {
+      if (this.gen59Unlocked()) return false;
+      if (!this.gen14DexComplete(attId)) return false;
+      const name = (this.attendee(attId) || {}).name || "a trainer";
+      this.update((s) => {
+        s.pokedex.gen59Unlocked = true;
+        s.pokedex.gen59By = name;
+        s.pokedex.gen59At = (function () { try { return Date.now(); } catch (_) { return 0; } })();
+        this.chron(s, "🎉", name + " completed the entire Gen 1-4 Pokédex — GEN 5-9 UNLOCKED for everyone!");
+      });
+      return true;
+    },
+    // How many species the dex is measured against right now — 493 until the
+    // room unlocks the later gens, then the whole National Dex.
+    dexTarget() {
+      return this.gen59Unlocked() ? (Object.keys(window.DEX || {}).length || this.GEN14_MAX) : this.GEN14_MAX;
     },
 
     // Caught species of a given type (partner freebie excluded, same fairness
@@ -952,6 +973,15 @@
     // structures are never deleted from (owning a variant / holding a badge is
     // permanent), so a union can't resurrect a trade or undo anything.
     _mergeCumulative(prev, next) {
+      // 🌍 Gen 5-9 global unlock — sticky once ANY phone sets it, so a
+      // concurrent write can never re-lock the room.
+      const pp = (prev && prev.pokedex) || {};
+      next.pokedex = next.pokedex || { active: "", trainers: {}, log: [], given: 0, taken: 0 };
+      if (pp.gen59Unlocked && !next.pokedex.gen59Unlocked) {
+        next.pokedex.gen59Unlocked = true;
+        next.pokedex.gen59By = next.pokedex.gen59By || pp.gen59By;
+        next.pokedex.gen59At = next.pokedex.gen59At || pp.gen59At;
+      }
       // 🏅 gym badges: union the holder list per gym.
       const pc = (prev && prev.gymCircuit) || {};
       const nc = next.gymCircuit = next.gymCircuit || {};
