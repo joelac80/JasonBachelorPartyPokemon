@@ -309,7 +309,7 @@
       stats.innerHTML = "";
       const id = active();
       const stat = (v, l) => el("div", { class: "safari-stat" }, [el("div", { class: "safari-stat-v" }, String(v)), el("div", { class: "safari-stat-l" }, l)]);
-      stats.appendChild(stat(id ? caughtCount(id) + " / 251" : "—", id ? attendeeName(id) + "'s dex" : "No trainer"));
+      stats.appendChild(stat(id ? caughtCount(id) + " / " + IDS.length : "—", id ? attendeeName(id) + "'s dex" : "No trainer"));
       stats.appendChild(stat("🏆 " + (id ? (rec(id).safariPts || 0) : 0), "Pts scored"));
       stats.appendChild(stat(Store.state.pokedex.log ? Store.state.pokedex.log.length : 0, "Catches logged"));
     }
@@ -750,8 +750,8 @@
       const nNorm = IDS.reduce((n, id) => n + (ownsNormal(tid, id) ? 1 : 0), 0);
       const nShiny = IDS.reduce((n, id) => n + (ownsShiny(tid, id) ? 1 : 0), 0);
       dexHost.appendChild(el("h2", { class: "section-title" },
-        (shinyMode ? "✨ Shiny Pokédex (" + nShiny + " / 251)" : "Pokédex (" + nNorm + " / 251)")));
-      // toggle between the two 251 halves of the 502-entry dex
+        (shinyMode ? "✨ Shiny Pokédex (" + nShiny + " / " + IDS.length + ")" : "Pokédex (" + nNorm + " / " + IDS.length + ")")));
+      // toggle between the two halves of the full (normal + shiny) dex
       dexHost.appendChild(el("div", { class: "dex-toggle" }, [
         el("button", { class: "btn sm" + (shinyMode ? " subtle" : " primary"), onClick: () => { dexMode = "normal"; renderDex(); } }, "Regular · " + nNorm),
         el("button", { class: "btn sm" + (shinyMode ? " primary" : " subtle"), onClick: () => { dexMode = "shiny"; renderDex(); } }, "✨ Shiny · " + nShiny),

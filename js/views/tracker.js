@@ -29,12 +29,13 @@
     const caught = Store.dexCount(a.id);
     const tr = (Store.state.pokedex.trainers || {})[a.id] || {};
     const seen = Object.keys(Object.assign({}, tr.seen || {}, tr.caught || {})).length;
-    const pct = Math.min(100, Math.round(caught / 251 * 100));
+    const DEXN = Object.keys(window.DEX || {}).length || 251;
+    const pct = Math.min(100, Math.round(caught / DEXN * 100));
     const myTypes = leaders.filter((l) => l.holderId === a.id && l.n > 0);
     return el("div", { class: "trk-card", onClick: () => window.Profile && Profile.open(a.id) }, [
       el("div", { class: "trk-head" }, [
         el("div", { class: "trk-name" }, a.name),
-        el("div", { class: "trk-nums" }, "🔴 " + caught + " / 251 · 👀 " + seen),
+        el("div", { class: "trk-nums" }, "🔴 " + caught + " / " + DEXN + " · 👀 " + seen),
       ]),
       el("div", { class: "trk-bar" }, [el("div", { class: "trk-fill", style: { width: Math.max(pct, caught ? 2 : 0) + "%" } })]),
       teamRow(a.id),
