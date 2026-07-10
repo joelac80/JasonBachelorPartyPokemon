@@ -786,9 +786,10 @@
       const m = mon(u), mv = act.move === 99 ? STRUGGLE : (m.moves[act.move] || m.moves[0]), tm = tu ? mon(tu) : null;
       const fx = act.fx;
       const isStatus = act.cat === "status";
-      // A self-targeting status move (Recover, Swords Dance, Agility, Rest)
+      // A self-targeting status move (Recover, Swords Dance, Dragon Dance, Rest)
       // ignores the foe's typing — it can't be "immune"/"missed" by type.
-      const selfMove = isStatus && !!(fx && (fx.heal || fx.rest || (fx.stat && fx.stat.who === "self")));
+      const allSelfStats = fx && fx.stats && fx.stats.every((sc) => sc.who === "self");
+      const selfMove = isStatus && !!(fx && (fx.heal || fx.rest || (fx.stat && fx.stat.who === "self") || allSelfStats));
       if (act.courage) u.courage = false;               // half a drink, spent on this very hit
       const chug = act.courage ? [["🍺 " + u.name + " chugs — LIQUID COURAGE!", 950, () => sfx("correct")]] : [];
 
@@ -823,6 +824,11 @@
           if (fx.stat.who === "self" && act.fxHit) push(applyStage(m, fx.stat.stat, fx.stat.stg), 900, "blip");
           else if (fx.stat.who === "foe" && act.fxHit && tm && tm.hp > 0 && act.eff !== 0) push(applyStage(tm, fx.stat.stat, fx.stat.stg), 900, "blip");
         }
+        // Multi-stat moves (Dragon Dance, Calm Mind, Close Combat's drawback…).
+        if (fx.stats && act.fxHit) fx.stats.forEach((sc) => {
+          if (sc.who === "foe") { if (tm && tm.hp > 0 && act.eff !== 0) push(applyStage(tm, sc.stat, sc.stg), 850, "blip"); }
+          else push(applyStage(m, sc.stat, sc.stg), 850, "blip");
+        });
         if (fx.drain && dmgDealt > 0 && m.hp > 0) {
           const h = Math.max(1, Math.round(dmgDealt * fx.drain)); const b = m.hp; m.hp = Math.min(m.hpMax, m.hp + h);
           if (m.hp > b) push("🧛 " + m.name + " drained energy! (+" + (m.hp - b) + " HP)", 950, "coin");
@@ -1111,6 +1117,8 @@
       const fx = m.fx; if (!fx) return "";
       if (fx.status) return "💤 " + STATUS_TAG[fx.status.id] + (fx.status.chance < 100 ? " " + fx.status.chance + "%" : "");
       if (fx.stat) { const s = STAT_LABEL[fx.stat.stat] || fx.stat.stat; return (fx.stat.who === "self" ? "self " : "foe ") + s + (fx.stat.stg > 0 ? " ▲" : " ▼"); }
+      if (fx.stats) { const up = fx.stats.filter((x) => x.stg > 0).length, dn = fx.stats.filter((x) => x.stg < 0).length;
+        const who = fx.stats.every((x) => x.who === "self") ? "self " : ""; return who + (up ? "▲".repeat(Math.min(up, 2)) : "") + (dn ? "▼".repeat(Math.min(dn, 2)) : ""); }
       if (fx.rest) return "😴 full heal";
       if (fx.heal) return "💚 heal";
       if (fx.drain) return "🧛 drain";
@@ -1192,6 +1200,7 @@
         if (mv.fx.status) ch = mv.fx.status.chance;
         else if (mv.fx.flinch != null) ch = mv.fx.flinch;
         else if (mv.fx.stat && mv.fx.stat.chance != null) ch = mv.fx.stat.chance;
+        // (fx.stats setup/drawback moves are always 100% → ch stays 100)
         fxHit = Math.random() * 100 < (ch == null ? 100 : ch);
         if (fxHit && mv.fx.status && mv.fx.status.id === "slp") slpTurns = 1 + Math.floor(Math.random() * 3);
       }
