@@ -59,18 +59,47 @@
     fairy: [["Fairy Wind", 55, 100], ["Moonblast", 110, 75]],
   };
 
-  // Lv50 battle stats from the species power stat (x = base experience).
+  // Resolve a move NAME (from a learnset) into a battle move via the move
+  // dictionary. Unknown names return null so the caller can fall back — a data
+  // typo can never crash a battle.
+  function moveObj(name) {
+    const d = window.MOVES_DB && MOVES_DB[name];
+    if (!d) return null;
+    return { name: name, type: d.t, cat: d.cat || "phys", pow: d.pow || 0,
+      acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null };
+  }
+  function typeMove(t, m) { return { name: m[0], type: t, cat: "phys", pow: m[1], acc: m[2], pri: 0, fx: null }; }
+  // Gen-1/2 stat-stage multiplier (−6..+6).
+  function stageMul(n) { n = Math.max(-6, Math.min(6, n || 0)); return n >= 0 ? (2 + n) / 2 : 2 / (2 - n); }
+  // Effective Speed for turn order: base × speed-stage, halved by paralysis.
+  function effSpeed(m) { let s = (m.spe || 50) * stageMul(m.stg ? m.stg.spe : 0); if (m.status === "par") s *= 0.5; return s; }
+
+  // Lv50 battle stats from the species power stat (x = base experience). Moves
+  // come from the species' real Gen-2 learnset (data/learnsets.js) resolved via
+  // the move dictionary; a missing/short set falls back to the type table.
   function statsFor(monId) {
     const d = DEX[monId] || { n: "???", x: 60 };
     const x = d.x || 60;
     const types = (d.t && d.t.length ? d.t : ["normal"]).slice(0, 2);
-    const moves = [];
-    types.forEach((t) => (MOVES[t] || MOVES.normal).forEach((m) =>
-      moves.push({ name: m[0], pow: m[1], acc: m[2], type: t })));
-    if (types.length === 1 && types[0] !== "normal") moves.push({ name: "Tackle", pow: 50, acc: 100, type: "normal" });
+    let moves = [];
+    const set = window.DEX_MOVESETS && DEX_MOVESETS[monId];
+    if (set && set.length) set.forEach((nm) => { const mv = moveObj(nm); if (mv) moves.push(mv); });
+    if (moves.length < 2) {                       // no/short learnset → type table
+      moves = [];
+      types.forEach((t) => (MOVES[t] || MOVES.normal).forEach((m) => moves.push(typeMove(t, m))));
+      if (types.length === 1 && types[0] !== "normal") moves.push(typeMove("normal", ["Tackle", 40, 100]));
+    }
+    moves = moves.slice(0, 4);
     return { id: monId, name: d.n, x: x, types: types,
       spe: (window.DEX_SPEED && DEX_SPEED[monId]) || 50,   // Gen-2 base Speed → turn order
-      hpMax: 120 + Math.round(x * 0.5), atk: 0.55 + x / 500, moves: moves.slice(0, 4) };
+      hpMax: 120 + Math.round(x * 0.5), atk: 0.55 + x / 500,
+      // ---- live battle state (reset on switch-in where noted) ----
+      status: null,        // major status: par | brn | psn | slp | frz
+      slp: 0,              // remaining sleep turns
+      seeded: false,       // Leech Seed drain each turn
+      _flinch: false,      // flinched this turn (volatile)
+      stg: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 },   // stat stages
+      moves: moves };
   }
 
   function effFor(moveType, defTypes) {
@@ -81,7 +110,31 @@
 
   // Last resort when every move is nullified by immunity (e.g. a mono-Normal
   // mon staring down a Ghost): typeless, always usable, never great.
-  const STRUGGLE = { name: "Struggle", pow: 50, acc: 100, type: "none" };
+  const STRUGGLE = { name: "Struggle", type: "none", cat: "phys", pow: 50, acc: 100, pri: 0, fx: null };
+
+  // ---- status helpers ----
+  const STATUS_TAG = { par: "PAR", brn: "BRN", psn: "PSN", slp: "SLP", frz: "FRZ" };
+  const STATUS_GOT = { par: " is paralyzed! It may not attack!", brn: " was burned!", psn: " was poisoned!",
+    slp: " fell asleep!", frz: " was frozen solid!" };
+  // Can this status land? One major status at a time; some types are immune.
+  function canStatus(tm, id) {
+    if (!tm || tm.status) return false;
+    const ty = tm.types || [];
+    if (id === "brn" && ty.indexOf("fire") >= 0) return false;
+    if (id === "frz" && ty.indexOf("ice") >= 0) return false;
+    if (id === "psn" && (ty.indexOf("poison") >= 0 || ty.indexOf("steel") >= 0)) return false;
+    return true;
+  }
+  const STAT_LABEL = { atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed", acc: "accuracy" };
+  // Apply a stat-stage change; returns a human line (or null if it couldn't move).
+  function applyStage(m, stat, stg) {
+    const cur = m.stg[stat] || 0;
+    const next = Math.max(-6, Math.min(6, cur + stg));
+    if (next === cur) return m.name + "'s " + STAT_LABEL[stat] + (stg > 0 ? " won't go higher!" : " won't go lower!");
+    m.stg[stat] = next;
+    const big = Math.abs(stg) >= 2 ? " sharply" : "";
+    return m.name + "'s " + STAT_LABEL[stat] + (stg > 0 ? big + " rose!" : big + " fell!");
+  }
 
   // A trainer's pickable Pokémon: team of 6 first, then the rest of their
   // caught dex — and the partner is ALWAYS in the pool (it used to vanish
@@ -302,6 +355,14 @@
       u._fill.classList.toggle("low", pct <= 0.5 && pct > 0.2);
       u._fill.classList.toggle("crit", pct <= 0.2);
       u._num.textContent = Math.max(0, m.hp) + " / " + m.hpMax;
+      paintStatus(u);
+    }
+    // The little PAR/BRN/PSN/SLP/FRZ badge next to a mon's name.
+    function paintStatus(u) {
+      if (!u._statusEl) return;
+      const m = mon(u), st = m.status;
+      u._statusEl.textContent = st ? STATUS_TAG[st] : "";
+      u._statusEl.className = "duel-status" + (st ? " st-" + st : " hidden");
     }
     function renderHp(s) {
       const box = hpBoxes[s]; box.innerHTML = "";
@@ -309,9 +370,10 @@
         const m = mon(u);
         u._fill = el("div", { class: "battle-hp-fill" });
         u._num = el("span", { class: "duel-hp-num" });
+        u._statusEl = el("span", { class: "duel-status hidden" });
         const left = u.party.filter((x) => x.hp > 0).length;
         box.appendChild(el("div", { class: "battle-hp-mem" }, [
-          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv50")]),
+          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv50"), u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
             el("div", { class: "battle-hp-track" }, [u._fill]),
@@ -455,7 +517,9 @@
     function beginSelect() {
       if (S.done) return;
       S.phase = "select"; S.orders = {}; S.pending = null; S.zmove = false; S.res = []; S.repl = [];
-      S.sel = [];
+      S.sel = []; S.stDec = {};
+      // Flinch is volatile — it only lasts the turn it was inflicted.
+      ["a", "b"].forEach((sd) => sides[sd].units.forEach((u) => { if (mon(u)) mon(u)._flinch = false; }));
       [S.first, other(S.first)].forEach((sd) => sides[sd].units.forEach((u, i) => { if (unitAlive(u)) S.sel.push({ side: sd, unit: i }); }));
       if (!S.sel.length) return;
       S.actor = S.sel[0];
@@ -476,12 +540,15 @@
         const i = k.indexOf(":"); const side = k.slice(0, i), unit = +k.slice(i + 1);
         list.push(Object.assign({ side: side, unit: unit }, S.orders[k]));
       });
-      // Switches go first, then potions, then attacks by Speed (desc). Ties break
-      // deterministically (side, then slot) so every phone resolves identically.
+      // Switches go first, then potions, then attacks by PRIORITY, then Speed
+      // (desc). Ties break deterministically (side, then slot) so every phone
+      // resolves identically. Speed is the effective value (para-halved, stage).
       const rank = (o) => o.kind === "switch" ? 0 : o.kind === "potion" ? 1 : 2;
       list.sort((a, b) => {
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const sa = mon(sides[a.side].units[a.unit]).spe, sb = mon(sides[b.side].units[b.unit]).spe;
+        const pa = a.pri || 0, pb = b.pri || 0;
+        if (pa !== pb) return pb - pa;                  // higher priority moves first
+        const sa = effSpeed(mon(sides[a.side].units[a.unit])), sb = effSpeed(mon(sides[b.side].units[b.unit]));
         if (sa !== sb) return sb - sa;
         if (a.side !== b.side) return a.side < b.side ? -1 : 1;
         return a.unit - b.unit;
@@ -492,18 +559,62 @@
     function resolveNext() {
       if (S.done) return;
       const o = S.res.shift();
-      if (!o) { endTurn(); return; }
+      if (!o) { endResidual(); return; }               // → chip damage, then end of turn
       const u = sides[o.side].units[o.unit];
       if (mon(u).hp <= 0) { resolveNext(); return; }   // fainted before it could act → skip
       if (o.kind === "switch") return resolveSwitch(o, u);
       if (o.kind === "potion") return resolvePotion(o, u);
+      if (o.kind === "skip") return resolveSkip(o, u);
       return resolveMove(o, u);
+    }
+    // A slot that couldn't act this turn (asleep / frozen / fully paralyzed).
+    // The controlling phone rolled this at selection and sent a "skip" order
+    // (o.clear = it wakes/thaws THIS turn, cured for every screen identically).
+    function resolveSkip(o, u) {
+      S.moved++;
+      const m = mon(u); menu.innerHTML = "";
+      let line, cure = false;
+      if (o.why === "slp") { if (o.clear) { line = m.name + " woke up!"; cure = true; } else line = m.name + " is fast asleep…"; }
+      else if (o.why === "frz") { if (o.clear) { line = m.name + " thawed out!"; cure = true; } else line = m.name + " is frozen solid!"; }
+      else line = m.name + " is paralyzed! It can't move!";
+      beats([[line, 1050, () => { if (cure) { m.status = null; m.slp = 0; paintStatus(u); sfx("blip"); } else sfx("error"); }]], resolveNext);
+    }
+    // Controlling phone: does a status stop this mon acting this turn? The
+    // wake/thaw/para outcome is decided ONCE per turn (cached in S.stDec so a
+    // re-render or a "Back" tap can't re-roll it) and a skip order is sent.
+    // Returns true when the turn is spent on the status.
+    function statusBlocks(u, ptr) {
+      const m = mon(u), st = m.status;
+      if (!st) return false;
+      const key = ptr.side + ":" + ptr.unit;
+      S.stDec = S.stDec || {};
+      if (S.stDec[key] === undefined) {
+        if (st === "slp") { m.slp = (m.slp || 1) - 1; S.stDec[key] = { block: true, why: "slp", clear: m.slp <= 0 }; }
+        else if (st === "frz") { S.stDec[key] = { block: true, why: "frz", clear: Math.random() < 0.2 }; }
+        else if (st === "par") { S.stDec[key] = (Math.random() < 0.25) ? { block: true, why: "par", clear: false } : { block: false }; }
+        else S.stDec[key] = { block: false };
+      }
+      const dec = S.stDec[key];
+      if (!dec.block) return false;
+      if (!dec.sent) { dec.sent = true; sendSkip(ptr, dec.why, dec.clear); }
+      return true;
+    }
+    function sendSkip(ptr, why, clear) {
+      sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "skip", why: why, clear: !!clear, pri: 0 } });
     }
     function resolveSwitch(o, u) {
       if (!bench(u).some((x) => x.i === o.to)) { resolveNext(); return; }   // no longer valid
-      const old = mon(u).name; u.cur = o.to; S.moved++;
+      const old = mon(u).name; switchIn(u, o.to); S.moved++;
       renderSprites(o.side); renderHp(o.side); menu.innerHTML = "";
       beats([[u.name + " withdrew " + old + " — go, " + mon(u).name + "!", 1100, () => sfx("blip")]], resolveNext);
+    }
+    // Reset a switched-in mon's volatile battle state (stat stages, flinch,
+    // Leech Seed) — the major status (par/brn/psn) rides along, cartridge-style.
+    function switchIn(u, to) {
+      u.cur = to;
+      const m = mon(u);
+      m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
+      m._flinch = false; m.seeded = false;
     }
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
@@ -511,22 +622,76 @@
       beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+60 HP)", 1200, () => sfx("coin")]], resolveNext);
     }
     function resolveMove(o, u) {
+      const m = mon(u);
+      // Flinched by a faster foe's move earlier this turn → lose the turn.
+      if (m._flinch) { m._flinch = false; menu.innerHTML = "";
+        beats([[m.name + " flinched and couldn't move!", 1000, () => sfx("error")]], resolveNext); return; }
+      const mv = o.move === 99 ? STRUGGLE : (m.moves[o.move] || m.moves[0]);
+      const isStatus = mv.cat === "status";
       const dSide = other(o.side);
       let tUnit = o.tUnit, tu = sides[dSide].units[tUnit];
       if (!tu || mon(tu).hp <= 0) {                    // chosen target fainted → re-target
         const foes = livingEnemies(o.side);
-        if (!foes.length) { resolveNext(); return; }   // no one left to hit → the move fizzles
-        tUnit = foes[0].i; tu = sides[dSide].units[tUnit];
+        if (!isStatus) {
+          if (!foes.length) { resolveNext(); return; } // no one left to hit → the move fizzles
+          tUnit = foes[0].i; tu = sides[dSide].units[tUnit];
+        }
       }
-      // Damage's random roll was baked in at pick time (o.base); type effect is
-      // applied now against the ACTUAL target so re-targeting stays deterministic.
-      const m = mon(u), mv = o.move === 99 ? STRUGGLE : (m.moves[o.move] || m.moves[0]);
-      const eff = effFor(mv.type, mon(tu).types), immune = eff === 0;
+      const tm = tu ? mon(tu) : null;
+      // Type effect is computed now against the ACTUAL target (re-target safe);
+      // stat-stage and burn modifiers use current battle state (deterministic).
+      const eff = tm ? effFor(mv.type, tm.types) : 1;
+      const immune = eff === 0;
       const miss = immune ? false : o.miss;
-      const dmg = (miss || immune) ? 0 : Math.max(1, Math.round(o.base * eff));
+      let dmg = 0;
+      if (!miss && !immune && !isStatus && tm) {
+        const off = mv.cat === "spec" ? "spa" : "atk";
+        const def = mv.cat === "spec" ? "spd" : "def";
+        const statMod = stageMul(m.stg[off]) / stageMul(tm.stg[def]);
+        const burnMod = (mv.cat === "phys" && m.status === "brn") ? 0.5 : 1;
+        dmg = Math.max(1, Math.round(o.base * eff * statMod * burnMod));
+      }
       applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
-        miss: miss, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg, by: o.by },
+        miss: miss, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg,
+        cat: mv.cat, mvType: mv.type, fx: mv.fx, fxHit: o.fxHit, slpTurns: o.slpTurns, by: o.by },
         u, false, resolveNext);
+    }
+
+    // ---- residual (end-of-turn): burn/poison chip + Leech Seed drain, in a
+    // fixed slot order so every phone agrees, then the end-of-turn wrap-up. ----
+    function endResidual() {
+      if (S.done) return;
+      const steps = [];
+      const chip = (m) => Math.max(1, Math.round(m.hpMax / 8));
+      ["a", "b"].forEach((sd) => sides[sd].units.forEach((u) => {
+        const m = mon(u);
+        if (m.hp <= 0) return;
+        if (m.status === "brn" || m.status === "psn") {
+          const d = chip(m);
+          steps.push([(m.status === "brn" ? "🔥 " : "☠️ ") + m.name + (m.status === "brn" ? " is hurt by its burn!" : " is hurt by poison!") + " (−" + d + " HP)", 1000, () => {
+            m.hp = Math.max(0, m.hp - d); paintHp(u); if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted"); sfx("error");
+          }]);
+        }
+        if (m.seeded) {
+          const d = chip(m);
+          steps.push(["🌱 " + m.name + "'s health is sapped by Leech Seed! (−" + d + " HP)", 1000, () => {
+            m.hp = Math.max(0, m.hp - d);
+            const foe = (livingEnemies(u._side)[0] || {}).u;
+            if (foe) { const fm = mon(foe); fm.hp = Math.min(fm.hpMax, fm.hp + d); paintHp(foe); }
+            paintHp(u); if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted"); sfx("coin");
+          }]);
+        }
+      }));
+      const doneResidual = () => {
+        // Attribute the recorded win to the WINNER's controlling phone so
+        // exactly one screen logs it (act.by === myClient), same as a KO move.
+        if (!sides.a.units.some(unitAlive)) { finish("b", { by: sides.b.units[0].client }, "faint", false, function () {}); return; }
+        if (!sides.b.units.some(unitAlive)) { finish("a", { by: sides.a.units[0].client }, "faint", false, function () {}); return; }
+        endTurn();
+      };
+      if (!steps.length) { doneResidual(); return; }
+      menu.innerHTML = "";
+      beats(steps, doneResidual);
     }
 
     // ---- end of turn: send out any fainted slots, then next turn ----
@@ -618,79 +783,110 @@
       S.moved++;
       const dSide = other(act.side);
       const tu = sides[dSide].units[act.tUnit];
-      const m = mon(u), mv = act.move === 99 ? STRUGGLE : (m.moves[act.move] || m.moves[0]), tm = mon(tu);
+      const m = mon(u), mv = act.move === 99 ? STRUGGLE : (m.moves[act.move] || m.moves[0]), tm = tu ? mon(tu) : null;
+      const fx = act.fx;
+      const isStatus = act.cat === "status";
+      // A self-targeting status move (Recover, Swords Dance, Agility, Rest)
+      // ignores the foe's typing — it can't be "immune"/"missed" by type.
+      const selfMove = isStatus && !!(fx && (fx.heal || fx.rest || (fx.stat && fx.stat.who === "self")));
       if (act.courage) u.courage = false;               // half a drink, spent on this very hit
       const chug = act.courage ? [["🍺 " + u.name + " chugs — LIQUID COURAGE!", 950, () => sfx("correct")]] : [];
-      const afterDamage = () => {
-        if (tm.hp > 0) { advance(); done(); return; }
-        // Fainted. Replacements are sent out at END of turn (real-Pokémon style),
-        // so here we just carry on — unless the whole side is down, which ends it.
-        if (sides[dSide].units.some(unitAlive)) { renderHp(dSide); advance(); done(); return; }
-        finish(act.side, act, "faint", instant, done);
+
+      const eatBerry = (unit) => {
+        unit.berryUsed = true;
+        const mm = mon(unit); mm.hp = Math.min(mm.hpMax, mm.hp + 45); paintHp(unit);
+        try { Store.update((s) => { const t = s.pokedex.trainers[unit.attId]; if (t && t.berries > 0) t.berries--; }); } catch (_) {}
       };
-      // 🍓 auto-berry: survive a hit below 30% and the trainer's Sitrus kicks in
-      const eatBerry = () => {
-        tu.berryUsed = true;
-        mon(tu).hp = Math.min(mon(tu).hpMax, mon(tu).hp + 45);
-        paintHp(tu);
-        try {
-          Store.update((s) => {
-            const t = s.pokedex.trainers[tu.attId];
-            if (t && t.berries > 0) t.berries--;
-          });
-        } catch (_) {}
+      const berryReady = (unit) => { const mm = mon(unit); return mm.hp > 0 && mm.hp < mm.hpMax * 0.3 && unit.hasBerry && !unit.berryUsed; };
+
+      // End the whole move: mark faints, end the battle if a side is wiped,
+      // else carry on (fainted slots get replaced at end of turn).
+      const settle = () => {
+        if (tu) paintHp(tu); paintHp(u); paintStatus(u); if (tu) paintStatus(tu);
+        if (tm && tm.hp <= 0 && tu._monEl) tu._monEl.classList.add("fainted");
+        if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted");
+        if (tu && !sides[dSide].units.some(unitAlive)) { finish(act.side, act, "faint", instant, done); return; }
+        if (!sides[act.side].units.some(unitAlive)) { finish(dSide, act, "faint", instant, done); return; }
+        advance(); done();
       };
-      const berryReady = () => tm.hp > 0 && tm.hp < tm.hpMax * 0.3 && tu.hasBerry && !tu.berryUsed;
-      if (instant) {
-        if (!act.miss) {
-          tm.hp = Math.max(0, tm.hp - act.dmg); paintHp(tu);
-          if (tm.hp <= 0) { creditKO(u, m); if (tu._monEl) tu._monEl.classList.add("fainted"); }
-          else if (berryReady()) eatBerry();
+
+      // Apply all of the move's after-effects to state. `push(msg, delay, sfx)`
+      // queues a narration beat; in instant catch-up mode push is a no-op.
+      function applyEffects(dmgDealt, push) {
+        if (!fx) return;
+        if (fx.status && act.fxHit && tm && tm.hp > 0 && act.eff !== 0 && canStatus(tm, fx.status.id)) {
+          tm.status = fx.status.id;
+          if (fx.status.id === "slp") tm.slp = act.slpTurns || 1;
+          push("💤 " + tm.name + STATUS_GOT[fx.status.id], 1050, "error");
         }
-        afterDamage();
+        if (fx.stat) {
+          if (fx.stat.who === "self" && act.fxHit) push(applyStage(m, fx.stat.stat, fx.stat.stg), 900, "blip");
+          else if (fx.stat.who === "foe" && act.fxHit && tm && tm.hp > 0 && act.eff !== 0) push(applyStage(tm, fx.stat.stat, fx.stat.stg), 900, "blip");
+        }
+        if (fx.drain && dmgDealt > 0 && m.hp > 0) {
+          const h = Math.max(1, Math.round(dmgDealt * fx.drain)); const b = m.hp; m.hp = Math.min(m.hpMax, m.hp + h);
+          if (m.hp > b) push("🧛 " + m.name + " drained energy! (+" + (m.hp - b) + " HP)", 950, "coin");
+        }
+        if (fx.heal) { const b = m.hp; m.hp = Math.min(m.hpMax, m.hp + Math.round(m.hpMax * fx.heal));
+          push("💚 " + m.name + " regained health! (+" + (m.hp - b) + " HP)", 1000, "coin"); }
+        if (fx.rest) { m.hp = m.hpMax; m.status = "slp"; m.slp = 2;
+          push("😴 " + m.name + " slept and restored full HP!", 1100, "coin"); }
+        if (fx.seed && tm && tm.hp > 0 && (tm.types || []).indexOf("grass") < 0 && !tm.seeded) {
+          tm.seeded = true; push("🌱 " + tm.name + " was seeded!", 950, "blip"); }
+        if (fx.recoil && dmgDealt > 0) { const r = Math.max(1, Math.round(dmgDealt * fx.recoil)); m.hp = Math.max(0, m.hp - r);
+          push("💢 " + m.name + " is hit with recoil! (−" + r + " HP)", 950, "error"); }
+        if (fx.flinch && act.fxHit && tm && tm.hp > 0) tm._flinch = true;
+      }
+
+      // ---- instant (catch-up) path: no animation, apply everything now ----
+      if (instant) {
+        if (!act.miss && !(act.eff === 0 && !selfMove)) {
+          if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
+          applyEffects(isStatus ? 0 : act.dmg, function () {});
+        }
+        settle();
         return;
       }
+
       menu.innerHTML = "";
       u._monEl.classList.add("attack");
       setTimeout(() => u._monEl.classList.remove("attack"), 600);
-      if (act.miss) {
-        beats([
-          [m.name + " used " + mv.name + "!", 850, () => sfx("select")],
-          ["…it missed!", 1000, () => sfx("error")],
-        ], () => { advance(); done(); });
+      const used = [m.name + " used " + mv.name + "!", 800, () => sfx("select")];
+      if (act.miss) { beats(chug.concat([used, ["…it missed!", 1000, () => sfx("error")]]), () => { advance(); done(); }); return; }
+      if (act.eff === 0 && !selfMove) {                 // immune (damage OR foe-status move)
+        beats(chug.concat([used, ["It doesn't affect " + (tm ? tm.name : "it") + "…", 1150, () => sfx("error")]]), () => { advance(); done(); });
         return;
       }
-      if (act.eff === 0) {                              // immune — no damage at all
-        beats(chug.concat([
-          [m.name + " used " + mv.name + "!", 850, () => sfx("select")],
-          ["It doesn't affect " + tm.name + "…", 1150, () => sfx("error")],
-        ]), () => { advance(); done(); });
-        return;
+
+      const steps = chug.concat([used]);
+      if (!isStatus && tm) {
+        steps.push([null, 500, () => {
+          tm.hp = Math.max(0, tm.hp - act.dmg);
+          if (tm.hp <= 0) act._exp = creditKO(u, m);
+          tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
+          setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
+          spawnHit(tu._monEl, TYPE_COLOR[act.mvType] || "#fff", act.crit);
+          paintHp(tu); sfx("coin");
+        }]);
+        if (act.crit) steps.push([act.armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
+        if (act.eff >= 4) steps.push(["💥💥 It's SUPER effective!! (double weakness)", 950]);
+        else if (act.eff > 1) steps.push(["It's super effective!", 900]);
+        else if (act.eff <= 0.25) steps.push(["It barely has any effect…", 900]);
+        else if (act.eff < 1) steps.push(["It's not very effective…", 900]);
+        steps.push(["−" + act.dmg + " HP!", 650]);
       }
-      const steps = chug.concat([[m.name + " used " + mv.name + "!", 800, () => sfx("select")]]);
-      steps.push([null, 500, () => {
-        tm.hp = Math.max(0, tm.hp - act.dmg);
-        if (tm.hp <= 0) act._exp = creditKO(u, m);
-        tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
-        setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
-        spawnHit(tu._monEl, TYPE_COLOR[mv.type] || "#fff", act.crit);
-        paintHp(tu); sfx("coin");
-      }]);
-      if (act.crit) steps.push([act.armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
-      if (act.eff >= 4) steps.push(["💥💥 It's SUPER effective!! (double weakness)", 950]);
-      else if (act.eff > 1) steps.push(["It's super effective!", 900]);
-      else if (act.eff <= 0.25) steps.push(["It barely has any effect…", 900]);
-      else if (act.eff < 1) steps.push(["It's not very effective…", 900]);
-      steps.push(["−" + act.dmg + " HP!", 650]);
+      // Post-damage / status-move effects (drain, recoil, status, stat, etc.).
+      const dmgDealt = (!isStatus && tm) ? act.dmg : 0;
+      applyEffects(dmgDealt, (msg, delay, s) => { if (msg) steps.push([msg, delay, () => { paintHp(u); if (tu) paintHp(tu); if (s) sfx(s); }]); });
+
       beats(steps, () => {
-        if (tm.hp <= 0) {
-          beats([
-            [tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
-            ["🍺 KO! " + tu.name + " takes 2 sips!", 1150],
-          ].concat(act._exp ? [[act._exp, 1300, () => sfx("coin")]] : []), afterDamage);
-        } else if (berryReady()) {
-          beats([["🍓 " + tu.name + "'s Sitrus Berry! " + tm.name + " recovered 45 HP!", 1250, () => { eatBerry(); sfx("coin"); }]], afterDamage);
-        } else afterDamage();
+        const koSteps = [];
+        if (tm && tm.hp <= 0) koSteps.push([tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
+          ["🍺 KO! " + tu.name + " takes 2 sips!", 1150]);
+        if (act._exp) koSteps.push([act._exp, 1300, () => sfx("coin")]);
+        if (m.hp <= 0) koSteps.push([m.name + " fainted from recoil!", 1150, () => { u._monEl.classList.add("fainted"); sfx("error"); }]);
+        if (tm && tm.hp > 0 && berryReady(tu)) koSteps.push(["🍓 " + tu.name + "'s Sitrus Berry! " + tm.name + " recovered 45 HP!", 1250, () => { eatBerry(tu); sfx("coin"); }]);
+        if (koSteps.length) beats(koSteps, settle); else settle();
       });
     }
 
@@ -910,10 +1106,29 @@
     // ---- menus (only the phone that controls the current pick gets one) ----
     function isMine(u) { return mode === "local" || (mode === "remote" && u.client === myClient); }
 
+    // A short tag describing a move's effect, shown on its button.
+    function fxLabel(m) {
+      const fx = m.fx; if (!fx) return "";
+      if (fx.status) return "💤 " + STATUS_TAG[fx.status.id] + (fx.status.chance < 100 ? " " + fx.status.chance + "%" : "");
+      if (fx.stat) { const s = STAT_LABEL[fx.stat.stat] || fx.stat.stat; return (fx.stat.who === "self" ? "self " : "foe ") + s + (fx.stat.stg > 0 ? " ▲" : " ▼"); }
+      if (fx.rest) return "😴 full heal";
+      if (fx.heal) return "💚 heal";
+      if (fx.drain) return "🧛 drain";
+      if (fx.recoil) return "💢 recoil";
+      if (fx.seed) return "🌱 seed";
+      if (fx.flinch) return "😵 flinch " + fx.flinch + "%";
+      if (fx.crit === "high") return "🎯 high crit";
+      return "";
+    }
     function moveBtn(m, onPick) {
+      const catIcon = m.cat === "spec" ? "🌀" : m.cat === "status" ? "🌟" : "👊";
+      const bits = [catIcon, m.cat === "status" ? "STATUS" : "POW " + m.pow, (m.acc >= 101 ? "—" : m.acc + "%")];
+      if (m.pri > 0) bits.push("⚡1st");
+      const fl = fxLabel(m);
       return el("button", { class: "duel-move", style: { "--mt": TYPE_COLOR[m.type] || "#a8a878" }, onClick: onPick }, [
         el("span", { class: "duel-move-name" }, (TYPE_EMOJI[m.type] || "⭐") + " " + m.name),
-        el("span", { class: "duel-move-sub" }, "POW " + m.pow + " · " + m.acc + "%"),
+        el("span", { class: "duel-move-sub" }, bits.join(" · ")),
+        fl ? el("span", { class: "duel-move-fx" }, fl) : null,
       ]);
     }
 
@@ -961,14 +1176,28 @@
       const m = mon(u), mv = mIdx === 99 ? STRUGGLE : m.moves[mIdx];
       const armed = !!z;                               // Liquid Courage: unleashed on THIS hit
       S.zmove = false;
-      // Roll accuracy, crit and the damage spread NOW (so it's baked into the
-      // synced order); type effect is applied at resolution against whoever's
-      // actually standing there, keeping re-targets deterministic.
-      const miss = !armed && Math.random() * 100 >= mv.acc;
-      const crit = !miss && (armed || Math.random() < 0.08);
-      const base = miss ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      const isStatus = mv.cat === "status";
+      // Roll accuracy, crit, damage spread and any effect proc NOW (baked into
+      // the synced order); type effect + stat/burn mods are applied at
+      // resolution against whoever's actually standing there (re-target safe).
+      const accMod = stageMul(m.stg ? m.stg.acc : 0);
+      const miss = !armed && mv.acc < 101 && (Math.random() * 100 >= mv.acc * accMod);
+      const highCrit = !!(mv.fx && mv.fx.crit === "high");
+      const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.18 : 0.08));
+      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      // Secondary effect: does it proc? (self-buff status moves always do.)
+      let fxHit = false, slpTurns = 0;
+      if (mv.fx && !miss) {
+        let ch = 100;
+        if (mv.fx.status) ch = mv.fx.status.chance;
+        else if (mv.fx.flinch != null) ch = mv.fx.flinch;
+        else if (mv.fx.stat && mv.fx.stat.chance != null) ch = mv.fx.stat.chance;
+        fxHit = Math.random() * 100 < (ch == null ? 100 : ch);
+        if (fxHit && mv.fx.status && mv.fx.status.id === "slp") slpTurns = 1 + Math.floor(Math.random() * 3);
+      }
       sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
-        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, armed: armed, courage: armed } });
+        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base,
+          armed: armed, courage: armed, pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
     }
 
     // ---- gym-leader AI: picks the hardest-hitting move vs the best target,
@@ -980,16 +1209,26 @@
         if (b.length) sendAct({ seq: S.seq + 1, kind: "next", side: ptr.side, unit: ptr.unit, to: b[0].i });
         return;
       }
+      // Asleep / frozen / paralyzed? The host rolls it for the AI too.
+      if (statusBlocks(u, ptr)) return;
       const m = mon(u);
-      let best = null;
+      let best = null, bestStatus = null;
       livingEnemies(ptr.side).forEach((f) => {
         m.moves.forEach((mv, i) => {
+          if (mv.cat === "status") {
+            // Value a status/setup move a little — enough to use it sometimes,
+            // never over a solid attack.
+            const s = 22 * (mv.acc >= 101 ? 1 : mv.acc / 100);
+            if (!bestStatus || s > bestStatus.score) bestStatus = { score: s, mIdx: i, tIdx: f.i };
+            return;
+          }
           const score = mv.pow * effFor(mv.type, mon(f.u).types) * (mv.acc / 100);
           if (!best || score > best.score) best = { score: score, mIdx: i, tIdx: f.i };
         });
       });
       if (best && best.score > 0) { doMove(u, ptr, best.mIdx, best.tIdx); return; }
-      doMove(u, ptr, 99, (livingEnemies(ptr.side)[0] || { i: 0 }).i);   // fully walled → Struggle
+      if (bestStatus) { doMove(u, ptr, bestStatus.mIdx, bestStatus.tIdx); return; }   // walled → try status
+      doMove(u, ptr, 99, (livingEnemies(ptr.side)[0] || { i: 0 }).i);   // nothing → Struggle
     }
 
     function renderMenu() {
@@ -1024,6 +1263,11 @@
         }
       }
       if (S.pending) { partyPanel(u, ptr, "next", false); return; }
+      // Asleep / frozen / fully paralyzed → the turn is auto-spent (skip order).
+      if (statusBlocks(u, ptr)) {
+        menu.appendChild(el("div", { class: "duel-wait" }, "💤 " + mon(u).name + " can't act this turn…"));
+        return;
+      }
       const m = mon(u);
       // Everything immune against everything standing? Struggle keeps the
       // fight alive (typeless, always usable).
