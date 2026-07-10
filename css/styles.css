@@ -1359,6 +1359,16 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .duel-move-name { font-family: var(--pixel); font-weight: 800; font-size: 11px; color: #262626;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .duel-move-sub { font-size: 10px; color: #6b6b52; }
+.duel-move-fx { font-size: 9px; font-weight: 700; color: #7a5cc0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* status badge next to a battler's name */
+.duel-status { display: inline-block; font-family: var(--pixel, monospace); font-size: 9px; font-weight: 800;
+  color: #fff; border-radius: 4px; padding: 1px 4px; margin-left: 4px; vertical-align: middle; letter-spacing: .03em; }
+.duel-status.hidden { display: none; }
+.duel-status.st-par { background: #d8a72a; }
+.duel-status.st-brn { background: #e2622b; }
+.duel-status.st-psn { background: #9a4bad; }
+.duel-status.st-slp { background: #7a7a88; }
+.duel-status.st-frz { background: #4aa8c8; }
 .duel-items { width: 100%; }
 .duel-confirm { display: flex; flex-direction: column; gap: 10px; align-items: center; max-width: 460px; }
 .duel-confirm-txt { color: #fff; font-size: 13px; line-height: 1.45; text-align: center; }
