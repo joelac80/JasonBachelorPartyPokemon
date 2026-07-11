@@ -49,6 +49,55 @@
 
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
+  // ---- browsable, filterable Pokédex: every mon, caught / seen / unseen for a
+  // chosen trainer, sortable by number and filterable by generation + type. ----
+  function dexBrowser(root) {
+    root.appendChild(el("h2", { class: "section-title" }, "📒 Browse the Pokédex"));
+    const me = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
+    let attId = me;
+    const filter = { gen: 0, type: "", desc: false };
+    const CAPN = 400;
+
+    const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id }, a.name + "'s dex")));
+    sel.value = attId;
+    sel.onchange = () => { attId = sel.value; paint(); };
+
+    const bar = window.DexFilter ? DexFilter.controls(filter, () => paint()) : null;
+    const count = el("div", { class: "hint trk-dex-count" });
+    const grid = el("div", { class: "trk-dex-grid" });
+
+    function paint() {
+      const tr = (Store.state.pokedex.trainers || {})[attId] || {};
+      const caughtMap = tr.caught || {}, seenMap = tr.seen || {};
+      const target = Store.dexTarget ? Store.dexTarget(attId) : (Object.keys(window.DEX || {}).length || 251);
+      const allIds = []; for (let i = 1; i <= target; i++) allIds.push(i);
+      const shown = window.DexFilter ? DexFilter.apply(allIds, filter) : allIds;
+      grid.innerHTML = "";
+      const clip = shown.slice(0, CAPN);
+      clip.forEach((id) => {
+        const d = DEX()[id]; if (!d) return;
+        const rc = caughtMap[id]; const caught = !!rc; const seen = caught || !!seenMap[id];
+        const shiny = !!(rc && rc.shiny);
+        const src = (shiny && (window.DEX_SPRITES_SHINY || {})[id]) || SP()[id] || Store.sprite(id);
+        grid.appendChild(el("div", { class: "trk-dex-cell " + (caught ? "caught" : seen ? "seen" : "unseen"),
+          title: "#" + id + " " + (seen ? d.n : "???") + (caught ? (shiny ? " ✨ caught" : " · caught") : seen ? " · seen" : "") }, [
+          src ? el("img", { src: src, alt: "" }) : el("span", { class: "trk-dex-ball" }, "◓"),
+          shiny && caught ? el("span", { class: "trk-dex-shiny" }, "✨") : null,
+          el("span", { class: "trk-dex-no" }, "#" + String(id).padStart(id > 999 ? 4 : 3, "0")),
+        ]));
+      });
+      const nCaught = shown.filter((id) => caughtMap[id]).length;
+      count.textContent = "🔴 " + nCaught + " caught · " + shown.length + " shown"
+        + (shown.length > CAPN ? " (first " + CAPN + " — narrow by gen/type to see the rest)" : "");
+    }
+
+    root.appendChild(el("div", { class: "toolbar trk-dex-tools" }, [sel]));
+    if (bar) root.appendChild(bar);
+    root.appendChild(count);
+    root.appendChild(grid);
+    paint();
+  }
+
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔬 Pokédex Tracker"),
@@ -77,6 +126,9 @@
         ]),
       ]);
     })));
+
+    // ---- browsable, filterable Pokédex ----
+    dexBrowser(root);
   }
 
   window.Views = window.Views || {};
