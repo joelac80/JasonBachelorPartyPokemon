@@ -152,6 +152,14 @@
 
   const btn = document.getElementById("break-btn");
   if (btn) btn.addEventListener("click", open);
+  // Lives in the nav menu (keeps the top bar uncluttered). Open the setter
+  // without navigating, and close the menu.
+  const navBtn = document.getElementById("break-nav");
+  if (navBtn) navBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const nav = document.getElementById("nav"); if (nav) nav.classList.remove("open");
+    open();
+  });
 
   window.BreakTimer = { open: open, render: render };
 })();
