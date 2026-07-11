@@ -410,8 +410,35 @@
     ]);
   }
 
+  // One-time backfill: HOF entries enshrined BEFORE per-crown tracking carry no
+  // region. Each Champion win created exactly ONE entry, in ladder order — so
+  // pair a trainer's region-less entries (oldest first) with the champions they
+  // have beaten (ladder order) and stamp region/champ/key/rank. Reliable because
+  // only fresh Champion wins enshrine (rematches/HOF/gym battles don't).
+  function backfillHofRegions() {
+    const hof = Store.state.hof || [];
+    if (!hof.some((h) => h && !h.region && !h.key && !h.mig)) return;
+    const champs = LEAGUE.filter((s) => (s.rank === "Champion" || s.rank === "Top Champion" || s.final) && s.key !== "red");
+    const wonByAtt = {};
+    (Store.state.attendees || []).forEach((a) => { wonByAtt[a.id] = champs.filter((c) => hasBeat(a.id, c.key)); });
+    Store.update((s) => {
+      const byAtt = {};
+      (s.hof || []).forEach((h) => { if (h && !h.region && !h.key && !h.mig) (byAtt[h.attId] = byAtt[h.attId] || []).push(h); });
+      Object.keys(byAtt).forEach((att) => {
+        const entries = byAtt[att].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        const won = wonByAtt[att] || [];
+        entries.forEach((h, i) => {
+          const c = won[i];
+          if (c) { h.region = c.region || ""; h.champ = c.name; h.rank = c.rank; h.key = c.key; }
+          else { h.mig = 1; }   // no matching champ on record — leave legacy, don't re-scan
+        });
+      });
+    });
+  }
+
   function renderHOF(hostEl, attId, opts) {
     opts = opts || {};
+    backfillHofRegions();
     let hof = (Store.state.hof || []).slice();
     // Region-scoped Hall of Fame: only champions who won THIS region. Kanto &
     // Johto (the origin) also adopts legacy entries that predate region tracking.
