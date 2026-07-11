@@ -13,10 +13,13 @@
   const BOSSES = [
     { key: "mewtwo", name: "MEWTWO", title: "The Genetic Pokémon", film: "Mewtwo Strikes Back",
       type: "psychic", team: [6, 9, 3, 31, 28, 150], pts: 12, boost: 1.4, icon: "🧬", face: 150,
+      // The five clones field in their eerie shadow palette (shiny sprites —
+      // clone Charizard is jet-black, just like the film); Mewtwo stays himself.
+      shiny: [6, 9, 3, 31, 28],
       quote: "I was created by humans… to obey them. I have chosen a different destiny. You believe a TRAINED Pokémon can overcome a perfect clone? Come — show me. And despair.",
       winChron: "shattered MEWTWO's cloned army — and the genetic legend itself!",
       loseChron: "MEWTWO proved the clones reign supreme",
-      lead: "🧬 His cloned army — Charizard, Blastoise, Venusaur and more — then Mewtwo himself." },
+      lead: "🧬 His shadow CLONES — a jet-black Charizard, Blastoise, Venusaur and more — then Mewtwo himself." },
     { key: "collector", name: "LAWRENCE III", title: "The Collector", film: "Pokémon 2000 · The Power of One",
       type: "flying", team: [144, 145, 146, 142, 149, 249], pts: 12, boost: 1.4, icon: "🎐", face: 249,
       quote: "Fire, Ice, Lightning — the titans of the sky are already mine. Only Lugia, guardian of the sea, remains… the jewel of my collection. You? Merely an obstacle to be catalogued.",
@@ -63,7 +66,7 @@
           Duel.start({ mode: "local", title: b.name + " — " + b.film,
             movie: { key: b.key, name: b.name, pts: b.pts, icon: b.icon, winChron: b.winChron, loseChron: b.loseChron },
             a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), boost: b.boost }] },
+            b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), boost: b.boost, shiny: b.shiny || false }] },
             onResult: () => Router.render() });
         } });
     });

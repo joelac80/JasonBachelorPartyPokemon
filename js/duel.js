@@ -248,7 +248,11 @@
       const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
       const party = (u.monIds || []).filter(Boolean).map((id) => {
         const m = statsFor(id); m.hp = m.hpMax;
-        m.shiny = isShinyFor(u.attId, id);          // ✨ carried into battle
+        // ✨ shiny is a trainer's own catch — but an NPC boss can FORCE it via
+        // u.shiny (true = all, or an array of ids). Mewtwo uses this to field his
+        // cloned army in their eerie shadow palette (shiny Charizard is jet-black).
+        const forced = u.shiny === true || (Array.isArray(u.shiny) && u.shiny.indexOf(id) >= 0);
+        m.shiny = forced || isShinyFor(u.attId, id);          // carried into battle
         // battle EXP: KOs banked before this battle (this mon must land the
         // blow itself to earn more). Veterans hit harder: +2% attack per
         // banked KO, capped at +20%.
