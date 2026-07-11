@@ -34,5 +34,9 @@
       quote: "If you make me wait, you're gonna owe me a million! Now BATTLE me!" },
     { name: "NEMONA", title: "Rival", type: "fighting", tier: 3, team: [745, 923, 706, 982, 908, 445],
       quote: "Finally, a real battle! Come on, come on — give me EVERYTHING you've got!" },
+    // 👨‍🔬 The professor who's studied them all — a top-tier generalist running
+    // his classic Stadium-style Kanto powerhouse squad, every mon fully evolved.
+    { name: "PROF. OAK", title: "Pokémon Professor", type: "normal", tier: 4, team: [128, 103, 59, 130, 34, 149],
+      quote: "I've devoted my whole life to Pokémon research… now let me show you what decades of study can really do!" },
   ];
 })();

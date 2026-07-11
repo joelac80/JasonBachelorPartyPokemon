@@ -786,10 +786,23 @@
     }
     function promptReplace() {
       if (S.done) return;
-      if (!S.repl.length) { beginSelect(); return; }
-      S.phase = "replace";
-      S.pending = S.repl[0]; S.actor = S.repl[0];
-      renderMenu();
+      // A queued slot only still needs replacing if it's actually down AND has
+      // a living bench mon to send. In a shared-party double, both slots can
+      // faint the same turn and each gets queued — but filling the first slot
+      // claims the last shared bench mon, leaving its sibling with nothing.
+      // That field position just stays empty (play down a mon) instead of
+      // hanging forever on "picking a new Pokémon."
+      while (S.repl.length) {
+        const r = S.repl[0];
+        const u = sides[r.side].units[r.unit];
+        if (mon(u).hp > 0 || bench(u).length === 0) { S.repl.shift(); continue; }
+        S.phase = "replace";
+        S.pending = r; S.actor = r;
+        renderMenu();
+        return;
+      }
+      S.pending = null;
+      beginSelect();
     }
 
     function applyAct(act, instant, done) {
