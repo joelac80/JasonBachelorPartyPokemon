@@ -151,7 +151,9 @@
   // Ordered party picker (modal) — used to challenge someone to a remote
   // duel and to accept one. onDone receives the picked mon ids, lead first.
   function pickParty(opts) {
-    const pool = poolFor(opts.attId);
+    // opts.pool restricts the choices (e.g. a locked tournament squad of 6);
+    // otherwise the trainer's whole roster is fair game.
+    const pool = (opts.pool && opts.pool.length) ? opts.pool.slice() : poolFor(opts.attId);
     const max = opts.max || 6;
     const min = opts.min || 1;
     let picked = [];
@@ -191,6 +193,7 @@
       paint();
     } }, "⚡ Use my team");
     const body = el("div", { class: "modal-form" }, [
+      opts.preview || null,
       el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
       grid,
       el("div", { class: "toolbar" }, [cta, teamBtn]),
