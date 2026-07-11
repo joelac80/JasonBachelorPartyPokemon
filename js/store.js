@@ -897,6 +897,22 @@
       });
       return out;
     },
+    // ⏸ Break timer — one shared countdown for the whole room: "games resume at
+    // X". Set/clear syncs to everyone; the newest set OR clear wins (merge guard
+    // keeps a stale phone from resurrecting an old timer). `set` timestamps it.
+    setBreak(mins, by, note) {
+      const ms = Math.max(1, Math.round((Number(mins) || 0) * 60000));
+      this.update((s) => { s.break = { until: Date.now() + ms, by: by || "", note: note || "", set: Date.now() }; });
+    },
+    clearBreak(by) {
+      this.update((s) => { s.break = { until: 0, by: by || "", note: "", set: Date.now(), cleared: true }; });
+    },
+    // The active break, or null if none / already elapsed.
+    getBreak() {
+      const b = this.state.break;
+      if (!b || !b.until || b.until <= Date.now()) return null;
+      return b;
+    },
 
     // Nickname a caught mon (per trainer). Blank clears it.
     setNick(attId, monId, nick) {
@@ -1059,6 +1075,11 @@
       const ptw = (prev && prev.tourneyWins) || {};
       const ntw = next.tourneyWins = next.tourneyWins || {};
       Object.keys(ptw).forEach((tid) => { ntw[tid] = Math.max(ntw[tid] || 0, ptw[tid] || 0); });
+      // ⏸ Break timer: a single shared value — keep whichever side was set most
+      // recently (a newer set OR clear wins) so a lagging phone can't resurrect a
+      // stale timer or wipe a fresh one.
+      const pbrk = prev && prev.break, nbrk = next.break;
+      if (pbrk && (!nbrk || (pbrk.set || 0) > (nbrk.set || 0))) next.break = pbrk;
       // 🛠 Admin config (party info / teams / events) is EDITED, not append-only,
       // so a union won't do — but a device still holding STALE config must never
       // revert a newer edit via last-write-wins. Every config edit bumps
