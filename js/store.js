@@ -1008,6 +1008,19 @@
         const arr = nmv[tid] = nmv[tid] || [];
         (pmv[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
+      // 🛠 Admin config (party info / teams / events) is EDITED, not append-only,
+      // so a union won't do — but a device still holding STALE config must never
+      // revert a newer edit via last-write-wins. Every config edit bumps
+      // `configRev`; here we keep whichever side was edited most recently, so an
+      // organizer's team/event changes stop getting wiped by a lagging phone.
+      const pRev = (prev && prev.configRev) || 0;
+      const nRev = next.configRev || 0;
+      if (pRev > nRev) {
+        if (prev.party) next.party = prev.party;
+        if (prev.teams) next.teams = prev.teams;
+        if (prev.events) next.events = prev.events;
+        next.configRev = pRev;
+      }
       // 🏛 Hall of Fame: append-only enshrinements — union by attendee + timestamp.
       const phof = (prev && prev.hof) || [];
       const nhof = next.hof = next.hof || [];

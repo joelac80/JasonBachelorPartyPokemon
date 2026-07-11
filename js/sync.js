@@ -266,6 +266,10 @@
     let obj; try { obj = JSON.parse(data.stateJson); } catch (_) { return; }
     applying = true;
     try { Store.applyRemote(obj); } finally { applying = false; }
+    // If our local party config (teams/events) is NEWER than what just arrived,
+    // the sender was lagging — the merge kept ours; now re-assert it to the room
+    // so the organizer's edit propagates instead of being lost to their push.
+    try { if ((Store.state.configRev || 0) > (obj.configRev || 0)) schedulePush(); } catch (_) {}
     // The state is now current in the Store. Schedule a (debounced) re-render
     // to reflect it — unless the active view is mid-interaction and asked us
     // to hold off (e.g. mid-catch in the Safari); their next action re-renders
