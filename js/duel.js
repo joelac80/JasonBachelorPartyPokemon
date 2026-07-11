@@ -599,6 +599,15 @@
     // every phone reaches the same verdict; sleep counts down deterministically.
     function resolveMove(o, u) {
       const m = mon(u);
+      // If a mid-charge mon (Dig/Fly…) is about to be stopped cold this turn,
+      // the charge is disrupted — cancel it so it can't stay stuck underground
+      // (semi-invulnerable) forever. (It still completes normally on a wake/thaw.)
+      if (m._charging) {
+        const slpBlock = m.status === "slp" && (m.slp || 0) > 1;
+        const frzBlock = m.status === "frz" && (o.statusRoll || 0) >= 0.2;
+        const parBlock = m.status === "par" && (o.statusRoll || 0) < 0.25;
+        if (m._recharge || slpBlock || frzBlock || parBlock || m._flinch) { m._charging = null; m._invuln = false; }
+      }
       // Recharge (Hyper Beam / Giga Impact…): the turn AFTER the blast is spent
       // catching your breath — no attack lands.
       if (m._recharge) {
@@ -657,8 +666,13 @@
       // stat-stage and burn modifiers use current battle state (deterministic).
       const eff = tm ? effFor(mv.type, tm.types) : 1;
       const immune = eff === 0;
-      // A semi-invulnerable target (mid-Dig/Fly/Phantom Force) can't be hit.
-      const avoided = !isStatus && tm && tm._invuln;
+      // A semi-invulnerable target (mid-Dig/Fly/Phantom Force) can't be hit —
+      // by damaging moves OR foe-targeting status moves (Thunder Wave, Toxic,
+      // Leech Seed…). The foe's own self-buffs still go through (they don't
+      // touch the buried mon).
+      const fx0 = mv.fx;
+      const foeAimed = !isStatus || (fx0 && (fx0.status || fx0.seed || fx0.flinch || (fx0.stat && fx0.stat.who === "foe")));
+      const avoided = tm && tm._invuln && foeAimed;
       const miss = immune ? false : (o.miss || !!avoided);
       // Spread moves (Surf, Earthquake, Discharge…) splash EVERY other fielded
       // foe in a double battle. Each hit is dialed to 75% when 2+ are struck —
