@@ -37,27 +37,41 @@
     document.body.appendChild(banner);
     return banner;
   }
+  // Diff-based: the banner DOM is built ONCE when a break starts (or its note
+  // changes) and torn down when it ends — every other call just updates the
+  // countdown text. This matters because render() runs on every Store change
+  // (many per second during battles), so it must be near-free when nothing
+  // about the break changed.
+  let shownId = null;      // break.set currently structured in the DOM, or "hidden"
+  let countEl = null;
+  function structure(b) {
+    const bn = ensureBanner();
+    bn.className = "break-banner";
+    bn.innerHTML = "";
+    countEl = el("div", { class: "break-count" }, "");
+    bn.appendChild(el("div", { class: "break-main", onClick: () => open() }, [
+      el("span", { class: "break-ico" }, "⏸"),
+      el("div", { class: "break-txt" }, [
+        countEl,
+        el("div", { class: "break-sub" },
+          (b.note ? "“" + b.note + "” · " : "") + "back at " + clockStr(b.until) + (b.by ? " · " + b.by : "")),
+      ]),
+    ]));
+    bn.appendChild(el("button", { class: "break-x", title: "End the break now", onClick: (e) => {
+      e.stopPropagation(); Store.clearBreak(meName()); render();
+    } }, "✕"));
+  }
   function render() {
     const bn = ensureBanner();
     const b = raw(), now = Date.now();
-    if (b && b.until && b.until > now) {
-      bn.className = "break-banner";
-      bn.innerHTML = "";
-      bn.appendChild(el("div", { class: "break-main", onClick: () => open() }, [
-        el("span", { class: "break-ico" }, "⏸"),
-        el("div", { class: "break-txt" }, [
-          el("div", { class: "break-count" }, "Games resume in " + fmt(b.until - now)),
-          el("div", { class: "break-sub" },
-            (b.note ? "“" + b.note + "” · " : "") + "back at " + clockStr(b.until) + (b.by ? " · " + b.by : "")),
-        ]),
-      ]));
-      bn.appendChild(el("button", { class: "break-x", title: "End the break now", onClick: (e) => {
-        e.stopPropagation(); Store.clearBreak(meName()); render();
-      } }, "✕"));
-    } else {
-      bn.className = "break-banner hidden";
-      bn.innerHTML = "";
+    const active = !!(b && b.until && b.until > now);
+    const id = active ? String(b.set) : "hidden";
+    if (id !== shownId) {                    // structure only changes on a new/ended break
+      shownId = id;
+      if (active) structure(b);
+      else { bn.className = "break-banner hidden"; bn.innerHTML = ""; countEl = null; }
     }
+    if (active && countEl) countEl.textContent = "Games resume in " + fmt(b.until - now);
   }
 
   // ---- room alerts ----
