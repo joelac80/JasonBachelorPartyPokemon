@@ -1093,7 +1093,11 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 100%; overscroll-behavior: none; }
 .battle.out { opacity: 0; transition: opacity .32s ease; }
 @keyframes battleIn { from { opacity: 0; } to { opacity: 1; } }
-.battle-arena { flex: 1; position: relative; overflow: hidden;
+/* The field is a FIXED height so it never resizes between "your move" (menu
+   full) and "opponent's turn / mid-animation" (menu shows a status line). The
+   menu area below always fills the rest, so pop-up text just appears in the
+   space where the move buttons live instead of the whole scene jumping. */
+.battle-arena { flex: 0 0 46dvh; position: relative; overflow: hidden;
   background: linear-gradient(#bfe3ff 0 58%, #a6d88f 58%, #8fd07a 100%); }
 .battle-platform { position: absolute; width: 42%; max-width: 240px; height: 30px; border-radius: 50%; background: rgba(60,120,40,0.28); }
 .battle-platform.foe { top: 28%; right: 5%; }
@@ -1157,7 +1161,8 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 /* message + menu */
 .battle-msg { background: #f6f4df; border-top: 4px solid #2c2c2c; padding: 16px 18px; min-height: 58px;
   font-family: var(--pixel); font-size: 15px; color: #262626; display: flex; align-items: center; }
-.battle-menu { background: #2c2c2c; padding: 12px; display: flex; flex-direction: column; gap: 9px; align-items: center; }
+.battle-menu { background: #2c2c2c; padding: 12px; display: flex; flex-direction: column; gap: 9px; align-items: center;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; justify-content: safe center; }
 .battle-menu-q { color: #fff; font-family: var(--pixel); font-size: 12px; }
 .battle-menu-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 /* doubles (2v2): two mons per side, staggered, kept to their own half so
