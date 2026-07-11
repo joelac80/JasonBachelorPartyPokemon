@@ -57,9 +57,64 @@
       quote: "My fire's been waiting for a challenger this bright. Don't you dare disappoint me!" },
     { key: "lucian", name: "LUCIAN", rank: "Elite Four", type: "psychic", team: [65, 196, 475, 437, 122, 203], pts: 10, boost: 1.32, needs: "flint", reveal: "steven",
       quote: "Few reach me. I'll read every move before you make it. Now — begin." },
-    { key: "cynthia", name: "CYNTHIA", rank: "Champion", type: "dragon",  team: [445, 442, 407, 448, 350, 468], pts: 14, boost: 1.5, needs: "lucian", reveal: "lucian", mystery: true, final: true,
+    { key: "cynthia", name: "CYNTHIA", rank: "Champion", type: "dragon",  team: [445, 442, 407, 448, 350, 468], pts: 14, boost: 1.5, needs: "lucian", reveal: "lucian", mystery: true,
       intro: "🎹 piano ensues….",
       quote: "There is no such thing as a battle whose outcome doesn't matter. Come — show me everything you have." },
+    // ---- The Unova Elite Four → Champion ALDER ----
+    { key: "shauntal", name: "SHAUNTAL", rank: "Elite Four", type: "ghost",    team: [563, 609, 623, 593, 426, 478], pts: 12, boost: 1.34, needs: "cynthia", reveal: "cynthia", gymGate: { start: 32, count: 8, region: "Unova" },
+      quote: "My ghosts have already written the ending of this tale. Care to read it with me?" },
+    { key: "grimsley", name: "GRIMSLEY", rank: "Elite Four", type: "dark",     team: [625, 553, 510, 560, 359, 430], pts: 12, boost: 1.34, needs: "shauntal", reveal: "cynthia",
+      quote: "Win or lose, it's all just the roll of the dice. Let's gamble, shall we?" },
+    { key: "caitlin", name: "CAITLIN", rank: "Elite Four", type: "psychic",    team: [579, 518, 561, 576, 475, 376], pts: 12, boost: 1.34, needs: "grimsley", reveal: "cynthia",
+      quote: "My Pokémon and I will read your heart — and answer it in full." },
+    { key: "marshal", name: "MARSHAL", rank: "Elite Four", type: "fighting",   team: [534, 620, 538, 539, 526, 68], pts: 12, boost: 1.34, needs: "caitlin", reveal: "cynthia",
+      quote: "I seek strength in its purest form. Come — strike me with everything you have!" },
+    { key: "alder", name: "ALDER", rank: "Champion", type: "bug",              team: [637, 626, 584, 589, 617, 628], pts: 16, boost: 1.4, needs: "marshal", reveal: "cynthia",
+      quote: "I'm the strongest Champion — old, but still burning. Show this graybeard the fire of youth!" },
+    // ---- The Kalos Elite Four → Champion DIANTHA ----
+    { key: "malva", name: "MALVA", rank: "Elite Four", type: "fire",           team: [663, 668, 324, 609, 229, 38], pts: 14, boost: 1.42, needs: "alder", reveal: "alder", gymGate: { start: 40, count: 8, region: "Kalos" },
+      quote: "I am a member of the Elite Four, and a star of the Holo Caster. Burn brightly — or burn away." },
+    { key: "wikstrom", name: "WIKSTROM", rank: "Elite Four", type: "steel",    team: [707, 476, 212, 681, 437, 376], pts: 14, boost: 1.42, needs: "malva", reveal: "alder",
+      quote: "Well met, brave challenger! My blade of steel has been polished for this very duel!" },
+    { key: "drasna", name: "DRASNA", rank: "Elite Four", type: "dragon",       team: [691, 621, 334, 715, 445, 373], pts: 14, boost: 1.42, needs: "wikstrom", reveal: "alder",
+      quote: "Oh, dear — such lovely Pokémon you have. My dragons and I would love to play with them." },
+    { key: "siebold", name: "SIEBOLD", rank: "Elite Four", type: "water",      team: [693, 130, 121, 689, 9, 230], pts: 14, boost: 1.42, needs: "drasna", reveal: "alder",
+      quote: "A battle is art — and I am both chef and artist. Let me savor every move you make." },
+    { key: "diantha", name: "DIANTHA", rank: "Champion", type: "fairy",        team: [701, 697, 699, 711, 706, 282], pts: 18, boost: 1.46, needs: "siebold", reveal: "alder",
+      quote: "Battling alongside you has taught my heart to shine. Now — dazzle me one last time!" },
+    // ---- The Alola Elite Four → Champion KUKUI ----
+    { key: "molayne", name: "MOLAYNE", rank: "Elite Four", type: "steel",      team: [707, 51, 376, 625, 462, 227], pts: 15, boost: 1.44, needs: "diantha", reveal: "diantha", gymGate: { start: 48, count: 4, region: "Alola" },
+      quote: "My cousin Sophocles lends me the stars; my steel does the rest. Let's shine." },
+    { key: "acerola", name: "ACEROLA", rank: "Elite Four", type: "ghost",      team: [778, 770, 781, 426, 478, 302], pts: 15, boost: 1.44, needs: "molayne", reveal: "diantha",
+      quote: "Heeey! My ghost-type friends are dying to meet you — well, they're already dead, but still!" },
+    { key: "kahili", name: "KAHILI", rank: "Elite Four", type: "flying",       team: [733, 628, 630, 169, 741, 227], pts: 15, boost: 1.44, needs: "acerola", reveal: "diantha",
+      quote: "A pro golfer's drive and a flying-type's wings — both cut clean through the wind. Fore!" },
+    { key: "mina", name: "MINA", rank: "Elite Four", type: "fairy",            team: [743, 210, 764, 700, 303, 36], pts: 15, boost: 1.44, needs: "kahili", reveal: "diantha",
+      quote: "Hmm? Oh — a battle? Sure, sure. My fairies paint outside the lines. Hope you don't mind." },
+    { key: "kukui", name: "PROF. KUKUI", rank: "Champion", type: "fighting",   team: [745, 38, 628, 462, 143, 727], pts: 20, boost: 1.48, needs: "mina", reveal: "diantha",
+      quote: "Woo! I built this whole league dreaming of a battle like this one. Let's make it legendary — yeah!" },
+    // ---- The Galar Champion Cup → Champion LEON ----
+    { key: "marnie", name: "MARNIE", rank: "Champion Cup", type: "dark",       team: [861, 877, 510, 454, 560, 197], pts: 16, boost: 1.46, needs: "kukui", reveal: "kukui", gymGate: { start: 52, count: 8, region: "Galar" },
+      quote: "I'm gonna become Champion for Spikemuth's sake. Nothin' personal — but I'm not holdin' back." },
+    { key: "bede", name: "BEDE", rank: "Champion Cup", type: "fairy",          team: [858, 866, 282, 78, 700, 468], pts: 16, boost: 1.46, needs: "marnie", reveal: "kukui",
+      quote: "I'm destined for greatness — obviously. Now stand aside, or be knocked aside." },
+    { key: "oleana", name: "OLEANA", rank: "Champion Cup", type: "poison",     team: [569, 350, 478, 758, 596, 884], pts: 16, boost: 1.46, needs: "bede", reveal: "kukui",
+      quote: "For Chairman Rose, I will allow no one to pass. Efficiency demands your defeat." },
+    { key: "hop", name: "HOP", rank: "Champion Cup", type: "normal",           team: [832, 845, 823, 143, 706, 812], pts: 16, boost: 1.46, needs: "oleana", reveal: "kukui",
+      quote: "I'm gonna be the greatest Champion — right after my brother! Bring it on, mate!" },
+    { key: "leon", name: "LEON", rank: "Champion", type: "dragon",             team: [681, 887, 612, 537, 464, 6], pts: 22, boost: 1.5, needs: "hop", reveal: "kukui",
+      quote: "My time as Champion is coming to an end… but I'll go out with the greatest battle ever. Let's have a champion time!" },
+    // ---- The Paldea Elite Four → Top Champion GEETA ----
+    { key: "rika", name: "RIKA", rank: "Elite Four", type: "ground",           team: [980, 340, 323, 51, 232, 445], pts: 17, boost: 1.48, needs: "leon", reveal: "leon", gymGate: { start: 60, count: 8, region: "Paldea" },
+      quote: "You've got potential, kid — I can smell it. Let's see if the ground agrees." },
+    { key: "poppy", name: "POPPY", rank: "Elite Four", type: "steel",          team: [879, 959, 823, 437, 462, 212], pts: 17, boost: 1.48, needs: "rika", reveal: "leon",
+      quote: "Wanna battle? Yay! My steel-type buddies are super duper strong, you know!" },
+    { key: "larryf", name: "LARRY", rank: "Elite Four", type: "flying",        team: [357, 398, 334, 741, 973, 715], pts: 17, boost: 1.48, needs: "poppy", reveal: "leon",
+      quote: "Off the clock, it's flying-types for me. Simple and strong — no frills. That's the best way, right?" },
+    { key: "hassel", name: "HASSEL", rank: "Elite Four", type: "dragon",       team: [715, 691, 841, 612, 998, 149], pts: 17, boost: 1.48, needs: "larryf", reveal: "leon",
+      quote: "Let us paint a masterpiece together — you, me, and the roar of dragons!" },
+    { key: "geeta", name: "GEETA", rank: "Top Champion", type: "fairy",        team: [956, 713, 673, 976, 983, 970], pts: 24, boost: 1.55, needs: "hassel", reveal: "leon", mystery: true,
+      quote: "As Top Champion, I oversee every league. Show me why you climbed all nine regions to reach me." },
   ];
   window.LEAGUE_STAGES = LEAGUE;
   const idxOf = (key) => LEAGUE.findIndex((s) => s.key === key);
@@ -207,7 +262,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "👑 Pokémon League"),
-      el("p", { class: "page-sub" }, "Victory Road is only the beginning. Elite chambers, Champions, a silent trainer on the mountain — and, far beyond, challengers from other regions await." ),
+      el("p", { class: "page-sub" }, "Victory Road is only the beginning. Nine regions of Elite chambers and Champions, a silent trainer on the mountain, and — at the summit of it all — the Top Champion who oversees them all." ),
     ]));
 
     // whose journey are we looking at?
