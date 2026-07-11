@@ -39,8 +39,12 @@
 
     const photos = (Store.state.photos || []).slice();
 
-    // top toolbar: add a photo, and (when there are photos) select-to-save
-    const tools = [el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render()); } }, "📸 Add a photo moment")];
+    // top toolbar: take a new photo, upload one from the phone, and (when there
+    // are photos) select-to-save.
+    const tools = [
+      el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render(), { source: "camera" }); } }, "📸 Take a photo"),
+      el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render(), { source: "library" }); } }, "🖼 Upload a photo"),
+    ];
     if (photos.length) tools.push(el("button", { class: "btn subtle", onClick: () => { selecting = !selecting; Router.render(); } },
       selecting ? "✕ Done selecting" : "⬇️ Select & save"));
     root.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, tools));
