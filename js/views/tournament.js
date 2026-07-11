@@ -1,6 +1,6 @@
 /* tournament.js — 🏆 Champions Tournament: a 16-trainer single-elimination
    bracket drawn FRESH each run from every Elite Four member, every Champion,
-   plus RED and BLUE. You fight your own matches (3v3); the rest of the bracket
+   plus RED and BLUE. You fight your own 2v2 double battles; the rest of the bracket
    simulates itself — upsets and all — round by round, until a champion is
    crowned. Pure exhibition: no Elo, no belt, glory only. */
 (function () {
@@ -80,19 +80,22 @@
   function battle(match) {
     const me = match.a.player ? match.a : match.b;
     const opp = match.a.player ? match.b : match.a;
-    const size = 3;
+    const size = 4;   // 2v2 double battle → pick 4 (two lead, two in reserve)
     if (Duel.poolFor(me.attId).length < size) {
-      alert("The Champions Tournament is 3 v 3 — you need at least 3 of your own Pokémon (catch more in the Safari!).");
+      alert("The Champions Cup is a 2 v 2 DOUBLE battle — you need at least 4 of your own Pokémon (catch more in the Safari!).");
       return;
     }
+    const oppTeam = opp.team.slice(0, size);
     Duel.pickParty({ attId: me.attId, min: size, max: size,
-      title: "vs " + opp.title + " " + opp.name + " — pick 3",
-      hint: "🏆 Champions Tournament — 3 v 3. Win to advance; lose and you're out.",
+      title: "vs " + opp.title + " " + opp.name + " — pick 4 (2v2 doubles)",
+      hint: "🏆 Champions Cup — 2 v 2 DOUBLE battle. Your first two lead; the other two wait in reserve. Win to advance; lose and you're out.",
       onDone: (ids) => {
-        Duel.start({ mode: "local", title: "the Champions Tournament",
+        Duel.start({ mode: "local", title: "the Champions Cup",
           tournament: { foe: opp.title + " " + opp.name },
-          a: { units: [{ attId: me.attId, monIds: ids }] },
-          b: { units: [{ npc: opp.name, ai: true, monIds: opp.team.slice(0, size), boost: 1.15 }] },
+          a: { shared: true, units: [{ attId: me.attId, monIds: ids }, { attId: me.attId, monIds: ids }] },
+          b: { shared: true, units: [
+            { npc: opp.name, ai: true, monIds: oppTeam, boost: 1.15 },
+            { npc: opp.name, ai: true, monIds: oppTeam, boost: 1.15 } ] },
           onResult: (winSide) => {
             const won = winSide === "a";
             match.winner = won ? me : opp;
@@ -130,7 +133,7 @@
       competitor(m.a, m),
       el("div", { class: "trn-vs" }, "vs"),
       competitor(m.b, m),
-      live ? el("button", { class: "btn primary sm trn-go", onClick: () => battle(m) }, "⚔ Battle (3v3)") : null,
+      live ? el("button", { class: "btn primary sm trn-go", onClick: () => battle(m) }, "⚔ Battle (2v2)") : null,
     ]);
   }
 
@@ -164,7 +167,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏆 Champions Tournament"),
-      el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, RED and BLUE — drawn fresh each time into one single-elimination bracket. You fight your own 3v3 matches; the rest of the field battles itself. Last trainer standing takes the crown." ),
+      el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, RED and BLUE — drawn fresh each time into one single-elimination bracket. You fight your own 2v2 DOUBLE battles; the rest of the field battles itself. Last trainer standing takes the crown." ),
     ]));
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";

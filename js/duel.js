@@ -66,7 +66,7 @@
     const d = window.MOVES_DB && MOVES_DB[name];
     if (!d) return null;
     return { name: name, type: d.t, cat: d.cat || "phys", pow: d.pow || 0,
-      acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null };
+      acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null, spread: !!d.spread };
   }
   function typeMove(t, m) { return { name: m[0], type: t, cat: "phys", pow: m[1], acc: m[2], pri: 0, fx: null }; }
   // Gen-1/2 stat-stage multiplier (−6..+6).
@@ -633,17 +633,34 @@
       const eff = tm ? effFor(mv.type, tm.types) : 1;
       const immune = eff === 0;
       const miss = immune ? false : o.miss;
-      let dmg = 0;
-      if (!miss && !immune && !isStatus && tm) {
+      // Spread moves (Surf, Earthquake, Discharge…) splash EVERY other fielded
+      // foe in a double battle. Each hit is dialed to 75% when 2+ are struck —
+      // the classic all-adjacent penalty.
+      const dUnits = sides[dSide].units;
+      let spreadFoes = [];
+      if (!isStatus && !miss && mv.spread && dUnits.length > 1) {
+        spreadFoes = dUnits.map((fu, i) => ({ fu: fu, i: i })).filter((x) => x.i !== tUnit && mon(x.fu).hp > 0);
+      }
+      const spreadMult = spreadFoes.length ? 0.75 : 1;
+      // Damage for one target: base × type × stat-stages × burn × (spread penalty).
+      const dmgFor = (target, teff) => {
+        if (teff === 0) return 0;
         const off = mv.cat === "spec" ? "spa" : "atk";
         const def = mv.cat === "spec" ? "spd" : "def";
-        const statMod = stageMul(m.stg[off]) / stageMul(tm.stg[def]);
+        const statMod = stageMul(m.stg[off]) / stageMul(mon(target).stg[def]);
         const burnMod = (mv.cat === "phys" && m.status === "brn") ? 0.5 : 1;
-        dmg = Math.max(1, Math.round(o.base * eff * statMod * burnMod));
-      }
+        return Math.max(1, Math.round(o.base * teff * statMod * burnMod * spreadMult));
+      };
+      let dmg = 0;
+      if (!miss && !immune && !isStatus && tm) dmg = dmgFor(tu, eff);
+      const spread = spreadFoes.map((x) => {
+        const teff = effFor(mv.type, mon(x.fu).types);
+        return { tUnit: x.i, eff: teff, dmg: dmgFor(x.fu, teff) };
+      });
       applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
         miss: miss, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg,
-        cat: mv.cat, mvType: mv.type, fx: mv.fx, fxHit: o.fxHit, slpTurns: o.slpTurns, by: o.by },
+        cat: mv.cat, mvType: mv.type, fx: mv.fx, fxHit: o.fxHit, slpTurns: o.slpTurns, by: o.by,
+        spread: spread },
         u, false, resolveNext);
     }
 
@@ -834,10 +851,21 @@
         if (fx.flinch && act.fxHit && tm && tm.hp > 0) tm._flinch = true;
       }
 
+      // Spread damage: splash each secondary foe (damage only — no secondary
+      // status/stat effects on the splash targets).
+      const applySpread = () => (act.spread || []).forEach((sp) => {
+        const su = sides[dSide].units[sp.tUnit]; if (!su) return;
+        const sm = mon(su);
+        if (sp.eff === 0 || sm.hp <= 0) return;
+        sm.hp = Math.max(0, sm.hp - sp.dmg);
+        if (sm.hp <= 0) creditKO(u, m); else if (berryReady(su)) eatBerry(su);
+      });
+
       // ---- instant (catch-up) path: no animation, apply everything now ----
       if (instant) {
         if (!act.miss && !(act.eff === 0 && !selfMove)) {
           if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
+          applySpread();
           applyEffects(isStatus ? 0 : act.dmg, function () {});
         }
         settle();
@@ -871,6 +899,21 @@
         else if (act.eff < 1) steps.push(["It's not very effective…", 900]);
         steps.push(["−" + act.dmg + " HP!", 650]);
       }
+      // Spread splash: each other fielded foe also takes the hit.
+      (act.spread || []).forEach((sp) => {
+        const su = sides[dSide].units[sp.tUnit]; if (!su) return;
+        const sm = mon(su);
+        if (sp.eff === 0) { steps.push(["…it doesn't affect " + sm.name + "…", 850, () => sfx("error")]); return; }
+        steps.push([null, 450, () => {
+          sm.hp = Math.max(0, sm.hp - sp.dmg);
+          if (sm.hp <= 0) sp._exp = creditKO(u, m);
+          su._monEl.classList.add("hurt");
+          setTimeout(() => su._monEl.classList.remove("hurt"), 600);
+          spawnHit(su._monEl, TYPE_COLOR[act.mvType] || "#fff", false);
+          paintHp(su); sfx("coin");
+        }]);
+        steps.push(["…and " + sm.name + " too! (−" + sp.dmg + " HP)", 700]);
+      });
       // Post-damage / status-move effects (drain, recoil, status, stat, etc.).
       const dmgDealt = (!isStatus && tm) ? act.dmg : 0;
       applyEffects(dmgDealt, (msg, delay, s) => { if (msg) steps.push([msg, delay, () => { paintHp(u); if (tu) paintHp(tu); if (s) sfx(s); }]); });
@@ -880,6 +923,16 @@
         if (tm && tm.hp <= 0) koSteps.push([tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
           ["🍺 KO! " + tu.name + " takes 2 sips!", 1150]);
         if (act._exp) koSteps.push([act._exp, 1300, () => sfx("coin")]);
+        // A splashed foe that fainted from the spread hit.
+        (act.spread || []).forEach((sp) => {
+          const su = sides[dSide].units[sp.tUnit]; if (!su) return;
+          const sm = mon(su);
+          if (sm.hp <= 0) {
+            koSteps.push([sm.name + " fainted!", 1100, () => { su._monEl.classList.add("fainted"); sfx("error"); }],
+              ["🍺 KO! " + su.name + " takes 2 sips!", 1150]);
+            if (sp._exp) koSteps.push([sp._exp, 1300, () => sfx("coin")]);
+          }
+        });
         if (m.hp <= 0) koSteps.push([m.name + " fainted from recoil!", 1150, () => { u._monEl.classList.add("fainted"); sfx("error"); }]);
         if (tm && tm.hp > 0 && berryReady(tu)) koSteps.push(["🍓 " + tu.name + "'s Sitrus Berry! " + tm.name + " recovered 45 HP!", 1250, () => { eatBerry(tu); sfx("coin"); }]);
         if (koSteps.length) beats(koSteps, settle); else settle();
