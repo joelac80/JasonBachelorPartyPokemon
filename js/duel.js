@@ -1234,6 +1234,28 @@
         } catch (_) {}
         return;
       }
+      // 🎬 Movie Legends: MEWTWO (Strikes Back) & the COLLECTOR (Pokémon 2000).
+      // Special cinematic boss battles — win is recorded per trainer (append-only,
+      // sync-unioned) for a ✅ on the wall; no Elo, no belt, glory + sips.
+      if (opts.movie) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const mvb = opts.movie;
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              s.movies = s.movies || {};
+              const w = s.movies[player.attId] = s.movies[player.attId] || [];
+              if (w.indexOf(mvb.key) < 0) w.push(mvb.key);
+              Store.grantPoints(s, "battle", player.teamId, mvb.pts || 10);
+              Store.chron(s, mvb.icon || "🎬", player.name + " " + (mvb.winChron || ("defeated " + mvb.name + "!")));
+            } else {
+              Store.chron(s, mvb.icon || "🎬", (mvb.loseChron || (mvb.name + " proved too powerful")) + " — " + player.name + " drinks 3.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
       // ❗ Surprise post-gym challenger (Giovanni, Silver…). Pure exhibition —
       // no Elo, no belt, no badge. Bragging rights and sips.
       if (opts.encounter) {

@@ -1598,6 +1598,13 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .league-stage.final .league-stage-card { background: linear-gradient(rgba(24,16,40,.92), rgba(48,30,78,.92)); border-color: #9a6cff; }
 .league-stage.final .gymc-badge { color: #e7dbff; }
 .league-intro.fame .league-intro-mt { filter: drop-shadow(0 0 22px rgba(255,208,64,.65)); }
+/* 🎬 Movie Legends: cinematic boss battles (Mewtwo / the Collector) */
+.movie-intro { background: radial-gradient(circle at 50% 35%, rgba(28,20,54,.97), rgba(6,6,14,.99)); }
+.movie-boss-ico { width: 108px; height: 108px; image-rendering: pixelated;
+  filter: drop-shadow(0 0 22px rgba(150,110,255,.65)); animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }
+.movie-stage .league-stage-card { border-color: #9a6cff; background: linear-gradient(rgba(24,16,40,.6), rgba(40,26,70,.35)); }
+.movie-stage.cleared .league-stage-card { border-color: #b8860b; background: rgba(230,184,0,.10); }
+.movie-lead { font-size: 12px; color: #c9b8ff; }
 /* 👋 first-open onboarding tour */
 .onb { position: fixed; inset: 0; z-index: 300; background: linear-gradient(160deg, rgba(10,16,14,.97), rgba(16,26,40,.97));
   display: flex; opacity: 0; transition: opacity .35s ease; overflow-y: auto;

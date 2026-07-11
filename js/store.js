@@ -853,6 +853,10 @@
     leagueWins(attId) {
       return ((this.state.league || {})[attId] || []).slice();
     },
+    // 🎬 Movie Legends beaten (mewtwo / collector) — special film boss battles.
+    movieWins(attId) {
+      return ((this.state.movies || {})[attId] || []).slice();
+    },
 
     // Nickname a caught mon (per trainer). Blank clears it.
     setNick(attId, monId, nick) {
@@ -996,6 +1000,13 @@
       Object.keys(pgl).forEach((tid) => {
         const arr = ngl[tid] = ngl[tid] || [];
         (pgl[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+      });
+      // 🎬 Movie Legends (Mewtwo / the Collector): append-only per trainer.
+      const pmv = (prev && prev.movies) || {};
+      const nmv = next.movies = next.movies || {};
+      Object.keys(pmv).forEach((tid) => {
+        const arr = nmv[tid] = nmv[tid] || [];
+        (pmv[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
       // 🏛 Hall of Fame: append-only enshrinements — union by attendee + timestamp.
       const phof = (prev && prev.hof) || [];
