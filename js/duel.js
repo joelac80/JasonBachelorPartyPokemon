@@ -274,6 +274,7 @@
       const bag = ((Store.state.pokedex || {}).trainers || {})[u.attId];
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
         ai: !!u.ai, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
+        vsFace: u.vsFace || null,                      // 🎬 boss portrait for the VS intro
         party: party, cur: 0, potions: 2, courage: true, armed: false };
     }
     const sides = {
@@ -1562,6 +1563,13 @@
       const mons = [];
       sides[s].units.forEach((u) => {
         if (u.ai) {
+          // A boss can stare you down with its own portrait (Mewtwo) instead of
+          // hiding behind balls.
+          if (u.vsFace) {
+            const fsrc = frontSprite(u.vsFace, false);
+            mons.push(fsrc ? el("img", { class: "vs-mon vs-boss", src: fsrc, alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" }));
+            return;
+          }
           // Gym leaders keep their team in the balls — one ball per mon,
           // identities hidden until they're sent out.
           u.party.forEach(() => mons.push(el("div", { class: "battle-ball-inner vs-mon" })));
