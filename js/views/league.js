@@ -116,6 +116,24 @@
   const idxOf = (key) => LEAGUE.findIndex((s) => s.key === key);
   const stageByKey = (key) => LEAGUE[idxOf(key)];
 
+  // The set of stages a trainer has EFFECTIVELY beaten. Beating any stage was
+  // only ever possible after clearing everything on its `needs`-chain, so a
+  // later win PROVES every prerequisite was beaten too. We close over that
+  // chain here — which self-heals a win that got clipped by a last-write-wins
+  // sync (the classic "I beat Koga but the ladder says I didn't": if Bruno is
+  // still on record, Koga and Will are re-inferred from it). Never fabricates
+  // an unearned win — the game enforced the order at the time it was played.
+  function beatenSet(attId) {
+    const set = {};
+    Store.leagueWins(attId).forEach((k) => {
+      set[k] = 1;
+      let cur = stageByKey(k);
+      while (cur && cur.needs && !set[cur.needs]) { set[cur.needs] = 1; cur = stageByKey(cur.needs); }
+    });
+    return set;
+  }
+  const hasBeat = (attId, key) => !!beatenSet(attId)[key];
+
   function johtoBadges(attId) {
     let n = 0; for (let i = 0; i < 8; i++) if (Store.gymHolders(i).indexOf(attId) >= 0) n++;
     return n;
@@ -123,7 +141,7 @@
   // Why can't this trainer fight stage idx yet? "" = clear to battle.
   function leagueBlocked(attId, idx) {
     const st = LEAGUE[idx];
-    const wins = Store.leagueWins(attId);
+    const beaten = beatenSet(attId);
     // The whole League gates on the 8 Johto badges (Victory Road).
     if (johtoBadges(attId) < 8) return "The League only admits trainers holding all 8 JOHTO badges (" + johtoBadges(attId) + "/8).";
     // RED, the Mt. Silver summit, additionally demands all 16 Johto+Kanto badges.
@@ -134,7 +152,7 @@
       if (have < g.count) return "The " + g.region + " Elite Four admit only trainers holding all " + g.count + " " + g.region + " gym badges (" + have + "/" + g.count + " — earn them in the Gym Circuit).";
     }
     // Linear climb: the previous stage (st.needs) must be beaten.
-    if (st.needs && wins.indexOf(st.needs) < 0) {
+    if (st.needs && !beaten[st.needs]) {
       const prev = stageByKey(st.needs);
       if (st.key === "red") return "…the summit is silent. (Beat Champion " + prev.name + " first.)";
       if (st.rank === "Champion") return "Champion " + st.name + " only faces trainers who've toppled all four of the Elite Four.";
@@ -149,7 +167,7 @@
   // `reveal` key (keeps later regions — and the final trainer — a surprise).
   function revealed(st) {
     if (!st.reveal) return true;
-    return Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf(st.reveal) >= 0);
+    return Store.state.attendees.some((a) => hasBeat(a.id, st.reveal));
   }
 
   // Cinematic chamber entrance: doors part, the quote lands, then you choose
@@ -274,13 +292,12 @@
       const st = LEAGUE[idx];
       const isRed = st.key === "red";
       const isFinal = !!st.final;
-      const wins = Store.leagueWins(attId);
-      const mineBeat = wins.indexOf(st.key) >= 0;
-      const anyBeat = Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0);
+      const mineBeat = hasBeat(attId, st.key);
+      const anyBeat = Store.state.attendees.some((a) => hasBeat(a.id, st.key));
       const blocked = leagueBlocked(attId, idx);
       const isNext = !mineBeat && !blocked;
       const ico = energyIcon(st.type);
-      const beatenBy = Store.state.attendees.filter((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0);
+      const beatenBy = Store.state.attendees.filter((a) => hasBeat(a.id, st.key));
       // Mystery bosses (RED, CYNTHIA) stay "???" until someone unmasks them.
       const nameLabel = st.mystery ? ((anyBeat || mineBeat) ? st.name : "???") : st.rank + " " + st.name;
       const sub = isRed ? "the summit" : isFinal ? "the finale" : (st.rank === "Champion" ? "the Champion's hall" : "an Elite chamber");
