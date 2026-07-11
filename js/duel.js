@@ -517,7 +517,7 @@
     function beginSelect() {
       if (S.done) return;
       S.phase = "select"; S.orders = {}; S.pending = null; S.zmove = false; S.res = []; S.repl = [];
-      S.sel = []; S.stDec = {};
+      S.sel = [];
       // Flinch is volatile — it only lasts the turn it was inflicted.
       ["a", "b"].forEach((sd) => sides[sd].units.forEach((u) => { if (mon(u)) mon(u)._flinch = false; }));
       [S.first, other(S.first)].forEach((sd) => sides[sd].units.forEach((u, i) => { if (unitAlive(u)) S.sel.push({ side: sd, unit: i }); }));
@@ -564,43 +564,7 @@
       if (mon(u).hp <= 0) { resolveNext(); return; }   // fainted before it could act → skip
       if (o.kind === "switch") return resolveSwitch(o, u);
       if (o.kind === "potion") return resolvePotion(o, u);
-      if (o.kind === "skip") return resolveSkip(o, u);
-      return resolveMove(o, u);
-    }
-    // A slot that couldn't act this turn (asleep / frozen / fully paralyzed).
-    // The controlling phone rolled this at selection and sent a "skip" order
-    // (o.clear = it wakes/thaws THIS turn, cured for every screen identically).
-    function resolveSkip(o, u) {
-      S.moved++;
-      const m = mon(u); menu.innerHTML = "";
-      let line, cure = false;
-      if (o.why === "slp") { if (o.clear) { line = m.name + " woke up!"; cure = true; } else line = m.name + " is fast asleep…"; }
-      else if (o.why === "frz") { if (o.clear) { line = m.name + " thawed out!"; cure = true; } else line = m.name + " is frozen solid!"; }
-      else line = m.name + " is paralyzed! It can't move!";
-      beats([[line, 1050, () => { if (cure) { m.status = null; m.slp = 0; paintStatus(u); sfx("blip"); } else sfx("error"); }]], resolveNext);
-    }
-    // Controlling phone: does a status stop this mon acting this turn? The
-    // wake/thaw/para outcome is decided ONCE per turn (cached in S.stDec so a
-    // re-render or a "Back" tap can't re-roll it) and a skip order is sent.
-    // Returns true when the turn is spent on the status.
-    function statusBlocks(u, ptr) {
-      const m = mon(u), st = m.status;
-      if (!st) return false;
-      const key = ptr.side + ":" + ptr.unit;
-      S.stDec = S.stDec || {};
-      if (S.stDec[key] === undefined) {
-        if (st === "slp") { m.slp = (m.slp || 1) - 1; S.stDec[key] = { block: true, why: "slp", clear: m.slp <= 0 }; }
-        else if (st === "frz") { S.stDec[key] = { block: true, why: "frz", clear: Math.random() < 0.2 }; }
-        else if (st === "par") { S.stDec[key] = (Math.random() < 0.25) ? { block: true, why: "par", clear: false } : { block: false }; }
-        else S.stDec[key] = { block: false };
-      }
-      const dec = S.stDec[key];
-      if (!dec.block) return false;
-      if (!dec.sent) { dec.sent = true; sendSkip(ptr, dec.why, dec.clear); }
-      return true;
-    }
-    function sendSkip(ptr, why, clear) {
-      sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "skip", why: why, clear: !!clear, pri: 0 } });
+      return resolveMove(o, u);   // status act-checks live inside resolveMove now
     }
     function resolveSwitch(o, u) {
       if (!bench(u).some((x) => x.i === o.to)) { resolveNext(); return; }   // no longer valid
@@ -621,11 +585,37 @@
       const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 60); paintHp(u); menu.innerHTML = "";
       beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+60 HP)", 1200, () => sfx("coin")]], resolveNext);
     }
+    // Status is checked HERE, at resolution — so a status just inflicted by a
+    // faster foe already stops this mon THIS turn (not just next turn). The
+    // para/thaw dice were baked into the order (o.statusRoll) at pick time, so
+    // every phone reaches the same verdict; sleep counts down deterministically.
     function resolveMove(o, u) {
       const m = mon(u);
+      if (m.status === "slp") {
+        if ((m.slp || 0) > 1) { m.slp -= 1; menu.innerHTML = "";
+          beats([[m.name + " is fast asleep…", 1050, () => sfx("error")]], resolveNext); return; }
+        m.status = null; m.slp = 0; paintStatus(u); menu.innerHTML = "";
+        beats([[m.name + " woke up!", 950, () => sfx("blip")]], () => resolveMoveGo(o, u)); return;
+      }
+      if (m.status === "frz") {
+        if ((o.statusRoll || 0) < 0.2) { m.status = null; paintStatus(u); menu.innerHTML = "";
+          beats([[m.name + " thawed out!", 950, () => sfx("blip")]], () => resolveMoveGo(o, u)); return; }
+        menu.innerHTML = "";
+        beats([[m.name + " is frozen solid!", 1050, () => sfx("error")]], resolveNext); return;
+      }
+      if (m.status === "par" && (o.statusRoll || 0) < 0.25) {
+        menu.innerHTML = "";
+        beats([[m.name + " is paralyzed! It can't move!", 1050, () => sfx("error")]], resolveNext); return;
+      }
       // Flinched by a faster foe's move earlier this turn → lose the turn.
       if (m._flinch) { m._flinch = false; menu.innerHTML = "";
         beats([[m.name + " flinched and couldn't move!", 1000, () => sfx("error")]], resolveNext); return; }
+      resolveMoveGo(o, u);
+    }
+    // The actual move execution (targeting, damage, effects) once the mon is
+    // clear to act.
+    function resolveMoveGo(o, u) {
+      const m = mon(u);
       const mv = o.move === 99 ? STRUGGLE : (m.moves[o.move] || m.moves[0]);
       const isStatus = mv.cat === "status";
       const dSide = other(o.side);
@@ -1203,10 +1193,13 @@
         else if (mv.fx.stat && mv.fx.stat.chance != null) ch = mv.fx.stat.chance;
         // (fx.stats setup/drawback moves are always 100% → ch stays 100)
         fxHit = Math.random() * 100 < (ch == null ? 100 : ch);
-        if (fxHit && mv.fx.status && mv.fx.status.id === "slp") slpTurns = 1 + Math.floor(Math.random() * 3);
+        if (fxHit && mv.fx.status && mv.fx.status.id === "slp") slpTurns = 2 + Math.floor(Math.random() * 3);
       }
+      // Baked at pick time so the SAME-turn status check at resolution (para
+      // full-skip / freeze thaw) is deterministic across every phone.
+      const statusRoll = Math.random();
       sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
-        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base,
+        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, statusRoll: statusRoll,
           armed: armed, courage: armed, pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
     }
 
@@ -1219,8 +1212,6 @@
         if (b.length) sendAct({ seq: S.seq + 1, kind: "next", side: ptr.side, unit: ptr.unit, to: b[0].i });
         return;
       }
-      // Asleep / frozen / paralyzed? The host rolls it for the AI too.
-      if (statusBlocks(u, ptr)) return;
       const m = mon(u);
       let best = null, bestStatus = null;
       livingEnemies(ptr.side).forEach((f) => {
@@ -1273,11 +1264,6 @@
         }
       }
       if (S.pending) { partyPanel(u, ptr, "next", false); return; }
-      // Asleep / frozen / fully paralyzed → the turn is auto-spent (skip order).
-      if (statusBlocks(u, ptr)) {
-        menu.appendChild(el("div", { class: "duel-wait" }, "💤 " + mon(u).name + " can't act this turn…"));
-        return;
-      }
       const m = mon(u);
       // Everything immune against everything standing? Struggle keeps the
       // fight alive (typeless, always usable).
