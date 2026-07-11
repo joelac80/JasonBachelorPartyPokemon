@@ -15,6 +15,7 @@
     .add("trade", V.trade)
     .add("gyms", V.gyms)
     .add("league", V.league)
+    .add("tournament", V.tournament)
     .add("predictions", V.predictions)
     .add("cards", V.cards)
     .add("superlatives", V.superlatives)

@@ -997,8 +997,9 @@
               const enshrine = () => { if (fresh) { s.hof = s.hof || []; s.hof.push({ attId: player.attId, ts: now(), party: player.party.map((x) => x.id) }); } };
               if (lg.key === "red") Store.chron(s, "🗻", player.name + " climbed Mt. Silver and defeated RED. There is nothing left to prove. THE ABSOLUTE CHAMPION.");
               else if (lg.final) { enshrine(); Store.chron(s, "🎹", player.name + " out-dueled CYNTHIA in the final battle — the piano falls silent. THE TRUE CHAMPION OF CHAMPIONS."); }
+              else if (lg.rank === "Top Champion") { enshrine(); Store.chron(s, "🏆", player.name + " toppled TOP CHAMPION " + lg.name + " — nine regions conquered. Enshrined in the HALL OF FAME!"); }
               else if (lg.rank === "Champion") { enshrine(); Store.chron(s, "👑", player.name + " defeated Champion " + lg.name + " — welcome to the HALL OF FAME!" + (lg.key === "lance" && fresh ? " …the summit of Mt. Silver just rumbled." : "")); }
-              else Store.chron(s, "⭐", player.name + " toppled Elite Four " + lg.name + "!");
+              else Store.chron(s, "⭐", player.name + " toppled " + lg.rank + " " + lg.name + "!");
             } else {
               if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " drinks 3 and descends the mountain.");
               else if (lg.final) Store.chron(s, "🎹", "CYNTHIA remains undefeated — the piano plays on. " + player.name + " drinks 3.");
@@ -1025,10 +1026,24 @@
               Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (opts.gym.badge || "gym") + " Badge!" + (fresh ? "" : " (rematch flex)"));
               if (fresh && opts.gym.idx < 16 && Store.gymBadgesInRange(player.attId, 0, 16) >= 16)
                 Store.chron(s, "🏆", "ALL 16 BADGES — " + player.name + " has conquered Johto AND Kanto. CHAMPION!!");
-              else if (fresh && opts.gym.idx >= 16 && opts.gym.idx < 24 && Store.gymBadgesInRange(player.attId, 16, 8) >= 8)
-                Store.chron(s, "🌊", "ALL 8 HOENN BADGES — " + player.name + " may now challenge the Hoenn Elite Four!");
-              else if (fresh && opts.gym.idx >= 24 && Store.gymBadgesInRange(player.attId, 24, 8) >= 8)
-                Store.chron(s, "🏔", "ALL 8 SINNOH BADGES — " + player.name + " may now challenge the Sinnoh Elite Four!");
+              else if (fresh) {
+                // Region badge sweeps unlock that region's Elite Four. {start,
+                // count, emoji, label} per post-Kanto region.
+                const REGION_SWEEP = [
+                  { start: 16, count: 8, emoji: "🌊", label: "HOENN" },
+                  { start: 24, count: 8, emoji: "🏔", label: "SINNOH" },
+                  { start: 32, count: 8, emoji: "🏙", label: "UNOVA" },
+                  { start: 40, count: 8, emoji: "🗼", label: "KALOS" },
+                  { start: 48, count: 4, emoji: "🌺", label: "ALOLA" },
+                  { start: 52, count: 8, emoji: "⚽", label: "GALAR" },
+                  { start: 60, count: 8, emoji: "🍊", label: "PALDEA" },
+                ];
+                const rg = REGION_SWEEP.find((r) => opts.gym.idx >= r.start && opts.gym.idx < r.start + r.count);
+                if (rg && Store.gymBadgesInRange(player.attId, rg.start, rg.count) >= rg.count) {
+                  const gate = rg.label === "GALAR" ? "enter the Galar Champion Cup" : "challenge the " + rg.label[0] + rg.label.slice(1).toLowerCase() + " Elite Four";
+                  Store.chron(s, rg.emoji, "ALL " + rg.count + " " + rg.label + " BADGES — " + player.name + " may now " + gate + "!");
+                }
+              }
             } else {
               Store.chron(s, "🤖", "Leader " + opts.gym.leader + " defended the gym — " + player.name + " drinks 3 and trains harder.");
             }
@@ -1054,6 +1069,24 @@
               Store.chron(s, "🏛", ownGhost
                 ? player.name + " lost to their own past self. 3 sips of humility."
                 : ghost.name + "'s Hall of Fame team stands eternal — " + player.name + " toasts the champion with 3 sips.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
+      // 🏆 Champions Tournament: a bracket exhibition against a legend's team.
+      // No Elo, no belt, no leaderboard — the bracket advances via onResult.
+      if (opts.tournament) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const foe = opts.tournament.foe || "a legend";
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              Store.grantPoints(s, "battle", player.teamId, 4);
+              Store.chron(s, "🏆", player.name + " defeated " + foe + " in the Champions Tournament!");
+            } else {
+              Store.chron(s, "🏆", foe + " knocked " + player.name + " out of the Champions Tournament. 3 sips.");
             }
           });
         } catch (_) {}

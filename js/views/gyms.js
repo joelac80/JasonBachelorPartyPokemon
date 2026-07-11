@@ -49,6 +49,47 @@
     { leader: "BYRON",     badge: "Mine",     type: "steel",    region: "Sinnoh", team: [411, 208, 437, 462] },
     { leader: "CANDICE",   badge: "Icicle",   type: "ice",      region: "Sinnoh", team: [478, 460, 471, 461, 473] },
     { leader: "VOLKNER",   badge: "Beacon",   type: "electric", region: "Sinnoh", team: [466, 405, 135, 26] },
+    // ---- Unova (Gen 5) ----
+    { leader: "CHILI",     badge: "Trio",     type: "fire",     region: "Unova",  team: [513, 514, 555, 631] },
+    { leader: "LENORA",    badge: "Basic",    type: "normal",   region: "Unova",  team: [508, 505, 626, 573] },
+    { leader: "BURGH",     badge: "Insect",   type: "bug",      region: "Unova",  team: [542, 545, 557, 617] },
+    { leader: "ELESA",     badge: "Bolt",     type: "electric", region: "Unova",  team: [523, 587, 596, 604] },
+    { leader: "CLAY",      badge: "Quake",    type: "ground",   region: "Unova",  team: [530, 552, 536, 623] },
+    { leader: "SKYLA",     badge: "Jet",      type: "flying",   region: "Unova",  team: [581, 521, 561, 528] },
+    { leader: "BRYCEN",    badge: "Freeze",   type: "ice",      region: "Unova",  team: [614, 615, 584, 583] },
+    { leader: "DRAYDEN",   badge: "Legend",   type: "dragon",   region: "Unova",  team: [612, 611, 621, 610] },
+    // ---- Kalos (Gen 6) ----
+    { leader: "VIOLA",     badge: "Bug",      type: "bug",      region: "Kalos",  team: [666, 284, 214, 545] },
+    { leader: "GRANT",     badge: "Cliff",    type: "rock",     region: "Kalos",  team: [697, 699, 698, 696] },
+    { leader: "KORRINA",   badge: "Rumble",   type: "fighting", region: "Kalos",  team: [448, 701, 68, 620] },
+    { leader: "RAMOS",     badge: "Plant",    type: "grass",    region: "Kalos",  team: [673, 709, 189, 549] },
+    { leader: "CLEMONT",   badge: "Voltage",  type: "electric", region: "Kalos",  team: [695, 462, 587, 479] },
+    { leader: "VALERIE",   badge: "Fairy",    type: "fairy",    region: "Kalos",  team: [700, 303, 671, 210] },
+    { leader: "OLYMPIA",   badge: "Psychic",  type: "psychic",  region: "Kalos",  team: [678, 282, 561, 80] },
+    { leader: "WULFRIC",   badge: "Iceberg",  type: "ice",      region: "Kalos",  team: [713, 460, 615, 712] },
+    // ---- Alola (Gen 7): the four Island Kahunas of the Island Challenge ----
+    { leader: "HALA",      badge: "Melemele", type: "fighting", region: "Alola",  team: [740, 297, 57, 760] },
+    { leader: "OLIVIA",    badge: "Akala",    type: "rock",     region: "Alola",  team: [745, 476, 525, 76] },
+    { leader: "NANU",      badge: "Ula'ula",  type: "dark",     region: "Alola",  team: [53, 302, 430, 553] },
+    { leader: "HAPU",      badge: "Poni",     type: "ground",   region: "Alola",  team: [750, 330, 423, 623] },
+    // ---- Galar (Gen 8) ----
+    { leader: "MILO",      badge: "Grass",    type: "grass",    region: "Galar",  team: [830, 842, 829, 546] },
+    { leader: "NESSA",     badge: "Water",    type: "water",    region: "Galar",  team: [834, 847, 846, 279] },
+    { leader: "KABU",      badge: "Fire",     type: "fire",     region: "Galar",  team: [851, 59, 38, 667] },
+    { leader: "BEA",       badge: "Fighting", type: "fighting", region: "Galar",  team: [68, 853, 870, 865] },
+    { leader: "ALLISTER",  badge: "Ghost",    type: "ghost",    region: "Galar",  team: [94, 864, 867, 778] },
+    { leader: "OPAL",      badge: "Fairy",    type: "fairy",    region: "Galar",  team: [869, 468, 110, 303] },
+    { leader: "GORDIE",    badge: "Rock",     type: "rock",     region: "Galar",  team: [839, 874, 689, 526] },
+    { leader: "RAIHAN",    badge: "Dragon",   type: "dragon",   region: "Galar",  team: [884, 330, 844, 776] },
+    // ---- Paldea (Gen 9) ----
+    { leader: "KATY",      badge: "Bug",      type: "bug",      region: "Paldea", team: [918, 416, 168, 212] },
+    { leader: "BRASSIUS",  badge: "Grass",    type: "grass",    region: "Paldea", team: [930, 185, 548, 556] },
+    { leader: "IONO",      badge: "Electric", type: "electric", region: "Paldea", team: [939, 405, 429, 941] },
+    { leader: "KOFU",      badge: "Water",    type: "water",    region: "Paldea", team: [976, 961, 740, 693] },
+    { leader: "LARRY",     badge: "Normal",   type: "normal",   region: "Paldea", team: [398, 775, 982, 765] },
+    { leader: "RYME",      badge: "Ghost",    type: "ghost",    region: "Paldea", team: [354, 778, 972, 426] },
+    { leader: "TULIP",     badge: "Psychic",  type: "psychic",  region: "Paldea", team: [981, 282, 956, 671] },
+    { leader: "GRUSHA",    badge: "Ice",      type: "ice",      region: "Paldea", team: [975, 873, 614, 998] },
   ];
   window.GYM_CIRCUIT = GYMS;   // profiles/tests can read the circuit
 
@@ -120,7 +161,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏟 Gym Circuit"),
-      el("p", { class: "page-sub" }, "32 canon Gym Leaders across four regions — Johto & Kanto (Falkner → BLUE), then Hoenn (Roxanne → Juan) and Sinnoh (Roark → Volkner). Leaders bring their grown-up REMATCH squads." ),
+      el("p", { class: "page-sub" }, "68 Gym Leaders & Island Kahunas across nine regions — Johto & Kanto, Hoenn, Sinnoh, Unova, Kalos, Alola's Island Challenge, Galar and Paldea. Leaders bring their grown-up REMATCH squads." ),
     ]));
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
@@ -134,6 +175,11 @@
       { name: "Kanto", emoji: "🗾", note: "The rematch tour. All 16 here = CHAMPION." },
       { name: "Hoenn", emoji: "🌊", note: "Earn all 8 to face the Hoenn Elite Four." },
       { name: "Sinnoh", emoji: "🏔", note: "Earn all 8 to face the Sinnoh Elite Four." },
+      { name: "Unova", emoji: "🏙", note: "Earn all 8 to face the Unova Elite Four." },
+      { name: "Kalos", emoji: "🗼", note: "Earn all 8 to face the Kalos Elite Four." },
+      { name: "Alola", emoji: "🌺", note: "The Island Challenge — best all 4 Kahunas to face the Alola Elite Four." },
+      { name: "Galar", emoji: "⚽", note: "Earn all 8 to enter the Galar Champion Cup." },
+      { name: "Paldea", emoji: "🍊", note: "Earn all 8 to face the Paldea Elite Four." },
     ];
     REGIONS.forEach((r) => {
       const idxs = GYMS.map((g, i) => i).filter((i) => GYMS[i].region === r.name);
