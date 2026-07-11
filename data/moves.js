@@ -60,7 +60,7 @@
     // ---- Water ----
     "Water Gun":   { t: "water", cat: "spec", pow: 40, acc: 100 },
     "Bubble Beam": { t: "water", cat: "spec", pow: 65, acc: 100, fx: { stat: { who: "foe", stat: "spe", stg: -1, chance: 20 } } },
-    "Surf":        { t: "water", cat: "spec", pow: 90, acc: 100 },
+    "Surf":        { t: "water", cat: "spec", pow: 90, acc: 100, spread: true },
     "Hydro Pump":  { t: "water", cat: "spec", pow: 110, acc: 80 },
     "Waterfall":   { t: "water", cat: "phys", pow: 80, acc: 100 },
     "Crabhammer":  { t: "water", cat: "phys", pow: 90, acc: 85, fx: { crit: "high" } },
@@ -85,10 +85,10 @@
     "Leech Seed":  { t: "grass", cat: "status", pow: 0, acc: 90, fx: { seed: true } },
     // ---- Ice ----
     "Ice Beam":    { t: "ice", cat: "spec", pow: 90, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
-    "Blizzard":    { t: "ice", cat: "spec", pow: 110, acc: 70, fx: { status: { id: "frz", chance: 10 } } },
+    "Blizzard":    { t: "ice", cat: "spec", pow: 110, acc: 70, fx: { status: { id: "frz", chance: 10 } }, spread: true },
     "Ice Punch":   { t: "ice", cat: "phys", pow: 75, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
     "Aurora Beam": { t: "ice", cat: "spec", pow: 65, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -1, chance: 10 } } },
-    "Powder Snow": { t: "ice", cat: "spec", pow: 40, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
+    "Powder Snow": { t: "ice", cat: "spec", pow: 40, acc: 100, fx: { status: { id: "frz", chance: 10 } }, spread: true },
     // ---- Fighting ----
     "Karate Chop": { t: "fighting", cat: "phys", pow: 50, acc: 100, fx: { crit: "high" } },
     "Brick Break": { t: "fighting", cat: "phys", pow: 65, acc: 100 },
@@ -98,13 +98,13 @@
     "Mach Punch":  { t: "fighting", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Submission":  { t: "fighting", cat: "phys", pow: 80, acc: 80, fx: { recoil: 0.25 } },
     // ---- Poison ----
-    "Sludge":      { t: "poison", cat: "spec", pow: 65, acc: 100, fx: { status: { id: "psn", chance: 30 } } },
+    "Sludge":      { t: "poison", cat: "spec", pow: 65, acc: 100, fx: { status: { id: "psn", chance: 30 } }, spread: true },
     "Sludge Bomb": { t: "poison", cat: "spec", pow: 90, acc: 100, fx: { status: { id: "psn", chance: 30 } } },
     "Poison Sting":{ t: "poison", cat: "phys", pow: 40, acc: 100, fx: { status: { id: "psn", chance: 30 } } },
     "Acid":        { t: "poison", cat: "spec", pow: 60, acc: 100, fx: { stat: { who: "foe", stat: "def", stg: -1, chance: 10 } } },
     "Toxic":       { t: "poison", cat: "status", pow: 0, acc: 90, fx: { status: { id: "psn", chance: 100 } } },
     // ---- Ground ----
-    "Earthquake":  { t: "ground", cat: "phys", pow: 100, acc: 100 },
+    "Earthquake":  { t: "ground", cat: "phys", pow: 100, acc: 100, spread: true },
     "Dig":         { t: "ground", cat: "phys", pow: 60, acc: 100 },
     "Mud-Slap":    { t: "ground", cat: "spec", pow: 40, acc: 100, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
     "Bone Club":   { t: "ground", cat: "phys", pow: 65, acc: 85, fx: { flinch: 10 } },
@@ -134,7 +134,7 @@
     "String Shot": { t: "bug", cat: "status", pow: 0, acc: 95, fx: { stat: { who: "foe", stat: "spe", stg: -1 } } },
     // ---- Rock ----
     "Rock Throw":  { t: "rock", cat: "phys", pow: 50, acc: 90 },
-    "Rock Slide":  { t: "rock", cat: "phys", pow: 75, acc: 90, fx: { flinch: 30 } },
+    "Rock Slide":  { t: "rock", cat: "phys", pow: 75, acc: 90, fx: { flinch: 30 }, spread: true },
     "Ancient Power":{ t: "rock", cat: "spec", pow: 60, acc: 100 },
     // ---- Ghost ----
     "Lick":        { t: "ghost", cat: "phys", pow: 30, acc: 100, fx: { status: { id: "par", chance: 30 } } },
@@ -168,23 +168,23 @@
     // Normal
     "Extreme Speed":{ t: "normal", cat: "phys", pow: 80, acc: 100, pri: 2 },
     "Giga Impact":  { t: "normal", cat: "phys", pow: 130, acc: 90 },
-    "Hyper Voice":  { t: "normal", cat: "spec", pow: 90, acc: 100 },
+    "Hyper Voice":  { t: "normal", cat: "spec", pow: 90, acc: 100, spread: true },
     "Crush Claw":   { t: "normal", cat: "phys", pow: 75, acc: 95, fx: { stat: { who: "foe", stat: "def", stg: -1, chance: 50 } } },
     "Wish":         { t: "normal", cat: "status", pow: 0, acc: 101, fx: { heal: 0.5 } },
     // Fire
     "Will-O-Wisp":  { t: "fire", cat: "status", pow: 0, acc: 85, fx: { status: { id: "brn", chance: 100 } } },
     "Flare Blitz":  { t: "fire", cat: "phys", pow: 120, acc: 100, fx: { recoil: 0.33, status: { id: "brn", chance: 10 } } },
     "Overheat":     { t: "fire", cat: "spec", pow: 130, acc: 90, fx: { stat: { who: "self", stat: "spa", stg: -2 } } },
-    "Lava Plume":   { t: "fire", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "brn", chance: 30 } } },
+    "Lava Plume":   { t: "fire", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "brn", chance: 30 } }, spread: true },
     "Fire Fang":    { t: "fire", cat: "phys", pow: 65, acc: 95, fx: { status: { id: "brn", chance: 10 } } },
-    "Heat Wave":    { t: "fire", cat: "spec", pow: 95, acc: 90, fx: { status: { id: "brn", chance: 10 } } },
+    "Heat Wave":    { t: "fire", cat: "spec", pow: 95, acc: 90, fx: { status: { id: "brn", chance: 10 } }, spread: true },
     // Water
     "Aqua Jet":     { t: "water", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Aqua Tail":    { t: "water", cat: "phys", pow: 90, acc: 90 },
     "Water Pulse":  { t: "water", cat: "spec", pow: 60, acc: 100 },
-    "Muddy Water":  { t: "water", cat: "spec", pow: 90, acc: 85, fx: { stat: { who: "foe", stat: "acc", stg: -1, chance: 30 } } },
+    "Muddy Water":  { t: "water", cat: "spec", pow: 90, acc: 85, fx: { stat: { who: "foe", stat: "acc", stg: -1, chance: 30 } }, spread: true },
     // Electric
-    "Discharge":    { t: "electric", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 30 } } },
+    "Discharge":    { t: "electric", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 30 } }, spread: true },
     "Volt Tackle":  { t: "electric", cat: "phys", pow: 120, acc: 100, fx: { recoil: 0.33, status: { id: "par", chance: 10 } } },
     "Thunder Fang": { t: "electric", cat: "phys", pow: 65, acc: 95, fx: { status: { id: "par", chance: 10 } } },
     // Grass
@@ -253,7 +253,7 @@
     // Gen 5-9 additions — signature/common moves for #494-1025.
     // ============================================================
     // Normal
-    "Boomburst":    { t: "normal", cat: "spec", pow: 110, acc: 100 },
+    "Boomburst":    { t: "normal", cat: "spec", pow: 110, acc: 100, spread: true },
     "Judgment":     { t: "normal", cat: "spec", pow: 100, acc: 100 },
     "Tera Blast":   { t: "normal", cat: "spec", pow: 80, acc: 100 },
     "Population Bomb":{ t: "normal", cat: "phys", pow: 90, acc: 90 },
@@ -261,9 +261,9 @@
     "Scald":        { t: "water", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "brn", chance: 30 } } },
     "Blue Flare":   { t: "fire", cat: "spec", pow: 120, acc: 85, fx: { status: { id: "brn", chance: 20 } } },
     "Fusion Flare": { t: "fire", cat: "spec", pow: 100, acc: 100 },
-    "Searing Shot": { t: "fire", cat: "spec", pow: 100, acc: 100, fx: { status: { id: "brn", chance: 30 } } },
+    "Searing Shot": { t: "fire", cat: "spec", pow: 100, acc: 100, fx: { status: { id: "brn", chance: 30 } }, spread: true },
     // Water
-    "Origin Pulse": { t: "water", cat: "spec", pow: 110, acc: 85 },
+    "Origin Pulse": { t: "water", cat: "spec", pow: 110, acc: 85, spread: true },
     "Aqua Step":    { t: "water", cat: "phys", pow: 80, acc: 100, fx: { stat: { who: "self", stat: "spe", stg: 1 } } },
     "Fishious Rend":{ t: "water", cat: "phys", pow: 85, acc: 100 },
     // Electric
@@ -276,7 +276,7 @@
     "Apple Acid":   { t: "grass", cat: "spec", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1 } } },
     // Ice
     "Freeze-Dry":   { t: "ice", cat: "spec", pow: 70, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
-    "Glaciate":     { t: "ice", cat: "spec", pow: 65, acc: 95, fx: { stat: { who: "foe", stat: "spe", stg: -1 } } },
+    "Glaciate":     { t: "ice", cat: "spec", pow: 65, acc: 95, fx: { stat: { who: "foe", stat: "spe", stg: -1 } }, spread: true },
     "Freezing Glare":{ t: "psychic", cat: "spec", pow: 90, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
     // Fighting
     "Focus Blast":  { t: "fighting", cat: "spec", pow: 120, acc: 70, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 10 } } },
@@ -284,16 +284,16 @@
     "Collision Course":{ t: "fighting", cat: "phys", pow: 100, acc: 100 },
     "Drain Punch":  { t: "fighting", cat: "phys", pow: 75, acc: 100, fx: { drain: 0.5 } },
     // Poison
-    "Sludge Wave":  { t: "poison", cat: "spec", pow: 95, acc: 100, fx: { status: { id: "psn", chance: 10 } } },
+    "Sludge Wave":  { t: "poison", cat: "spec", pow: 95, acc: 100, fx: { status: { id: "psn", chance: 10 } }, spread: true },
     "Barb Barrage": { t: "poison", cat: "phys", pow: 60, acc: 100, fx: { status: { id: "psn", chance: 50 } } },
     // Ground
     "Scorching Sands":{ t: "ground", cat: "spec", pow: 70, acc: 100, fx: { status: { id: "brn", chance: 30 } } },
-    "Sandsear Storm":{ t: "ground", cat: "spec", pow: 100, acc: 80, fx: { status: { id: "brn", chance: 20 } } },
+    "Sandsear Storm":{ t: "ground", cat: "spec", pow: 100, acc: 80, fx: { status: { id: "brn", chance: 20 } }, spread: true },
     "Headlong Rush":{ t: "ground", cat: "phys", pow: 120, acc: 100, fx: { stats: [{ who: "self", stat: "def", stg: -1 }, { who: "self", stat: "spd", stg: -1 }] } },
     // Flying
     "Hurricane":    { t: "flying", cat: "spec", pow: 110, acc: 70 },
     "Dual Wingbeat":{ t: "flying", cat: "phys", pow: 80, acc: 90 },
-    "Bleakwind Storm":{ t: "flying", cat: "spec", pow: 100, acc: 80, fx: { stat: { who: "foe", stat: "spe", stg: -1, chance: 30 } } },
+    "Bleakwind Storm":{ t: "flying", cat: "spec", pow: 100, acc: 80, fx: { stat: { who: "foe", stat: "spe", stg: -1, chance: 30 } }, spread: true },
     // Psychic
     "Psyshock":     { t: "psychic", cat: "spec", pow: 80, acc: 100 },
     "Psystrike":    { t: "psychic", cat: "spec", pow: 100, acc: 100 },
@@ -305,10 +305,10 @@
     "First Impression":{ t: "bug", cat: "phys", pow: 90, acc: 100, pri: 2 },
     // Rock
     "Meteor Assault":{ t: "rock", cat: "phys", pow: 100, acc: 100 },
-    "Diamond Storm":{ t: "rock", cat: "phys", pow: 100, acc: 95, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 50 } } },
+    "Diamond Storm":{ t: "rock", cat: "phys", pow: 100, acc: 95, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 50 } }, spread: true },
     // Ghost
     "Moongeist Beam":{ t: "ghost", cat: "spec", pow: 100, acc: 100 },
-    "Astral Barrage":{ t: "ghost", cat: "spec", pow: 120, acc: 100 },
+    "Astral Barrage":{ t: "ghost", cat: "spec", pow: 120, acc: 100, spread: true },
     "Spectral Thief":{ t: "ghost", cat: "phys", pow: 90, acc: 100 },
     "Phantom Force":{ t: "ghost", cat: "phys", pow: 90, acc: 100 },
     "Hex":          { t: "ghost", cat: "spec", pow: 65, acc: 100 },
@@ -316,7 +316,7 @@
     // Dragon
     "Dragon Rush":  { t: "dragon", cat: "phys", pow: 100, acc: 75, fx: { flinch: 20 } },
     "Scale Shot":   { t: "dragon", cat: "phys", pow: 75, acc: 90 },
-    "Clanging Scales":{ t: "dragon", cat: "spec", pow: 110, acc: 100, fx: { stat: { who: "self", stat: "def", stg: -1 } } },
+    "Clanging Scales":{ t: "dragon", cat: "spec", pow: 110, acc: 100, fx: { stat: { who: "self", stat: "def", stg: -1 } }, spread: true },
     "Glaive Rush":  { t: "dragon", cat: "phys", pow: 120, acc: 100 },
     "Roar of Time": { t: "dragon", cat: "spec", pow: 120, acc: 90 },
     "Spacial Rend": { t: "dragon", cat: "spec", pow: 100, acc: 95, fx: { crit: "high" } },
@@ -326,16 +326,16 @@
     "Snarl":        { t: "dark", cat: "spec", pow: 55, acc: 95, fx: { stat: { who: "foe", stat: "spa", stg: -1 } } },
     "Ruination":    { t: "dark", cat: "spec", pow: 80, acc: 90 },
     "Lash Out":     { t: "dark", cat: "phys", pow: 75, acc: 100 },
-    "Fiery Wrath":  { t: "dark", cat: "spec", pow: 90, acc: 100, fx: { flinch: 20 } },
+    "Fiery Wrath":  { t: "dark", cat: "spec", pow: 90, acc: 100, fx: { flinch: 20 }, spread: true },
     // Steel
     "Sunsteel Strike":{ t: "steel", cat: "phys", pow: 100, acc: 100 },
     "Behemoth Blade":{ t: "steel", cat: "phys", pow: 100, acc: 100 },
-    "Make It Rain": { t: "steel", cat: "spec", pow: 120, acc: 100, fx: { stat: { who: "self", stat: "spa", stg: -1 } } },
+    "Make It Rain": { t: "steel", cat: "spec", pow: 120, acc: 100, fx: { stat: { who: "self", stat: "spa", stg: -1 } }, spread: true },
     "Gigaton Hammer":{ t: "steel", cat: "phys", pow: 120, acc: 100 },
     "Steel Beam":   { t: "steel", cat: "spec", pow: 120, acc: 95, fx: { recoil: 0.25 } },
     // Fairy
     "Play Rough":   { t: "fairy", cat: "phys", pow: 90, acc: 90, fx: { stat: { who: "foe", stat: "atk", stg: -1, chance: 10 } } },
-    "Dazzling Gleam":{ t: "fairy", cat: "spec", pow: 80, acc: 100 },
+    "Dazzling Gleam":{ t: "fairy", cat: "spec", pow: 80, acc: 100, spread: true },
     "Spirit Break": { t: "fairy", cat: "phys", pow: 75, acc: 100, fx: { stat: { who: "foe", stat: "spa", stg: -1 } } },
     "Fleur Cannon": { t: "fairy", cat: "spec", pow: 130, acc: 90, fx: { stat: { who: "self", stat: "spa", stg: -2 } } },
     "Draining Kiss":{ t: "fairy", cat: "spec", pow: 50, acc: 100, fx: { drain: 0.5 } },
