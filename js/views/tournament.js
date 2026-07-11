@@ -177,8 +177,10 @@
     return nm + (total > 2 ? " · " + total + " left" : "");
   }
 
-  function view(root) {
-    root.appendChild(el("div", { class: "page-head" }, [
+  function view(root, opts) {
+    opts = opts || {};
+    // When embedded inside The Journey (region area) we skip our own page title.
+    if (!opts.embed) root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏆 Champions Tournament"),
       el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, RED and BLUE — drawn fresh each time into one single-elimination bracket. Lock in a squad of SIX for the whole run, then bring 4 of them to each 2v2 double battle once you've scouted your opponent. The rest of the field battles itself; last trainer standing takes the crown." ),
     ]));
@@ -230,4 +232,6 @@
 
   window.Views = window.Views || {};
   window.Views.tournament = view;
+  // Embed the whole Champions Cup (controls + full bracket) inside The Journey.
+  window.ChampionsCup = { render: function (host) { view(host, { embed: true }); } };
 })();

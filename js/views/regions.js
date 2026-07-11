@@ -25,6 +25,8 @@
       note: "Eight gyms, the Champion Cup, and Champion LEON." },
     { key: "paldea", name: "Paldea", emoji: "🍊", gen: "Gen 9", gym: ["Paldea"], lg: ["Paldea"],
       note: "Eight gyms, the Elite Four, and Top Champion GEETA." },
+    { key: "cup", name: "Champions Cup", emoji: "🏆", gen: "Endgame", cup: true,
+      note: "Beyond every region — a 16-legend single-elimination bracket. Every Elite Four, every Champion, RED and BLUE, drawn fresh into one tournament." },
   ];
 
   function view(root) {
@@ -64,6 +66,13 @@
         el("h2", { class: "section-title" }, t.emoji + " " + t.name + " · " + t.gen),
         el("p", { class: "hint", style: { marginTop: "-4px" } }, t.note),
       ]));
+
+      // 🏆 Champions Cup — the endgame bracket (no gyms/league; its own view)
+      if (t.cup) {
+        if (window.ChampionsCup) ChampionsCup.render(host);
+        else host.appendChild(el("p", { class: "hint" }, "Champions Cup unavailable."));
+        return;
+      }
 
       // 🏟 Gyms for this region
       const GC = window.GymCircuit;
