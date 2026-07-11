@@ -66,7 +66,8 @@
     const d = window.MOVES_DB && MOVES_DB[name];
     if (!d) return null;
     return { name: name, type: d.t, cat: d.cat || "phys", pow: d.pow || 0,
-      acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null, spread: !!d.spread };
+      acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null,
+      spread: !!d.spread, recharge: !!d.recharge };
   }
   function typeMove(t, m) { return { name: m[0], type: t, cat: "phys", pow: m[1], acc: m[2], pri: 0, fx: null }; }
   // Gen-1/2 stat-stage multiplier (−6..+6).
@@ -98,6 +99,7 @@
       slp: 0,              // remaining sleep turns
       seeded: false,       // Leech Seed drain each turn
       _flinch: false,      // flinched this turn (volatile)
+      _recharge: false,    // must spend next turn recharging (Hyper Beam etc.)
       stg: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 },   // stat stages
       moves: moves };
   }
@@ -581,7 +583,7 @@
       u.cur = to;
       const m = mon(u);
       m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
-      m._flinch = false; m.seeded = false;
+      m._flinch = false; m.seeded = false; m._recharge = false;
     }
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
@@ -594,6 +596,12 @@
     // every phone reaches the same verdict; sleep counts down deterministically.
     function resolveMove(o, u) {
       const m = mon(u);
+      // Recharge (Hyper Beam / Giga Impact…): the turn AFTER the blast is spent
+      // catching your breath — no attack lands.
+      if (m._recharge) {
+        m._recharge = false; menu.innerHTML = "";
+        beats([[m.name + " must recharge!", 1050, () => sfx("error")]], resolveNext); return;
+      }
       if (m.status === "slp") {
         if ((m.slp || 0) > 1) { m.slp -= 1; menu.innerHTML = "";
           beats([[m.name + " is fast asleep…", 1050, () => sfx("error")]], resolveNext); return; }
@@ -663,7 +671,7 @@
       applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
         miss: miss, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg,
         cat: mv.cat, mvType: mv.type, fx: mv.fx, fxHit: o.fxHit, slpTurns: o.slpTurns, by: o.by,
-        spread: spread },
+        spread: spread, recharge: mv.recharge },
         u, false, resolveNext);
     }
 
@@ -870,6 +878,7 @@
           if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
           applySpread();
           applyEffects(isStatus ? 0 : act.dmg, function () {});
+          if (act.recharge && m.hp > 0) m._recharge = true;
         }
         settle();
         return;
@@ -884,6 +893,8 @@
         beats(chug.concat([used, ["It doesn't affect " + (tm ? tm.name : "it") + "…", 1150, () => sfx("error")]]), () => { advance(); done(); });
         return;
       }
+      // The blast connected — this mon must recharge next turn.
+      if (act.recharge) m._recharge = true;
 
       const steps = chug.concat([used]);
       if (!isStatus && tm) {
@@ -1194,19 +1205,27 @@
 
     // A short tag describing a move's effect, shown on its button.
     function fxLabel(m) {
-      const fx = m.fx; if (!fx) return "";
-      if (fx.status) return "💤 " + STATUS_TAG[fx.status.id] + (fx.status.chance < 100 ? " " + fx.status.chance + "%" : "");
-      if (fx.stat) { const s = STAT_LABEL[fx.stat.stat] || fx.stat.stat; return (fx.stat.who === "self" ? "self " : "foe ") + s + (fx.stat.stg > 0 ? " ▲" : " ▼"); }
-      if (fx.stats) { const up = fx.stats.filter((x) => x.stg > 0).length, dn = fx.stats.filter((x) => x.stg < 0).length;
-        const who = fx.stats.every((x) => x.who === "self") ? "self " : ""; return who + (up ? "▲".repeat(Math.min(up, 2)) : "") + (dn ? "▼".repeat(Math.min(dn, 2)) : ""); }
-      if (fx.rest) return "😴 full heal";
-      if (fx.heal) return "💚 heal";
-      if (fx.drain) return "🧛 drain";
-      if (fx.recoil) return "💢 recoil";
-      if (fx.seed) return "🌱 seed";
-      if (fx.flinch) return "😵 flinch " + fx.flinch + "%";
-      if (fx.crit === "high") return "🎯 high crit";
-      return "";
+      // Payoff/drawback flags that live on the move itself (no fx block needed).
+      const tags = [];
+      if (m.spread) tags.push("💠 both");
+      if (m.recharge) tags.push("💤 recharge");
+      const fx = m.fx;
+      let base = "";
+      if (fx) {
+        if (fx.status) base = "💤 " + STATUS_TAG[fx.status.id] + (fx.status.chance < 100 ? " " + fx.status.chance + "%" : "");
+        else if (fx.stat) { const s = STAT_LABEL[fx.stat.stat] || fx.stat.stat; base = (fx.stat.who === "self" ? "self " : "foe ") + s + (fx.stat.stg > 0 ? " ▲" : " ▼"); }
+        else if (fx.stats) { const up = fx.stats.filter((x) => x.stg > 0).length, dn = fx.stats.filter((x) => x.stg < 0).length;
+          const who = fx.stats.every((x) => x.who === "self") ? "self " : ""; base = who + (up ? "▲".repeat(Math.min(up, 2)) : "") + (dn ? "▼".repeat(Math.min(dn, 2)) : ""); }
+        else if (fx.rest) base = "😴 full heal";
+        else if (fx.heal) base = "💚 heal";
+        else if (fx.drain) base = "🧛 drain";
+        else if (fx.recoil) base = "💢 recoil";
+        else if (fx.seed) base = "🌱 seed";
+        else if (fx.flinch) base = "😵 flinch " + fx.flinch + "%";
+        else if (fx.crit === "high") base = "🎯 high crit";
+      }
+      if (base) tags.push(base);
+      return tags.join(" · ");
     }
     function moveBtn(m, onPick) {
       const catIcon = m.cat === "spec" ? "🌀" : m.cat === "status" ? "🌟" : "👊";
@@ -1302,6 +1321,8 @@
         return;
       }
       const m = mon(u);
+      // Recharging AI: it must waste the turn too (order resolves as a skip).
+      if (m._recharge) { doMove(u, ptr, 0, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
       let best = null, bestStatus = null;
       livingEnemies(ptr.side).forEach((f) => {
         m.moves.forEach((mv, i) => {
@@ -1357,6 +1378,14 @@
       // Everything immune against everything standing? Struggle keeps the
       // fight alive (typeless, always usable).
       const foes = livingEnemies(ptr.side);
+      // Recharging from last turn's blast — the turn is spent. One tap to ride
+      // it out (the order resolves as a forced skip).
+      if (m._recharge) {
+        menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) }, "💤 " + m.name + " must recharge!"));
+        menu.appendChild(el("div", { class: "battle-menu-row" },
+          [el("button", { class: "btn primary", onClick: () => doMove(u, ptr, 0, (foes[0] || { i: 0 }).i) }, "💤 Recharge…")]));
+        return;
+      }
       const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types) === 0));
       // Liquid Courage armed: Z-move style — the chug happened, now unleash
       // a move on THIS same turn (can't miss, guaranteed crit).
