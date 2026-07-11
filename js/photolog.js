@@ -56,9 +56,11 @@
     ctrl = Modal.open("Add a photo moment", body, null, {});
   }
 
-  function capture(onAdded) {
+  // opts.source: "camera" forces the rear camera; "library"/omitted opens the
+  // native picker so you can TAKE a new photo OR upload one from your gallery.
+  function capture(onAdded, opts) {
     const input = el("input", { type: "file", accept: "image/*", style: { display: "none" } });
-    input.setAttribute("capture", "environment");   // prefer the camera on phones
+    if (opts && opts.source === "camera") input.setAttribute("capture", "environment");
     document.body.appendChild(input);
     input.addEventListener("change", function () {
       const f = input.files && input.files[0];
