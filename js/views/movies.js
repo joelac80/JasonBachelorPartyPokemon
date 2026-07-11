@@ -19,7 +19,12 @@
       quote: "I was created by humans… to obey them. I have chosen a different destiny. You believe a TRAINED Pokémon can overcome a perfect clone? Come — show me. And despair.",
       winChron: "shattered MEWTWO's cloned army — and the genetic legend itself!",
       loseChron: "MEWTWO proved the clones reign supreme",
-      lead: "🧬 His four shadow CLONES — a jet-black Charizard, plus Blastoise, Venusaur and Pikachu — then Mewtwo himself." },
+      lead: "🧬 His four shadow CLONES — a jet-black Charizard, plus Blastoise, Venusaur and Pikachu — then Mewtwo himself.",
+      // 🎬 The film's mirror match: answer the clones with the ORIGINALS —
+      // Charizard, Blastoise, Venusaur, Pikachu, and MEW (whom Mewtwo was cloned
+      // from). Offered as a ready-made squad you don't need to have caught.
+      mirror: { team: [6, 9, 3, 25, 151],
+        note: "Answer the clones with the ORIGINALS — Charizard, Blastoise, Venusaur, Pikachu, and MEW, the ancient Pokémon Mewtwo was cloned from." } },
     { key: "collector", name: "LAWRENCE III", title: "The Collector", film: "Pokémon 2000 · The Power of One",
       type: "flying", team: [144, 145, 146, 142, 149, 249], pts: 12, boost: 1.4, icon: "🎐", face: 249,
       quote: "Fire, Ice, Lightning — the titans of the sky are already mine. Only Lugia, guardian of the sea, remains… the jewel of my collection. You? Merely an obstacle to be catalogued.",
@@ -52,23 +57,53 @@
     requestAnimationFrame(() => lay.classList.add("go"));
   }
 
+  // A ready-made "wield the Originals" choice: take the preset mirror squad (no
+  // need to have caught them), or bring your own five.
+  function teamChoice(b, onMirror, onOwn) {
+    const mons = b.mirror.team.map((id) => {
+      const s = SP[id] || Store.sprite(id);
+      return s ? el("img", { class: "trn-scout-mon", src: s, alt: "" }) : null;
+    });
+    const lay = el("div", { class: "league-intro final movie-intro" }, [
+      el("div", { class: "league-intro-inner" }, [
+        el("div", { class: "league-intro-rank" }, "CHOOSE YOUR TEAM"),
+        el("div", { class: "league-intro-name", style: { fontSize: "26px" } }, "Originals vs Clones"),
+        el("div", { class: "league-intro-quote" }, b.mirror.note),
+        el("div", { class: "trn-scout-row", style: { justifyContent: "center" } }, mons),
+        el("div", { class: "toolbar", style: { justifyContent: "center", flexWrap: "wrap" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onMirror(); } }, "✨ Wield the Originals (+ MEW)"),
+          el("button", { class: "btn primary", onClick: () => { lay.remove(); onOwn(); } }, "🎒 Bring my own " + b.team.length),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "↩ Back"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
+
   function challenge(b, attId) {
     const size = b.team.length;
-    if (Duel.poolFor(attId).length < size) {
-      alert(b.name + " fields " + size + " Pokémon — catch " + size + " of your own first (Safari Zone).");
-      return;
-    }
-    bossIntro(b, () => {
+    const startWith = (ids) => {
+      Duel.start({ mode: "local", title: b.name + " — " + b.film,
+        movie: { key: b.key, name: b.name, pts: b.pts, icon: b.icon, winChron: b.winChron, loseChron: b.loseChron },
+        a: { units: [{ attId: attId, monIds: ids }] },
+        b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
+        onResult: () => Router.render() });
+    };
+    // Bring-your-own path needs a full pool; the preset mirror squad does not.
+    const pickOwn = () => {
+      if (Duel.poolFor(attId).length < size) {
+        alert(b.name + " fields " + size + " Pokémon — catch " + size + " of your own first (Safari Zone), or take the ready-made squad.");
+        return;
+      }
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs " + b.name + " — pick EXACTLY " + size,
         hint: "🎬 " + b.film + ". A " + size + " v " + size + " boss battle — the lineup is hidden. Bring your very best.",
-        onDone: (ids) => {
-          Duel.start({ mode: "local", title: b.name + " — " + b.film,
-            movie: { key: b.key, name: b.name, pts: b.pts, icon: b.icon, winChron: b.winChron, loseChron: b.loseChron },
-            a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
-            onResult: () => Router.render() });
-        } });
+        onDone: (ids) => startWith(ids) });
+    };
+    bossIntro(b, () => {
+      if (b.mirror) teamChoice(b, () => startWith(b.mirror.team.slice()), pickOwn);
+      else pickOwn();
     });
   }
 
