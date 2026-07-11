@@ -76,7 +76,7 @@
     "Mega Drain":  { t: "grass", cat: "spec", pow: 60, acc: 100, fx: { drain: 0.5 } },
     "Giga Drain":  { t: "grass", cat: "spec", pow: 70, acc: 100, fx: { drain: 0.5 } },
     "Razor Leaf":  { t: "grass", cat: "phys", pow: 60, acc: 95, fx: { crit: "high" } },
-    "Solar Beam":  { t: "grass", cat: "spec", pow: 110, acc: 100 },
+    "Solar Beam":  { t: "grass", cat: "spec", pow: 110, acc: 100, charge: { msg: "absorbed light!" } },
     "Vine Whip":   { t: "grass", cat: "phys", pow: 45, acc: 100 },
     "Petal Dance": { t: "grass", cat: "spec", pow: 90, acc: 100 },
     "Sleep Powder":{ t: "grass", cat: "status", pow: 0, acc: 75, fx: { status: { id: "slp", chance: 100 } } },
@@ -105,7 +105,7 @@
     "Toxic":       { t: "poison", cat: "status", pow: 0, acc: 90, fx: { status: { id: "psn", chance: 100 } } },
     // ---- Ground ----
     "Earthquake":  { t: "ground", cat: "phys", pow: 100, acc: 100, spread: true },
-    "Dig":         { t: "ground", cat: "phys", pow: 60, acc: 100 },
+    "Dig":         { t: "ground", cat: "phys", pow: 80, acc: 100, charge: { msg: "burrowed underground!", invuln: true } },
     "Mud-Slap":    { t: "ground", cat: "spec", pow: 40, acc: 100, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
     "Bone Club":   { t: "ground", cat: "phys", pow: 65, acc: 85, fx: { flinch: 10 } },
     "Bonemerang":  { t: "ground", cat: "phys", pow: 50, acc: 90 },
@@ -114,8 +114,8 @@
     "Aerial Ace":  { t: "flying", cat: "phys", pow: 60, acc: 101 },
     "Drill Peck":  { t: "flying", cat: "phys", pow: 80, acc: 100 },
     "Peck":        { t: "flying", cat: "phys", pow: 35, acc: 100 },
-    "Sky Attack":  { t: "flying", cat: "phys", pow: 110, acc: 90 },
-    "Fly":         { t: "flying", cat: "phys", pow: 70, acc: 95 },
+    "Sky Attack":  { t: "flying", cat: "phys", pow: 140, acc: 90, fx: { flinch: 30 }, charge: { msg: "started glowing!" } },
+    "Fly":         { t: "flying", cat: "phys", pow: 90, acc: 95, charge: { msg: "flew up high!", invuln: true } },
     "Gust":        { t: "flying", cat: "spec", pow: 40, acc: 100 },
     // ---- Psychic ----
     "Confusion":   { t: "psychic", cat: "spec", pow: 50, acc: 100 },
@@ -247,7 +247,7 @@
     "Flash Cannon": { t: "steel", cat: "spec", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 10 } } },
     "Meteor Mash":  { t: "steel", cat: "phys", pow: 90, acc: 90, fx: { stat: { who: "self", stat: "atk", stg: 1, chance: 20 } } },
     "Bullet Punch": { t: "steel", cat: "phys", pow: 40, acc: 100, pri: 1 },
-    "Meteor Beam":  { t: "steel", cat: "spec", pow: 100, acc: 90 },
+    "Meteor Beam":  { t: "steel", cat: "spec", pow: 120, acc: 90, charge: { msg: "is overflowing with space power!", stat: { stat: "spa", stg: 1 } } },
 
     // ============================================================
     // Gen 5-9 additions — signature/common moves for #494-1025.
@@ -310,7 +310,7 @@
     "Moongeist Beam":{ t: "ghost", cat: "spec", pow: 100, acc: 100 },
     "Astral Barrage":{ t: "ghost", cat: "spec", pow: 120, acc: 100, spread: true },
     "Spectral Thief":{ t: "ghost", cat: "phys", pow: 90, acc: 100 },
-    "Phantom Force":{ t: "ghost", cat: "phys", pow: 90, acc: 100 },
+    "Phantom Force":{ t: "ghost", cat: "phys", pow: 90, acc: 100, charge: { msg: "vanished instantly!", invuln: true } },
     "Hex":          { t: "ghost", cat: "spec", pow: 65, acc: 100 },
     "Poltergeist":  { t: "ghost", cat: "phys", pow: 110, acc: 90 },
     // Dragon

@@ -67,7 +67,7 @@
     if (!d) return null;
     return { name: name, type: d.t, cat: d.cat || "phys", pow: d.pow || 0,
       acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null,
-      spread: !!d.spread, recharge: !!d.recharge };
+      spread: !!d.spread, recharge: !!d.recharge, charge: d.charge || null };
   }
   function typeMove(t, m) { return { name: m[0], type: t, cat: "phys", pow: m[1], acc: m[2], pri: 0, fx: null }; }
   // Gen-1/2 stat-stage multiplier (−6..+6).
@@ -100,6 +100,8 @@
       seeded: false,       // Leech Seed drain each turn
       _flinch: false,      // flinched this turn (volatile)
       _recharge: false,    // must spend next turn recharging (Hyper Beam etc.)
+      _charging: null,     // mid two-turn move ({move}): must strike next turn
+      _invuln: false,      // semi-invulnerable while charging (Dig/Fly/Phantom Force)
       stg: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 },   // stat stages
       moves: moves };
   }
@@ -125,6 +127,7 @@
     if (id === "brn" && ty.indexOf("fire") >= 0) return false;
     if (id === "frz" && ty.indexOf("ice") >= 0) return false;
     if (id === "psn" && (ty.indexOf("poison") >= 0 || ty.indexOf("steel") >= 0)) return false;
+    if (id === "par" && ty.indexOf("electric") >= 0) return false;   // Gen 6+: Electric can't be paralyzed
     return true;
   }
   const STAT_LABEL = { atk: "Attack", def: "Defense", spa: "Sp. Atk", spd: "Sp. Def", spe: "Speed", acc: "accuracy" };
@@ -583,7 +586,7 @@
       u.cur = to;
       const m = mon(u);
       m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
-      m._flinch = false; m.seeded = false; m._recharge = false;
+      m._flinch = false; m.seeded = false; m._recharge = false; m._charging = null; m._invuln = false;
     }
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
@@ -628,6 +631,17 @@
     function resolveMoveGo(o, u) {
       const m = mon(u);
       const mv = o.move === 99 ? STRUGGLE : (m.moves[o.move] || m.moves[0]);
+      // Two-turn charge move: turn 1 charges (Dig/Fly/Phantom Force also go
+      // semi-invulnerable), turn 2 strikes. On the charge turn we bank the move
+      // and stop here; next turn the mon is forced to complete it.
+      if (mv.charge && !m._charging) {
+        m._charging = { move: o.move }; m._invuln = !!mv.charge.invuln;
+        menu.innerHTML = "";
+        const cs = [[m.name + " " + mv.charge.msg, 1050, () => sfx("blip")]];
+        if (mv.charge.stat) cs.push([applyStage(m, mv.charge.stat.stat, mv.charge.stat.stg), 850, () => sfx("blip")]);
+        beats(cs, resolveNext); return;
+      }
+      if (mv.charge && m._charging) { m._charging = null; m._invuln = false; }   // emerge and strike
       const isStatus = mv.cat === "status";
       const dSide = other(o.side);
       let tUnit = o.tUnit, tu = sides[dSide].units[tUnit];
@@ -643,14 +657,16 @@
       // stat-stage and burn modifiers use current battle state (deterministic).
       const eff = tm ? effFor(mv.type, tm.types) : 1;
       const immune = eff === 0;
-      const miss = immune ? false : o.miss;
+      // A semi-invulnerable target (mid-Dig/Fly/Phantom Force) can't be hit.
+      const avoided = !isStatus && tm && tm._invuln;
+      const miss = immune ? false : (o.miss || !!avoided);
       // Spread moves (Surf, Earthquake, Discharge…) splash EVERY other fielded
       // foe in a double battle. Each hit is dialed to 75% when 2+ are struck —
       // the classic all-adjacent penalty.
       const dUnits = sides[dSide].units;
       let spreadFoes = [];
       if (!isStatus && !miss && mv.spread && dUnits.length > 1) {
-        spreadFoes = dUnits.map((fu, i) => ({ fu: fu, i: i })).filter((x) => x.i !== tUnit && mon(x.fu).hp > 0);
+        spreadFoes = dUnits.map((fu, i) => ({ fu: fu, i: i })).filter((x) => x.i !== tUnit && mon(x.fu).hp > 0 && !mon(x.fu)._invuln);
       }
       const spreadMult = spreadFoes.length ? 0.75 : 1;
       // Damage for one target: base × type × stat-stages × burn × (spread penalty).
@@ -669,7 +685,7 @@
         return { tUnit: x.i, eff: teff, dmg: dmgFor(x.fu, teff) };
       });
       applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
-        miss: miss, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg,
+        miss: miss, avoided: !!avoided, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg,
         cat: mv.cat, mvType: mv.type, fx: mv.fx, fxHit: o.fxHit, slpTurns: o.slpTurns, by: o.by,
         spread: spread, recharge: mv.recharge },
         u, false, resolveNext);
@@ -888,7 +904,10 @@
       u._monEl.classList.add("attack");
       setTimeout(() => u._monEl.classList.remove("attack"), 600);
       const used = [m.name + " used " + mv.name + "!", 800, () => sfx("select")];
-      if (act.miss) { beats(chug.concat([used, ["…it missed!", 1000, () => sfx("error")]]), () => { advance(); done(); }); return; }
+      if (act.miss) {
+        const missMsg = act.avoided ? (tm ? tm.name : "The foe") + " avoided the attack!" : "…it missed!";
+        beats(chug.concat([used, [missMsg, 1000, () => sfx("error")]]), () => { advance(); done(); }); return;
+      }
       if (act.eff === 0 && !selfMove) {                 // immune (damage OR foe-status move)
         beats(chug.concat([used, ["It doesn't affect " + (tm ? tm.name : "it") + "…", 1150, () => sfx("error")]]), () => { advance(); done(); });
         return;
@@ -1209,6 +1228,7 @@
       const tags = [];
       if (m.spread) tags.push("💠 both");
       if (m.recharge) tags.push("💤 recharge");
+      if (m.charge) tags.push(m.charge.invuln ? "⏳ 2-turn·hides" : "⏳ 2-turn");
       const fx = m.fx;
       let base = "";
       if (fx) {
@@ -1323,6 +1343,8 @@
       const m = mon(u);
       // Recharging AI: it must waste the turn too (order resolves as a skip).
       if (m._recharge) { doMove(u, ptr, 0, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
+      // Mid two-turn move: it's locked into completing the charge move.
+      if (m._charging) { doMove(u, ptr, m._charging.move, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
       let best = null, bestStatus = null;
       livingEnemies(ptr.side).forEach((f) => {
         m.moves.forEach((mv, i) => {
@@ -1384,6 +1406,14 @@
         menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) }, "💤 " + m.name + " must recharge!"));
         menu.appendChild(el("div", { class: "battle-menu-row" },
           [el("button", { class: "btn primary", onClick: () => doMove(u, ptr, 0, (foes[0] || { i: 0 }).i) }, "💤 Recharge…")]));
+        return;
+      }
+      // Mid two-turn move (Dig/Fly/Solar Beam…) — it must strike this turn.
+      if (m._charging) {
+        const cm = m.moves[m._charging.move] || m.moves[0];
+        menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) }, "⚡ " + m.name + " is charging " + cm.name + "!"));
+        menu.appendChild(el("div", { class: "battle-menu-row" },
+          [el("button", { class: "btn primary", onClick: () => doMove(u, ptr, m._charging.move, (foes[0] || { i: 0 }).i) }, "💥 Unleash " + cm.name + "!")]));
         return;
       }
       const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types) === 0));
