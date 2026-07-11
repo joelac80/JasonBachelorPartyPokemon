@@ -238,4 +238,10 @@
 
   window.Views = window.Views || {};
   window.Views.gyms = view;
+  // Shared with the combined Regions view: a gym card + region→gym-index lookup.
+  window.GymCircuit = {
+    GYMS: GYMS,
+    card: circuitCard,
+    idxsForRegion: function (name) { return GYMS.map(function (g, i) { return i; }).filter(function (i) { return GYMS[i].region === name; }); },
+  };
 })();

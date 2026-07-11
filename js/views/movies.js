@@ -158,4 +158,9 @@
 
   window.Views = window.Views || {};
   window.Views.movies = view;
+  // Shared with the combined Regions view: the boss cards (folded into Kanto).
+  window.MovieLegends = {
+    BOSSES: BOSSES,
+    card: bossCard,
+  };
 })();
