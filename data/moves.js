@@ -124,7 +124,6 @@
     "Hypnosis":    { t: "psychic", cat: "status", pow: 0, acc: 60, fx: { status: { id: "slp", chance: 100 } } },
     "Agility":     { t: "psychic", cat: "status", pow: 0, acc: 101, fx: { stat: { who: "self", stat: "spe", stg: 2 } } },
     "Amnesia":     { t: "psychic", cat: "status", pow: 0, acc: 101, fx: { stat: { who: "self", stat: "spd", stg: 2 } } },
-    "Future Sight":{ t: "psychic", cat: "spec", pow: 80, acc: 90 },
     // ---- Bug ----
     "Fury Cutter": { t: "bug", cat: "phys", pow: 50, acc: 95 },
     "Megahorn":    { t: "bug", cat: "phys", pow: 120, acc: 85 },
