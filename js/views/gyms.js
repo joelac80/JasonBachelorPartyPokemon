@@ -120,7 +120,7 @@
       hint: "A surprise battle! Bragging rights and sips — no badge, no rating.",
       onDone: (ids) => {
         Duel.start({ mode: "local", title: "a surprise showdown",
-          encounter: { foe: t.title + " " + t.name },
+          encounter: { foe: t.title + " " + t.name, who: t.name },
           a: { units: [{ attId: attId, monIds: ids }] },
           b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: 1.12 }] },
           onResult: () => Router.render() });

@@ -857,6 +857,46 @@
     movieWins(attId) {
       return ((this.state.movies || {})[attId] || []).slice();
     },
+    // ❗ canon-villain encounters won (Giovanni, Silver…) — names, append-only.
+    encounterWins(attId) {
+      return ((this.state.encounters || {})[attId] || []).slice();
+    },
+    // 🏆 Champions Tournament titles won by this trainer.
+    tourneyWins(attId) {
+      return ((this.state.tourneyWins || {})[attId] || 0);
+    },
+    // 🎖 Battle Honors — per-trainer awards for the EXTRA challenge ladders
+    // (Movie Legends, the Champions Tournament, canon-villain ambushes, Mt.
+    // Silver, and the nine-region Top Champion). Unlike liveTrophies (one holder
+    // each), every trainer who earns one keeps it — they roll in the closing
+    // credits and gather in the ceremony. Returns [{emoji, title, sub}].
+    battleHonorsFor(attId) {
+      const out = [];
+      const mv = this.movieWins(attId);
+      const mewtwo = mv.indexOf("mewtwo") >= 0, collector = mv.indexOf("collector") >= 0;
+      if (mewtwo && collector) out.push({ emoji: "🎬", title: "Silver Screen Legend", sub: "conquered every Movie Legend" });
+      else if (mewtwo) out.push({ emoji: "🧬", title: "Clone Buster", sub: "toppled MEWTWO and his clones" });
+      else if (collector) out.push({ emoji: "🎐", title: "Sky Liberator", sub: "freed the birds from the Collector" });
+      const tw = this.tourneyWins(attId);
+      if (tw > 0) out.push({ emoji: "🏆", title: "Tournament Champion", sub: tw > 1 ? tw + "× Champions Cup winner" : "won the Champions Tournament" });
+      const enc = this.encounterWins(attId);
+      const totalCanon = (window.CANON_TRAINERS || []).length;
+      if (enc.length && totalCanon && enc.length >= totalCanon) out.push({ emoji: "☠️", title: "Rogues' Gallery", sub: "beat every villain who ambushed the crew" });
+      else if (enc.length >= 5) out.push({ emoji: "🦹", title: "Villain Vanquisher", sub: "sent " + enc.length + " famous rogues packing" });
+      else if (enc.length >= 1) out.push({ emoji: "❗", title: "Ambush Survivor", sub: "won " + enc.length + " surprise showdown" + (enc.length > 1 ? "s" : "") });
+      const lw = this.leagueWins(attId);
+      if (lw.indexOf("red") >= 0) out.push({ emoji: "🗻", title: "Mt. Silver Conqueror", sub: "defeated the silent trainer, RED" });
+      if (lw.indexOf("geeta") >= 0) out.push({ emoji: "🌟", title: "Grand Champion", sub: "climbed all nine regions to the Top Champion" });
+      return out;
+    },
+    // Flat roll-up of every trainer's honors, for the ceremony credits.
+    battleHonors() {
+      const out = [];
+      (this.state.attendees || []).forEach((a) => {
+        this.battleHonorsFor(a.id).forEach((h) => out.push({ emoji: h.emoji, title: h.title, holder: a.name, sub: h.sub }));
+      });
+      return out;
+    },
 
     // Nickname a caught mon (per trainer). Blank clears it.
     setNick(attId, monId, nick) {
@@ -1008,6 +1048,17 @@
         const arr = nmv[tid] = nmv[tid] || [];
         (pmv[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
+      // ❗ canon-villain encounter wins: append-only names per trainer.
+      const pe = (prev && prev.encounters) || {};
+      const ne = next.encounters = next.encounters || {};
+      Object.keys(pe).forEach((tid) => {
+        const arr = ne[tid] = ne[tid] || [];
+        (pe[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+      });
+      // 🏆 Champions Tournament titles: keep the higher count per trainer.
+      const ptw = (prev && prev.tourneyWins) || {};
+      const ntw = next.tourneyWins = next.tourneyWins || {};
+      Object.keys(ptw).forEach((tid) => { ntw[tid] = Math.max(ntw[tid] || 0, ptw[tid] || 0); });
       // 🛠 Admin config (party info / teams / events) is EDITED, not append-only,
       // so a union won't do — but a device still holding STALE config must never
       // revert a newer edit via last-write-wins. Every config edit bumps

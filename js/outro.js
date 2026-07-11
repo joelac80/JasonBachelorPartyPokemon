@@ -32,6 +32,14 @@
   function trophiesFor(name) {
     return Store.liveTrophies().concat(Store.funSuperlatives()).filter((t) => t.holder === name).map((t) => t.emoji).join(" ");
   }
+  // 🎖 Battle Honors this trainer earned on the extra challenge ladders — a row
+  // of award chips (emoji + title) that scrolls by in their credit.
+  function honorsRow(attId) {
+    const hs = (Store.battleHonorsFor && Store.battleHonorsFor(attId)) || [];
+    if (!hs.length) return null;
+    return el("div", { class: "outro-honors" }, hs.map((h) =>
+      el("span", { class: "outro-honor", title: h.sub }, h.emoji + " " + h.title)));
+  }
   // Energy symbols for any type crowns this trainer holds.
   function gymRow(attId) {
     const gyms = Store.typeLeaders().filter((l) => l.holderId === attId && l.n > 0);
@@ -51,6 +59,7 @@
       el("div", { class: "outro-mem-stats" }, statLine(w)),
       teamRow(w),
       gymRow(a.id),
+      honorsRow(a.id),
       tro ? el("div", { class: "outro-mem-tro" }, tro) : null,
     ]);
   }
@@ -99,6 +108,7 @@
         el("div", { class: "outro-groom-name" }, groom ? groom.name : "The Groom"),
         w ? el("div", { class: "outro-groom-stats" }, statLine(w)) : null,
         w ? teamRow(w) : null,
+        groom ? honorsRow(groom.id) : null,
         el("div", { class: "outro-sendoff-msg" }, "Here's to " + (groom ? groom.name.split(" ")[0] : "the groom") + " — gotta catch that Bobby Quinn! 💍🌿"),
         el("button", { class: "btn spin-btn", onClick: finish }, "🖼️ To the Poster ▸"),
       ]));

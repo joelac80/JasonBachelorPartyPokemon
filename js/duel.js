@@ -1271,6 +1271,12 @@
           Store.update((s) => {
             if (winSide === playerSide) {
               Store.grantPoints(s, "battle", player.teamId, 5);
+              // 🎖 record the villain beaten (append-only) for Battle Honors.
+              if (opts.encounter.who) {
+                s.encounters = s.encounters || {};
+                const e = s.encounters[player.attId] = s.encounters[player.attId] || [];
+                if (e.indexOf(opts.encounter.who) < 0) e.push(opts.encounter.who);
+              }
               Store.chron(s, "❗", player.name + " sent " + foe + " packing in a surprise showdown!");
             } else {
               Store.chron(s, "❗", foe + " ambushed " + player.name + " and won. 3 sips of humility.");

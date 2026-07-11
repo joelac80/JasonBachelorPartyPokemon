@@ -68,6 +68,11 @@
         T.over = true;
         T.championName = winners[0].player ? (T.rounds && (Store.attendee(T.attId) || {}).name) || "You" : winners[0].name;
         T.playerWon = !!winners[0].player;
+        // 🏆 enshrine the championship (once) for Battle Honors + the ceremony.
+        if (T.playerWon && !T.recorded) {
+          T.recorded = true;
+          try { Store.update((s) => { s.tourneyWins = s.tourneyWins || {}; s.tourneyWins[T.attId] = (s.tourneyWins[T.attId] || 0) + 1; }); } catch (_) {}
+        }
         return;
       }
       const next = [];

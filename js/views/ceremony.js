@@ -148,6 +148,22 @@
     const gyms = section("Gym Badge Holders", gymBadgeRows());
     if (gyms) root.appendChild(gyms);
 
+    // 🎖 Battle Honors — awards for the extra challenge ladders (Movie Legends,
+    // the Champions Tournament, canon-villain ambushes, Mt. Silver, Top Champion).
+    const honors = Store.battleHonors ? Store.battleHonors() : [];
+    if (honors.length) {
+      root.appendChild(el("h2", { class: "section-title" }, "🎖 Battle Honors"));
+      root.appendChild(el("div", { class: "trophy-strip" }, honors.map((t) =>
+        el("div", { class: "trophy honor" }, [
+          el("span", { class: "trophy-emoji" }, t.emoji),
+          el("div", { class: "trophy-txt" }, [
+            el("div", { class: "trophy-title" }, t.title),
+            el("div", { class: "trophy-holder" }, t.holder),
+            el("div", { class: "trophy-sub" }, t.sub),
+          ]),
+        ]))));
+    }
+
     // Trophy Hall — every auto-earned trophy + the fun superlatives.
     const allTrophies = Store.liveTrophies().concat(Store.funSuperlatives());
     if (allTrophies.length) {
