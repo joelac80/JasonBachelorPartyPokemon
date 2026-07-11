@@ -6,8 +6,16 @@
   const { el, contrast } = U;
 
   function J() { return Store.state.jeopardy; }
-  function key(ci, qi) { return ci + "-" + qi; }
+  function key(r, ci, qi) { return r + "-" + ci + "-" + qi; }
   function sfx(name) { if (window.SFX && SFX[name]) SFX[name](); }
+  // The board's rounds (Single / Double Jeopardy). Falls back to a single round
+  // for any legacy board that only had a flat `categories` array.
+  function rounds() {
+    const b = J().board || {};
+    if (b.rounds && b.rounds.length) return b.rounds;
+    return [{ name: "Jeopardy", categories: b.categories || [] }];
+  }
+  function curRound() { return Math.min(Math.max(0, J().round || 0), rounds().length - 1); }
 
   // ---- Scoring against teams ------------------------------------------------
   function teamScore(id) { return (J().scores && J().scores[id]) || 0; }
@@ -40,8 +48,8 @@
   }
 
   // ---- Clue modal -----------------------------------------------------------
-  function openClue(ci, qi, onDone) {
-    const cat = J().board.categories[ci];
+  function openClue(r, ci, qi, onDone) {
+    const cat = rounds()[r].categories[ci];
     const clue = cat.clues[qi];
     const teams = Store.state.teams;
     const isBulba = !!clue.dailyBulba;
@@ -81,7 +89,7 @@
 
     let modalRef = null;
     function finish() {
-      Store.update((s) => { s.jeopardy.used[key(ci, qi)] = true; });
+      Store.update((s) => { s.jeopardy.used[key(r, ci, qi)] = true; });
       if (modalRef) modalRef.close();
       if (onDone) onDone();
     }
@@ -93,15 +101,15 @@
       answerBox,
       revealBtn,
       scoreRow,
-      el("button", { class: "jp-edit-clue", onClick: () => { modalRef.close(); editClue(ci, qi, onDone); } }, "✎ Edit this clue"),
+      el("button", { class: "jp-edit-clue", onClick: () => { modalRef.close(); editClue(r, ci, qi, onDone); } }, "✎ Edit this clue"),
     ]);
 
     modalRef = Modal.open(isBulba ? "Daily Bulba" : "Clue", body, null, {});
   }
 
   // ---- Edit clue ------------------------------------------------------------
-  function editClue(ci, qi, onDone) {
-    const clue = J().board.categories[ci].clues[qi];
+  function editClue(r, ci, qi, onDone) {
+    const clue = rounds()[r].categories[ci].clues[qi];
     const clueIn = el("textarea", { class: "in", rows: "3" }, clue.clue || "");
     const ansIn = el("textarea", { class: "in", rows: "2" }, clue.answer || "");
     const bulbaIn = el("input", { type: "checkbox" });
@@ -113,9 +121,11 @@
       el("label", { class: "jp-check" }, [bulbaIn, " Make this a Daily Bulba square"]),
     ]);
 
-    Modal.open("Edit Clue — " + J().board.categories[ci].name, body, () => {
+    Modal.open("Edit Clue — " + rounds()[r].categories[ci].name, body, () => {
       Store.update((s) => {
-        const c = s.jeopardy.board.categories[ci].clues[qi];
+        const b = s.jeopardy.board;
+        const cats = (b.rounds && b.rounds[r] ? b.rounds[r].categories : b.categories);
+        const c = cats[ci].clues[qi];
         c.clue = clueIn.value.trim();
         c.answer = ansIn.value.trim();
         c.dailyBulba = bulbaIn.checked;
@@ -167,12 +177,11 @@
 
   // ---- Board ----------------------------------------------------------------
   function view(root) {
-    const board = J().board;
-    const cats = board.categories || [];
+    const rs = rounds();
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "❓ Jason Jeopardy"),
-      el("p", { class: "page-sub" }, "This-is-your-life trivia — Bulbasaur style. Watch for the Daily Bulba!"),
+      el("p", { class: "page-sub" }, "Two full rounds — Single then Double Jeopardy — plus Final. Watch for the Daily Bulba!"),
     ]));
 
     // Scores
@@ -181,36 +190,54 @@
     root.appendChild(scoreHost);
     renderScores(scoreHost);
 
-    if (!cats.length) {
+    if (!rs.length || !(rs[0].categories || []).length) {
       root.appendChild(el("p", { class: "empty" }, "No board yet — add a jeopardyBoard in seed.js."));
       return;
     }
 
-    root.appendChild(el("h2", { class: "section-title" }, "The Board"));
+    // Round tabs (Single / Double Jeopardy). Each round keeps its own board
+    // state; used squares track (round-cat-clue).
+    const tabs = el("div", { class: "jp-rounds" });
+    root.appendChild(tabs);
 
-    const boardEl = el("div", { class: "jp-board", style: {
-      gridTemplateColumns: "repeat(" + cats.length + ", 1fr)",
-    } });
+    root.appendChild(el("h2", { class: "section-title" }, "The Board"));
+    const boardEl = el("div", { class: "jp-board" });
+
+    function paintTabs() {
+      tabs.innerHTML = "";
+      rs.forEach((rd, ri) => {
+        const on = ri === curRound();
+        // count remaining clues in this round
+        const cs = rd.categories || [];
+        let left = 0; cs.forEach((c, ci) => c.clues.forEach((_, qi) => { if (!J().used[key(ri, ci, qi)]) left++; }));
+        tabs.appendChild(el("button", { class: "jp-round-tab" + (on ? " on" : ""),
+          onClick: () => { if (ri !== curRound()) { Store.update((s) => { s.jeopardy.round = ri; }); rebuild(); paintTabs(); } } },
+          [el("span", {}, (ri === 0 ? "① " : ri === 1 ? "② " : (ri + 1) + " ") + rd.name),
+           el("span", { class: "jp-round-left" }, left + " left")]));
+      });
+    }
 
     function rebuild() {
+      const r = curRound();
+      const cats = rs[r].categories || [];
+      boardEl.style.gridTemplateColumns = "repeat(" + cats.length + ", 1fr)";
       boardEl.innerHTML = "";
-      // Category header row
       cats.forEach((c) => boardEl.appendChild(el("div", { class: "jp-cat" }, c.name)));
-      // Clue rows (assume equal clue counts; use max for safety)
-      const rows = Math.max.apply(null, cats.map((c) => c.clues.length));
-      for (let qi = 0; qi < rows; qi++) {
+      const nrows = Math.max.apply(null, cats.map((c) => c.clues.length));
+      for (let qi = 0; qi < nrows; qi++) {
         cats.forEach((c, ci) => {
           const clue = c.clues[qi];
           if (!clue) { boardEl.appendChild(el("div", { class: "jp-cell empty-cell" })); return; }
-          const used = !!J().used[key(ci, qi)];
+          const used = !!J().used[key(r, ci, qi)];
           const cell = el("div", {
             class: "jp-cell" + (used ? " used" : ""),
-            onClick: () => { if (!used) openClue(ci, qi, rebuild); },
+            onClick: () => { if (!used) openClue(r, ci, qi, () => { rebuild(); paintTabs(); }); },
           }, used ? "" : el("span", { class: "jp-val" }, "$" + clue.value));
           boardEl.appendChild(cell);
         });
       }
     }
+    paintTabs();
     rebuild();
     root.appendChild(boardEl);
 
@@ -219,15 +246,15 @@
       el("button", { class: "btn primary", onClick: () => openFinal(rebuild) },
         J().finalDone ? "✔ Final Jeopardy (replay)" : "🌟 Play Final Jeopardy"),
       el("button", { class: "btn subtle", onClick: () => {
-        if (confirm("Clear the board (reopen all clues) and zero the scores?")) {
-          Store.update((s) => { s.jeopardy.used = {}; s.jeopardy.scores = {}; s.jeopardy.finalDone = false; });
-          renderScores(scoreHost); rebuild();
+        if (confirm("Clear BOTH rounds (reopen all clues) and zero the scores?")) {
+          Store.update((s) => { s.jeopardy.used = {}; s.jeopardy.scores = {}; s.jeopardy.finalDone = false; s.jeopardy.round = 0; });
+          renderScores(scoreHost); paintTabs(); rebuild();
         }
       } }, "↺ Reset board & scores"),
     ]));
 
     root.appendChild(el("p", { class: "hint", style: { marginTop: "10px" } },
-      "Tip: real clues are coming from Bob. Open any square and tap “✎ Edit this clue” to drop them in."));
+      "Tip: tap a square to read the clue, reveal the answer, and award points. Switch rounds with the tabs above; ✎ edits any clue live."));
   }
 
   window.Views = window.Views || {};

@@ -51,8 +51,9 @@
       challengeDone: {},
       // Live Jeopardy state — the board is cloned so clues can be edited in-app.
       jeopardy: {
-        board: clone(seed.jeopardyBoard || { categories: [], final: {} }),
-        used: {},          // used["cat-clue"] = true
+        board: clone(seed.jeopardyBoard || { rounds: [], final: {} }),
+        round: 0,          // which round is on the board (0 = Single, 1 = Double)
+        used: {},          // used["round-cat-clue"] = true
         scores: {},        // scores[teamId] = running total
         finalDone: false,
       },
@@ -104,7 +105,17 @@
         superlativeVotes: parsed.superlativeVotes || {},
         challengeDone: parsed.challengeDone || {},
         evoStage: parsed.evoStage || {},
-        jeopardy: Object.assign(base.jeopardy, parsed.jeopardy || {}),
+        jeopardy: (function () {
+          // Keep the player's in-progress board, BUT if the seed ships a newer
+          // deck (higher board.version) than what was saved, swap in the fresh
+          // clues and reopen the board.
+          const saved = parsed.jeopardy || {};
+          const merged = Object.assign(base.jeopardy, saved);
+          const seedVer = (base.jeopardy.board && base.jeopardy.board.version) || 0;
+          const savedVer = (saved.board && saved.board.version) || 0;
+          if (savedVer < seedVer) { merged.board = clone(seed.jeopardyBoard); merged.used = {}; merged.finalDone = false; merged.round = 0; }
+          return merged;
+        })(),
         brackets: parsed.brackets || [],
         pokedex: Object.assign(base.pokedex, parsed.pokedex || {}),
         battles: Object.assign(base.battles, parsed.battles || {}),
@@ -1075,6 +1086,12 @@
       const ptw = (prev && prev.tourneyWins) || {};
       const ntw = next.tourneyWins = next.tourneyWins || {};
       Object.keys(ptw).forEach((tid) => { ntw[tid] = Math.max(ntw[tid] || 0, ptw[tid] || 0); });
+      // ❓ Jeopardy board is versioned content (like admin config) — keep
+      // whichever side has the newer deck so a phone on an older version can't
+      // downgrade the questions for everyone.
+      const pj = (prev && prev.jeopardy) || {}, nj = next.jeopardy = next.jeopardy || {};
+      const pv = (pj.board && pj.board.version) || 0, nv = (nj.board && nj.board.version) || 0;
+      if (pj.board && pv > nv) { nj.board = pj.board; nj.used = {}; nj.finalDone = false; nj.round = pj.round || 0; }
       // ⏸ Break timer: a single shared value — keep whichever side was set most
       // recently (a newer set OR clear wins) so a lagging phone can't resurrect a
       // stale timer or wipe a fresh one.

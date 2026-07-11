@@ -395,63 +395,147 @@ window.SEED = {
   //   Each category has 5 clues worth 100..500.
   //   dailyBulba: true marks a hidden wager square.
   // ---------------------------------------------------------------------------
+  // Two full rounds of real clues (Single + Double Jeopardy) + Final Jeopardy.
+  // `version` lets the app replace an older saved board with a newer deck.
+  // dailyBulba: true marks the Daily Doubles.
   jeopardyBoard: {
-    categories: [
+    version: 2,
+    rounds: [
       {
-        name: "All About Jason",
-        clues: [
-          { value: 100, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 200, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 300, clue: "Clue coming from Bob…", answer: "TBD", dailyBulba: true },
-          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
+        name: "Single Jeopardy",
+        categories: [
+          {
+            name: "Live From the Bach Party, It's Saturday Nighhhhtt",
+            clues: [
+              { value: 100, clue: "The Lonely Island digital short \"Lazy Sunday\" prominently referenced buying cupcakes at this Manhattan bakery.", answer: "What is Magnolia Bakery?" },
+              { value: 200, clue: "This original SNL cast member portrayed Roseanne Roseannadanna on Weekend Update.", answer: "Who is Gilda Radner?" },
+              { value: 300, clue: "This original cast member left SNL after one season and was replaced on Weekend Update by Jane Curtin.", answer: "Who is Chevy Chase?" },
+              { value: 400, clue: "This recurring Weekend Update character was known for starting every sentence confidently before immediately changing direction with \"Just kidding…\"", answer: "Who is Judy Grimes?" },
+              { value: 500, clue: "This fake commercial advertised a luxury perfume for \"complicit\" women after the Harvey Weinstein scandal.", answer: "What is \"Complicit\"?" },
+            ],
+          },
+          {
+            name: "Hoosier Daddy",
+            clues: [
+              { value: 100, clue: "This city is home to Indiana University's flagship campus.", answer: "What is Bloomington?" },
+              { value: 200, clue: "This famous cyclist race takes place annually at IU.", answer: "What is the Little 500?" },
+              { value: 300, clue: "This IU alumnus created the iconic TV series Parks and Recreation.", answer: "Who is Michael Schur?" },
+              { value: 400, clue: "This IU professor developed the Elinor Ostrom framework that earned her the 2009 Nobel Prize in Economics.", answer: "Who is Elinor Ostrom?" },
+              { value: 500, clue: "In 1938, IU's football stadium was named after this university president.", answer: "Who is Zora Clevenger?" },
+            ],
+          },
+          {
+            name: "Gotta Answer 'Em All",
+            clues: [
+              { value: 100, clue: "This Pokémon has the highest base HP of all Pokémon.", answer: "Who is Blissey?" },
+              { value: 200, clue: "This is the only Pokémon whose English name begins with the letter X.", answer: "Who is Xatu?" },
+              { value: 300, clue: "The move Sketch permanently copies another Pokémon's move and is exclusive to this Pokémon.", answer: "Who is Smeargle?" },
+              { value: 400, clue: "This was the first Pokémon ever designed by Game Freak.", answer: "Who is Rhydon?" },
+              { value: 500, clue: "This Pokémon is the only non-Legendary Pokémon with a base stat total of exactly 600.", answer: "Who is Tyranitar?" },
+            ],
+          },
+          {
+            name: "Sip Sip Hooray",
+            clues: [
+              { value: 100, clue: "2 oz vodka · 1 oz coffee liqueur · 1 oz espresso", answer: "What is an Espresso Martini?" },
+              { value: 200, clue: "2 oz gin · 0.5 oz dry vermouth · 0.5 oz olive brine", answer: "What is a Dirty Martini?" },
+              { value: 300, clue: "2 oz tequila · 4 oz grapefruit soda · 0.5 oz lime juice", answer: "What is a Paloma?" },
+              { value: 400, clue: "12 oz Modelo Especial · 1.5 oz lime juice · 2 oz tomato juice · hot sauce · Worcestershire · Tajín", answer: "What is a Michelada?" },
+              { value: 500, clue: "1.5 oz vodka · 1 oz cranberry juice · 0.5 oz lime juice · 0.5 oz triple sec", answer: "What is a Cosmopolitan?" },
+            ],
+          },
+          {
+            name: "Trust Me Bro, It's a Good Investment",
+            clues: [
+              { value: 100, clue: "Investors receive this payment when a company distributes profits.", answer: "What is a dividend?" },
+              { value: 200, clue: "This investor is known as the Oracle of Omaha.", answer: "Who is Warren Buffett?", dailyBulba: true },
+              { value: 300, clue: "A market decline of at least 20% is known as this.", answer: "What is a bear market?" },
+              { value: 400, clue: "The 1987 stock market crash is commonly known by this name.", answer: "What is Black Monday?" },
+              { value: 500, clue: "This company was the first to reach a $1 trillion market capitalization.", answer: "Who is Apple?" },
+            ],
+          },
+          {
+            name: "Blades of Glory",
+            clues: [
+              { value: 100, clue: "This jump enters from a back outside edge and uses the opposite toe pick.", answer: "What is a Lutz?" },
+              { value: 200, clue: "This skater was the first to land a ratified Quad Axel in competition.", answer: "Who is Ilia Malinin?" },
+              { value: 300, clue: "This skater was attacked before the 1994 Olympics.", answer: "Who is Nancy Kerrigan?" },
+              { value: 400, clue: "A Triple Axel requires this many rotations.", answer: "What is 3½ rotations?" },
+              { value: 500, clue: "The move now known as a \"Tano Jump\" was popularized by this 1988 Olympic gold medalist.", answer: "Who is Brian Boitano?" },
+            ],
+          },
         ],
       },
       {
-        name: "Bulba-Trivia",
-        clues: [
-          { value: 100, clue: "This Grass/Poison starter is #001 in the Kanto Pokédex.", answer: "Who is Bulbasaur?" },
-          { value: 200, clue: "Bulbasaur evolves into this Pokémon at level 16.", answer: "What is Ivysaur?" },
-          { value: 300, clue: "The seed on Bulbasaur's back is said to grow using this from the sun.", answer: "What is (sun)light / nutrients?" },
-          { value: 400, clue: "This signature Grass move fires a beam after absorbing sunlight.", answer: "What is Solar Beam?" },
-          { value: 500, clue: "Bulbasaur's final evolution is this Pokémon.", answer: "What is Venusaur?", dailyBulba: true },
-        ],
-      },
-      {
-        name: "Indiana Hoosiers",
-        clues: [
-          { value: 100, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 200, clue: "This QB — a big theme of the weekend — goes by 'Fernando'.", answer: "Who is Fernando Mendoza?" },
-          { value: 300, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
-        ],
-      },
-      {
-        name: "Carolina / Persians",
-        clues: [
-          { value: 100, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 200, clue: "Clue coming from Bob…", answer: "TBD", dailyBulba: true },
-          { value: 300, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
-        ],
-      },
-      {
-        name: "Lake House Lore",
-        clues: [
-          { value: 100, clue: "The party HQ sits on this lake road in Bristol, Indiana.", answer: "What is E Indiana Lake Rd?" },
-          { value: 200, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 300, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 400, clue: "Clue coming from Bob…", answer: "TBD" },
-          { value: 500, clue: "Clue coming from Bob…", answer: "TBD" },
+        name: "Double Jeopardy",
+        categories: [
+          {
+            name: "B-A-N-A-N-A-S",
+            clues: [
+              { value: 200, clue: "Bananas are naturally rich in this mineral.", answer: "What is Potassium?" },
+              { value: 400, clue: "Despite common belief, bananas are botanically classified as this type of fruit.", answer: "What is a berry?", dailyBulba: true },
+              { value: 600, clue: "Most commercial bananas are propagated through this process rather than seeds.", answer: "What is cloning (vegetative propagation)?" },
+              { value: 800, clue: "The humorous unit \"Banana Equivalent Dose\" measures exposure to this phenomenon.", answer: "What is radiation?" },
+              { value: 1000, clue: "O. Henry coined this political term in reference to Honduras in his 1904 book Cabbages and Kings.", answer: "What is a banana republic?" },
+            ],
+          },
+          {
+            name: "There's More than Corn Here",
+            clues: [
+              { value: 200, clue: "Indiana's capital city.", answer: "What is Indianapolis?" },
+              { value: 400, clue: "The Indianapolis 500 is held at this speedway.", answer: "What is Indianapolis Motor Speedway?" },
+              { value: 600, clue: "Indiana was the 19th state admitted to the Union in this year.", answer: "What is 1816?" },
+              { value: 800, clue: "Indiana's state motto is this four-word phrase.", answer: "What is \"The Crossroads of America\"?" },
+              { value: 1000, clue: "This singer-songwriter from Seymour, Indiana, recorded \"Jack and Diane.\"", answer: "Who is John Mellencamp?" },
+            ],
+          },
+          {
+            name: "Books Jason Definitely Didn't Read",
+            clues: [
+              { value: 200, clue: "This Harper Lee novel won the Pulitzer Prize in 1961.", answer: "What is To Kill a Mockingbird?" },
+              { value: 400, clue: "This novel by Mary Shelley is subtitled The Modern Prometheus.", answer: "What is Frankenstein?" },
+              { value: 600, clue: "The opening line, \"Happy families are all alike,\" appears in this novel.", answer: "What is Anna Karenina?" },
+              { value: 800, clue: "The title of Do Androids Dream of Electric Sheep? inspired this 1982 film.", answer: "What is Blade Runner?" },
+              { value: 1000, clue: "According to a 2021 survey, this book was the most commonly lied about when Americans claimed to have read it.", answer: "TBD — (from Bob)", dailyBulba: true },
+            ],
+          },
+          {
+            name: "The Almost Newlyweds",
+            clues: [
+              { value: 200, clue: "Bob was born on August 16, placing him under this zodiac sign, known for confidence and loving the spotlight.", answer: "What is Leo?" },
+              { value: 400, clue: "In 2023, Bob and Jason's Halloween costume represented two magical beings whose jobs were governed by \"Da Rules.\"", answer: "Who are Cosmo and Wanda?" },
+              { value: 600, clue: "Bob's master's degree from DePaul focused on the field whose practitioners spend nine months waiting for summer vacation.", answer: "What is Education?" },
+              { value: 800, clue: "Bob and Jason attended a 2024 concert by a band whose average member age is higher than many Fortune 500 CEOs.", answer: "Who are The Rolling Stones?" },
+              { value: 1000, clue: "The site of Bob and Jason's engagement sits between the city skyline and the namesake lagoon in Lincoln Park.", answer: "What is North Pond?" },
+            ],
+          },
+          {
+            name: "NSFW",
+            clues: [
+              { value: 200, clue: "This sex columnist and Sex and the City character famously asked, \"Couldn't help but wonder…\"", answer: "Who is Carrie Bradshaw?" },
+              { value: 400, clue: "This slang term refers to someone you repeatedly hook up with casually.", answer: "What is FWB / a situationship?" },
+              { value: 600, clue: "The term \"MILF\" was heavily popularized by this 1999 teen comedy.", answer: "What is American Pie?" },
+              { value: 800, clue: "\"Cuffing season\" refers to the time of year when people tend to do this.", answer: "What is look for relationships during the colder months?" },
+              { value: 1000, clue: "\"ENM\" on a dating profile stands for this.", answer: "What is Ethical Non-Monogamy?" },
+            ],
+          },
+          {
+            name: "Brian's Choice",
+            clues: [
+              { value: 200, clue: "The first appearance of Rowlf the Dog was not on a Henson production but on commercials for this dog food brand.", answer: "What is Purina Dog Chow?" },
+              { value: 400, clue: "In The Lord of the Rings, the Elvish word \"Mellon\" means this.", answer: "What is friend?" },
+              { value: 600, clue: "This houseplant is often called \"Mother-in-Law's Tongue.\"", answer: "What is a Snake Plant?" },
+              { value: 800, clue: "If Velma says \"Jinkies!\" and Shaggy says \"Zoinks!\", then this phrase of exasperation belongs to the fashion-forward Daphne Blake.", answer: "What is \"Jeepers!\"?" },
+              { value: 1000, clue: "In the classic Nickelodeon jingle, the word \"Nick\" is repeated this many times before the singer finally says \"Nickelodeon.\"", answer: "What is 7 or 8? (debated — either is accepted)" },
+            ],
+          },
         ],
       },
     ],
     final: {
-      category: "The Groom's Future",
-      clue: "Clue coming from Bob — the big Final Jeopardy question about Jason & the wedding.",
-      answer: "TBD",
+      category: "Wedding Statistics",
+      clue: "According to wedding industry surveys, more than 54% of couples create one of these to help guests share photos and memories from their wedding day online.",
+      answer: "What is a Wedding Hashtag?",
     },
   },
 };

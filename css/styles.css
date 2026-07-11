@@ -1049,6 +1049,20 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .jp-cell.used:hover { filter: none; transform: none; }
 .jp-cell.empty-cell { background: transparent; border: none; cursor: default; }
 .jp-val { font-family: var(--pixel); font-size: 24px; color: var(--pokeyellow); text-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+/* Round tabs (Single / Double Jeopardy) */
+.jp-rounds { display: flex; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
+.jp-round-tab { flex: 1; min-width: 130px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer;
+  font-weight: 800; font-size: 13px; color: var(--ink); }
+.jp-round-tab.on { border-color: var(--pokeblue); background: var(--pokeblue); color: #fff; box-shadow: 0 0 10px rgba(42,117,187,.4); }
+.jp-round-left { font-family: var(--pixel, monospace); font-size: 9px; opacity: .8; font-weight: 400; }
+/* 6 categories fit narrow phones: tighten type + values */
+@media (max-width: 560px) {
+  .jp-board { gap: 4px; }
+  .jp-cat { font-size: 9px; padding: 6px 3px; min-height: 58px; }
+  .jp-cell { min-height: 52px; }
+  .jp-val { font-size: 16px; }
+}
 
 .jp-clue-modal { display: flex; flex-direction: column; gap: 14px; text-align: center; }
 .jp-clue-modal.final .jp-clue-cat { color: var(--pokeyellow); background: var(--pokeblue-dk); }
