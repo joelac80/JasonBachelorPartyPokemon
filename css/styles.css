@@ -1849,3 +1849,7 @@ html, body { overscroll-behavior-y: contain; }
 .break-resume { text-align: center; }
 .break-resume-emoji { font-size: 48px; animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }
 .break-resume-title { font-family: var(--pixel, monospace); font-size: 20px; font-weight: 900; color: #2ec96b; letter-spacing: 1px; }
+
+/* 🏰 Hall of Fame Gauntlet mode picker */
+.gauntlet-modes { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.gauntlet-modes .btn { text-align: center; white-space: normal; line-height: 1.3; }

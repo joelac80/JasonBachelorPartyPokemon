@@ -1262,6 +1262,10 @@
         } catch (_) {}
         return;
       }
+      // 🏰 Hall of Fame Gauntlet — a back-to-back run against enshrined teams.
+      // The league view drives the chain via onResult (already fired above); no
+      // per-battle logging, Elo, belt, or chron here.
+      if (opts.gauntlet) { return; }
       // ❗ Surprise post-gym challenger (Giovanni, Silver…). Pure exhibition —
       // no Elo, no belt, no badge. Bragging rights and sips.
       if (opts.encounter) {

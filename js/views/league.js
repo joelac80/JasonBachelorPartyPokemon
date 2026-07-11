@@ -227,6 +227,76 @@
     });
   }
 
+  // 🏰 Hall of Fame Gauntlet — fight EVERY enshrined team back-to-back. Two
+  // modes: pick a fresh six each battle, or bring one squad for the whole run
+  // (fully healed between rounds).
+  function runGauntlet(attId, mode) {
+    const teams = (Store.state.hof || []).slice();
+    const total = teams.length;
+    if (!total) return;
+    const size = 6;
+    if (Duel.poolFor(attId).length < size) { alert("The Gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
+    let fixed = null;
+
+    const finishRun = (cleared, won) => {
+      if (won) {
+        try { Store.update((s) => Store.chron(s, "🏰", ((Store.attendee(attId) || {}).name || attId) +
+          " ran the HALL OF FAME GAUNTLET and toppled all " + total + " enshrined teams" +
+          (mode === "fixed" ? " — with ONE squad, no less!" : ", swapping squads each round!"))); } catch (_) {}
+        sfx("fanfare");
+      }
+      let ctrl;
+      const body = el("div", { class: "league-intro-inner", style: { textAlign: "center", padding: "8px", gap: "10px" } }, [
+        el("div", { style: { fontSize: "52px" } }, won ? "🏆" : "🛡"),
+        el("div", { class: "trn-crown-rank" }, won ? "GAUNTLET CLEARED!" : "GAUNTLET OVER"),
+        el("div", { class: "trn-crown-name" }, won
+          ? "Defeated all " + total + " Hall of Fame team" + (total > 1 ? "s" : "") + "!"
+          : "You fell after " + cleared + " / " + total + ". Run it back?"),
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); Router.render(); } }, "Done"),
+      ]);
+      ctrl = Modal.open("🏰 Hall of Fame Gauntlet", body, null, { noFooter: true });
+    };
+
+    const runAt = (i) => {
+      if (i >= total) { finishRun(total, true); return; }
+      const h = teams[i];
+      const champ = (Store.attendee(h.attId) || {}).name || h.attId;
+      const go = (party) => {
+        Duel.start({ mode: "local", title: "Hall of Fame Gauntlet (" + (i + 1) + "/" + total + ")",
+          gauntlet: true,
+          a: { units: [{ attId: attId, monIds: party }] },
+          b: { units: [{ npc: "HOF " + champ, ai: true, monIds: (h.party || []).slice() }] },
+          onResult: (winSide) => { if (winSide === "a") runAt(i + 1); else finishRun(i, false); } });
+      };
+      if (mode === "fixed") {
+        if (fixed) { go(fixed); return; }
+        Duel.pickParty({ attId: attId, min: size, max: size, title: "Your ONE Gauntlet squad — pick 6",
+          hint: "🛡 ONE team for the entire gauntlet (fully healed between battles). No swaps — choose a versatile six! First up: " + champ + "'s team.",
+          onDone: (ids) => { fixed = ids; go(ids); } });
+      } else {
+        Duel.pickParty({ attId: attId, min: size, max: size, title: "Round " + (i + 1) + "/" + total + " — vs " + champ + "'s team",
+          hint: "🔄 Fresh 6 for THIS battle — counter their lineup. Win to advance to the next enshrined team.",
+          onDone: go });
+      }
+    };
+    runAt(0);
+  }
+
+  function gauntletChoice(attId) {
+    const n = (Store.state.hof || []).length;
+    let ctrl;
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, "Face all " + n + " enshrined team" + (n > 1 ? "s" : "") + " back-to-back, in order. Lose once and the run ends. Pick your style:"),
+      el("div", { class: "gauntlet-modes" }, [
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fresh"); } },
+          "🔄 Swap squads — pick a fresh 6 every battle"),
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fixed"); } },
+          "🛡 One squad — same 6 all the way (healed between)"),
+      ]),
+    ]);
+    ctrl = Modal.open("🏰 Hall of Fame Gauntlet", body, null, { noFooter: true });
+  }
+
   // 🏛 Battle of Fame — a champion's enshrined team steps down from its
   // plaque (Stadium-style ghost team, AI-controlled). Pure exhibition.
   function challengeFame(h, attId) {
@@ -377,6 +447,10 @@
         host.appendChild(el("h2", { class: "section-title" }, "🏛 Hall of Fame"));
         host.appendChild(el("p", { class: "hint" },
           "⚔ Battle of Fame: any enshrined team can be challenged — the exact lineup that beat the League, AI-controlled, Stadium-style. Exhibition only (no Elo, no belt)."));
+        host.appendChild(el("div", { class: "toolbar" }, [
+          el("button", { class: "btn spin-btn", onClick: () => gauntletChoice(attId) },
+            "🏰 Run the Gauntlet — all " + hof.length + " team" + (hof.length > 1 ? "s" : "")),
+        ]));
         host.appendChild(el("div", { class: "hof-list" }, hof.map((h) => {
           const a = Store.attendee(h.attId);
           const title = hofTitle(h);
