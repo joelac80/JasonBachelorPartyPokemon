@@ -209,7 +209,7 @@
       el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
       filterBar,
       grid,
-      el("div", { class: "toolbar" }, [cta, teamBtn]),
+      el("div", { class: "toolbar duel-pick-actions" }, [cta, teamBtn]),
     ]);
     paint();
     const ref = Modal.open(opts.title || "Choose your party", body, null, {});
@@ -1216,6 +1216,24 @@
               Store.chron(s, "🏆", player.name + " defeated " + foe + " in the Champions Tournament!");
             } else {
               Store.chron(s, "🏆", foe + " knocked " + player.name + " out of the Champions Tournament. 3 sips.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
+      // ❗ Surprise post-gym challenger (Giovanni, Silver…). Pure exhibition —
+      // no Elo, no belt, no badge. Bragging rights and sips.
+      if (opts.encounter) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const foe = opts.encounter.foe || "a mysterious challenger";
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              Store.grantPoints(s, "battle", player.teamId, 5);
+              Store.chron(s, "❗", player.name + " sent " + foe + " packing in a surprise showdown!");
+            } else {
+              Store.chron(s, "❗", foe + " ambushed " + player.name + " and won. 3 sips of humility.");
             }
           });
         } catch (_) {}

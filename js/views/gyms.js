@@ -110,6 +110,50 @@
     const ctrl = Modal.open(title, grid, null, {});
   }
 
+  // ❗ ~1-in-4 chance a famous canon trainer (Giovanni, Silver, N…) ambushes you
+  // on your way out of a gym. Pure exhibition — glory and sips.
+  function startEncounter(attId, t) {
+    const size = Math.min(6, Duel.poolFor(attId).length);
+    if (size < 1) return;
+    Duel.pickParty({ attId: attId, min: 1, max: size,
+      title: "vs " + t.title + " " + t.name + " — pick up to " + size,
+      hint: "A surprise battle! Bragging rights and sips — no badge, no rating.",
+      onDone: (ids) => {
+        Duel.start({ mode: "local", title: "a surprise showdown",
+          encounter: { foe: t.title + " " + t.name },
+          a: { units: [{ attId: attId, monIds: ids }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: 1.12 }] },
+          onResult: () => Router.render() });
+      } });
+  }
+  function maybeEncounter(attId) {
+    const pool = window.CANON_TRAINERS || [];
+    if (!pool.length || Duel.poolFor(attId).length < 1) return;
+    if (Math.random() > 0.28) return;                       // ~28% of gym battles
+    const t = pool[Math.floor(Math.random() * pool.length)];
+    let tries = 0;
+    // Wait until the gym battle's own end screens (evolution / rematch) clear.
+    (function whenClear() {
+      if (++tries > 25 || !/^#\/gyms/.test(location.hash)) return;   // give up / left the page
+      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
+      const ico = U.energyIcon(t.type);
+      let ctrl;
+      const body = el("div", { class: "modal-form" }, [
+        el("p", { class: "hint" }, "❗ On your way out of the gym, a challenger blocks the path!"),
+        el("div", { class: "enc-hero" }, [
+          ico ? el("img", { class: "enc-ico", src: ico, alt: t.type }) : null,
+          el("div", {}, [el("div", { class: "enc-name" }, t.name), el("div", { class: "enc-title" }, t.title)]),
+        ]),
+        el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
+        el("div", { class: "toolbar" }, [
+          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); if (window.SFX) SFX.fanfare && SFX.fanfare(); startEncounter(attId, t); } }, "⚔ Accept"),
+          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Walk away"),
+        ]),
+      ]);
+      ctrl = Modal.open("A challenger appears!", body, null, { noFooter: true });
+    })();
+  }
+
   function challengeGym(idx) {
     const gym = GYMS[idx];
     const size = gym.team.length;
@@ -125,7 +169,7 @@
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym", gym: { idx: idx, leader: gym.leader, badge: gym.badge },
             a: { units: [{ attId: attId, monIds: ids }] },
             b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: gym.team.slice() }] },
-            onResult: () => Router.render() });
+            onResult: () => { Router.render(); maybeEncounter(attId); } });
         } });
     };
     const me = window.Sync && Sync.getMe && Sync.getMe();
