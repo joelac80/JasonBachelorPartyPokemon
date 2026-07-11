@@ -29,9 +29,9 @@
       quote: "We will grind you down with our superior power. Hoo hah!" },
     { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [461, 45, 94, 248, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
       quote: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Show me YOUR favorites." },
-    { key: "lance", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
+    { key: "lance", region: "Johto", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },
-    { key: "red",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
+    { key: "red", region: "Kanto",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
       quote: "……" },
     // ---- The Hoenn Elite Four (rematch squads) → Champion STEVEN ----
     { key: "sidney", name: "SIDNEY", rank: "Elite Four", type: "dark",   team: [359, 275, 332, 319, 342, 262], pts: 8, boost: 1.22, needs: "lance", reveal: "lance", gymGate: { start: 16, count: 8, region: "Hoenn" },
@@ -42,7 +42,7 @@
       quote: "Passion burns hotter than any blizzard. Show me a heart that won't freeze!" },
     { key: "drake",  name: "DRAKE",  rank: "Elite Four", type: "dragon", team: [373, 330, 334, 230, 149, 445], pts: 8, boost: 1.22, needs: "glacia", reveal: "lance",
       quote: "Dragons are the mightiest of all! Prove your bond is stronger — if you dare." },
-    { key: "steven", name: "STEVEN", rank: "Champion",   type: "steel",  team: [376, 306, 227, 344, 346, 348], pts: 10, boost: 1.3, needs: "drake", reveal: "lance",
+    { key: "steven", region: "Hoenn", name: "STEVEN", rank: "Champion",   type: "steel",  team: [376, 306, 227, 344, 346, 348], pts: 10, boost: 1.3, needs: "drake", reveal: "lance",
       quote: "I'm Steven — collector of rare stones, and Champion of Hoenn. Show me the power you've forged." },
     // ---- The Sinnoh Elite Four (Platinum rematch) → CYNTHIA ----
     { key: "aaron",  name: "AARON",  rank: "Elite Four", type: "bug",     team: [469, 212, 214, 416, 452, 267], pts: 10, boost: 1.32, needs: "steven", reveal: "steven", gymGate: { start: 24, count: 8, region: "Sinnoh" },
@@ -53,7 +53,7 @@
       quote: "My fire's been waiting for a challenger this bright. Don't you dare disappoint me!" },
     { key: "lucian", name: "LUCIAN", rank: "Elite Four", type: "psychic", team: [65, 196, 475, 437, 866, 981], pts: 10, boost: 1.32, needs: "flint", reveal: "steven",
       quote: "Few reach me. I'll read every move before you make it. Now — begin." },
-    { key: "cynthia", name: "CYNTHIA", rank: "Champion", type: "dragon",  team: [445, 442, 407, 448, 350, 468], pts: 14, boost: 1.5, needs: "lucian", reveal: "lucian", mystery: true,
+    { key: "cynthia", region: "Sinnoh", name: "CYNTHIA", rank: "Champion", type: "dragon",  team: [445, 442, 407, 448, 350, 468], pts: 14, boost: 1.5, needs: "lucian", reveal: "lucian", mystery: true,
       intro: "🎹 piano ensues….",
       quote: "There is no such thing as a battle whose outcome doesn't matter. Come — show me everything you have." },
     // ---- The Unova Elite Four → Champion ALDER ----
@@ -65,7 +65,7 @@
       quote: "My Pokémon and I will read your heart — and answer it in full." },
     { key: "marshal", name: "MARSHAL", rank: "Elite Four", type: "fighting",   team: [534, 620, 538, 539, 526, 68], pts: 12, boost: 1.34, needs: "caitlin", reveal: "cynthia",
       quote: "I seek strength in its purest form. Come — strike me with everything you have!" },
-    { key: "alder", name: "ALDER", rank: "Champion", type: "bug",              team: [637, 626, 584, 589, 617, 628], pts: 16, boost: 1.4, needs: "marshal", reveal: "cynthia",
+    { key: "alder", region: "Unova", name: "ALDER", rank: "Champion", type: "bug",              team: [637, 626, 584, 589, 617, 628], pts: 16, boost: 1.4, needs: "marshal", reveal: "cynthia",
       quote: "I'm the strongest Champion — old, but still burning. Show this graybeard the fire of youth!" },
     // ---- The Kalos Elite Four → Champion DIANTHA ----
     { key: "malva", name: "MALVA", rank: "Elite Four", type: "fire",           team: [663, 668, 324, 609, 229, 38], pts: 14, boost: 1.42, needs: "alder", reveal: "alder", gymGate: { start: 40, count: 8, region: "Kalos" },
@@ -76,7 +76,7 @@
       quote: "Oh, dear — such lovely Pokémon you have. My dragons and I would love to play with them." },
     { key: "siebold", name: "SIEBOLD", rank: "Elite Four", type: "water",      team: [693, 130, 121, 689, 9, 230], pts: 14, boost: 1.42, needs: "drasna", reveal: "alder",
       quote: "A battle is art — and I am both chef and artist. Let me savor every move you make." },
-    { key: "diantha", name: "DIANTHA", rank: "Champion", type: "fairy",        team: [701, 697, 699, 711, 706, 282], pts: 18, boost: 1.46, needs: "siebold", reveal: "alder",
+    { key: "diantha", region: "Kalos", name: "DIANTHA", rank: "Champion", type: "fairy",        team: [701, 697, 699, 711, 706, 282], pts: 18, boost: 1.46, needs: "siebold", reveal: "alder",
       quote: "Battling alongside you has taught my heart to shine. Now — dazzle me one last time!" },
     // ---- The Alola Elite Four → Champion KUKUI ----
     { key: "molayne", name: "MOLAYNE", rank: "Elite Four", type: "steel",      team: [707, 51, 376, 983, 462, 227], pts: 15, boost: 1.44, needs: "diantha", reveal: "diantha", gymGate: { start: 48, count: 4, region: "Alola" },
@@ -87,7 +87,7 @@
       quote: "A pro golfer's drive and a flying-type's wings — both cut clean through the wind. Fore!" },
     { key: "mina", name: "MINA", rank: "Elite Four", type: "fairy",            team: [743, 210, 764, 700, 303, 36], pts: 15, boost: 1.44, needs: "kahili", reveal: "diantha",
       quote: "Hmm? Oh — a battle? Sure, sure. My fairies paint outside the lines. Hope you don't mind." },
-    { key: "kukui", name: "PROF. KUKUI", rank: "Champion", type: "fighting",   team: [745, 38, 628, 462, 143, 727], pts: 20, boost: 1.48, needs: "mina", reveal: "diantha",
+    { key: "kukui", region: "Alola", name: "PROF. KUKUI", rank: "Champion", type: "fighting",   team: [745, 38, 628, 462, 143, 727], pts: 20, boost: 1.48, needs: "mina", reveal: "diantha",
       quote: "Woo! I built this whole league dreaming of a battle like this one. Let's make it legendary — yeah!" },
     // ---- The Galar Champion Cup → Champion LEON ----
     { key: "marnie", name: "MARNIE", rank: "Champion Cup", type: "dark",       team: [861, 877, 510, 454, 560, 197], pts: 16, boost: 1.46, needs: "kukui", reveal: "kukui", gymGate: { start: 52, count: 8, region: "Galar" },
@@ -98,7 +98,7 @@
       quote: "For Chairman Rose, I will allow no one to pass. Efficiency demands your defeat." },
     { key: "hop", name: "HOP", rank: "Champion Cup", type: "normal",           team: [832, 845, 823, 143, 706, 812], pts: 16, boost: 1.46, needs: "oleana", reveal: "kukui",
       quote: "I'm gonna be the greatest Champion — right after my brother! Bring it on, mate!" },
-    { key: "leon", name: "LEON", rank: "Champion", type: "dragon",             team: [681, 887, 612, 537, 464, 6], pts: 22, boost: 1.5, needs: "hop", reveal: "kukui",
+    { key: "leon", region: "Galar", name: "LEON", rank: "Champion", type: "dragon",             team: [681, 887, 612, 537, 464, 6], pts: 22, boost: 1.5, needs: "hop", reveal: "kukui",
       quote: "My time as Champion is coming to an end… but I'll go out with the greatest battle ever. Let's have a champion time!" },
     // ---- The Paldea Elite Four → Top Champion GEETA ----
     { key: "rika", name: "RIKA", rank: "Elite Four", type: "ground",           team: [980, 340, 323, 51, 232, 445], pts: 17, boost: 1.48, needs: "leon", reveal: "leon", gymGate: { start: 60, count: 8, region: "Paldea" },
@@ -109,7 +109,7 @@
       quote: "Off the clock, it's flying-types for me. Simple and strong — no frills. That's the best way, right?" },
     { key: "hassel", name: "HASSEL", rank: "Elite Four", type: "dragon",       team: [715, 691, 841, 612, 998, 149], pts: 17, boost: 1.48, needs: "larryf", reveal: "leon",
       quote: "Let us paint a masterpiece together — you, me, and the roar of dragons!" },
-    { key: "geeta", name: "GEETA", rank: "Top Champion", type: "fairy",        team: [956, 713, 673, 976, 983, 970], pts: 24, boost: 1.55, needs: "hassel", reveal: "leon", mystery: true,
+    { key: "geeta", region: "Paldea", name: "GEETA", rank: "Top Champion", type: "fairy",        team: [956, 713, 673, 976, 983, 970], pts: 24, boost: 1.55, needs: "hassel", reveal: "leon", mystery: true,
       quote: "As Top Champion, I oversee every league. Show me why you climbed all nine regions to reach me." },
   ];
   window.LEAGUE_STAGES = LEAGUE;
@@ -218,7 +218,7 @@
         onDone: (ids) => {
           Duel.start({ mode: "local",
             title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
-            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, pts: st.pts, final: isFinal },
+            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal },
             a: { units: [{ attId: attId, monIds: ids }] },
             b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
               boost: st.boost || 1.15 }] },
@@ -271,6 +271,20 @@
     const src = SP[ace] || Store.sprite(ace);
     if (!src) return null;
     return el("img", { class: "league-ace" + (beaten ? " lit" : ""), src: src, alt: "" });
+  }
+
+  // 🏛 Which crown a Hall-of-Fame team earned — named by the champion/region it
+  // beat. Newer enshrinements carry key/champ/region; older ones fall back to
+  // the legacy "beat RED?" heuristic.
+  function hofTitle(h) {
+    if (h && h.key === "red") return { ico: "🗻", txt: "conquered Mt. Silver — defeated RED" };
+    if (h && h.champ) {
+      if (h.rank === "Top Champion") return { ico: "🌟", txt: "Top Champion — beat " + h.champ + (h.region ? " (" + h.region + ")" : "") };
+      return { ico: "👑", txt: (h.region ? h.region + " " : "") + "Champion — beat " + h.champ };
+    }
+    // Legacy entries predate per-crown tracking — label neutrally (every
+    // enshrined team beat *a* Champion) rather than guessing the region.
+    return { ico: "👑", txt: "League Champion" };
   }
 
   function view(root) {
@@ -365,10 +379,9 @@
           "⚔ Battle of Fame: any enshrined team can be challenged — the exact lineup that beat the League, AI-controlled, Stadium-style. Exhibition only (no Elo, no belt)."));
         host.appendChild(el("div", { class: "hof-list" }, hof.map((h) => {
           const a = Store.attendee(h.attId);
-          const beatRed = Store.leagueWins(h.attId).indexOf("red") >= 0;
+          const title = hofTitle(h);
           return el("div", { class: "hof-row" }, [
-            el("div", { class: "hof-name" }, (beatRed ? "🗻 " : "👑 ") + ((a && a.name) || h.attId) +
-              (beatRed ? " — conquered Mt. Silver" : " — Champion")),
+            el("div", { class: "hof-name" }, title.ico + " " + ((a && a.name) || h.attId) + " — " + title.txt),
             el("div", { class: "hof-team" }, (h.party || []).map((id) => {
               const shiny = a && Store.state.pokedex.trainers[a.id] && Store.state.pokedex.trainers[a.id].caught[id] && Store.state.pokedex.trainers[a.id].caught[id].shiny;
               const src = (shiny && window.DEX_SPRITES_SHINY && DEX_SPRITES_SHINY[id]) || SP[id] || Store.sprite(id);
