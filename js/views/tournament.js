@@ -29,15 +29,16 @@
 
   function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
 
-  function draw(attId) {
+  function draw(attId, team) {
     const a = Store.attendee(attId);
     const me = { player: true, attId: attId, name: (a && a.name) || attId, tier: 2.6,
-      face: (a && a.favoriteId) ? a.favoriteId : null };
+      face: (team && team[0]) || (a && a.favoriteId) || null };
     const pool = shuffle(roster()).slice(0, 15);
     const slots = shuffle([me].concat(pool));
     const round0 = [];
     for (let i = 0; i < 16; i += 2) round0.push({ a: slots[i], b: slots[i + 1], winner: null });
-    T = { attId: attId, rounds: [round0], roundIdx: 0, over: false, eliminated: false, playerOut: -1, championName: "" };
+    T = { attId: attId, team: (team || []).slice(), rounds: [round0], roundIdx: 0,
+      over: false, eliminated: false, playerOut: -1, championName: "" };
     advance();
   }
 
@@ -80,15 +81,20 @@
   function battle(match) {
     const me = match.a.player ? match.a : match.b;
     const opp = match.a.player ? match.b : match.a;
-    const size = 4;   // 2v2 double battle → pick 4 (two lead, two in reserve)
-    if (Duel.poolFor(me.attId).length < size) {
-      alert("The Champions Cup is a 2 v 2 DOUBLE battle — you need at least 4 of your own Pokémon (catch more in the Safari!).");
-      return;
-    }
+    const size = 4;   // 2v2 double battle → pick 4 of your locked squad of 6
     const oppTeam = opp.team.slice(0, size);
-    Duel.pickParty({ attId: me.attId, min: size, max: size,
-      title: "vs " + opp.title + " " + opp.name + " — pick 4 (2v2 doubles)",
-      hint: "🏆 Champions Cup — 2 v 2 DOUBLE battle. Your first two lead; the other two wait in reserve. Win to advance; lose and you're out.",
+    // Scouting report: reveal the four the opponent is bringing so you can
+    // counter-pick your 4 of 6.
+    const scout = el("div", { class: "trn-scout" }, [
+      el("div", { class: "trn-scout-lab" }, "🔎 " + opp.title + " " + opp.name + " brings:"),
+      el("div", { class: "trn-scout-row" }, oppTeam.map((id) => {
+        const s = SP[id] || Store.sprite(id);
+        return s ? el("img", { class: "trn-scout-mon", src: s, alt: "" }) : null;
+      })),
+    ]);
+    Duel.pickParty({ attId: me.attId, min: size, max: size, pool: T.team, preview: scout,
+      title: "vs " + opp.title + " " + opp.name + " — pick 4 of your 6",
+      hint: "🏆 Champions Cup — 2 v 2 DOUBLE battle. Choose 4 of your six to counter them (first two lead, next two reserve). Win to advance; lose and you're out.",
       onDone: (ids) => {
         Duel.start({ mode: "local", title: "the Champions Cup",
           tournament: { foe: opp.title + " " + opp.name },
@@ -167,17 +173,29 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏆 Champions Tournament"),
-      el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, RED and BLUE — drawn fresh each time into one single-elimination bracket. You fight your own 2v2 DOUBLE battles; the rest of the field battles itself. Last trainer standing takes the crown." ),
+      el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, RED and BLUE — drawn fresh each time into one single-elimination bracket. Lock in a squad of SIX for the whole run, then bring 4 of them to each 2v2 double battle once you've scouted your opponent. The rest of the field battles itself; last trainer standing takes the crown." ),
     ]));
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
     if (!attId) { root.appendChild(el("p", { class: "hint" }, "Add trainers first (Squad page).")); return; }
 
+    // Lock in the 6-mon tournament squad, then build the bracket.
+    const enter = (att) => {
+      if (Duel.poolFor(att).length < 6) {
+        alert("The Champions Cup asks for a squad of SIX — catch a few more in the Safari, then enter.");
+        return;
+      }
+      Duel.pickParty({ attId: att, min: 6, max: 6,
+        title: "Your Champions Cup squad — pick 6",
+        hint: "🏆 Bring SIX for the ENTIRE tournament. Each 2v2 match you'll choose 4 of these six after scouting your opponent — so pick a versatile squad.",
+        onDone: (ids) => { sfx("fanfare"); draw(att, ids); Router.render(); } });
+    };
+
     const bar = el("div", { class: "toolbar" });
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id }, a.name)));
     sel.value = (T && T.attId) || attId;
-    const drawBtn = el("button", { class: "btn spin-btn" }, (T ? "🔁 Redraw bracket" : "🎲 Draw the bracket"));
-    drawBtn.onclick = () => { sfx("fanfare"); draw(sel.value); Router.render(); };
+    const drawBtn = el("button", { class: "btn spin-btn" }, (T ? "🔁 New run (re-pick 6)" : "🎲 Enter — pick your 6"));
+    drawBtn.onclick = () => enter(sel.value);
     bar.appendChild(sel); bar.appendChild(drawBtn);
     root.appendChild(bar);
 
@@ -185,8 +203,18 @@
     root.appendChild(host);
 
     if (!T) {
-      host.appendChild(el("p", { class: "hint" }, "🎲 Pick your challenger and draw the bracket — a new set of 16 legends every time. RED and BLUE are always in the pool."));
+      host.appendChild(el("p", { class: "hint" }, "🎲 Pick your challenger, lock in a squad of six, and the bracket of 16 legends is drawn — a new set every time. RED and BLUE are always in the pool."));
       return;
+    }
+    // Show the locked squad above the bracket.
+    if (T.team && T.team.length) {
+      host.appendChild(el("div", { class: "trn-squad" }, [
+        el("span", { class: "trn-squad-lab" }, "🎒 Your squad:"),
+        el("span", { class: "trn-squad-row" }, T.team.map((id) => {
+          const s = SP[id] || Store.sprite(id);
+          return s ? el("img", { class: "trn-squad-mon", src: s, alt: "" }) : null;
+        })),
+      ]));
     }
     // If the selected trainer differs from the running bracket, keep showing the
     // running one until they redraw (avoids clobbering a live bracket on nav).
