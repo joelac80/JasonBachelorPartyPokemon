@@ -230,8 +230,8 @@
   // 🏰 Hall of Fame Gauntlet — fight EVERY enshrined team back-to-back. Two
   // modes: pick a fresh six each battle, or bring one squad for the whole run
   // (fully healed between rounds).
-  function runGauntlet(attId, mode) {
-    const teams = (Store.state.hof || []).slice();
+  function runGauntlet(attId, mode, teamList) {
+    const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
     const total = teams.length;
     if (!total) return;
     const size = 6;
@@ -282,15 +282,16 @@
     runAt(0);
   }
 
-  function gauntletChoice(attId) {
-    const n = (Store.state.hof || []).length;
+  function gauntletChoice(attId, teamList) {
+    const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
+    const n = teams.length;
     let ctrl;
     const body = el("div", { class: "modal-form" }, [
       el("p", { class: "hint" }, "Face all " + n + " enshrined team" + (n > 1 ? "s" : "") + " back-to-back, in order. Lose once and the run ends. Pick your style:"),
       el("div", { class: "gauntlet-modes" }, [
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fresh"); } },
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fresh", teams); } },
           "🔄 Swap squads — pick a fresh 6 every battle"),
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fixed"); } },
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fixed", teams); } },
           "🛡 One squad — same 6 all the way (healed between)"),
       ]),
     ]);
@@ -409,14 +410,22 @@
     ]);
   }
 
-  function renderHOF(hostEl, attId) {
-    const hof = (Store.state.hof || []).slice();
+  function renderHOF(hostEl, attId, opts) {
+    opts = opts || {};
+    let hof = (Store.state.hof || []).slice();
+    // Region-scoped Hall of Fame: only champions who won THIS region. Kanto &
+    // Johto (the origin) also adopts legacy entries that predate region tracking.
+    if (opts.regions) {
+      const regs = opts.regions;
+      const takesLegacy = regs.indexOf("Johto") >= 0 || regs.indexOf("Kanto") >= 0;
+      hof = hof.filter((h) => (h.region && regs.indexOf(h.region) >= 0) || (takesLegacy && !h.region));
+    }
     if (!hof.length) return;
-    hostEl.appendChild(el("h2", { class: "section-title" }, "🏛 Hall of Fame"));
+    hostEl.appendChild(el("h2", { class: "section-title" }, "🏛 Hall of Fame" + (opts.label ? " · " + opts.label : "")));
     hostEl.appendChild(el("p", { class: "hint" },
-      "⚔ Battle of Fame: any enshrined team can be challenged — the exact lineup that beat the League, AI-controlled, Stadium-style. Exhibition only (no Elo, no belt)."));
+      "⚔ Battle of Fame: any enshrined team can be challenged — the exact lineup that beat " + (opts.label ? opts.label : "the League") + ", AI-controlled, Stadium-style. Exhibition only (no Elo, no belt)."));
     hostEl.appendChild(el("div", { class: "toolbar" }, [
-      el("button", { class: "btn spin-btn", onClick: () => gauntletChoice(attId) },
+      el("button", { class: "btn spin-btn", onClick: () => gauntletChoice(attId, hof) },
         "🏰 Run the Gauntlet — all " + hof.length + " team" + (hof.length > 1 ? "s" : "")),
     ]));
     hostEl.appendChild(el("div", { class: "hof-list" }, hof.map((h) => {

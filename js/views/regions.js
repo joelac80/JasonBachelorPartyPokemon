@@ -100,8 +100,8 @@
           MovieLegends.BOSSES.map(function (b) { return MovieLegends.card(b, attId); })));
       }
 
-      // 🏛 Hall of Fame + Gauntlet (spans all regions) at the bottom
-      if (window.PokeLeague && PokeLeague.renderHOF) PokeLeague.renderHOF(host, attId);
+      // 🏛 Hall of Fame + Gauntlet — scoped to THIS region's champions
+      if (window.PokeLeague && PokeLeague.renderHOF) PokeLeague.renderHOF(host, attId, { regions: t.lg, label: t.name });
     }
 
     paintTabs();
