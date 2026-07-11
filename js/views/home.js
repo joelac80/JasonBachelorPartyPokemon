@@ -61,10 +61,9 @@
     ] },
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
-      { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Real turn-based duels — singles or doubles, sips on the line" },
-      { r: "gyms",    e: "🏟", t: "Gym Circuit", d: "32 leaders across 4 regions — even matches, hidden teams" },
-      { r: "league",  e: "👑", t: "Pokémon League", d: "Elite Four → Champion LANCE → …the summit" },
-      { r: "brackets", e: "🥊", t: "Brackets",     d: "Run a tournament — matchups launch real duels" },
+      { r: "regions",  e: "🗺", t: "The Journey",   d: "Every region — gyms → Elite Four → Champion, the Champions Cup & Movie Legends" },
+      { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real turn-based duels — singles or doubles, sips on the line" },
+      { r: "brackets", e: "🥊", t: "Party Brackets", d: "Run a tournament — matchups launch real duels" },
     ] },
     { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
       { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
