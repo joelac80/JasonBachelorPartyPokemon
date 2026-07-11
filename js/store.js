@@ -989,6 +989,19 @@
         const arr = nc[idx] = nc[idx] || [];
         (pc[idx] || []).forEach((att) => { if (arr.indexOf(att) < 0) arr.push(att); });
       });
+      // 👑 league wins (Elite Four / Champions / RED): append-only per trainer —
+      // union so a concurrent last-write-wins push can't erase a stage you beat.
+      const pgl = (prev && prev.league) || {};
+      const ngl = next.league = next.league || {};
+      Object.keys(pgl).forEach((tid) => {
+        const arr = ngl[tid] = ngl[tid] || [];
+        (pgl[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+      });
+      // 🏛 Hall of Fame: append-only enshrinements — union by attendee + timestamp.
+      const phof = (prev && prev.hof) || [];
+      const nhof = next.hof = next.hof || [];
+      const hseen = {}; nhof.forEach((h) => { if (h) hseen[(h.attId || "") + ":" + (h.ts || "")] = 1; });
+      phof.forEach((h) => { if (!h) return; const k = (h.attId || "") + ":" + (h.ts || ""); if (!hseen[k]) { nhof.push(h); hseen[k] = 1; } });
       // ✨ dex variant ownership: union have / haveShiny / seen per trainer, so
       // a shiny (or normal) you caught stays owned even if the catch record
       // itself got last-write-clobbered — the dex + encounter table read these.
