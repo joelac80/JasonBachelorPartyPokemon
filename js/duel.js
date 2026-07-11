@@ -162,6 +162,8 @@
     const max = opts.max || 6;
     const min = opts.min || 1;
     let picked = [];
+    // Sort/filter the pool by dex number, generation and type.
+    const filter = { gen: 0, type: "", desc: false };
     const grid = el("div", { class: "duel-party-grid" });
     const cta = el("button", { class: "btn primary", onClick: () => {
       if (picked.length < min) return;
@@ -169,7 +171,9 @@
     } }, "Ready");
     function paint() {
       grid.innerHTML = "";
-      pool.forEach((id) => {
+      const shown = (window.DexFilter ? DexFilter.apply(pool, filter) : pool.slice());
+      if (!shown.length) grid.appendChild(el("div", { class: "duel-pick-empty" }, "No Pok\u00e9mon match \u2014 clear the filter."));
+      shown.forEach((id) => {
         const st = statsFor(id);
         const idx = picked.indexOf(id);
         const shiny = isShinyFor(opts.attId, id);
@@ -197,9 +201,13 @@
       picked = team;
       paint();
     } }, "⚡ Use my team");
+    // Filter bar only when there's enough to sift through (a locked squad of a
+    // few doesn't need it).
+    const filterBar = (pool.length > 8 && window.DexFilter) ? DexFilter.controls(filter, paint) : null;
     const body = el("div", { class: "modal-form" }, [
       opts.preview || null,
       el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
+      filterBar,
       grid,
       el("div", { class: "toolbar" }, [cta, teamBtn]),
     ]);

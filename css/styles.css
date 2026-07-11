@@ -1759,3 +1759,25 @@ html, body { overscroll-behavior-y: contain; }
 .trn-scout-row { display: flex; gap: 4px; flex-wrap: wrap; }
 .trn-scout-mon { width: 46px; height: 46px; image-rendering: pixelated;
   background: rgba(0,0,0,0.04); border-radius: 8px; }
+
+/* 🔎 shared Pokédex sort/filter bar */
+.dexf-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.dexf-sel { flex: 1 1 auto; min-width: 110px; max-width: 200px; padding: 6px 8px; font-size: 13px; }
+.dexf-sort { font-family: var(--pixel); }
+.duel-pick-empty { color: var(--ink-dim); font-size: 13px; padding: 12px; text-align: center; width: 100%; }
+
+/* 📒 Pokédex Tracker — browsable dex grid */
+.trk-dex-tools { justify-content: flex-start; margin-top: 6px; }
+.trk-dex-count { margin: 2px 0 8px; }
+.trk-dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)); gap: 6px; }
+.trk-dex-cell { position: relative; background: var(--panel); border: 2px solid var(--line); border-radius: 10px;
+  padding: 4px 2px 2px; display: flex; flex-direction: column; align-items: center; }
+.trk-dex-cell img { width: 48px; height: 48px; image-rendering: pixelated; object-fit: contain; }
+.trk-dex-cell.caught { border-color: #b8860b; background: linear-gradient(#fffdf2, #fff7d6); }
+.trk-dex-cell.seen img { filter: grayscale(1) brightness(.9); opacity: .8; }
+.trk-dex-cell.unseen img { filter: brightness(0); opacity: .42; }
+.trk-dex-cell.unseen { opacity: .8; }
+.trk-dex-no { font-family: var(--pixel); font-size: 10px; font-weight: 800; color: var(--ink-dim); margin-top: 1px; }
+.trk-dex-cell.caught .trk-dex-no { color: #a9781a; }
+.trk-dex-ball { font-size: 30px; line-height: 48px; }
+.trk-dex-shiny { position: absolute; top: 2px; right: 3px; font-size: 12px; }
