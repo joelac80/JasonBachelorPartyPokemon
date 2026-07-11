@@ -20,7 +20,7 @@
       name: s.name, title: s.key === "red" ? "Mt. Silver" : s.rank, type: s.type,
       team: s.team.slice(), tier: tierOf(s.rank),
     }));
-    pool.push({ name: "BLUE", title: "Rival Champion", type: "normal", team: [18, 65, 112, 130, 103, 59], tier: 3 });
+    pool.push({ name: "BLUE", title: "Rival Champion", type: "normal", team: [18, 65, 464, 130, 103, 59], tier: 3 });
     return pool;
   }
 

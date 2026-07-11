@@ -9,29 +9,25 @@
   const SP = window.DEX_SPRITES || {};
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
 
-  // Since the Johto gyms run their HGSS rematch squads, the Elite Four run
-  // THEIR HGSS round-two rematch teams too (six deep, fully evolved) so the
-  // League stays above the gyms. Later-gen rematch mons are swapped for
-  // their closest Gen 1–2 kin: Bronzong/Grumpig/Gardevoir→Mr. Mime/Hypno/
-  // Espeon (Will), Skuntank/Swalot/Toxicroak→Weezing+his GSC classics
-  // (Koga), Lucario→Heracross and Onix grows into Steelix (Bruno),
-  // Weavile/Spiritomb/Absol→Sneasel/Gengar/Tyranitar (Karen). LANCE's
-  // triple-Dragonite six is already his ceiling; RED is RED.
-  // A long cinematic ladder: Johto E4 → LANCE → (Mt. Silver RED, a secret side
-  // summit) → the HOENN Elite Four → Champion STEVEN → the SINNOH Elite Four →
-  // and, at the very end, a Cynthia rematch. Each stage carries its own gating
-  // (needs = the key you must have beaten), reveal (un-fogs for everyone once
-  // ANY trainer beats that key), mystery (name hidden until beaten), boost and
-  // point value. Later-gen teams use the real rematch squads now that the dex
-  // reaches #493.
+  // The Elite Four and Champions run their round-two REMATCH teams — six deep,
+  // every mon in its FINAL evolved form (Sneasel→Weavile & Girafarig→Farigiraf
+  // for Karen/Lucian, Mr. Mime→Mr. Rime, Bisharp→Kingambit for Grimsley, and so
+  // on). RED alone keeps his signature Pikachu — that IS his definitive team.
+  // A long cinematic ladder in generation order: Johto E4 → LANCE → (Mt. Silver
+  // RED, a secret side summit) → Hoenn → Sinnoh (Cynthia) → Unova (Alder) →
+  // Kalos (Diantha) → Alola (Prof. Kukui) → the Galar Champion Cup (Leon) →
+  // Paldea and Top Champion GEETA — with the Champions Tournament beyond. Each
+  // stage carries its own gating (needs = the key you must have beaten), reveal
+  // (un-fogs for everyone once ANY trainer beats that key), mystery (name hidden
+  // until beaten), boost and point value.
   const LEAGUE = [
-    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [122, 124, 97, 196, 80, 178], pts: 6, boost: 1.15,
+    { key: "will",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [866, 124, 97, 196, 80, 178], pts: 6, boost: 1.15,
       quote: "I have trained my mind to see all that is coming… and I foresee your defeat." },
     { key: "koga",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 110, 89, 169], pts: 6, boost: 1.15, needs: "will",
       quote: "A ninja's poison lingers long after the strike. Can you endure it?" },
     { key: "bruno", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 208, 214, 68], pts: 6, boost: 1.15, needs: "koga",
       quote: "We will grind you down with our superior power. Hoo hah!" },
-    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [215, 45, 94, 248, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
+    { key: "karen", name: "KAREN", rank: "Elite Four", type: "dark",     team: [461, 45, 94, 248, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
       quote: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Show me YOUR favorites." },
     { key: "lance", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },
@@ -40,11 +36,11 @@
     // ---- The Hoenn Elite Four (rematch squads) → Champion STEVEN ----
     { key: "sidney", name: "SIDNEY", rank: "Elite Four", type: "dark",   team: [359, 275, 332, 319, 342, 262], pts: 8, boost: 1.22, needs: "lance", reveal: "lance", gymGate: { start: 16, count: 8, region: "Hoenn" },
       quote: "Well, well — a fresh challenger from another region! No holding back. Let's go all out!" },
-    { key: "phoebe", name: "PHOEBE", rank: "Elite Four", type: "ghost",  team: [477, 354, 302, 94, 429, 356], pts: 8, boost: 1.22, needs: "sidney", reveal: "lance",
+    { key: "phoebe", name: "PHOEBE", rank: "Elite Four", type: "ghost",  team: [477, 354, 302, 94, 429, 442], pts: 8, boost: 1.22, needs: "sidney", reveal: "lance",
       quote: "I speak with the departed. They whisper that your team is about to join them…" },
     { key: "glacia", name: "GLACIA", rank: "Elite Four", type: "ice",    team: [365, 362, 478, 461, 131, 87], pts: 8, boost: 1.22, needs: "phoebe", reveal: "lance",
       quote: "Passion burns hotter than any blizzard. Show me a heart that won't freeze!" },
-    { key: "drake",  name: "DRAKE",  rank: "Elite Four", type: "dragon", team: [373, 330, 334, 230, 149, 372], pts: 8, boost: 1.22, needs: "glacia", reveal: "lance",
+    { key: "drake",  name: "DRAKE",  rank: "Elite Four", type: "dragon", team: [373, 330, 334, 230, 149, 445], pts: 8, boost: 1.22, needs: "glacia", reveal: "lance",
       quote: "Dragons are the mightiest of all! Prove your bond is stronger — if you dare." },
     { key: "steven", name: "STEVEN", rank: "Champion",   type: "steel",  team: [376, 306, 227, 344, 346, 348], pts: 10, boost: 1.3, needs: "drake", reveal: "lance",
       quote: "I'm Steven — collector of rare stones, and Champion of Hoenn. Show me the power you've forged." },
@@ -55,7 +51,7 @@
       quote: "Hehe — a young one keeps this old woman on her toes. Let's see your grit." },
     { key: "flint",  name: "FLINT",  rank: "Elite Four", type: "fire",    team: [392, 467, 78, 229, 136, 59], pts: 10, boost: 1.32, needs: "bertha", reveal: "steven",
       quote: "My fire's been waiting for a challenger this bright. Don't you dare disappoint me!" },
-    { key: "lucian", name: "LUCIAN", rank: "Elite Four", type: "psychic", team: [65, 196, 475, 437, 122, 203], pts: 10, boost: 1.32, needs: "flint", reveal: "steven",
+    { key: "lucian", name: "LUCIAN", rank: "Elite Four", type: "psychic", team: [65, 196, 475, 437, 866, 981], pts: 10, boost: 1.32, needs: "flint", reveal: "steven",
       quote: "Few reach me. I'll read every move before you make it. Now — begin." },
     { key: "cynthia", name: "CYNTHIA", rank: "Champion", type: "dragon",  team: [445, 442, 407, 448, 350, 468], pts: 14, boost: 1.5, needs: "lucian", reveal: "lucian", mystery: true,
       intro: "🎹 piano ensues….",
@@ -63,7 +59,7 @@
     // ---- The Unova Elite Four → Champion ALDER ----
     { key: "shauntal", name: "SHAUNTAL", rank: "Elite Four", type: "ghost",    team: [563, 609, 623, 593, 426, 478], pts: 12, boost: 1.34, needs: "cynthia", reveal: "cynthia", gymGate: { start: 32, count: 8, region: "Unova" },
       quote: "My ghosts have already written the ending of this tale. Care to read it with me?" },
-    { key: "grimsley", name: "GRIMSLEY", rank: "Elite Four", type: "dark",     team: [625, 553, 510, 560, 359, 430], pts: 12, boost: 1.34, needs: "shauntal", reveal: "cynthia",
+    { key: "grimsley", name: "GRIMSLEY", rank: "Elite Four", type: "dark",     team: [983, 553, 510, 560, 359, 430], pts: 12, boost: 1.34, needs: "shauntal", reveal: "cynthia",
       quote: "Win or lose, it's all just the roll of the dice. Let's gamble, shall we?" },
     { key: "caitlin", name: "CAITLIN", rank: "Elite Four", type: "psychic",    team: [579, 518, 561, 576, 475, 376], pts: 12, boost: 1.34, needs: "grimsley", reveal: "cynthia",
       quote: "My Pokémon and I will read your heart — and answer it in full." },
@@ -83,7 +79,7 @@
     { key: "diantha", name: "DIANTHA", rank: "Champion", type: "fairy",        team: [701, 697, 699, 711, 706, 282], pts: 18, boost: 1.46, needs: "siebold", reveal: "alder",
       quote: "Battling alongside you has taught my heart to shine. Now — dazzle me one last time!" },
     // ---- The Alola Elite Four → Champion KUKUI ----
-    { key: "molayne", name: "MOLAYNE", rank: "Elite Four", type: "steel",      team: [707, 51, 376, 625, 462, 227], pts: 15, boost: 1.44, needs: "diantha", reveal: "diantha", gymGate: { start: 48, count: 4, region: "Alola" },
+    { key: "molayne", name: "MOLAYNE", rank: "Elite Four", type: "steel",      team: [707, 51, 376, 983, 462, 227], pts: 15, boost: 1.44, needs: "diantha", reveal: "diantha", gymGate: { start: 48, count: 4, region: "Alola" },
       quote: "My cousin Sophocles lends me the stars; my steel does the rest. Let's shine." },
     { key: "acerola", name: "ACEROLA", rank: "Elite Four", type: "ghost",      team: [778, 770, 781, 426, 478, 302], pts: 15, boost: 1.44, needs: "molayne", reveal: "diantha",
       quote: "Heeey! My ghost-type friends are dying to meet you — well, they're already dead, but still!" },
@@ -98,7 +94,7 @@
       quote: "I'm gonna become Champion for Spikemuth's sake. Nothin' personal — but I'm not holdin' back." },
     { key: "bede", name: "BEDE", rank: "Champion Cup", type: "fairy",          team: [858, 866, 282, 78, 700, 468], pts: 16, boost: 1.46, needs: "marnie", reveal: "kukui",
       quote: "I'm destined for greatness — obviously. Now stand aside, or be knocked aside." },
-    { key: "oleana", name: "OLEANA", rank: "Champion Cup", type: "poison",     team: [569, 350, 478, 758, 596, 884], pts: 16, boost: 1.46, needs: "bede", reveal: "kukui",
+    { key: "oleana", name: "OLEANA", rank: "Champion Cup", type: "poison",     team: [569, 350, 478, 758, 596, 1018], pts: 16, boost: 1.46, needs: "bede", reveal: "kukui",
       quote: "For Chairman Rose, I will allow no one to pass. Efficiency demands your defeat." },
     { key: "hop", name: "HOP", rank: "Champion Cup", type: "normal",           team: [832, 845, 823, 143, 706, 812], pts: 16, boost: 1.46, needs: "oleana", reveal: "kukui",
       quote: "I'm gonna be the greatest Champion — right after my brother! Bring it on, mate!" },
