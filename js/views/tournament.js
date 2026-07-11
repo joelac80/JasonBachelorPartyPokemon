@@ -21,6 +21,8 @@
       team: s.team.slice(), tier: tierOf(s.rank),
     }));
     pool.push({ name: "BLUE", title: "Rival Champion", type: "normal", team: [18, 65, 464, 130, 103, 59], tier: 3 });
+    // Famous canon trainers — Giovanni, Silver, N, and the rest — join the draw.
+    (window.CANON_TRAINERS || []).forEach((t) => pool.push({ name: t.name, title: t.title, type: t.type, team: t.team.slice(), tier: t.tier }));
     return pool;
   }
 
