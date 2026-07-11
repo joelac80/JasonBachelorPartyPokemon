@@ -364,6 +364,26 @@
       u._fill.classList.toggle("crit", pct <= 0.2);
       u._num.textContent = Math.max(0, m.hp) + " / " + m.hpMax;
       paintStatus(u);
+      paintParty(u._side);   // remaining-team balls track every faint/heal
+    }
+    // Every Pokémon on a side (shared-double slots point at one party, so we
+    // dedupe by party reference — no double-counting).
+    function sideMons(s) {
+      const seen = [], out = [];
+      sides[s].units.forEach((u) => { if (seen.indexOf(u.party) < 0) { seen.push(u.party); u.party.forEach((m) => out.push(m)); } });
+      return out;
+    }
+    // 🔴 the classic party-ball row: one ball per team member, dimmed (×) once
+    // it's fainted, so both trainers can see how many each has left.
+    function paintParty(s) {
+      const row = sides[s] && sides[s]._balls; if (!row) return;
+      const mons = sideMons(s);
+      row.innerHTML = "";
+      if (mons.length <= 1) { row.style.display = "none"; return; }
+      row.style.display = "";
+      const alive = mons.filter((m) => m.hp > 0).length;
+      mons.forEach((m) => row.appendChild(el("div", { class: "pball" + (m.hp > 0 ? "" : " down"), title: m.name })));
+      row.appendChild(el("span", { class: "pball-count" }, alive + "/" + mons.length));
     }
     // The little PAR/BRN/PSN/SLP/FRZ badge next to a mon's name.
     function paintStatus(u) {
@@ -374,23 +394,24 @@
     }
     function renderHp(s) {
       const box = hpBoxes[s]; box.innerHTML = "";
+      const balls = el("div", { class: "battle-party" });
+      sides[s]._balls = balls; box.appendChild(balls);
       sides[s].units.forEach((u) => {
         const m = mon(u);
         u._fill = el("div", { class: "battle-hp-fill" });
         u._num = el("span", { class: "duel-hp-num" });
         u._statusEl = el("span", { class: "duel-status hidden" });
-        const left = u.party.filter((x) => x.hp > 0).length;
         box.appendChild(el("div", { class: "battle-hp-mem" }, [
           el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv50"), u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
             el("div", { class: "battle-hp-track" }, [u._fill]),
           ]),
-          el("div", { class: "duel-hp-sub" }, [u._num,
-            el("span", { class: "duel-owner" }, u.name + (u.party.length > 1 ? " · ⚪" + left + "/" + u.party.length : ""))]),
+          el("div", { class: "duel-hp-sub" }, [u._num, el("span", { class: "duel-owner" }, u.name)]),
         ]));
         paintHp(u);
       });
+      paintParty(s);
     }
     renderHp("a"); renderHp("b");
 
