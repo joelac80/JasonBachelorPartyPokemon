@@ -1,6 +1,6 @@
 /* badges.js — Weekend Badges: the 8 hand-awarded party badges (each with a
    reason to earn + a power), the glossy badge case, and the live trophies.
-   Gym Leader battles live in the Battle Frontier (#/gyms). */
+   Gym Leader battles live in The Journey (#/regions). */
 (function () {
   const { el, contrast } = U;
 
@@ -132,7 +132,7 @@
       el("p", { class: "page-sub" }, "The 8 hand-awarded party badges — each earned by weekend deeds and carrying a real power — plus the badge case and live trophies." ),
     ]));
 
-    // Pokémon battling lives in the Battle Frontier now.
+    // Pokémon battling lives in The Journey now.
     root.appendChild(el("div", { class: "duel-belt", onClick: () => { location.hash = "#/regions"; } },
       "⚔ Looking for the Gym Leaders? Every region's gyms, Elite Four & Champion live in THE JOURNEY →"));
 
