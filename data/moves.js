@@ -31,7 +31,7 @@
     "Stomp":       { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Double-Edge": { t: "normal", cat: "phys", pow: 100, acc: 100, fx: { recoil: 0.25 } },
     "Take Down":   { t: "normal", cat: "phys", pow: 80, acc: 85, fx: { recoil: 0.25 } },
-    "Hyper Beam":  { t: "normal", cat: "spec", pow: 120, acc: 90 },
+    "Hyper Beam":  { t: "normal", cat: "spec", pow: 120, acc: 90, recharge: true },
     "Swift":       { t: "normal", cat: "spec", pow: 60, acc: 101 },
     "Tri Attack":  { t: "normal", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 20 } } },
     "Return":      { t: "normal", cat: "phys", pow: 75, acc: 100 },
@@ -167,7 +167,7 @@
     // ============================================================
     // Normal
     "Extreme Speed":{ t: "normal", cat: "phys", pow: 80, acc: 100, pri: 2 },
-    "Giga Impact":  { t: "normal", cat: "phys", pow: 130, acc: 90 },
+    "Giga Impact":  { t: "normal", cat: "phys", pow: 130, acc: 90, recharge: true },
     "Hyper Voice":  { t: "normal", cat: "spec", pow: 90, acc: 100, spread: true },
     "Crush Claw":   { t: "normal", cat: "phys", pow: 75, acc: 95, fx: { stat: { who: "foe", stat: "def", stg: -1, chance: 50 } } },
     "Wish":         { t: "normal", cat: "status", pow: 0, acc: 101, fx: { heal: 0.5 } },
@@ -304,7 +304,7 @@
     "Lunge":        { t: "bug", cat: "phys", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -1 } } },
     "First Impression":{ t: "bug", cat: "phys", pow: 90, acc: 100, pri: 2 },
     // Rock
-    "Meteor Assault":{ t: "rock", cat: "phys", pow: 100, acc: 100 },
+    "Meteor Assault":{ t: "rock", cat: "phys", pow: 100, acc: 100, recharge: true },
     "Diamond Storm":{ t: "rock", cat: "phys", pow: 100, acc: 95, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 50 } }, spread: true },
     // Ghost
     "Moongeist Beam":{ t: "ghost", cat: "spec", pow: 100, acc: 100 },
@@ -318,7 +318,7 @@
     "Scale Shot":   { t: "dragon", cat: "phys", pow: 75, acc: 90 },
     "Clanging Scales":{ t: "dragon", cat: "spec", pow: 110, acc: 100, fx: { stat: { who: "self", stat: "def", stg: -1 } }, spread: true },
     "Glaive Rush":  { t: "dragon", cat: "phys", pow: 120, acc: 100 },
-    "Roar of Time": { t: "dragon", cat: "spec", pow: 120, acc: 90 },
+    "Roar of Time": { t: "dragon", cat: "spec", pow: 120, acc: 90, recharge: true },
     "Spacial Rend": { t: "dragon", cat: "spec", pow: 100, acc: 95, fx: { crit: "high" } },
     // Dark
     "Knock Off":    { t: "dark", cat: "phys", pow: 65, acc: 100 },
