@@ -1221,7 +1221,7 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .battle-sprite.fainted { animation: battleFaint .6s ease forwards; }
 @keyframes battleFaint { to { transform: translateY(46px) scale(.85); opacity: 0; } }
 .battle-sprite.crit { animation: battleCrit .5s steps(1) 3; }
-@keyframes battleCrit { 0%,100% { filter: none; } 50% { filter: brightness(0.3) sepia(1) saturate(6) hue-rotate(-20deg); } }
+@keyframes battleCrit { 0%,100% { filter: none; } 50% { filter: brightness(1.6) sepia(1) saturate(8) hue-rotate(-30deg) drop-shadow(0 0 12px rgba(255,60,40,.9)); } }
 
 /* VS intro */
 .battle-vs { position: absolute; inset: 0; z-index: 6; overflow: hidden; display: flex; align-items: center; justify-content: center;
@@ -2059,3 +2059,7 @@ html, body { overscroll-behavior-y: contain; }
 .duel-catch-ball.click { box-shadow: 0 0 14px 4px rgba(255,226,122,.9); filter: brightness(1.15); }
 @keyframes duel-ball-open { to { transform: scale(1.6); opacity: 0; } }
 .duel-catch-ball.open { animation: duel-ball-open .45s ease-out forwards; }
+
+/* 📕 Unified Pokédex page */
+.dex-tabbar { margin-top: 2px; }
+.dex-embed .page-head { display: none; }

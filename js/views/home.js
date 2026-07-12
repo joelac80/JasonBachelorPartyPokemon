@@ -67,8 +67,7 @@
     { id: "safari", e: "🔴", t: "Safari Zone", x: 52, y: 11, sub: [
       { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
       { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Masters" },
-      { r: "unown",   e: "🔡", t: "Unown Dex", d: "The living alphabet — 28 glyphs in the wild" },
-      { r: "megadex", e: "✨", t: "Mega-Dex", d: "Mega-Evolve every form in battle" },
+      { r: "dex",     e: "📕", t: "Pokédex", d: "Every collection on one page — Gen 1-9, Hisui, Unown & Mega" },
       { r: "trade",   e: "🔁", t: "Trading Post", d: "Swap caught Pokémon — some evolve when traded!" },
     ] },
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },

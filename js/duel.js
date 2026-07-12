@@ -1147,7 +1147,9 @@
         steps.push([null, 500, () => {
           tm.hp = Math.max(0, tm.hp - act.dmg);
           if (tm.hp <= 0) act._exp = creditKO(u, m);
-          tu._monEl.classList.add("hurt"); if (act.crit) tu._monEl.classList.add("crit");
+          // A crit gets ONLY the red flash — stacking it with the hurt blink
+          // (opacity dip) made the whole scene look like it went transparent.
+          tu._monEl.classList.add(act.crit ? "crit" : "hurt");
           setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
           spawnHit(tu._monEl, TYPE_COLOR[act.mvType] || "#fff", act.crit);
           paintHp(tu); sfx("coin");
@@ -1233,8 +1235,17 @@
 
     // Losers always want to run it back — same trainers, same parties,
     // fresh HP. Hot-seat only (remote rematches are a new challenge).
-    function offerRematch(wLabel) {
+    // The prompt only appears when someone actually LOST and wants revenge:
+    // beat the AI and you just move on; wild grinds, Nuzlocke runs and the
+    // Battle Tower have their own flows and never nag.
+    function offerRematch(wLabel, winSide) {
       if (mode !== "local" || !window.Modal) return;
+      if (opts.wild || opts.nuzlocke || opts.tower) return;
+      if (winSide) {
+        const wAI = sides[winSide].units.some((x) => x.ai);
+        const lAI = sides[other(winSide)].units.some((x) => x.ai);
+        if (lAI && !wAI) return;                     // the human WON — no popup
+      }
       let ctrl;
       const body = el("div", { class: "chal-modal" }, [
         el("div", { class: "chal-line" }, "🏆 " + wLabel + " took it. Run it back?"),
@@ -1302,7 +1313,7 @@
         outro,
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
-      ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel)), 700); if (done) done(); });
+      ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel, winSide)), 700); if (done) done(); });
       if (!record) return;
       // End the room broadcast no matter which branch records below —
       // watchers' screens resolve and the LIVE banner clears.

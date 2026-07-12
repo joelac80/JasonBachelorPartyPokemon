@@ -14,6 +14,7 @@
     .add("safari", V.safari)
     .add("drinks", V.drinks)
     .add("tracker", V.tracker)
+    .add("dex", V.dex)
     .add("unown", V.unown)
     .add("megadex", V.megadex)
     .add("trade", V.trade)
