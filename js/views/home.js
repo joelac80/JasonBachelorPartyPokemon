@@ -147,23 +147,31 @@
     const p = Store.state.party;
     const target = new Date(p.startDate);
 
-    // Live-battle banner — appears while a room battle is on, so anyone who
-    // dismissed the alert can still jump in to watch.
+    // Live-battle strip — lists EVERY room battle currently on, so anyone who
+    // dismissed the alert can pick which one to jump into and watch.
     if (window.Sync) {
       const liveHost = el("div", {});
       root.appendChild(liveHost);
       if (liveUnsub) { try { liveUnsub(); } catch (_) {} liveUnsub = null; }
-      liveUnsub = Sync.onLiveBattle((data) => {
+      const paintLive = () => {
         liveHost.innerHTML = "";
-        if (!data || data.state !== "live") return;
-        const btn = el("button", { class: "btn primary sm" }, "👀 Watch");
-        btn.addEventListener("click", () => { if (window.watchLiveBattle) watchLiveBattle(data); });
-        liveHost.appendChild(el("div", { class: "live-banner" }, [
-          el("span", { class: "live-dot" }),
-          el("span", { class: "live-txt" }, "LIVE: " + data.aName + " vs " + data.bName + (data.event ? " · " + data.event : "")),
-          btn,
-        ]));
-      });
+        const active = (Sync.liveActive && Sync.liveActive()) || [];
+        if (!active.length) return;
+        if (active.length > 1) liveHost.appendChild(el("div", { class: "live-head" }, "🔴 " + active.length + " battles live — pick one to watch"));
+        active.forEach((d) => {
+          const btn = el("button", { class: "btn primary sm" }, "👀 Watch");
+          btn.addEventListener("click", () => { if (window.watchLiveBattle) watchLiveBattle(d); });
+          liveHost.appendChild(el("div", { class: "live-banner" }, [
+            el("span", { class: "live-dot" }),
+            el("span", { class: "live-txt" }, "LIVE: " + d.aName + " vs " + d.bName +
+              (d.stakes ? " · " + d.stakes : d.event ? " · " + d.event : "")),
+            btn,
+          ]));
+        });
+      };
+      // Any battle starting/ending re-paints the whole list from liveActive().
+      liveUnsub = Sync.onLiveBattle(() => paintLive());
+      paintLive();
     }
 
     // Quick actions for the signed-in trainer — log your own drink or a photo

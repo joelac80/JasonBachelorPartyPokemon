@@ -521,7 +521,10 @@
     // gym runs and League climbs become room events. The banner channel
     // still announces it (Watch alert + the Home LIVE strip), carrying the
     // stakes so the room knows a badge or a crown is on the line.
-    let liveLocal = false, castId = null, castUnsub = null;
+    // remoteId: for a duel played across phones, the shared battle/duel id
+    // (passed in by app.js) so this screen finishes the RIGHT battle doc.
+    const remoteId = opts.duelId || null;
+    let liveLocal = false, castId = null, castUnsub = null, liveId = null;
     if (mode === "local" && opts.broadcast !== false && window.Sync && Sync.isLive && Sync.isLive()) {
       liveLocal = true;
       try {
@@ -534,10 +537,11 @@
           a: { units: ((opts.a || {}).units || []) }, b: { units: ((opts.b || {}).units || []) } };
         castId = Sync.startRemoteDuel && Sync.startRemoteDuel(setup);
         if (castId) {
-          net = { send: function (act) { try { Sync.sendDuelAct(act); } catch (_) {} } };
+          net = { send: function (act) { try { Sync.sendDuelAct(castId, act); } catch (_) {} } };
           castUnsub = Sync.onDuel(function (d) { if (d && d.id === castId) receiveRx(d.rx || []); });
         }
-        Sync.startLiveBattle({ aName: label("a"), bName: label("b"), event: title,
+        // Give the banner the SAME id as the duel doc so watchers link the two.
+        liveId = Sync.startLiveBattle({ id: castId || undefined, aName: label("a"), bName: label("b"), event: title,
           aClient: Sync.myClientId(), mode: castId ? "duel-remote" : "duel", stakes: stakes });
       } catch (_) {}
     }
@@ -1147,8 +1151,8 @@
       // watchers' screens resolve and the LIVE banner clears.
       try {
         if (window.Sync) {
-          if (mode === "remote") { Sync.endRemoteDuel(wLabel); Sync.finishLiveBattle(wLabel); }
-          else if (liveLocal) { if (castId) Sync.endRemoteDuel(wLabel); Sync.finishLiveBattle(wLabel); }
+          if (mode === "remote") { Sync.endRemoteDuel(remoteId, wLabel); Sync.finishLiveBattle(remoteId, wLabel); }
+          else if (liveLocal) { if (castId) Sync.endRemoteDuel(castId, wLabel); Sync.finishLiveBattle(liveId, wLabel); }
           if (castUnsub) { castUnsub(); castUnsub = null; }
         }
       } catch (_) {}
@@ -1606,7 +1610,7 @@
       row.push(el("button", { class: "btn subtle sm", onClick: () => {
         if (!S.moved) {                           // nothing happened yet — just walk away (hot-seat only)
           if (mode === "local") {
-            if (liveLocal) try { Sync.finishLiveBattle(""); if (castId) Sync.endRemoteDuel(""); if (castUnsub) { castUnsub(); castUnsub = null; } } catch (_) {}
+            if (liveLocal) try { Sync.finishLiveBattle(liveId, ""); if (castId) Sync.endRemoteDuel(castId, ""); if (castUnsub) { castUnsub(); castUnsub = null; } } catch (_) {}
             close(); return;
           }
         }

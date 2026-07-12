@@ -36,7 +36,8 @@
   // ---- presence + challenges (live multiplayer) ----
   let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
-  let presenceList = [], roamLast = null, lastLive = null;
+  let presenceList = [], roamLast = null;
+  const battleMap = {}, duelMap = {};   // id → latest doc data (all live battles / duels)
   const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [], photoReactSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
@@ -136,20 +137,29 @@
     }, function () {});
     if (chalUnsub) chalUnsub();
     chalUnsub = chalRef.onSnapshot(handleChallenges, function () {});
-    liveRef = db.collection("rooms").doc(room).collection("live").doc("current");
+    // Live battles: ONE doc per battle (so several can run + be watched at
+    // once). Each change is delivered to subscribers keyed by data.id; the map
+    // lets late subscribers (and the Home list) see everything currently on.
+    liveRef = db.collection("rooms").doc(room).collection("battles");
     if (liveUnsub) liveUnsub();
-    liveUnsub = liveRef.onSnapshot((d) => {
-      const data = d.exists ? d.data() : null;
-      lastLive = data;                          // remembered so new subscribers can catch up
-      liveSubs.forEach((f) => { try { f(data); } catch (_) {} });
+    liveUnsub = liveRef.onSnapshot((snap) => {
+      snap.docChanges().forEach((ch) => {
+        const data = ch.doc.data(); if (!data || !data.id) return;
+        if (ch.type === "removed") delete battleMap[data.id]; else battleMap[data.id] = data;
+        liveSubs.forEach((f) => { try { f(data); } catch (_) {} });
+      });
     }, function () {});
-    // Remote duel channel: one doc holding the matchup + an append-only list
-    // of turn acts. Every phone (players AND spectators) replays the acts.
-    duelRef = db.collection("rooms").doc(room).collection("live").doc("duel");
+    // Remote duel channel: ONE doc per battle, holding the matchup + an
+    // append-only list of turn acts. Every phone (players AND spectators)
+    // replays its acts. Keyed by id so concurrent battles never cross wires.
+    duelRef = db.collection("rooms").doc(room).collection("duels");
     if (duelUnsub) duelUnsub();
-    duelUnsub = duelRef.onSnapshot((d) => {
-      const data = d.exists ? d.data() : null;
-      duelSubs.forEach((f) => { try { f(data); } catch (_) {} });
+    duelUnsub = duelRef.onSnapshot((snap) => {
+      snap.docChanges().forEach((ch) => {
+        const data = ch.doc.data(); if (!data || !data.id) return;
+        if (ch.type === "removed") delete duelMap[data.id]; else duelMap[data.id] = data;
+        duelSubs.forEach((f) => { try { f(data); } catch (_) {} });
+      });
     }, function () {});
     // Roaming legendary event — one doc, whole room races to catch it.
     roamRef = db.collection("rooms").doc(room).collection("live").doc("roam");
@@ -221,7 +231,8 @@
     if (duelUnsub) { duelUnsub(); duelUnsub = null; }
     if (roamUnsub) { roamUnsub(); roamUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; roamLast = null; lastLive = null;
+    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; roamLast = null;
+    Object.keys(battleMap).forEach((k) => delete battleMap[k]); Object.keys(duelMap).forEach((k) => delete duelMap[k]);
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
 
@@ -382,38 +393,55 @@
     onChallengeIncoming(fn) { chIncSubs.push(fn); return () => { const i = chIncSubs.indexOf(fn); if (i >= 0) chIncSubs.splice(i, 1); }; },
     onChallengeAccepted(fn) { chAccSubs.push(fn); return () => { const i = chAccSubs.indexOf(fn); if (i >= 0) chAccSubs.splice(i, 1); }; },
 
-    // ---- live battle (broadcast so the whole room can watch) ----
+    // ---- live battles (broadcast so the whole room can watch — many at once) ----
+    // Returns the battle's id; callers keep it to finish that exact battle.
+    // Pass info.id to reuse an id (e.g. match the duel channel's id).
     startLiveBattle(info) {
-      if (!liveRef || !info) return;
-      liveRef.set({
-        id: newId("lb"), aName: info.aName || "", bName: info.bName || "",
+      if (!liveRef || !info) return "";
+      const id = info.id || newId("lb");
+      liveRef.doc(id).set({
+        id: id, aName: info.aName || "", bName: info.bName || "",
         aClient: info.aClient || "", bClient: info.bClient || "", event: info.event || "",
-        mode: info.mode || "", state: "live", winner: "", t: nowMs(),
+        stakes: info.stakes || "", mode: info.mode || "", state: "live", winner: "", t: nowMs(),
       }).catch(function () {});
+      return id;
     },
-    finishLiveBattle(winner) {
-      if (!liveRef) return;
-      liveRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
+    finishLiveBattle(id, winner) {
+      if (!liveRef || !id) return;
+      liveRef.doc(id).set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
-    onLiveBattle(fn) { liveSubs.push(fn); if (lastLive) { try { fn(lastLive); } catch (_) {} } return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); }; },
+    onLiveBattle(fn) {
+      liveSubs.push(fn);
+      // Replay everything currently known so a fresh subscriber catches up.
+      Object.keys(battleMap).forEach((k) => { try { fn(battleMap[k]); } catch (_) {} });
+      return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); };
+    },
+    // Every battle currently live, oldest first — for the Home "watch" list.
+    liveActive() {
+      return Object.keys(battleMap).map((k) => battleMap[k])
+        .filter((d) => d && d.state === "live").sort((a, b) => (a.t || 0) - (b.t || 0));
+    },
 
     // ---- remote duels (turn-by-turn across phones) ----
     // The accepter writes the matchup; each phone appends its turn acts.
-    // Setup travels as a JSON string (arrays nest inside it freely).
+    // Setup travels as a JSON string (arrays nest inside it freely). One doc
+    // per battle (id), so concurrent duels never overwrite each other.
     startRemoteDuel(setup) {
       if (!duelRef || !setup) return null;
       const id = newId("dl");
-      duelRef.set({ id: id, state: "live", t: nowMs(), setupJson: JSON.stringify(setup), acts: [] }).catch(function () {});
+      duelRef.doc(id).set({ id: id, state: "live", t: nowMs(), setupJson: JSON.stringify(setup), acts: [] }).catch(function () {});
       return id;
     },
-    sendDuelAct(act) {
-      if (!duelRef || !act) return;
-      duelRef.set({ acts: firebase.firestore.FieldValue.arrayUnion(act) }, { merge: true }).catch(function () {});
+    sendDuelAct(id, act) {
+      if (!duelRef || !id || !act) return;
+      duelRef.doc(id).set({ acts: firebase.firestore.FieldValue.arrayUnion(act) }, { merge: true }).catch(function () {});
     },
-    endRemoteDuel(winner) {
-      if (!duelRef) return;
-      duelRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
+    endRemoteDuel(id, winner) {
+      if (!duelRef || !id) return;
+      duelRef.doc(id).set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
+    // The latest known data for one duel doc (setup + acts + rx), for late watchers.
+    duelData(id) { return (id && duelMap[id]) || null; },
     // ---- roaming legendary (room-wide race) ----
     startRoam(monId) {
       if (!roamRef || !monId) return;
@@ -430,12 +458,16 @@
     },
     onRoam(fn) { roamSubs.push(fn); return () => { const i = roamSubs.indexOf(fn); if (i >= 0) roamSubs.splice(i, 1); }; },
 
-    // Spectator reaction — floats up on every screen watching the duel.
-    sendDuelReaction(emoji) {
-      if (!duelRef || !emoji) return;
-      duelRef.set({ rx: firebase.firestore.FieldValue.arrayUnion({ e: emoji, by: conf.name || "", t: nowMs() }) }, { merge: true }).catch(function () {});
+    // Spectator reaction — floats up on every screen watching THAT duel.
+    sendDuelReaction(id, emoji) {
+      if (!duelRef || !id || !emoji) return;
+      duelRef.doc(id).set({ rx: firebase.firestore.FieldValue.arrayUnion({ e: emoji, by: conf.name || "", t: nowMs() }) }, { merge: true }).catch(function () {});
     },
-    onDuel(fn) { duelSubs.push(fn); return () => { const i = duelSubs.indexOf(fn); if (i >= 0) duelSubs.splice(i, 1); }; },
+    onDuel(fn) {
+      duelSubs.push(fn);
+      Object.keys(duelMap).forEach((k) => { try { fn(duelMap[k]); } catch (_) {} });
+      return () => { const i = duelSubs.indexOf(fn); if (i >= 0) duelSubs.splice(i, 1); };
+    },
     // fires after a REMOTE state doc is applied (not on local edits)
     onStateApplied(fn) { stateSubs.push(fn); return () => { const i = stateSubs.indexOf(fn); if (i >= 0) stateSubs.splice(i, 1); }; },
     // Fires with each NEW photo that lands from the room (backlog excluded).

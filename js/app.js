@@ -293,8 +293,9 @@
           a: { units: aUnits, shared: !!ch.solo2 }, b: { units: bUnits, shared: !!bShared },
         };
         const names = (us) => us.map((u) => (Store.attendee(u.attId) || {}).name || "?").join(" & ");
-        Sync.startRemoteDuel(setup);
-        Sync.startLiveBattle({ aName: names(aUnits), bName: names(bUnits),
+        const duelId = Sync.startRemoteDuel(setup);
+        // Banner shares the duel id so watchers can open the RIGHT duel doc.
+        Sync.startLiveBattle({ id: duelId || undefined, aName: names(aUnits), bName: names(bUnits),
           event: setup.title, aClient: ch.fromClient, bClient: Sync.myClientId(), mode: "duel-remote" });
       };
       const accept = () => {
@@ -407,10 +408,11 @@
       // otherwise a late act / focus refresh would restart a done battle and
       // replay the whole thing from seq 0.
       if (data.state === "live" && mine && fresh && !duelScreens[data.id] && !endedDuels[data.id]) {
-        duelScreens[data.id] = Duel.start(Object.assign({}, setup, {
-          mode: "remote", myClient: me,
-          net: { send: Sync.sendDuelAct },
-          onEnd: () => { delete duelScreens[data.id]; markDuelEnded(data.id); },
+        const did = data.id;                            // pin THIS duel's id into the screen's callbacks
+        duelScreens[did] = Duel.start(Object.assign({}, setup, {
+          mode: "remote", myClient: me, duelId: did,
+          net: { send: (act) => Sync.sendDuelAct(did, act) },
+          onEnd: () => { delete duelScreens[did]; markDuelEnded(did); },
         }));
       }
       const h = duelScreens[data.id];
@@ -570,44 +572,48 @@
       }
     });
 
-    function openDuelWatch() {
-      const d = latestDuel;
+    function openDuelWatch(id) {
+      const d = (Sync.duelData && Sync.duelData(id)) || (id && latestDuel && latestDuel.id === id ? latestDuel : null);
       if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id] || endedDuels[d.id]) return;
       let setup; try { setup = JSON.parse(d.setupJson); } catch (_) { return; }
-      duelScreens[d.id] = Duel.start(Object.assign({}, setup, {
-        mode: "watch", rx: Sync.sendDuelReaction,
-        onEnd: () => { delete duelScreens[d.id]; markDuelEnded(d.id); },
+      const did = d.id;
+      duelScreens[did] = Duel.start(Object.assign({}, setup, {
+        mode: "watch", duelId: did, rx: (e) => Sync.sendDuelReaction(did, e),
+        onEnd: () => { delete duelScreens[did]; markDuelEnded(did); },
       }));
-      duelScreens[d.id].receiveActs(d.acts || []);
-      duelScreens[d.id].receiveRx(d.rx || []);
+      duelScreens[did].receiveActs(d.acts || []);
+      duelScreens[did].receiveRx(d.rx || []);
     }
 
     // A live battle → the challenger referees (interactive), the opponent
     // auto-watches, and everyone else gets a "Watch" alert. Spectator screens
     // resolve when the referee reports the winner.
     const handledLive = {};
-    let specHandle = null, latestLive = null;
+    // You watch one battle at a time; specId marks WHICH, so another battle
+    // ending elsewhere can't resolve the screen you're actually watching.
+    let specHandle = null, specId = "";
     // Only ONE "watch this battle" popup at a time — a new battle (or the end of
     // the current one) dismisses any offer still on screen so they never stack.
     let liveOfferCtrl = null, liveOfferId = "";
     function closeLiveOffer() { if (liveOfferCtrl) { try { liveOfferCtrl.close(); } catch (_) {} liveOfferCtrl = null; liveOfferId = ""; } }
     function openSpectator(data) {
-      if (data && data.mode === "duel-remote") { openDuelWatch(); return; }   // turn-by-turn watch
-      if (!window.Battle || !Battle.spectate || specHandle || !data) return;
+      if (!data) return;
+      if (data.mode === "duel-remote") { openDuelWatch(data.id); return; }   // turn-by-turn watch
+      if (!window.Battle || !Battle.spectate || specHandle) return;          // already watching one
+      specId = data.id;
       specHandle = Battle.spectate({
         title: data.event || "Challenge",
         a: { label: data.aName, names: [data.aName] },
         b: { label: data.bName, names: [data.bName] },
-        onClose: () => { specHandle = null; },
+        onClose: () => { specHandle = null; specId = ""; },
       });
-      if (latestLive && latestLive.id === data.id && latestLive.state === "done") {
-        setTimeout(() => { if (specHandle) { specHandle.finish(latestLive.winner || data.aName); specHandle = null; } }, 1900);
+      if (data.state === "done") {   // opened one that already ended — resolve it
+        setTimeout(() => { if (specHandle && specId === data.id) { specHandle.finish(data.winner || data.aName); specHandle = null; specId = ""; } }, 1900);
       }
     }
     // Let the Home "Live now" banner open the spectator screen.
     window.watchLiveBattle = openSpectator;
     Sync.onLiveBattle((data) => {
-      latestLive = data;
       if (!data || !data.id) return;
       const me = Sync.myClientId();
       if (data.state === "live" && !handledLive[data.id]) {
@@ -619,7 +625,7 @@
             title: data.event || "Challenge",
             a: { label: data.aName, names: [data.aName] },
             b: { label: data.bName, names: [data.bName] },
-            onResult: (winnerKey) => Sync.finishLiveBattle(winnerKey === "a" ? data.aName : data.bName),
+            onResult: (winnerKey) => Sync.finishLiveBattle(data.id, winnerKey === "a" ? data.aName : data.bName),
           });
         } else if (me === data.bClient) {             // the opponent — auto-watch
           if (data.mode === "duel-remote") return;    // they're playing it on their own phone
@@ -643,10 +649,11 @@
           liveOfferCtrl = Modal.open("Battle starting!", body, null, { onClose: () => { liveOfferCtrl = null; liveOfferId = ""; } });
         }
       }
-      // The battle's over — pull down the offer popup and finish any spectator.
+      // The battle's over — pull down its offer popup and, if you were watching
+      // THIS one, resolve the spectator screen.
       if (data.state === "done") {
         if (liveOfferId === data.id) closeLiveOffer();
-        if (specHandle) { specHandle.finish(data.winner || data.aName); specHandle = null; }
+        if (specHandle && specId === data.id) { specHandle.finish(data.winner || data.aName); specHandle = null; specId = ""; }
       }
       // Stakes battles (badges, League chambers, Mt. Silver) ping the room
       // with the result — even the phones that didn't watch.
