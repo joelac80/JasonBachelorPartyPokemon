@@ -12,6 +12,7 @@
     .add("safari", V.safari)
     .add("drinks", V.drinks)
     .add("tracker", V.tracker)
+    .add("unown", V.unown)
     .add("trade", V.trade)
     .add("gyms", V.gyms)
     .add("league", V.league)

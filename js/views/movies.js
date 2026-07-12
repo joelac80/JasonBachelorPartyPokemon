@@ -31,6 +31,14 @@
       winChron: "freed the three legendary birds and grounded THE COLLECTOR's airship!",
       loseChron: "THE COLLECTOR catalogued another trainer",
       lead: "🎐 The three caged titans — Articuno, Zapdos, Moltres — and Lugia, guardian of the sea, the prize itself." },
+    { key: "entei", name: "ENTEI", title: "The Unown's Guardian", film: "Pokémon 3 · Spell of the Unown",
+      type: "fire", team: [201, 201, 201, 201, 201, 244], pts: 12, boost: 1.4, icon: "🔥", face: 244,
+      quote: "The Unown dreamed me into being, and I am bound to a lonely girl's every wish. You would wake her from this world? Then get past ME — and the living alphabet that conjured me.",
+      winChron: "shattered the Unown's illusion and freed Molly from ENTEI's dream!",
+      loseChron: "ENTEI guarded the dream and turned another dreamer away",
+      lead: "🔥 A swarm of Unown — the living alphabet — and ENTEI, the beast their spell made real.",
+      // Breaking the spell reveals the Unown to you: the Unown Dex opens.
+      unlockUnown: true },
   ];
   window.MOVIE_BOSSES = BOSSES;
 
@@ -88,7 +96,12 @@
         movie: { key: b.key, name: b.name, pts: b.pts, icon: b.icon, winChron: b.winChron, loseChron: b.loseChron },
         a: { units: [{ attId: attId, monIds: ids }] },
         b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
-        onResult: () => Router.render() });
+        onResult: (winSide) => {
+          // Beating ENTEI breaks the Unown's spell — reveal the starter glyphs
+          // and open the Unown Dex.
+          if (winSide === "a" && b.unlockUnown && window.Store && Store.breakUnownSeal) Store.breakUnownSeal(attId);
+          Router.render();
+        } });
     };
     // Bring-your-own path needs a full pool; the preset mirror squad does not.
     const pickOwn = () => {

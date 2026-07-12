@@ -881,6 +881,40 @@
     legendWins(attId) {
       return ((this.state.legends || {})[attId] || []).slice();
     },
+    // 🔡 Unown Dex — the living alphabet. All 28 glyphs; decoded ones are
+    // stored per trainer (append-only, sync-unioned).
+    UNOWN_GLYPHS: "ABCDEFGHIJKLMNOPQRSTUVWXYZ!?".split(""),
+    unownCaught(attId) { return ((this.state.unown || {})[attId] || []).slice(); },
+    // The Unown only answer once you've broken ENTEI's spell (3rd movie battle).
+    unownSealBroken(attId) { return this.movieWins(attId).indexOf("entei") >= 0; },
+    // Record one decoded glyph (append-only).
+    decodeUnown(attId, glyph) {
+      if (!attId || this.UNOWN_GLYPHS.indexOf(glyph) < 0) return;
+      this.update((s) => {
+        s.unown = s.unown || {}; const a = s.unown[attId] = s.unown[attId] || [];
+        if (a.indexOf(glyph) < 0) {
+          a.push(glyph);
+          Store.chron(s, "🔡", ((Store.attendee(attId) || {}).name || attId) + " decoded the Unown “" + glyph + "” — " + a.length + "/28.");
+        }
+      });
+    },
+    // "Search the ruins" — reveal one still-hidden glyph. Returns it, or "".
+    searchUnown(attId) {
+      const have = this.unownCaught(attId);
+      const hidden = this.UNOWN_GLYPHS.filter((g) => have.indexOf(g) < 0);
+      if (!hidden.length) return "";
+      const g = hidden[Math.floor((Math.random ? Math.random() : 0) * hidden.length)] || hidden[0];
+      this.decodeUnown(attId, g);
+      return g;
+    },
+    // First ENTEI win breaks the seal and reveals a starter batch (A–E).
+    breakUnownSeal(attId) {
+      if (!attId) return;
+      this.update((s) => {
+        s.unown = s.unown || {}; const a = s.unown[attId] = s.unown[attId] || [];
+        ["A", "B", "C", "D", "E"].forEach((g) => { if (a.indexOf(g) < 0) a.push(g); });
+      });
+    },
     // 🎖 Battle Honors — per-trainer awards for the EXTRA challenge ladders
     // (Movie Legends, the Champions Tournament, canon-villain ambushes, Mt.
     // Silver, and the nine-region Top Champion). Unlike liveTrophies (one holder
@@ -889,10 +923,13 @@
     battleHonorsFor(attId) {
       const out = [];
       const mv = this.movieWins(attId);
-      const mewtwo = mv.indexOf("mewtwo") >= 0, collector = mv.indexOf("collector") >= 0;
-      if (mewtwo && collector) out.push({ emoji: "🎬", title: "Silver Screen Legend", sub: "conquered every Movie Legend" });
-      else if (mewtwo) out.push({ emoji: "🧬", title: "Clone Buster", sub: "toppled MEWTWO and his clones" });
-      else if (collector) out.push({ emoji: "🎐", title: "Sky Liberator", sub: "freed the birds from the Collector" });
+      const mewtwo = mv.indexOf("mewtwo") >= 0, collector = mv.indexOf("collector") >= 0, entei = mv.indexOf("entei") >= 0;
+      if (mewtwo && collector && entei) out.push({ emoji: "🎬", title: "Silver Screen Legend", sub: "conquered every Movie Legend" });
+      else {
+        if (mewtwo) out.push({ emoji: "🧬", title: "Clone Buster", sub: "toppled MEWTWO and his clones" });
+        if (collector) out.push({ emoji: "🎐", title: "Sky Liberator", sub: "freed the birds from the Collector" });
+        if (entei) out.push({ emoji: "🔥", title: "Dream Breaker", sub: "broke the Unown's spell over ENTEI" });
+      }
       const tw = this.tourneyWins(attId);
       if (tw > 0) out.push({ emoji: "🏆", title: "Tournament Champion", sub: tw > 1 ? tw + "× Champions Cup winner" : "won the Champions Tournament" });
       const enc = this.encounterWins(attId);
@@ -908,6 +945,10 @@
       const lg = this.legendWins(attId);
       if (lg.length >= 9) out.push({ emoji: "🌌", title: "Legend Keeper", sub: "vanquished the legendaries of all nine generations" });
       else if (lg.length >= 1) out.push({ emoji: "✨", title: "Legend Slayer", sub: "conquered the legendaries of " + lg.length + " generation" + (lg.length > 1 ? "s" : "") });
+      // 🔡 Unown Dex — read the living alphabet.
+      const un = this.unownCaught(attId);
+      if (un.length >= 28) out.push({ emoji: "🔡", title: "Unown Scholar", sub: "decoded all 28 Unown" });
+      else if (un.length >= 1) out.push({ emoji: "🔠", title: "Unown Reader", sub: "decoded " + un.length + " of 28 Unown" });
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.
@@ -1098,6 +1139,13 @@
       Object.keys(plg).forEach((tid) => {
         const arr = nlg[tid] = nlg[tid] || [];
         (plg[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+      });
+      // 🔡 Unown glyphs decoded: append-only per trainer.
+      const pun = (prev && prev.unown) || {};
+      const nun = next.unown = next.unown || {};
+      Object.keys(pun).forEach((tid) => {
+        const arr = nun[tid] = nun[tid] || [];
+        (pun[tid] || []).forEach((g) => { if (arr.indexOf(g) < 0) arr.push(g); });
       });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};
