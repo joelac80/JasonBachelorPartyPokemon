@@ -881,6 +881,8 @@
     legendWins(attId) {
       return ((this.state.legends || {})[attId] || []).slice();
     },
+    // 🌀 Secret battles won (hidden endgame duels) — keys like "unown".
+    secretWins(attId) { return ((this.state.secrets || {})[attId] || []).slice(); },
     // 🔡 Unown Dex — the living alphabet. All 28 glyphs; decoded ones are
     // stored per trainer (append-only, sync-unioned).
     UNOWN_GLYPHS: "ABCDEFGHIJKLMNOPQRSTUVWXYZ!?".split(""),
@@ -949,6 +951,8 @@
       const un = this.unownCaught(attId);
       if (un.length >= 28) out.push({ emoji: "🔡", title: "Unown Scholar", sub: "decoded all 28 Unown" });
       else if (un.length >= 1) out.push({ emoji: "🔠", title: "Unown Reader", sub: "decoded " + un.length + " of 28 Unown" });
+      // 🌀 Secret battle — the Unown's Judgment (Arceus & the creation trio).
+      if (this.secretWins(attId).indexOf("unown") >= 0) out.push({ emoji: "🌀", title: "The Original One", sub: "answered the Unown's Judgment — Arceus & the creation trio" });
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.
@@ -1146,6 +1150,13 @@
       Object.keys(pun).forEach((tid) => {
         const arr = nun[tid] = nun[tid] || [];
         (pun[tid] || []).forEach((g) => { if (arr.indexOf(g) < 0) arr.push(g); });
+      });
+      // 🌀 Secret-battle wins: append-only keys per trainer.
+      const psc = (prev && prev.secrets) || {};
+      const nsc = next.secrets = next.secrets || {};
+      Object.keys(psc).forEach((tid) => {
+        const arr = nsc[tid] = nsc[tid] || [];
+        (psc[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};

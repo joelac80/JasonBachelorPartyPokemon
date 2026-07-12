@@ -1314,6 +1314,27 @@
         } catch (_) {}
         return;
       }
+      // 🌀 Secret battle — a hidden endgame duel (e.g. the Unown's Judgment).
+      // Win recorded per trainer per key (append-only) for a ceremony honor.
+      if (opts.secret) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const sc = opts.secret;
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              s.secrets = s.secrets || {};
+              const w = s.secrets[player.attId] = s.secrets[player.attId] || [];
+              if (w.indexOf(sc.key) < 0) w.push(sc.key);
+              Store.grantPoints(s, "battle", player.teamId, sc.pts || 30);
+              Store.chron(s, sc.icon || "🌀", player.name + " " + (sc.winChron || ("defeated " + sc.name + "!")));
+            } else {
+              Store.chron(s, sc.icon || "🌀", (sc.loseChron || (sc.name + " proved beyond reach")) + " — " + player.name + " drinks 3.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
       // 🏰 Hall of Fame Gauntlet — a back-to-back run against enshrined teams.
       // The league view drives the chain via onResult (already fired above); no
       // per-battle logging, Elo, belt, or chron here.
