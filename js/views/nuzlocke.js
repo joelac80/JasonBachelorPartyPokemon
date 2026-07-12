@@ -181,9 +181,10 @@
     if (act === 1 && kBadges < 8) {
       const idx = KANTO_GYM0 + kBadges;
       const g = gymAt(idx);
+      const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (kBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, g.team.map((id) =>
+        next.appendChild(el("div", { class: "nuz-foe-row" }, g.team.slice(0, hc.size).map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
@@ -275,13 +276,28 @@
       });
   }
 
+  // The run's difficulty CURVE: a fresh box is a Squirtle and a Pidgey, so
+  // early leaders meet you halfway — 3 mons at ~70% strength — and ramp to
+  // their full squad at full power by badge 8. Act II starts near full
+  // strength (you're a champion now) and climbs past it.
+  function gymHandicap(run) {
+    const act = run.act === 2 ? 2 : 1;
+    const step = act === 1
+      ? run.badges.filter((i) => i >= KANTO_GYM0).length
+      : run.badges.filter((i) => i < KANTO_GYM0).length;      // 0..7
+    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04 };
+    return { size: 6, boost: 0.95 + step * 0.02 };
+  }
+
   function battleGym(run, idx, g) {
+    const hc = gymHandicap(run);
     partyThen(run, 6, "⚔ Nuzlocke gym — Leader " + g.leader,
       "Bring up to 6 of the living. Every faint in there is permanent.",
       (ids) => {
         Duel.start({ mode: "local",
           a: { units: [{ attId: me, monIds: ids }] },
-          b: { units: [{ npc: "LEADER " + g.leader, ai: true, monIds: g.team.slice() }] },
+          b: { units: [{ npc: "LEADER " + g.leader, ai: true,
+            monIds: g.team.slice(0, Math.min(g.team.length, hc.size)), boost: hc.boost }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); maybeAmbush(); }
@@ -319,12 +335,13 @@
     })();
   }
   function ambushBattle(run, t) {
+    const hc = gymHandicap(run);   // villains scale with the run, like the gyms
     partyThen(run, 6, "❗ Ambush — " + t.title + " " + t.name,
       "No badge, no points — just survival. Every faint is permanent.",
       (ids) => {
         Duel.start({ mode: "local",
           a: { units: [{ attId: me, monIds: ids }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: 1.1 }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(0, Math.min(t.team.length, hc.size)), boost: Math.min(1.1, hc.boost) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             Store.update((s) => Store.chron(s, "❗", aName(me) + (winSide === "a" ? " fought off " : " survived ") + t.title + " " + t.name + "'s Nuzlocke ambush" + (winSide === "a" ? "!" : " — barely.")));

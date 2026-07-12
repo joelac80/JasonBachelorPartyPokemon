@@ -622,6 +622,19 @@
       })();
     }
 
+    // 💬 Trainer lines ALSO pop as a speech bubble by their Pokémon — the
+    // beat bar moves fast, the bubble lingers so the trash talk lands.
+    function sayBubble(u, text) {
+      try {
+        const host = u && u._monEl;
+        if (!host || !document.body.contains(host)) return;
+        const old = host.querySelector(".duel-bubble"); if (old) old.remove();
+        const b = el("div", { class: "duel-bubble" }, text);
+        host.appendChild(b);
+        setTimeout(() => { b.classList.add("fade"); setTimeout(() => { try { b.remove(); } catch (_) {} }, 600); }, 4200);
+      } catch (_) {}
+    }
+
     // ---- act plumbing: every decision is a small serializable act ----
     function sendAct(act) {
       act.by = myClient || "local";
@@ -991,13 +1004,13 @@
         // The trainer gets their line BEFORE the reveal (Volo's Giratina moment),
         // then the sprite appears with the classic send-out beat.
         const talk = (u.speak && u.speak[act.to]) || null;
-        const talkBeats = talk ? talk.map((ln) => ["🗣 " + u.name + ": “" + ln + "”", 2200, () => sfx("select")]) : [];
+        const talkBeats = talk ? talk.map((ln) => ["🗣 " + u.name + ": “" + ln + "”", 2200, () => { sfx("select"); sayBubble(u, ln); }]) : [];
         // 🎭 THE ACE MOMENT — an AI boss down to their very last: a line (custom
         // ace.line, or a generic; a scripted speak reveal already covers it),
         // the screen flashes, and the ace digs deep (+8% attack).
         const aceMon = mon(u);
         const isAce = u.ai && !opts.wild && u.party.length >= 3 && u.party.filter((x) => x.hp > 0).length === 1;
-        if (isAce && !talk) talkBeats.push(["🗣 " + u.name + ": “" + ((u.ace && u.ace.line) || bossLine(ACE_LINES, aceMon.id)) + "”", 2200, () => sfx("select")]);
+        if (isAce && !talk) { const aln = (u.ace && u.ace.line) || bossLine(ACE_LINES, aceMon.id); talkBeats.push(["🗣 " + u.name + ": “" + aln + "”", 2200, () => { sfx("select"); sayBubble(u, aln); }]); }
         beats(talkBeats, () => {
           renderSprites(act.side); renderHp(act.side);
           const sendBeats = [[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]];
@@ -1205,14 +1218,14 @@
 
       beats(steps, () => {
         const koSteps = [];
-        if (tm && tm.hp <= 0) koSteps.push([tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
-          ["🍺 KO! " + tu.name + " takes 2 sips!", 1150]);
+        if (tm && tm.hp <= 0) koSteps.push([tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }]);
         // 🎭 boss chatter — an AI trainer grits their teeth the first time
         // their active drops into the red half, and gloats over a KO.
         if (tm && !opts.wild) {
           if (tm.hp > 0 && tu.ai && !tm._tauntedHalf && tm.hp <= tm.hpMax / 2) {
             tm._tauntedHalf = true;
-            koSteps.push(["🗣 " + tu.name + ": “" + bossLine(TAUNT_HALF, tm.id + tm.hpMax) + "”", 1600, () => sfx("select")]);
+            const tln = bossLine(TAUNT_HALF, tm.id + tm.hpMax);
+            koSteps.push(["🗣 " + tu.name + ": “" + tln + "”", 1600, () => { sfx("select"); sayBubble(tu, tln); }]);
           }
           // 🎬 THE COMEBACK — the boss's ACE, first time it survives in deep
           // red: a telegraphed rally and a one-time 25% heal. Beat it twice.
@@ -1220,14 +1233,15 @@
               && tu.party.filter((x) => x.hp > 0).length === 1 && tm.hp <= tm.hpMax * 0.3) {
             tu._comebackDone = true;
             const heal = Math.round(tm.hpMax * 0.25);
-            koSteps.push(["🗣 " + tu.name + ": “We are NOT done. Together — ONE more stand!”", 1800, () => sfx("select")]);
+            koSteps.push(["🗣 " + tu.name + ": “We are NOT done. Together — ONE more stand!”", 1800, () => { sfx("select"); sayBubble(tu, "We are NOT done. Together — ONE more stand!"); }]);
             koSteps.push(["✨ " + tm.name + " dug deep — recovered " + heal + " HP!", 1300, () => {
               tm.hp = Math.min(tm.hpMax, tm.hp + heal);
               paintHp(tu); sfx("coin");
             }]);
           }
           if (tm.hp <= 0 && u.ai && !tu.ai) {
-            koSteps.push(["🗣 " + u.name + ": “" + bossLine(GLOAT_KO, tm.id + m.id) + "”", 1600, () => sfx("select")]);
+            const gln = bossLine(GLOAT_KO, tm.id + m.id);
+            koSteps.push(["🗣 " + u.name + ": “" + gln + "”", 1600, () => { sfx("select"); sayBubble(u, gln); }]);
           }
         }
         if (act._exp) koSteps.push([act._exp, 1300, () => sfx("coin")]);
@@ -1236,8 +1250,7 @@
           const su = sides[dSide].units[sp.tUnit]; if (!su) return;
           const sm = mon(su);
           if (sm.hp <= 0) {
-            koSteps.push([sm.name + " fainted!", 1100, () => { su._monEl.classList.add("fainted"); sfx("error"); }],
-              ["🍺 KO! " + su.name + " takes 2 sips!", 1150]);
+            koSteps.push([sm.name + " fainted!", 1100, () => { su._monEl.classList.add("fainted"); sfx("error"); }]);
             if (sp._exp) koSteps.push([sp._exp, 1300, () => sfx("coin")]);
           }
         });
@@ -1340,14 +1353,13 @@
       let outro = null;
       if (!opts.wild) {
         const wU = sides[winSide].units[0], lU = sides[other(winSide)].units[0];
-        if (lU.ai && !wU.ai) outro = ["🗣 " + lU.name + ": “" + ((lU.outro && lU.outro.lose) || bossLine(OUTRO_LOSE, lU.party[0].id)) + "”", 2300, () => sfx("select")];
-        else if (wU.ai && !lU.ai) outro = ["🗣 " + wU.name + ": “" + ((wU.outro && wU.outro.win) || bossLine(OUTRO_WIN, wU.party[0].id)) + "”", 2300, () => sfx("select")];
+        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || bossLine(OUTRO_LOSE, lU.party[0].id); outro = ["🗣 " + lU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(lU, oln); }]; }
+        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || bossLine(OUTRO_WIN, wU.party[0].id); outro = ["🗣 " + wU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(wU, oln); }]; }
       }
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         outro,
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
-        ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
       ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel, winSide)), 700); if (done) done(); });
       if (!record) return;
       // End the room broadcast no matter which branch records below —
@@ -1697,6 +1709,10 @@
     function pickTarget(u, ptr, mIdx, z) {
       const foes = livingEnemies(ptr.side);
       if (foes.length <= 1) { doMove(u, ptr, mIdx, foes.length ? foes[0].i : 0, z); return; }
+      // 💠 Spread moves (Surf, Earthquake…) hit EVERY foe — nothing to pick,
+      // so the "Which target?" screen is skipped entirely.
+      const smv = mIdx === 99 ? STRUGGLE : mon(u).moves[mIdx];
+      if (smv && smv.spread) { doMove(u, ptr, mIdx, foes[0].i, z); return; }
       menu.innerHTML = "";
       menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) }, "🎯 Which target?"));
       menu.appendChild(el("div", { class: "battle-menu-row" }, foes.map((x) =>
