@@ -661,9 +661,13 @@
       return true;
     },
     // How many species the dex is measured against right now — 493 until the
-    // room unlocks the later gens, then the whole National Dex.
+    // room unlocks the later gens, then the whole National Dex. Mega/Primal
+    // forms (ids 10000+) live in DEX for battles but are NOT catchable — they
+    // must never inflate the target.
     dexTarget() {
-      return this.gen59Unlocked() ? (Object.keys(window.DEX || {}).length || this.GEN14_MAX) : this.GEN14_MAX;
+      if (!this.gen59Unlocked()) return this.GEN14_MAX;
+      const n = Object.keys(window.DEX || {}).filter((id) => +id <= 1025).length;
+      return n || this.GEN14_MAX;
     },
 
     // Caught species of a given type (partner freebie excluded, same fairness
