@@ -32,11 +32,11 @@
       loseChron: "THE COLLECTOR catalogued another trainer",
       lead: "🎐 The three caged titans — Articuno, Zapdos, Moltres — and Lugia, guardian of the sea, the prize itself." },
     { key: "entei", name: "ENTEI", title: "The Unown's Guardian", film: "Pokémon 3 · Spell of the Unown",
-      type: "fire", team: [201, 201, 201, 201, 201, 244], glyphs: ["A", "W", "A", "K", "E"], pts: 12, boost: 1.4, icon: "🔥", face: 244,
+      type: "fire", team: [201, 201, 201, 201, 201, 244], glyphs: ["D", "R", "E", "A", "M"], pts: 12, boost: 1.4, icon: "🔥", face: 244,
       quote: "The Unown dreamed me into being, and I am bound to a lonely girl's every wish. You would wake her from this world? Then get past ME — and the living alphabet that conjured me.",
-      winChron: "shattered the Unown's illusion — the alphabet spelled A-W-A-K-E and Molly woke at last!",
+      winChron: "shattered the D-R-E-A-M — the Unown's spell broke and Molly woke at last!",
       loseChron: "ENTEI guarded the dream and turned another dreamer away",
-      lead: "🔥 A swarm of Unown spelling A · W · A · K · E — and ENTEI, the beast their spell made real.",
+      lead: "🔥 A swarm of Unown spelling D · R · E · A · M — and ENTEI, the beast their spell made real.",
       // Breaking the spell frees the Unown: they begin to roam the Safari Zone.
       unlockUnown: true },
   ];
