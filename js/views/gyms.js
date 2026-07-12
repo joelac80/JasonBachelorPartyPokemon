@@ -157,7 +157,8 @@
   // 🧭 The Gen Ladder: a region's gyms open only after the PREVIOUS region's
   // Champion falls, in order (Johto & Kanto are the free starting block).
   // Checked via the ladder cap so out-of-order wins can never skip a region.
-  const REGION_NEEDS = { Johto: null, Kanto: null,
+  const REGION_NEEDS = { Kanto: null,
+    Johto: { gen: 2, name: "BLUE" },
     Hoenn: { gen: 3, name: "LANCE" }, Sinnoh: { gen: 4, name: "STEVEN" },
     Unova: { gen: 5, name: "CYNTHIA" }, Kalos: { gen: 6, name: "ALDER" },
     Alola: { gen: 7, name: "DIANTHA" }, Galar: { gen: 8, name: "PROF. KUKUI" },
@@ -229,13 +230,13 @@
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
     root.appendChild(el("p", { class: "hint" },
-      "🧭 THE GEN LADDER: start in Johto & Kanto with Gen 1 in the wild. All 8 Johto badges spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs. Lose = 3 sips." +
+      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs. Lose = 3 sips." +
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
 
     // Group the circuit by region so 32 gyms stay readable.
     const REGIONS = [
-      { name: "Johto", emoji: "🌸", note: "The classic 8 — the road to Victory Road." },
-      { name: "Kanto", emoji: "🗾", note: "The rematch tour. All 16 here = CHAMPION." },
+      { name: "Kanto", emoji: "🗾", note: "Where it all began — 8 badges open the door to the KANTO Elite Four and Champion BLUE." },
+      { name: "Johto", emoji: "🌸", note: "The Gen 2 era — opens once Champion BLUE falls. All 16 badges = CHAMPION crusher (and RED demands the full sweep)." },
       { name: "Hoenn", emoji: "🌊", note: "Earn all 8 to face the Hoenn Elite Four." },
       { name: "Sinnoh", emoji: "🏔", note: "Earn all 8 to face the Sinnoh Elite Four." },
       { name: "Unova", emoji: "🏙", note: "Earn all 8 to face the Unova Elite Four." },

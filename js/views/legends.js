@@ -14,12 +14,12 @@
   // matching Journey tab. Teams are that generation's legendaries + a mythical,
   // ace last. Boost/points climb with the generation — this is the hardest PvE.
   const LEGENDS = [
-    { key: "gen1", gen: 1, name: "Kanto Titans", emoji: "🔮", needs: "lance", champ: "LANCE", regions: ["Johto", "Kanto"],
+    { key: "gen1", gen: 1, name: "Kanto Titans", emoji: "🔮", needs: "blue", champ: "BLUE", regions: ["Kanto"],
       team: [144, 145, 146, 151, 149, 150], face: 150, boost: 1.42, pts: 20,
       quote: "The Genetic Pokémon awakens, and the winged titans of ice, storm and flame answer. Prove a bond can outmatch raw creation.",
       winChron: "tamed the Kanto titans — MEWTWO itself bowed!", loseChron: "the Kanto titans proved unmatched",
       lead: "🔮 Articuno, Zapdos, Moltres, Mew and Dragonite — and MEWTWO, the perfect Pokémon." },
-    { key: "gen2", gen: 2, name: "Johto Beasts", emoji: "🌈", needs: "lance", champ: "LANCE", regions: ["Johto", "Kanto"],
+    { key: "gen2", gen: 2, name: "Johto Beasts", emoji: "🌈", needs: "lance", champ: "LANCE", regions: ["Johto"],
       team: [243, 244, 245, 250, 251, 249], face: 249, boost: 1.44, pts: 22,
       quote: "The three legendary beasts race the wind, the guardians of the towers spread their wings. Time itself sent Celebi to watch you fall.",
       winChron: "outran the Johto beasts and grounded LUGIA and HO-OH!", loseChron: "the Johto beasts vanished into legend",

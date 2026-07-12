@@ -538,7 +538,7 @@
       try {
         const lg = opts.league;
         const stakes = opts.gym ? "🏅 " + ((opts.gym.badge || "Gym") + " Badge") + " on the line"
-          : lg ? (lg.idx === 5 ? "🗻 Mt. Silver — facing RED" : "👑 " + ((lg.rank || "League") + " " + (lg.name || "")).trim())
+          : lg ? (lg.key === "red" ? "🗻 Mt. Silver — facing RED" : "👑 " + ((lg.rank || "League") + " " + (lg.name || "")).trim())
           : opts.hof ? "🏛 Battle of Fame" : "";
         const setup = { mode: "local", title: title, first: S.first,
           gym: opts.gym || null, league: lg || null, hof: opts.hof || null,

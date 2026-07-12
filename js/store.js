@@ -675,7 +675,7 @@
       return 9;
     },
     GEN_LADDER: [
-      { gen: 2, badges: { start: 0, count: 8 }, goal: "earn all 8 JOHTO badges", where: "the Gym Circuit" },
+      { gen: 2, champ: "blue", champName: "BLUE", opens: "Johto" },
       { gen: 3, champ: "lance", champName: "LANCE", opens: "Hoenn" },
       { gen: 4, champ: "steven", champName: "STEVEN", opens: "Sinnoh" },
       { gen: 5, champ: "cynthia", champName: "CYNTHIA", opens: "Unova" },
@@ -691,9 +691,11 @@
       let cap = 1;
       for (let i = 0; i < this.GEN_LADDER.length; i++) {
         const step = this.GEN_LADDER[i];
-        const met = step.badges
-          ? this.gymBadgesInRange(attId, step.badges.start, step.badges.count) >= step.badges.count
-          : w.indexOf(step.champ) >= 0;
+        let met = w.indexOf(step.champ) >= 0;
+        // Grandfather: Kanto's BLUE ladder arrived AFTER the original weekend —
+        // a recorded LANCE win proves the old combined region was conquered,
+        // so it satisfies the Gen-2 rung for those veterans.
+        if (!met && step.champ === "blue") met = w.indexOf("lance") >= 0;
         if (met) cap = step.gen; else break;   // the ladder climbs IN ORDER
       }
       return cap;

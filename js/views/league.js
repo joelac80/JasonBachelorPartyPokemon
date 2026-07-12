@@ -21,7 +21,22 @@
   // (un-fogs for everyone once ANY trainer beats that key), mystery (name hidden
   // until beaten), boost and point value.
   const LEAGUE = [
-    { key: "will", region: "Johto",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [866, 124, 97, 196, 80, 178], pts: 6, boost: 1.15,
+    // ---- KANTO (Gen 1) — where it all began. The ORIGINAL Elite Four, then
+    // the first Champion: the rival, BLUE. Beating him unlocks Gen 2 & Johto.
+    { key: "lorelei", region: "Kanto", name: "LORELEI", rank: "Elite Four", type: "ice", team: [87, 91, 80, 124, 121, 131], pts: 5, boost: 1.1, gymGate: { start: 8, count: 8, region: "Kanto" },
+      quote: "No one can best me when it comes to icy Pokémon. Freezing moves are powerful — your Pokémon will be at my mercy!" },
+    { key: "brunok", region: "Kanto", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [95, 107, 106, 57, 62, 68], pts: 5, boost: 1.1, needs: "lorelei",
+      quote: "Through rigorous training, people and Pokémon can become stronger. We will grind you down!" },
+    { key: "agatha", region: "Kanto", name: "AGATHA", rank: "Elite Four", type: "ghost", team: [94, 42, 93, 24, 110, 94], pts: 5, boost: 1.1, needs: "brunok",
+      quote: "I'll show you how a real trainer battles, whippersnapper!" },
+    { key: "lance4", region: "Kanto", name: "LANCE", rank: "Elite Four", type: "dragon", team: [130, 148, 148, 142, 149, 149], pts: 5, boost: 1.12, needs: "agatha",
+      quote: "You've come this far? Then face the mythical, terrifying power of DRAGONS!" },
+    { key: "blue", region: "Kanto", name: "BLUE", rank: "Champion", type: "normal", team: [18, 65, 112, 59, 103, 9], pts: 7, boost: 1.15, needs: "lance4",
+      quote: "Smell ya later? Not this time. I'm the most powerful trainer in the world — and I'll prove it right here." },
+    // ---- JOHTO (Gen 2) — the 16-badge era. Note: `inferStop` marks the era
+    // boundary — a Johto win must NOT retro-infer a BLUE win, because the Kanto
+    // ladder was added after the original weekend (veterans play it fresh).
+    { key: "will", region: "Johto",  name: "WILL",  rank: "Elite Four", type: "psychic",  team: [866, 124, 97, 196, 80, 178], pts: 6, boost: 1.15, needs: "blue", inferStop: true, gymGate: { start: 0, count: 8, region: "Johto" },
       quote: "I have trained my mind to see all that is coming… and I foresee your defeat." },
     { key: "koga", region: "Johto",  name: "KOGA",  rank: "Elite Four", type: "poison",   team: [168, 49, 205, 110, 89, 169], pts: 6, boost: 1.15, needs: "will",
       quote: "A ninja's poison lingers long after the strike. Can you endure it?" },
@@ -31,7 +46,7 @@
       quote: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Show me YOUR favorites." },
     { key: "lance", region: "Johto", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },
-    { key: "red", region: "Kanto",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
+    { key: "red", region: "Johto",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
       quote: "……" },
     // ---- The Hoenn Elite Four (rematch squads) → Champion STEVEN ----
     { key: "sidney", region: "Hoenn", name: "SIDNEY", rank: "Elite Four", type: "dark",   team: [359, 275, 332, 319, 342, 262], pts: 8, boost: 1.22, needs: "lance", reveal: "lance", gymGate: { start: 16, count: 8, region: "Hoenn" },
@@ -128,7 +143,10 @@
     Store.leagueWins(attId).forEach((k) => {
       set[k] = 1;
       let cur = stageByKey(k);
-      while (cur && cur.needs && !set[cur.needs]) { set[cur.needs] = 1; cur = stageByKey(cur.needs); }
+      // `inferStop` halts the walk at an era boundary — a prerequisite added
+      // AFTER wins were recorded (Kanto's BLUE under Johto's WILL) must never
+      // be fabricated from those older wins.
+      while (cur && cur.needs && !cur.inferStop && !set[cur.needs]) { set[cur.needs] = 1; cur = stageByKey(cur.needs); }
     });
     return set;
   }
@@ -142,8 +160,8 @@
   function leagueBlocked(attId, idx) {
     const st = LEAGUE[idx];
     const beaten = beatenSet(attId);
-    // The whole League gates on the 8 Johto badges (Victory Road).
-    if (johtoBadges(attId) < 8) return "The League only admits trainers holding all 8 JOHTO badges (" + johtoBadges(attId) + "/8).";
+    // (Per-region badge gates ride each block's first stage via gymGate —
+    // Kanto's Elite Four wants the 8 Kanto badges, Johto's the 8 Johto ones.)
     // RED, the Mt. Silver summit, additionally demands all 16 Johto+Kanto badges.
     if (st.key === "red" && Store.gymBadgesInRange(attId, 0, 16) < 16) return "RED faces only trainers holding ALL 16 Johto & Kanto badges (" + Store.gymBadgesInRange(attId, 0, 16) + "/16).";
     // A new region's Elite Four demands that region's 8 gym badges first.
@@ -522,11 +540,12 @@
     opts = opts || {};
     backfillHofRegions();
     let hof = (Store.state.hof || []).slice();
-    // Region-scoped Hall of Fame: only champions who won THIS region. Kanto &
-    // Johto (the origin) also adopts legacy entries that predate region tracking.
+    // Region-scoped Hall of Fame: only champions who won THIS region. Johto
+    // (the LANCE-era origin) also adopts legacy entries that predate region
+    // tracking — Kanto's hall belongs to the new BLUE ladder.
     if (opts.regions) {
       const regs = opts.regions;
-      const takesLegacy = regs.indexOf("Johto") >= 0 || regs.indexOf("Kanto") >= 0;
+      const takesLegacy = regs.indexOf("Johto") >= 0;
       hof = hof.filter((h) => (h.region && regs.indexOf(h.region) >= 0) || (takesLegacy && !h.region));
     }
     if (!hof.length) return;

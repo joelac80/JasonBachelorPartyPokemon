@@ -1,17 +1,19 @@
-/* regions.js — 🗺 The Journey: every region's FULL path in one place. Pick a
-   region (chronological, Gen 1 & 2 combined) and see its gyms → Elite Four →
-   Champion, all gated as before. Reuses the Gym Circuit, Pokémon League, and
-   Movie Legends renderers — this view just composes them per region. */
+/* regions.js — 🗺 The Journey: every region's FULL path in one place, one tab
+   per generation (Kanto/Gen 1 first — the true beginning — then Johto's
+   16-badge era, and on). Reuses the Gym Circuit, Pokémon League, and Movie
+   Legends renderers — this view just composes them per region. */
 (function () {
   const { el } = U;
   let curTab = 0;   // module-scope so the chosen region survives a re-render
 
-  // Chronological regions. Gen 1 & 2 (Kanto + Johto) share one path; the two
-  // Movie Legends (Kanto-themed) fold in at the bottom of that path.
+  // Chronological regions, one per generation. The Movie Legends fold into
+  // the Johto era (their gate: Champion LANCE).
   const TABS = [
-    { key: "kanto-johto", name: "Kanto & Johto", emoji: "🗾", gen: "Gen 1 & 2", gym: ["Johto", "Kanto"], lg: ["Johto", "Kanto"], gate: true, movies: true,
-      note: "The original journey — all 16 Johto & Kanto gyms, the Elite Four, Champion LANCE, the silent summit of Mt. Silver, and two big-screen legends." },
-    { key: "hoenn", name: "Hoenn", emoji: "🌊", gen: "Gen 3", gym: ["Hoenn"], lg: ["Hoenn"], needs: { champ: "lance", name: "LANCE", prev: "Kanto & Johto" },
+    { key: "kanto", name: "Kanto", emoji: "🗾", gen: "Gen 1", gym: ["Kanto"], lg: ["Kanto"],
+      note: "Where it all began — the 8 Kanto gyms, the ORIGINAL Elite Four, and Champion BLUE. Beat him to unlock Gen 2 and the road to Johto." },
+    { key: "johto", name: "Johto", emoji: "🌸", gen: "Gen 2", gym: ["Johto"], lg: ["Johto"], gate: true, movies: true, needs: { champ: "blue", name: "BLUE", prev: "Kanto" },
+      note: "The Gen 2 era — 8 Johto gyms (16 badges in all), the Elite Four, Champion LANCE, the silent summit of Mt. Silver, and the Movie Legends." },
+    { key: "hoenn", name: "Hoenn", emoji: "🌊", gen: "Gen 3", gym: ["Hoenn"], lg: ["Hoenn"], needs: { champ: "lance", name: "LANCE", prev: "Johto" },
       note: "Eight gyms, then the Elite Four and Champion STEVEN." },
     { key: "sinnoh", name: "Sinnoh", emoji: "🏔", gen: "Gen 4", gym: ["Sinnoh"], lg: ["Sinnoh"], needs: { champ: "steven", name: "STEVEN", prev: "Hoenn" },
       note: "Eight gyms, the Elite Four, and CYNTHIA's final battle." },
@@ -31,7 +33,7 @@
   // Locked for this trainer until the gating Champion falls (Gen Ladder). The
   // check rides the LADDER CAP (which climbs strictly in order), so a stray
   // out-of-order win can never skip a region. The Cup gates on GEETA herself.
-  const TAB_MIN_GEN = { hoenn: 3, sinnoh: 4, unova: 5, kalos: 6, alola: 7, galar: 8, paldea: 9 };
+  const TAB_MIN_GEN = { johto: 2, hoenn: 3, sinnoh: 4, unova: 5, kalos: 6, alola: 7, galar: 8, paldea: 9 };
   function tabLocked(t, attId) {
     if (!t.needs || !attId) return false;
     if (t.cup) return Store.leagueWins(attId).indexOf("geeta") < 0;
