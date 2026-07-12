@@ -1288,6 +1288,28 @@
         } catch (_) {}
         return;
       }
+      // 🌌 Legendary & Mythical Challenge — a generation's legendaries, 6v6.
+      // Post-league extension; win recorded per trainer per generation
+      // (append-only, sync-unioned) for the wall + a ceremony honor.
+      if (opts.legend) {
+        try {
+          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
+          const player = sides[playerSide].units[0];
+          const lg = opts.legend;
+          Store.update((s) => {
+            if (winSide === playerSide) {
+              s.legends = s.legends || {};
+              const w = s.legends[player.attId] = s.legends[player.attId] || [];
+              if (w.indexOf(lg.key) < 0) w.push(lg.key);
+              Store.grantPoints(s, "battle", player.teamId, lg.pts || 20);
+              Store.chron(s, lg.icon || "🌌", player.name + " " + (lg.winChron || ("conquered the " + lg.name + "!")));
+            } else {
+              Store.chron(s, lg.icon || "🌌", (lg.loseChron || (lg.name + " proved untamable")) + " — " + player.name + " drinks 3.");
+            }
+          });
+        } catch (_) {}
+        return;
+      }
       // 🏰 Hall of Fame Gauntlet — a back-to-back run against enshrined teams.
       // The league view drives the chain via onResult (already fired above); no
       // per-battle logging, Elo, belt, or chron here.

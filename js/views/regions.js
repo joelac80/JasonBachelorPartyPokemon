@@ -102,6 +102,17 @@
           MovieLegends.BOSSES.map(function (b) { return MovieLegends.card(b, attId); })));
       }
 
+      // 🌌 Legendary Challenge — this region's generation(s) of legendaries,
+      // unlocked once its Champion has fallen. The post-league endgame.
+      if (window.LegendChallenge) {
+        var trials = LegendChallenge.forRegions(t.lg || []);
+        if (trials.length) {
+          host.appendChild(el("h3", { class: "rg-sub" }, "🌌 Legendary Challenge"));
+          host.appendChild(el("div", { class: "league-journey" },
+            trials.map(function (lg) { return LegendChallenge.card(lg, attId); })));
+        }
+      }
+
       // 🏛 Hall of Fame + Gauntlet — scoped to THIS region's champions
       if (window.PokeLeague && PokeLeague.renderHOF) PokeLeague.renderHOF(host, attId, { regions: t.lg, label: t.name });
     }

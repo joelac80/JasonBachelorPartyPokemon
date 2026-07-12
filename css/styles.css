@@ -1636,6 +1636,15 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .movie-stage .league-stage-card { border-color: #9a6cff; background: linear-gradient(rgba(24,16,40,.6), rgba(40,26,70,.35)); }
 .movie-stage.cleared .league-stage-card { border-color: #b8860b; background: rgba(230,184,0,.10); }
 .movie-lead { font-size: 12px; color: #c9b8ff; }
+/* 🌌 Legendary Challenge — cosmic-themed post-league trials */
+.legend-intro { background: radial-gradient(circle at 50% 35%, rgba(30,14,54,.98), rgba(4,4,16,.99)); }
+.legend-boss-ico { width: 112px; height: 112px; image-rendering: pixelated;
+  filter: drop-shadow(0 0 24px rgba(190,120,255,.7)); animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }
+.legend-stage.next .league-stage-card { border-color: #b46cff; background: linear-gradient(rgba(26,14,46,.62), rgba(48,24,84,.38)); }
+.legend-stage.cleared .league-stage-card { border-color: #b8860b; background: rgba(230,184,0,.10); }
+.legend-stage.locked .league-stage-card { border-color: #4a4360; background: rgba(20,18,34,.35); opacity: .8; }
+.legend-stage.locked .league-ace { filter: brightness(0) saturate(0) opacity(.42); }
+.legend-lock { font-size: 12px; color: #b9a7d6; background: rgba(0,0,0,.22); border-radius: 8px; padding: 7px 10px; }
 /* 👋 first-open onboarding tour */
 .onb { position: fixed; inset: 0; z-index: 300; background: linear-gradient(160deg, rgba(10,16,14,.97), rgba(16,26,40,.97));
   display: flex; opacity: 0; transition: opacity .35s ease; overflow-y: auto;

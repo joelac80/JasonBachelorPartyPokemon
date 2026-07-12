@@ -26,11 +26,11 @@
       mirror: { team: [6, 9, 3, 25, 151],
         note: "Answer the clones with the ORIGINALS — Charizard, Blastoise, Venusaur, Pikachu, and MEW, the ancient Pokémon Mewtwo was cloned from." } },
     { key: "collector", name: "LAWRENCE III", title: "The Collector", film: "Pokémon 2000 · The Power of One",
-      type: "flying", team: [144, 145, 146, 142, 149, 249], pts: 12, boost: 1.4, icon: "🎐", face: 249,
+      type: "flying", team: [144, 145, 146, 249], pts: 12, boost: 1.4, icon: "🎐", face: 249,
       quote: "Fire, Ice, Lightning — the titans of the sky are already mine. Only Lugia, guardian of the sea, remains… the jewel of my collection. You? Merely an obstacle to be catalogued.",
-      winChron: "freed the legendary birds and grounded THE COLLECTOR's airship!",
+      winChron: "freed the three legendary birds and grounded THE COLLECTOR's airship!",
       loseChron: "THE COLLECTOR catalogued another trainer",
-      lead: "🎐 Articuno, Zapdos, Moltres — then the ancient rarities, and Lugia, the prize." },
+      lead: "🎐 The three caged titans — Articuno, Zapdos, Moltres — and Lugia, guardian of the sea, the prize itself." },
   ];
   window.MOVIE_BOSSES = BOSSES;
 
@@ -113,6 +113,7 @@
     const beatenBy = Store.state.attendees.filter((a) => Store.movieWins(a.id).indexOf(b.key) >= 0);
     const ace = b.team[b.team.length - 1];
     const aceSrc = SP[ace] || Store.sprite(ace);
+    const n = b.team.length, vs = n + "v" + n;
     return el("div", { class: "league-stage movie-stage" + (mineBeat ? " cleared" : " next") }, [
       el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, mineBeat ? "✅" : b.icon)]),
       el("div", { class: "league-stage-card" }, [
@@ -120,7 +121,7 @@
           el("span", { class: "league-mt" }, b.icon),
           el("div", {}, [
             el("div", { class: "gymc-badge" }, b.name),
-            el("div", { class: "gymc-leader" }, b.title + " · 🎬 " + b.film + " · team of 6 (hidden)"),
+            el("div", { class: "gymc-leader" }, b.title + " · 🎬 " + b.film + " · team of " + n + " (hidden)"),
           ]),
           aceSrc ? el("img", { class: "league-ace" + ((mineBeat || anyBeat) ? " lit" : ""), src: aceSrc, alt: "" }) : null,
         ]),
@@ -128,7 +129,7 @@
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, "🎬 " + a.name))) : null,
         el("button", { class: "btn " + (mineBeat ? "subtle" : "primary") + " sm", onClick: () => challenge(b, attId) },
-          (mineBeat ? "🔁 Rematch " : b.icon + " Challenge " + b.name + " ") + "(6v6)"),
+          (mineBeat ? "🔁 Rematch " : b.icon + " Challenge " + b.name + " ") + "(" + vs + ")"),
       ]),
     ]);
   }
@@ -136,7 +137,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🎬 Movie Legends"),
-      el("p", { class: "page-sub" }, "Two villains straight off the big screen. The cloned tyrant of Mewtwo Strikes Back, and the sky-pirate Collector who caged the legendary birds to seize Lugia. Six-on-six, no mercy — beat them for the wall of fame." ),
+      el("p", { class: "page-sub" }, "Two villains straight off the big screen. The cloned tyrant of Mewtwo Strikes Back, and the sky-pirate Collector who caged the legendary birds to seize Lugia. No mercy — beat them for the wall of fame." ),
     ]));
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";

@@ -876,6 +876,11 @@
     tourneyWins(attId) {
       return ((this.state.tourneyWins || {})[attId] || 0);
     },
+    // 🌌 Legendary & Mythical Challenge cleared per generation — keys like
+    // "gen1", "gen2"…"gen9" (append-only, sync-unioned).
+    legendWins(attId) {
+      return ((this.state.legends || {})[attId] || []).slice();
+    },
     // 🎖 Battle Honors — per-trainer awards for the EXTRA challenge ladders
     // (Movie Legends, the Champions Tournament, canon-villain ambushes, Mt.
     // Silver, and the nine-region Top Champion). Unlike liveTrophies (one holder
@@ -898,6 +903,11 @@
       const lw = this.leagueWins(attId);
       if (lw.indexOf("red") >= 0) out.push({ emoji: "🗻", title: "Mt. Silver Conqueror", sub: "defeated the silent trainer, RED" });
       if (lw.indexOf("geeta") >= 0) out.push({ emoji: "🌟", title: "Grand Champion", sub: "climbed all nine regions to the Top Champion" });
+      // 🌌 Legendary Challenge — one honor per generation cleared, and a grand
+      // title for sweeping all nine.
+      const lg = this.legendWins(attId);
+      if (lg.length >= 9) out.push({ emoji: "🌌", title: "Legend Keeper", sub: "vanquished the legendaries of all nine generations" });
+      else if (lg.length >= 1) out.push({ emoji: "✨", title: "Legend Slayer", sub: "conquered the legendaries of " + lg.length + " generation" + (lg.length > 1 ? "s" : "") });
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.
@@ -1081,6 +1091,13 @@
       Object.keys(pe).forEach((tid) => {
         const arr = ne[tid] = ne[tid] || [];
         (pe[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+      });
+      // 🌌 Legendary Challenge clears: append-only generation keys per trainer.
+      const plg = (prev && prev.legends) || {};
+      const nlg = next.legends = next.legends || {};
+      Object.keys(plg).forEach((tid) => {
+        const arr = nlg[tid] = nlg[tid] || [];
+        (plg[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};

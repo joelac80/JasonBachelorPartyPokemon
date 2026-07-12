@@ -17,6 +17,7 @@
     .add("league", V.league)
     .add("tournament", V.tournament)
     .add("movies", V.movies)
+    .add("legends", V.legends)
     .add("regions", V.regions)
     .add("predictions", V.predictions)
     .add("cards", V.cards)
