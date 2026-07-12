@@ -2034,3 +2034,28 @@ html, body { overscroll-behavior-y: contain; }
 .hisui-rift-name { font-family: var(--pixel, monospace); font-size: 22px; font-weight: 900; color: #fff;
   letter-spacing: 3px; text-shadow: 0 0 18px rgba(160,120,255,.8); margin-top: 4px; }
 .hisui-rift-sub { font-size: 13px; color: #cfc4ea; line-height: 1.5; }
+
+/* 🎭 Ace moment — the boss's last stand flashes the arena */
+@keyframes ace-flash-anim {
+  0% { opacity: 0; } 18% { opacity: .95; } 40% { opacity: .25; }
+  58% { opacity: .7; } 100% { opacity: 0; }
+}
+.battle.ace-flash::after { content: ""; position: absolute; inset: 0; z-index: 60; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 35%, rgba(255,230,140,.9), rgba(255,90,60,.35) 55%, transparent 75%);
+  animation: ace-flash-anim 1.25s ease-out forwards; }
+
+/* 🔴 In-battle capture — the wild mon is sucked into a ball that wobbles */
+@keyframes duel-catch-suck { from { transform: scale(1); filter: brightness(1); }
+  60% { filter: brightness(3); } to { transform: scale(0); filter: brightness(3); } }
+.battle-mon .battle-sprite-img.captured { animation: duel-catch-suck .45s ease-in forwards; }
+.duel-catch-ball { position: absolute; left: 50%; bottom: 22%; width: 26px; height: 26px; margin-left: -13px;
+  z-index: 12; border-radius: 50%; border: 2px solid #222;
+  background: linear-gradient(180deg, #ee1515 0 46%, #222 46% 54%, #f6f6f6 54% 100%); }
+.duel-catch-ball::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px;
+  margin: -4px 0 0 -4px; border-radius: 50%; background: #f6f6f6; border: 2px solid #222; box-sizing: border-box; }
+@keyframes duel-ball-wobble { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-24deg) translateX(-3px); }
+  75% { transform: rotate(24deg) translateX(3px); } }
+.duel-catch-ball.wobble { animation: duel-ball-wobble .55s ease-in-out; }
+.duel-catch-ball.click { box-shadow: 0 0 14px 4px rgba(255,226,122,.9); filter: brightness(1.15); }
+@keyframes duel-ball-open { to { transform: scale(1.6); opacity: 0; } }
+.duel-catch-ball.open { animation: duel-ball-open .45s ease-out forwards; }

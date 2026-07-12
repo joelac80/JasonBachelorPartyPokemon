@@ -101,7 +101,8 @@
             "Giratina fell once before and returned CHANGED — behold its ORIGIN FORME!"],
       },
       quote: "Lovely weather for a dig, isn't it? I've traded plates, pored over myths, smiled at every passing trainer… all for this moment. Show me everything you have — and I will show you what I've been keeping behind my smile.",
-      winChron: "saw through VOLO's smile and beat ALL EIGHT — Garchomp, then Giratina… and Giratina AGAIN!",
+      outro: { lose: "…all of it. The plates, the myths, the smile — and it still wasn't enough. Keep your world, then. For now.",
+        win: "Ah — don't look so crushed. Every relic I own was taken from someone who thought they'd win." },
       loseChron: "VOLO tucked his relics away, smiling — 'another time, perhaps'",
       lead: "⚱️ Spiritomb, Roserade, Togekiss, Hisuian Arcanine, Lucario… and a Garchomp to rival Cynthia's. Surely that's everything. Surely." },
     { key: "nobles", tab: "Sinnoh", name: "THE FRENZIED NOBLES", flair: "HISUI SPECIAL · Lords & Ladies of Old",
@@ -109,6 +110,8 @@
       icon: "🏔", face: 900, boost: 1.46, pts: 30, needs: "cynthia", champ: "CYNTHIA",
       team: [900, 10237, 10230, 10232, 10243],
       quote: "Lightning splits the old sky and the wardens cry out — the Nobles are FRENZIED, golden and blind with it. Kleavor rages in the fieldlands. Calm them the only way this era knows how.",
+      outro: { lose: "The golden light fades… the Nobles kneel, calm at last. The wardens will sing of this.",
+        win: "The frenzy takes the fieldlands. Run, trainer — and come back braver." },
       winChron: "quelled all five FRENZIED NOBLES of Hisui — Kleavor's rage broke first, Avalugg's last!",
       loseChron: "the frenzied Nobles of Hisui raged on",
       lead: "🏔 Lord Kleavor, Lady Lilligant, Lord Arcanine, Lord Electrode and Lord Avalugg — all five, golden-eyed and frenzied." },
@@ -124,6 +127,8 @@
             "I AM THE ONE WHO SPOKE THROUGH THE RIFT. I AM ARCEUS — AND I AM NOT DONE WITH YOU."],
       },
       quote: "Atop the Temple of Sinnoh the sky splits twice — once for TIME, once for SPACE. The mountain folk call what stands behind them 'almighty Sinnoh'. You have heard its voice already. Now answer it.",
+      outro: { lose: "IT IS ENOUGH. YOU ARE THE ONE I CALLED THROUGH THE RIFT. WALK YOUR ERA PROUDLY, CHOSEN ONE.",
+        win: "TIME BENDS. SPACE FOLDS. RETURN WHEN YOUR SPIRIT WEIGHS MORE THAN YOUR AMBITION." },
       winChron: "conquered THE ALMIGHTY SINNOH — Origin Dialga, Origin Palkia… and ARCEUS itself answered!",
       loseChron: "time and space closed over another challenger",
       lead: "⏳ Origin Dialga bends the hours, Origin Palkia folds the miles. And the third ball on their belt… is not a ball." },
@@ -225,9 +230,10 @@
           Duel.start({ mode: "local", title: sp.name.toLowerCase(),
             secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
             a: { units: [{ attId: attId, monIds: ids }] },
-            // reserve/speak: Volo's hidden Giratina + his lines when they emerge.
+            // reserve/speak/outro: hidden reveals, mid-battle lines and the
+            // boss's closing quote (Volo's Giratina, Arceus's judgment…).
             b: { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face,
-              reserve: sp.reserve || 0, speak: sp.speak || null }] },
+              reserve: sp.reserve || 0, speak: sp.speak || null, ace: sp.ace || null, outro: sp.outro || null }] },
             onResult: () => Router.render() });
         } });
     });

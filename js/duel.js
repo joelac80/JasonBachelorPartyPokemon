@@ -261,6 +261,38 @@
     const ref = Modal.open(opts.title || "Pick a trainer", body, null, {});
   }
 
+  // 🎭 Boss chatter — generic pools for AI trainers (any battle can override
+  // per-boss via unit.speak / unit.ace / unit.outro). Lines are picked
+  // deterministically from stable numbers so every phone shows the same one.
+  const TAUNT_HALF = [
+    "Hold fast! We are NOT done here!",
+    "Tch… impressive. But grit wins wars!",
+    "Shake it off! Show them why we came!",
+    "Good… GOOD. Now it gets serious.",
+  ];
+  const GLOAT_KO = [
+    "One down. Care to guess how this ends?",
+    "Was that your best? I do hope not.",
+    "You'll need far more than that.",
+    "And the crowd goes quiet…",
+  ];
+  const ACE_LINES = [
+    "…you've forced my hand. My partner. My pride. FINISH THIS!",
+    "All or nothing — my ace takes the field!",
+    "This is everything I have. Everything!",
+  ];
+  const OUTRO_LOSE = [
+    "…magnificent. I haven't felt a battle like that in years.",
+    "So that's the shape of your resolve. Well fought.",
+    "Hmph. Go on then — the road ahead deserves you.",
+  ];
+  const OUTRO_WIN = [
+    "Come back when your Pokémon believe in you as much as you do.",
+    "A fine effort — but this summit isn't for sale.",
+    "Rest, heal, return. I'll be right here.",
+  ];
+  function bossLine(pool, seed) { return pool[Math.abs(seed || 0) % pool.length]; }
+
   // ---------------- the battle itself ----------------
   function start(opts) {
     opts = opts || {};
@@ -310,6 +342,8 @@
         // speak lines (u.speak = {partyIdx: [lines]}) before a send-out.
         reserve: Math.max(0, Math.min(u.reserve || 0, party.length - 1)),
         speak: u.speak || null,
+        ace: u.ace || null,                            // {line} for the last-mon moment
+        outro: u.outro || null,                        // {win, lose} closing quotes
         party: party, cur: 0, potions: 2, courage: true, armed: false };
     }
     const sides = {
@@ -680,28 +714,48 @@
     }
     // 🔴 Wild battles: a thrown ball spends the turn. Catch odds come from the
     // wild mon's REMAINING HP via opts.wild.chanceFn — weaken it for a better
-    // shot, but a KO loses it. The roll was baked at pick time (deterministic).
+    // shot, but a KO loses it. Shared with the Throw button label so the
+    // trainer always sees the live % BEFORE they commit the turn.
+    function ballChance(wm) {
+      const frac = Math.max(0, wm.hp / wm.hpMax);
+      return Math.max(0.03, Math.min(1, (opts.wild && opts.wild.chanceFn) ? opts.wild.chanceFn(frac) : (0.3 + (1 - frac) * 0.5)));
+    }
+    // The roll was baked at pick time (deterministic across phones). The throw
+    // plays out ON the wild mon's sprite: sucked into a ball that wobbles per
+    // shake, then clicks shut (caught) or bursts back open (broke free).
     function resolveBall(o, u) {
       S.moved++;
       const foe = sides[other(o.side)].units[0];
       const wm = mon(foe);
-      const frac = Math.max(0, wm.hp / wm.hpMax);
-      const chance = Math.max(0.03, Math.min(1, (opts.wild && opts.wild.chanceFn) ? opts.wild.chanceFn(frac) : (0.3 + (1 - frac) * 0.5)));
+      const chance = ballChance(wm);
       const caught = (o.roll != null ? o.roll : 1) < chance;
       menu.innerHTML = "";
+      const img = foe._monEl && foe._monEl.querySelector(".battle-sprite-img");
+      const ballEl = el("div", { class: "duel-catch-ball" });
+      // A catch always rocks 3 times then clicks; a miss breaks out after 1–2.
+      const shakes = caught ? 3 : 1 + (Math.floor((o.roll || 0) * 977) % 2);
+      const steps = [["🔴 " + u.name + " threw a Poké Ball! (" + Math.round(chance * 100) + "%)", 950, () => {
+        sfx("select");
+        if (foe._monEl) foe._monEl.appendChild(ballEl);
+        if (img) img.classList.add("captured");
+      }]];
+      for (let i = 0; i < shakes; i++) steps.push(["…shake " + (i + 1) + "…", 800, () => {
+        ballEl.classList.remove("wobble"); void ballEl.offsetWidth; ballEl.classList.add("wobble");
+        sfx("blip");
+      }]);
       if (caught) {
         S.done = true;
-        beats([
-          ["🔴 " + u.name + " threw a Poké Ball!", 900, () => sfx("select")],
-          ["…shake… …shake…", 900, () => sfx("blip")],
-          ["✨ GOTCHA! " + wm.species + " was caught!", 1400, () => sfx("fanfare")],
-        ], () => { close(); try { if (opts.wild && opts.wild.onOutcome) opts.wild.onOutcome("caught", faintedOwnIds()); } catch (_) {} });
+        steps.push(["✨ Click! GOTCHA — " + wm.species + " was caught!", 1500, () => { ballEl.classList.remove("wobble"); ballEl.classList.add("click"); sfx("fanfare"); }]);
+        beats(steps, () => { close(); try { if (opts.wild && opts.wild.onOutcome) opts.wild.onOutcome("caught", faintedOwnIds()); } catch (_) {} });
         return;
       }
-      beats([
-        ["🔴 " + u.name + " threw a Poké Ball!", 900, () => sfx("select")],
-        ["💨 " + wm.species + " broke free! (" + Math.round(chance * 100) + "% — weaken it for a better shot)", 1200, () => sfx("error")],
-      ], resolveNext);
+      steps.push(["💨 " + wm.species + " broke free! (weaken it for a better shot)", 1200, () => {
+        ballEl.classList.remove("wobble"); ballEl.classList.add("open");
+        if (img) img.classList.remove("captured");
+        setTimeout(() => ballEl.remove(), 600);
+        sfx("error");
+      }]);
+      beats(steps, resolveNext);
     }
     // Which of side a's own mons are down — Nuzlocke deaths / wild-battle report.
     function faintedOwnIds() {
@@ -932,9 +986,22 @@
         // then the sprite appears with the classic send-out beat.
         const talk = (u.speak && u.speak[act.to]) || null;
         const talkBeats = talk ? talk.map((ln) => ["🗣 " + u.name + ": “" + ln + "”", 2200, () => sfx("select")]) : [];
+        // 🎭 THE ACE MOMENT — an AI boss down to their very last: a line (custom
+        // ace.line, or a generic; a scripted speak reveal already covers it),
+        // the screen flashes, and the ace digs deep (+8% attack).
+        const aceMon = mon(u);
+        const isAce = u.ai && !opts.wild && u.party.length >= 3 && u.party.filter((x) => x.hp > 0).length === 1;
+        if (isAce && !talk) talkBeats.push(["🗣 " + u.name + ": “" + ((u.ace && u.ace.line) || bossLine(ACE_LINES, aceMon.id)) + "”", 2200, () => sfx("select")]);
         beats(talkBeats, () => {
           renderSprites(act.side); renderHp(act.side);
-          beats([[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]], fin);
+          const sendBeats = [[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]];
+          if (isAce) sendBeats.push(["⚡ " + aceMon.name + " is giving it everything!", 1200, () => {
+            aceMon.atk *= 1.08;
+            overlay.classList.add("ace-flash");
+            setTimeout(() => overlay.classList.remove("ace-flash"), 1300);
+            sfx("fanfare");
+          }]);
+          beats(sendBeats, fin);
         });
         return;
       }
@@ -1115,6 +1182,17 @@
         const koSteps = [];
         if (tm && tm.hp <= 0) koSteps.push([tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }],
           ["🍺 KO! " + tu.name + " takes 2 sips!", 1150]);
+        // 🎭 boss chatter — an AI trainer grits their teeth the first time
+        // their active drops into the red half, and gloats over a KO.
+        if (tm && !opts.wild) {
+          if (tm.hp > 0 && tu.ai && !tm._tauntedHalf && tm.hp <= tm.hpMax / 2) {
+            tm._tauntedHalf = true;
+            koSteps.push(["🗣 " + tu.name + ": “" + bossLine(TAUNT_HALF, tm.id + tm.hpMax) + "”", 1600, () => sfx("select")]);
+          }
+          if (tm.hp <= 0 && u.ai && !tu.ai) {
+            koSteps.push(["🗣 " + u.name + ": “" + bossLine(GLOAT_KO, tm.id + m.id) + "”", 1600, () => sfx("select")]);
+          }
+        }
         if (act._exp) koSteps.push([act._exp, 1300, () => sfx("coin")]);
         // A splashed foe that fainted from the spread hit.
         (act.spread || []).forEach((sp) => {
@@ -1210,11 +1288,21 @@
       const wMons = sides[winSide].units.map((x) => mon(x).name).join(" & ");
       const lMons = sides[other(winSide)].units.map((x) => mon(x).name).join(" & ");
       const record = mode === "local" || (mode === "remote" && act.by === myClient);
+      // 🎭 THE OUTRO — an AI boss gets the last word: a closing quote (custom
+      // unit.outro.{win,lose}, else a generic line) before the result beats.
+      // Wild mons don't monologue.
+      let outro = null;
+      if (!opts.wild) {
+        const wU = sides[winSide].units[0], lU = sides[other(winSide)].units[0];
+        if (lU.ai && !wU.ai) outro = ["🗣 " + lU.name + ": “" + ((lU.outro && lU.outro.lose) || bossLine(OUTRO_LOSE, lU.party[0].id)) + "”", 2300, () => sfx("select")];
+        else if (wU.ai && !lU.ai) outro = ["🗣 " + wU.name + ": “" + ((wU.outro && wU.outro.win) || bossLine(OUTRO_WIN, wU.party[0].id)) + "”", 2300, () => sfx("select")];
+      }
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
+        outro,
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         ["🍺 Defeat toast — " + lLabel + ": 4 sips for the loss!", 1700],
-      ], () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel)), 700); if (done) done(); });
+      ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel)), 700); if (done) done(); });
       if (!record) return;
       // End the room broadcast no matter which branch records below —
       // watchers' screens resolve and the LIVE banner clears.
@@ -1741,9 +1829,12 @@
       }
       const row = [];
       if (opts.wild && mode === "local" && !u.ai) {
+        // Live odds ON the button — recomputed every turn from the wild
+        // mon's remaining HP, so "weaken it" is a number, not a vibe.
+        const pct = Math.round(ballChance(mon(sides[other(ptr.side)].units[0])) * 100);
         row.push(el("button", { class: "btn primary sm", onClick: () => {
           sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "ball", roll: Math.random() } });
-        } }, "🔴 Throw Ball"));
+        } }, "🔴 Throw Ball · " + pct + "%"));
       }
       row.push(
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
@@ -1774,6 +1865,14 @@
       const mons = [];
       sides[s].units.forEach((u) => {
         if (u.ai) {
+          // 🌿 A wild encounter hides nothing — the wild mon itself stares you
+          // down in the intro (there's no trainer, no balls).
+          if (opts.wild) {
+            const wm = mon(u);
+            const wsrc = frontSprite(wm.id, wm.shiny);
+            mons.push(wsrc ? el("img", { class: "vs-mon vs-boss", src: wsrc, alt: "" }) : el("div", { class: "battle-ball-inner vs-mon" }));
+            return;
+          }
           // A boss can stare you down with its own portrait (Mewtwo) instead of
           // hiding behind balls.
           if (u.vsFace) {
