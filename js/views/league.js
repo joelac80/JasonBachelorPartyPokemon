@@ -230,19 +230,26 @@
   // 🏰 Hall of Fame Gauntlet — fight EVERY enshrined team back-to-back. Two
   // modes: pick a fresh six each battle, or bring one squad for the whole run
   // (fully healed between rounds).
-  function runGauntlet(attId, mode, teamList) {
+  function runGauntlet(attId, mode, teamList, label) {
     const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
     const total = teams.length;
     if (!total) return;
     const size = 6;
     if (Duel.poolFor(attId).length < size) { alert("The Gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
+    const regKey = label || "All";
     let fixed = null;
 
     const finishRun = (cleared, won) => {
       if (won) {
-        try { Store.update((s) => Store.chron(s, "🏰", ((Store.attendee(attId) || {}).name || attId) +
-          " ran the HALL OF FAME GAUNTLET and toppled all " + total + " enshrined teams" +
-          (mode === "fixed" ? " — with ONE squad, no less!" : ", swapping squads each round!"))); } catch (_) {}
+        try { Store.update((s) => {
+          Store.chron(s, "🏰", ((Store.attendee(attId) || {}).name || attId) +
+            " ran the " + (label ? label.toUpperCase() + " " : "") + "HALL OF FAME GAUNTLET and toppled all " + total + " enshrined teams" +
+            (mode === "fixed" ? " — with ONE squad, no less!" : ", swapping squads each round!"));
+          // 🏰 record the clear (keep the harder mode: fixed one-squad beats fresh swap)
+          s.gauntlets = s.gauntlets || {};
+          const g = s.gauntlets[attId] = s.gauntlets[attId] || {};
+          if (g[regKey] !== "fixed") g[regKey] = mode;
+        }); } catch (_) {}
         sfx("fanfare");
       }
       let ctrl;
@@ -282,17 +289,17 @@
     runAt(0);
   }
 
-  function gauntletChoice(attId, teamList) {
+  function gauntletChoice(attId, teamList, label) {
     const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
     const n = teams.length;
     let ctrl;
     const body = el("div", { class: "modal-form" }, [
-      el("p", { class: "hint" }, "Face all " + n + " enshrined team" + (n > 1 ? "s" : "") + " back-to-back, in order. Lose once and the run ends. Pick your style:"),
+      el("p", { class: "hint" }, "Face all " + n + " enshrined team" + (n > 1 ? "s" : "") + " back-to-back, in order. Lose once and the run ends. One-squad is the tougher badge. Pick your style:"),
       el("div", { class: "gauntlet-modes" }, [
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fresh", teams); } },
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fresh", teams, label); } },
           "🔄 Swap squads — pick a fresh 6 every battle"),
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fixed", teams); } },
-          "🛡 One squad — same 6 all the way (healed between)"),
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fixed", teams, label); } },
+          "🏆 One squad — same 6 all the way (harder!)"),
       ]),
     ]);
     ctrl = Modal.open("🏰 Hall of Fame Gauntlet", body, null, { noFooter: true });
@@ -452,9 +459,23 @@
     hostEl.appendChild(el("p", { class: "hint" },
       "⚔ Battle of Fame: any enshrined team can be challenged — the exact lineup that beat " + (opts.label ? opts.label : "the League") + ", AI-controlled, Stadium-style. Exhibition only (no Elo, no belt)."));
     hostEl.appendChild(el("div", { class: "toolbar" }, [
-      el("button", { class: "btn spin-btn", onClick: () => gauntletChoice(attId, hof) },
+      el("button", { class: "btn spin-btn", onClick: () => gauntletChoice(attId, hof, opts.label) },
         "🏰 Run the Gauntlet — all " + hof.length + " team" + (hof.length > 1 ? "s" : "")),
     ]));
+    // 🏰 who has CLEARED this Hall of Fame's gauntlet, and how hard — one-squad
+    // (🏆) is the tougher badge than swap-squads (⚔).
+    const regKey = opts.label || "All";
+    const clears = (Store.state.attendees || []).map((a) => {
+      const m = ((Store.state.gauntlets || {})[a.id] || {})[regKey];
+      return m ? { name: a.name, id: a.id, mode: m } : null;
+    }).filter(Boolean).sort((a, b) => (a.mode === "fixed" ? 0 : 1) - (b.mode === "fixed" ? 0 : 1));
+    if (clears.length) {
+      hostEl.appendChild(el("div", { class: "gauntlet-cleared" }, [el("span", { class: "gc-lab" }, "🏰 Gauntlet cleared:")]
+        .concat(clears.map((c) => el("span", { class: "gc-chip" + (c.mode === "fixed" ? " hard" : ""),
+          onClick: () => window.Profile && Profile.open(c.id),
+          title: c.mode === "fixed" ? "One squad, all the way — the hard mode" : "Swapped squads each round" },
+          (c.mode === "fixed" ? "🏆 " : "⚔ ") + c.name + (c.mode === "fixed" ? " · one squad" : " · swap"))))));
+    }
     hostEl.appendChild(el("div", { class: "hof-list" }, hof.map((h) => {
       const a = Store.attendee(h.attId);
       const title = hofTitle(h);
