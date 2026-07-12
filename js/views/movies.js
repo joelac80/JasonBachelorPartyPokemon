@@ -11,7 +11,7 @@
   // Each boss: a themed final-evolution six, a signature quote, and the ace
   // whose silhouette looms in the card until someone beats them.
   const BOSSES = [
-    { key: "mewtwo", name: "MEWTWO", title: "The Genetic Pokémon", film: "Mewtwo Strikes Back", tab: "Johto", needs: "lance", needsName: "LANCE",
+    { key: "mewtwo", name: "MEWTWO", title: "The Genetic Pokémon", film: "Mewtwo Strikes Back", tab: "Kanto", needs: "blue", needsName: "BLUE",
       type: "psychic", team: [6, 9, 3, 25, 150], pts: 12, boost: 1.4, icon: "🧬", face: 150,
       // The four movie clones field in their eerie shadow palette (shiny sprites —
       // clone Charizard is jet-black, just like the film); Mewtwo stays himself.
