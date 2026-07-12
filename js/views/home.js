@@ -54,48 +54,26 @@
   const MAP = [
     { id: "settings", r: "settings",    e: "⚙️", t: "Settings",        x: 8,  y: 10 },
     { id: "lodge",    r: "roster",      e: "🎴", t: "The Lodge",       x: 13, y: 50 },
-    // 📦 The weekend's quieter corners, boxed up in one spot (was the Tavern).
-    { id: "vault", e: "📦", t: "The Vault", x: 32, y: 33, sub: [
-      { r: "brackets",     e: "🥊", t: "Party Brackets",  d: "Run a tournament — matchups launch real duels" },
-      { r: "predictions",  e: "🔮", t: "Oracle",          d: "Call it before it happens" },
-      { r: "challenges",   e: "🎣", t: "Daily Dares",     d: "The Dock — reel in the Catch of the Day" },
-      { r: "drinks",       e: "🍺", t: "Drink Tracker",   d: "The Lakeside Tavern's old ledger" },
-      { r: "superlatives", e: "🗳️", t: "Superlatives",    d: "Vote the end-of-weekend awards" },
-      { r: "hall",         e: "🌿", t: "Gallery",         d: "The Hall of Bulbasaur — photos & art wall" },
-      { r: "messages",     e: "💌", t: "Message Wall",    d: "Notes for the groom (sealed!)" },
-    ] },
-    { id: "safari", e: "🔴", t: "Safari Zone", x: 52, y: 11, sub: [
+    { id: "safari", e: "🔴", t: "Safari Zone", x: 46, y: 12, sub: [
       { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
       { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Masters" },
-      { r: "dex",     e: "📕", t: "Pokédex", d: "Every collection on one page — Gen 1-9, Hisui, Unown & Mega" },
       { r: "trade",   e: "🔁", t: "Trading Post", d: "Swap caught Pokémon — some evolve when traded!" },
     ] },
-    { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },
-    { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
+    // ⚔️ Everything battle — the plateau where the ladders live.
+    { id: "plateau", e: "🏟", t: "Indigo Plateau", x: 44, y: 46, sub: [
       { r: "regions",  e: "🗺", t: "The Journey",   d: "Every region — gyms → Elite Four → Champion, the Champions Cup & Movie Legends" },
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real turn-based duels — singles or doubles, sips on the line" },
-      { r: "tower",    e: "🗼", t: "Battle Tower",  d: "4v4 double-battle streaks vs random trainers — PALMER guards every 7th floor" },
-      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "One starter, catches by battle, permadeath — fewest catches wears the crown" },
+      { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks vs random trainers — PALMER every 7th, LEGENDS every 14th, rental mode" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Permadeath Kanto → Johto → RED — fewest catches wears the crown" },
+      { r: "dex",      e: "📕", t: "Pokédex",       d: "Every collection on one page — Gen 1-9, Hisui, Unown & Mega" },
     ] },
-    { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
-      { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
-      { r: "cards",       e: "🃏", t: "Card Table", d: "President, Euchre, King's Cup…" },
-    ] },
-    { id: "fame", e: "🏅", t: "Honors Hall", x: 67, y: 52, sub: [
-      { r: "badges",       e: "🏅", t: "Weekend Badges",    d: "8 party badges + the live trophies" },
-      { r: "feed",         e: "📸", t: "Snapshots",         d: "The photo feed — react + comment as your trainer" },
-    ] },
-    { id: "summit", e: "👑", t: "The Summit", x: 89, y: 12, sub: [
-      { r: "ceremony", e: "👑", t: "Ceremony",    d: "Crown the champion + closing credits" },
-      { r: "timeline", e: "📜", t: "Weekend Log", d: "Every moment, attributed" },
-      { r: "stats",    e: "📊", t: "Trip Stats",  d: "Charts, Wrapped, exports" },
-      { r: "poster",   e: "🖼️", t: "Poster",      d: "The keepsake board" },
-    ] },
+    { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },
+    // 🎉 Everything that isn't catching or battling lives in Party Central.
+    { id: "party", r: "party", e: "🎉", t: "Party Central", x: 68, y: 22 },
   ];
   const MAP_PATHS = [
-    ["settings", "lodge"], ["lodge", "vault"], ["vault", "safari"], ["vault", "frontier"],
-    ["frontier", "gamecorner"], ["safari", "gamecorner"], ["frontier", "fame"],
-    ["gamecorner", "victory"], ["fame", "victory"], ["victory", "summit"],
+    ["settings", "lodge"], ["lodge", "plateau"], ["safari", "plateau"],
+    ["safari", "party"], ["plateau", "victory"], ["party", "victory"],
   ];
 
   // A town's menu of buildings.
@@ -186,7 +164,7 @@
       { r: "safari",  e: "🔴", t: "Safari Zone",  d: "Catch 'em" },
       { r: "regions", e: "🗺", t: "The Journey",  d: "Gyms → Champions" },
       { r: "battle",  e: "⚔️", t: "Battle Arena", d: "Real duels" },
-      { r: "tracker", e: "🔬", t: "Pokédex",      d: "The living dex" },
+      { r: "party",   e: "🎉", t: "Party Central", d: "Everything else" },
     ];
     root.appendChild(el("div", { class: "home-quick" }, QUICK.map((q) =>
       el("a", { class: "hq-tile", href: "#/" + q.r }, [

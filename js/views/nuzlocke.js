@@ -15,11 +15,15 @@
 
   const STARTERS = [1, 4, 7, 25];                  // Bulbasaur / Charmander / Squirtle / Pikachu
   const KANTO_GYM0 = 8;                            // Kanto gyms live at circuit idx 8-15
+  const JOHTO_GYM0 = 0;                            // 🗻 Act II: Johto gyms live at idx 0-7
   const KANTO_E4 = ["lorelei", "brunok", "agatha", "lance4", "blue"];
-  // Gen 1 wild pool — no legendaries (they'd trivialize the run) and no
-  // starters (yours is a gift; the rest stay wild-only myths of Pallet Town).
-  const WILDS = Object.keys(DEX).map(Number)
-    .filter((id) => id >= 1 && id <= 151 && !DEX[id].leg && STARTERS.indexOf(id) < 0);
+  // Wild pools — no legendaries (they'd trivialize the run) and no starters
+  // (yours is a gift). Act I roams Gen 1; the Johto act adds Gen 2.
+  function wildsFor(run) {
+    const max = (run && run.act === 2) ? 251 : 151;
+    return Object.keys(DEX).map(Number)
+      .filter((id) => id >= 1 && id <= max && !DEX[id].leg && STARTERS.indexOf(id) < 0);
+  }
 
   function gymAt(i) { return (window.GymCircuit && GymCircuit.GYMS && GymCircuit.GYMS[i]) || null; }
   function stageFor(key) { return (window.LEAGUE_STAGES || []).find((s) => s.key === key) || null; }
@@ -34,6 +38,7 @@
   }
   // Near-flat encounter odds, like the Safari grass.
   function rollWild(run) {
+    const WILDS = wildsFor(run);
     const owned = {}; run.box.forEach((m) => { owned[m.id] = 1; });
     const pool = WILDS.filter((id) => !owned[id]);
     if (!pool.length) return WILDS[(Math.random() * WILDS.length) | 0];
@@ -77,9 +82,10 @@
   function renderStartScreen(host, lastRun) {
     if (lastRun && lastRun.over) {
       const alive = lastRun.box.filter((m) => !m.dead).length;
-      const headline = lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
+      const headline = lastRun.over === "legend" ? "🗻 LEGEND — two regions, permadeath on, RED defeated!"
+        : lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
         : lastRun.over === "wiped" ? "💀 The run ended — the whole box was lost." : "🏳️ Run abandoned.";
-      host.appendChild(el("div", { class: "safari-card nuz-summary" + (lastRun.over === "champion" ? " result win" : " result miss") }, [
+      host.appendChild(el("div", { class: "safari-card nuz-summary" + (lastRun.over === "champion" || lastRun.over === "legend" ? " result win" : " result miss") }, [
         el("div", { class: "safari-result-msg" }, headline),
         el("div", { class: "nuz-summary-line" },
           lastRun.badges.length + "/8 badges · " + lastRun.league.length + "/5 league stages · " +
@@ -112,11 +118,28 @@
   // ── Screen 2: the live run ─────────────────────────────────────────────────
   function renderRun(host, run) {
     const alive = run.box.filter((m) => !m.dead);
+    const act = run.act === 2 ? 2 : 1;
+    const kBadges = run.badges.filter((i) => i >= KANTO_GYM0).length;
+    const jBadges = run.badges.filter((i) => i < KANTO_GYM0).length;
+
+    // 🗻 Act II banner — the crown is banked; Johto (and RED) are optional glory.
+    if (act === 2) {
+      host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+        el("div", { class: "nuz-lab-head" }, "🗻 ACT II — THE JOHTO RUN"),
+        el("p", { class: "hint" }, "You're already a Nuzlocke CHAMPION (it's in the Hall of Fame). Now Gen 2 roams the grass, 8 Johto gyms stand in order… and RED waits on Mt. Silver. Or retire with the crown."),
+        el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn subtle sm", onClick: () => {
+            if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
+            Store.nuzRetire(me); wildId = 0; Router.render();
+          } }, "👑 Retire as Champion"),
+        ]),
+      ]));
+    }
 
     // Progress strip + the box.
     host.appendChild(el("div", { class: "safari-stats" }, [
-      stat("🏅 " + run.badges.length + "/8", "Kanto badges"),
-      stat("👑 " + run.league.length + "/5", "League stages"),
+      act === 1 ? stat("🏅 " + kBadges + "/8", "Kanto badges") : stat("🏅 " + jBadges + "/8", "Johto badges"),
+      act === 1 ? stat("👑 " + run.league.length + "/5", "League stages") : stat("🗻 " + (run.league.indexOf("red") >= 0 ? "1" : "0") + "/1", "Mt. Silver"),
       stat(run.catches, "Caught"),
       stat("🪦 " + run.deaths, "Lost forever"),
     ]));
@@ -152,22 +175,22 @@
       ]));
     }
 
-    // The gauntlet: next gym, or the league ladder.
+    // The gauntlet: next gym, the league ladder — or Mt. Silver.
     const next = el("div", { class: "safari-card nuz-next" });
     host.appendChild(next);
-    if (run.badges.length < 8) {
-      const idx = KANTO_GYM0 + run.badges.length;
+    if (act === 1 && kBadges < 8) {
+      const idx = KANTO_GYM0 + kBadges;
       const g = gymAt(idx);
-      next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (run.badges.length + 1) + "/8 — Leader " + (g ? g.leader : "?")));
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (kBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
         next.appendChild(el("div", { class: "nuz-foe-row" }, g.team.map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
-        next.appendChild(el("p", { class: "hint" }, "Gyms fall IN ORDER — no skipping ahead. The " + (g.badge || "") + " Badge counts only inside this run."));
+        next.appendChild(el("p", { class: "hint" }, "Gyms fall IN ORDER — no skipping ahead. And villains prowl the roads between them…"));
       }
-    } else {
+    } else if (act === 1) {
       const key = KANTO_E4[run.league.length];
       const st = key && stageFor(key);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "👑 Victory Road — " + run.league.length + "/5"));
@@ -177,7 +200,30 @@
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
         ]));
-        next.appendChild(el("p", { class: "hint" }, key === "blue" ? "The last battle. Beat BLUE and the run is legend." : "The Kanto Elite Four stands between you and BLUE."));
+        next.appendChild(el("p", { class: "hint" }, key === "blue" ? "Beat BLUE and the crown is yours — and then Johto opens for the LEGEND tier." : "The Kanto Elite Four stands between you and BLUE."));
+      }
+    } else if (jBadges < 8) {
+      const idx = JOHTO_GYM0 + jBadges;
+      const g = gymAt(idx);
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Johto Gym " + (jBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
+      if (g) {
+        next.appendChild(el("div", { class: "nuz-foe-row" }, g.team.map((id) =>
+          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
+        ]));
+        next.appendChild(el("p", { class: "hint" }, "Eight more, in order — the mountain only answers a 16-badge trainer."));
+      }
+    } else {
+      const st = stageFor("red");
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
+      if (st) {
+        next.appendChild(el("div", { class: "nuz-foe-row" }, st.team.map((id) =>
+          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Climb — battle RED"),
+        ]));
+        next.appendChild(el("p", { class: "hint" }, "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
       }
     }
 
@@ -238,7 +284,50 @@
           b: { units: [{ npc: "LEADER " + g.leader, ai: true, monIds: g.team.slice() }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
-            if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); }
+            if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); maybeAmbush(); }
+            Router.render();
+          } } });
+      });
+  }
+
+  // ❗ Villains prowl the roads between Nuzlocke gyms (~28% after a win) —
+  // same rogues' gallery as the main circuit, but HERE every faint is
+  // forever. You can slip away… for a sip and a little shame.
+  function maybeAmbush() {
+    const pool = window.CANON_TRAINERS || [];
+    if (!pool.length || Math.random() > 0.28) return;
+    const t = pool[(Math.random() * pool.length) | 0];
+    let tries = 0;
+    (function whenClear() {
+      if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
+      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
+      const run = Store.nuzRun(me);
+      if (!run || run.over || !Store.nuzAlive(me).length) return;
+      let ctrl;
+      const body = el("div", { class: "modal-form" }, [
+        el("p", { class: "hint" }, "❗ On the road out of the gym, a villain blocks the path — and in a NUZLOCKE, every faint is FOREVER."),
+        el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
+        el("div", { class: "toolbar" }, [
+          el("button", { class: "btn primary", onClick: () => { ctrl.close(); ambushBattle(run, t); } }, "⚔ Stand and fight"),
+          el("button", { class: "btn subtle", onClick: () => {
+            ctrl.close();
+            Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — a sip for the shame."); });
+          } }, "🏃 Slip away (take a sip)"),
+        ]),
+      ]);
+      ctrl = Modal.open("❗ " + t.title + " " + t.name + " ambushes the run!", body, null, { noFooter: true });
+    })();
+  }
+  function ambushBattle(run, t) {
+    partyThen(run, 6, "❗ Ambush — " + t.title + " " + t.name,
+      "No badge, no points — just survival. Every faint is permanent.",
+      (ids) => {
+        Duel.start({ mode: "local",
+          a: { units: [{ attId: me, monIds: ids }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: 1.1 }] },
+          nuzlocke: { onEnd: (fainted, winSide) => {
+            Store.nuzDeaths(me, fainted || []);
+            Store.update((s) => Store.chron(s, "❗", aName(me) + (winSide === "a" ? " fought off " : " survived ") + t.title + " " + t.name + "'s Nuzlocke ambush" + (winSide === "a" ? "!" : " — barely.")));
             Router.render();
           } } });
       });
@@ -268,7 +357,7 @@
       el("div", {}, hall.map((r, i) => el("div", { class: "nuz-hall-row" + (i === 0 ? " crowned" : "") }, [
         el("span", { class: "nuz-hall-rank" }, i === 0 ? "👑" : "#" + (i + 1)),
         el("span", { class: "nuz-hall-name" }, aName(r.att)),
-        el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost" + (r.deaths === 0 ? " · 💎 deathless" : "")),
+        el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost" + (r.tier === "legend" ? " · 🗻 LEGEND" : "") + (r.deaths === 0 ? " · 💎 deathless" : "")),
       ]))),
     ]));
   }

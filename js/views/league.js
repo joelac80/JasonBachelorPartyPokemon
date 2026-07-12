@@ -449,6 +449,9 @@
   // the legacy "beat RED?" heuristic.
   function hofTitle(h) {
     if (h && h.key === "red") return { ico: "🗻", txt: "conquered Mt. Silver — defeated RED" };
+    if (h && h.key === "nuzlocke") return { ico: "🪦", txt: "Nuzlocke Champion — beat BLUE with permadeath on" };
+    if (h && h.key === "nuzlocke-red") return { ico: "🗻", txt: "Nuzlocke LEGEND — RED fell, permadeath and all" };
+    if (h && h.key === "tower") return { ico: "🗼", txt: "Tower Ace — 7 straight, took PALMER's silver print" };
     if (h && h.champ) {
       if (h.rank === "Top Champion") return { ico: "🌟", txt: "Top Champion — beat " + h.champ + (h.region ? " (" + h.region + ")" : "") };
       return { ico: "👑", txt: (h.region ? h.region + " " : "") + "Champion — beat " + h.champ };

@@ -458,6 +458,7 @@
       u._fill.classList.toggle("low", pct <= 0.5 && pct > 0.2);
       u._fill.classList.toggle("crit", pct <= 0.2);
       u._num.textContent = Math.max(0, m.hp) + " / " + m.hpMax;
+      if (u._faceEl) u._faceEl.classList.toggle("low", pct <= 0.35);   // the grimace
       paintStatus(u);
       paintParty(u._side);   // remaining-team balls track every faint/heal
     }
@@ -499,7 +500,12 @@
         u._fill = el("div", { class: "battle-hp-fill" });
         u._num = el("span", { class: "duel-hp-num" });
         u._statusEl = el("span", { class: "duel-status hidden" });
-        box.appendChild(el("div", { class: "battle-hp-mem" }, [
+        // 🎬 A boss with a portrait (vsFace) stares you down BESIDE their HP
+        // bars all battle — and grimaces once their mon drops into the red.
+        const faceSrc = (u.ai && u.vsFace) ? frontSprite(u.vsFace, false) : "";
+        u._faceEl = faceSrc ? el("img", { class: "duel-boss-face", src: faceSrc, alt: "" }) : null;
+        box.appendChild(el("div", { class: "battle-hp-mem" + (u._faceEl ? " with-face" : "") }, [
+          u._faceEl,
           el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv50"), u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
@@ -1142,7 +1148,21 @@
       // The blast connected — this mon must recharge next turn.
       if (act.recharge) m._recharge = true;
 
-      const steps = chug.concat([used]);
+      // 🎬 SIGNATURE MOVE — the boss's LAST mon landing its strongest attack
+      // gets a named call-out and a screen shake, once per battle.
+      let sig = null;
+      if (u.ai && !u._sigDone && !isStatus && (mv.pow || 0) > 0
+          && u.party.filter((x) => x.hp > 0).length === 1
+          && (mv.pow || 0) >= Math.max.apply(null, m.moves.map((x) => x.pow || 0))) {
+        u._sigDone = true;
+        sig = ["💥 SIGNATURE — " + m.name + "'s " + mv.name.toUpperCase() + "!", 1300, () => {
+          overlay.classList.add("shake");
+          setTimeout(() => overlay.classList.remove("shake"), 800);
+          sfx("correct");
+        }];
+      }
+
+      const steps = chug.concat(sig ? [sig, used] : [used]);
       if (!isStatus && tm) {
         steps.push([null, 500, () => {
           tm.hp = Math.max(0, tm.hp - act.dmg);
@@ -1190,6 +1210,18 @@
           if (tm.hp > 0 && tu.ai && !tm._tauntedHalf && tm.hp <= tm.hpMax / 2) {
             tm._tauntedHalf = true;
             koSteps.push(["🗣 " + tu.name + ": “" + bossLine(TAUNT_HALF, tm.id + tm.hpMax) + "”", 1600, () => sfx("select")]);
+          }
+          // 🎬 THE COMEBACK — the boss's ACE, first time it survives in deep
+          // red: a telegraphed rally and a one-time 25% heal. Beat it twice.
+          if (tm.hp > 0 && tu.ai && !tu._comebackDone
+              && tu.party.filter((x) => x.hp > 0).length === 1 && tm.hp <= tm.hpMax * 0.3) {
+            tu._comebackDone = true;
+            const heal = Math.round(tm.hpMax * 0.25);
+            koSteps.push(["🗣 " + tu.name + ": “We are NOT done. Together — ONE more stand!”", 1800, () => sfx("select")]);
+            koSteps.push(["✨ " + tm.name + " dug deep — recovered " + heal + " HP!", 1300, () => {
+              tm.hp = Math.min(tm.hpMax, tm.hp + heal);
+              paintHp(tu); sfx("coin");
+            }]);
           }
           if (tm.hp <= 0 && u.ai && !tu.ai) {
             koSteps.push(["🗣 " + u.name + ": “" + bossLine(GLOAT_KO, tm.id + m.id) + "”", 1600, () => sfx("select")]);

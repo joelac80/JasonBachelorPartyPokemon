@@ -2063,3 +2063,31 @@ html, body { overscroll-behavior-y: contain; }
 /* 📕 Unified Pokédex page */
 .dex-tabbar { margin-top: 2px; }
 .dex-embed .page-head { display: none; }
+
+/* 🎬 Boss portrait beside the HP bars + the signature-move screen shake */
+.battle-hp-mem.with-face { position: relative; padding-right: 46px; }
+.duel-boss-face { position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px; image-rendering: pixelated; border-radius: 8px;
+  background: rgba(0,0,0,.25); border: 1.5px solid var(--line); transition: filter .3s; }
+.duel-boss-face.low { filter: grayscale(.7) brightness(.7) sepia(.4) hue-rotate(-30deg); }
+@keyframes battle-shake {
+  0%,100% { transform: translate(0,0); } 15% { transform: translate(-7px,3px); }
+  30% { transform: translate(6px,-4px); } 45% { transform: translate(-5px,-3px); }
+  60% { transform: translate(5px,4px); } 75% { transform: translate(-3px,2px); } 90% { transform: translate(2px,-2px); }
+}
+.battle.shake { animation: battle-shake .7s ease-in-out; }
+
+/* 🗻 Nuzlocke Act II banner */
+.nuz-act2 { margin: 10px 0; padding: 12px 14px; border: 2.5px solid #b9c4d4;
+  background: linear-gradient(135deg, #1d2733, #2b3a4d); color: #eef3fa; }
+.nuz-act2 .nuz-lab-head { color: #cfe0f5; }
+.nuz-act2 .hint { color: #b8c8dc; }
+
+/* 🎉 Party Central */
+.party-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 6px 0 14px; }
+.party-card { display: flex; flex-direction: column; gap: 3px; background: var(--panel); border: 2px solid var(--line);
+  border-radius: 12px; padding: 12px; text-decoration: none; color: var(--ink); }
+.party-card:hover { border-color: var(--pokered); box-shadow: 0 0 10px rgba(238,21,21,.3); }
+.party-card-e { font-size: 22px; line-height: 1; }
+.party-card-t { font-weight: 800; }
+.party-card-d { font-size: 12px; color: var(--muted, #8a97a8); line-height: 1.35; }

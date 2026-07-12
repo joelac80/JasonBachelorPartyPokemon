@@ -6,6 +6,7 @@
     .add("draft", V.draft)
     .add("roster", V.roster)
     .add("activities", V.activities)
+    .add("party", V.party)
     .add("jeopardy", V.jeopardy)
     .add("brackets", V.brackets)
     .add("battle", V.battle)

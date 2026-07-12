@@ -1057,22 +1057,35 @@
         Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + r.badges.length + "/8 — no losses allowed!");
       });
     },
-    // An Elite Four / Champion stage falls. Beating BLUE completes the run —
-    // it's enshrined in the Nuzlocke hall with its catch count.
+    // An Elite Four / Champion stage falls. BLUE crowns the run (enshrined in
+    // the Nuzlocke hall AND the real Hall of Fame) — then THE JOHTO ACT opens:
+    // 8 more gyms in order and RED on Mt. Silver for the Legend tier.
     nuzStage(attId, key) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.league.indexOf(key) >= 0) return;
         r.league.push(key);
+        const alive = r.box.filter((m) => !m.dead).map((m) => m.id);
         if (key === "blue") {
-          r.over = "champion"; r.doneTs = Date.now();
+          r.act = 2; r.champTs = Date.now();
           s.nuzlockeHof = s.nuzlockeHof || [];
-          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs });
-          Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + this._nuzName(attId) + " beat BLUE with permadeath on — " + r.catches + " caught, " + r.deaths + " lost along the way. LEGEND.");
+          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.champTs, tier: "champion" });
+          s.hof = s.hof || [];
+          s.hof.push({ attId: attId, ts: r.champTs, party: alive.slice(0, 6), key: "nuzlocke", champ: "BLUE", rank: "Nuzlocke Champion", region: "Kanto" });
+          Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + this._nuzName(attId) + " beat BLUE with permadeath on — " + r.catches + " caught, " + r.deaths + " lost. And Johto is calling…");
+        } else if (key === "red") {
+          r.over = "legend"; r.doneTs = Date.now();
+          s.nuzlockeHof = s.nuzlockeHof || [];
+          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "legend" });
+          s.hof = s.hof || [];
+          s.hof.push({ attId: attId, ts: r.doneTs, party: alive.slice(0, 6), key: "nuzlocke-red", champ: "RED", rank: "Nuzlocke Legend", region: "Johto" });
+          Store.chron(s, "🗻", "NUZLOCKE LEGEND!!! " + this._nuzName(attId) + " climbed Mt. Silver with permadeath on and defeated RED — " + r.catches + " caught, " + r.deaths + " lost across TWO regions. Nothing left to prove.");
         } else {
           Store.chron(s, "🪦", this._nuzName(attId) + " toppled a Nuzlocke Elite Four stage (" + r.league.length + "/5)!");
         }
       });
     },
+    // Bank the crown and stop — a champion who walks away stays a champion.
+    nuzRetire(attId) { this._nuzEdit(attId, (r) => { if (!r.over && r.act === 2) r.over = "champion"; }); },
     // Completed runs, best (fewest catches) first — the Nuzlocke crown board.
     nuzHall() {
       return (this.state.nuzlockeHof || []).slice().sort((a, b) => (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
@@ -1084,27 +1097,42 @@
     hisuiUnlocked(attId) { return this.leagueWins(attId).indexOf("cynthia") >= 0; },
 
     // 🗼 Battle Tower — 4v4 double-battle streaks vs randomized trainers.
-    // Per-trainer {streak, best}; a loss resets streak, best is forever.
-    towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0 }; },
-    towerWin(attId, foeName, tycoon) {
+    // Per-trainer {streak, best} for the classic climb and {rStreak, rBest}
+    // for RENTAL mode (random squad handed to you). A loss resets the live
+    // streak, bests are forever — and the FIRST time a classic streak hits 7
+    // (Palmer's floor), the team is enshrined in the real Hall of Fame.
+    towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0, rStreak: 0, rBest: 0 }; },
+    towerWin(attId, foeName, tycoon, partyIds, rental) {
       if (!attId) return;
       this.update((s) => {
         s.tower = s.tower || {};
         const t = s.tower[attId] = s.tower[attId] || { streak: 0, best: 0 };
-        t.streak += 1; t.best = Math.max(t.best || 0, t.streak); t.upd = Date.now();
         const nm = this._nuzName(attId);
+        if (rental) {
+          t.rStreak = (t.rStreak || 0) + 1; t.rBest = Math.max(t.rBest || 0, t.rStreak); t.upd = Date.now();
+          if (tycoon) Store.chron(s, "🎲", nm + " beat PALMER with a RENTAL squad — rental streak " + t.rStreak + "!!");
+          else if (t.rStreak % 5 === 0) Store.chron(s, "🎲", nm + " is " + t.rStreak + " deep on RENTAL Pokémon alone!");
+          return;
+        }
+        const prevBest = t.best || 0;
+        t.streak += 1; t.best = Math.max(prevBest, t.streak); t.upd = Date.now();
+        if (t.streak === 7 && prevBest < 7) {
+          s.hof = s.hof || [];
+          s.hof.push({ attId: attId, ts: Date.now(), party: (partyIds || []).slice(0, 6), key: "tower", champ: "PALMER", rank: "Tower Ace", region: "" });
+        }
         if (tycoon) Store.chron(s, "🗼", nm + " toppled TOWER TYCOON PALMER — Battle Tower streak " + t.streak + "!!");
         else if (t.streak % 5 === 0) Store.chron(s, "🗼", nm + " is on a Battle Tower HEATER — " + t.streak + " straight!");
       });
     },
-    towerLoss(attId, foeName) {
+    towerLoss(attId, foeName, rental) {
       if (!attId) return;
       this.update((s) => {
         s.tower = s.tower || {};
         const t = s.tower[attId] = s.tower[attId] || { streak: 0, best: 0 };
-        const had = t.streak;
-        t.streak = 0; t.upd = Date.now();
-        if (had >= 3) Store.chron(s, "🗼", this._nuzName(attId) + "'s Battle Tower streak ends at " + had + " — " + (foeName || "the tower") + " takes it.");
+        const had = rental ? (t.rStreak || 0) : t.streak;
+        if (rental) t.rStreak = 0; else t.streak = 0;
+        t.upd = Date.now();
+        if (had >= 3) Store.chron(s, "🗼", this._nuzName(attId) + "'s " + (rental ? "rental " : "") + "Battle Tower streak ends at " + had + " — " + (foeName || "the tower") + " takes it.");
       });
     },
 
@@ -1167,14 +1195,17 @@
       const sw = this.secretWins(attId);
       Object.keys(SPECIAL_HONORS).forEach((k) => { if (sw.indexOf(k) >= 0) out.push(SPECIAL_HONORS[k]); });
       // 🗼 Battle Tower — streak plaques (7 = the Tycoon's silver print).
-      const tb = (this.towerOf(attId) || {}).best || 0;
+      const twr = this.towerOf(attId) || {};
+      const tb = twr.best || 0;
       if (tb >= 21) out.push({ emoji: "🗼", title: "Tower Legend", sub: "a 21-win Battle Tower streak — the gold print" });
       else if (tb >= 7) out.push({ emoji: "🗼", title: "Tower Ace", sub: "a 7-win streak — took Tower Tycoon PALMER's silver print" });
       else if (tb >= 3) out.push({ emoji: "🛗", title: "Tower Climber", sub: "a " + tb + "-win Battle Tower streak" });
+      if ((twr.rBest || 0) >= 7) out.push({ emoji: "🎲", title: "Rental Ace", sub: "a 7-win Tower streak on RENTAL Pokémon alone" });
       // 🪦 Nuzlocke — completed hardcore runs (fewest catches is the flex).
       const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
       if (nz.length) {
         const best = nz.reduce((a, b) => (b.catches < a.catches ? b : a));
+        if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "two regions of permadeath — and RED still fell" });
         out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered Kanto with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });
         if (nz.some((r) => !r.deaths)) out.push({ emoji: "💎", title: "Deathless", sub: "won a Nuzlocke without losing a single Pokémon" });
@@ -1410,8 +1441,9 @@
       Object.keys(ptr2).forEach((tid) => {
         const a = ptr2[tid], b = ntr2[tid];
         if (!b) { ntr2[tid] = a; return; }
-        if ((a.upd || 0) > (b.upd || 0)) { b.streak = a.streak; b.upd = a.upd; }
+        if ((a.upd || 0) > (b.upd || 0)) { b.streak = a.streak; b.rStreak = a.rStreak || 0; b.upd = a.upd; }
         b.best = Math.max(b.best || 0, a.best || 0);
+        b.rBest = Math.max(b.rBest || 0, a.rBest || 0);
       });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};

@@ -11,19 +11,21 @@
   const SPS = window.DEX_SPRITES_SHINY || {};
   const SPANS = (window.Store && Store.GEN_SPANS) || [];
 
+  // Story order: Unown rides with its Johto era, Mega with its Kalos era,
+  // and Hisui closes the list as the post-Sinnoh rift.
   const TABS = [
     { key: "g1", gen: 1, name: "Kanto", emoji: "🔴" },
     { key: "g2", gen: 2, name: "Johto", emoji: "🌸" },
+    { key: "unown", name: "Unown", emoji: "🔡" },
     { key: "g3", gen: 3, name: "Hoenn", emoji: "🌊" },
     { key: "g4", gen: 4, name: "Sinnoh", emoji: "🏔" },
     { key: "g5", gen: 5, name: "Unova", emoji: "🏙" },
     { key: "g6", gen: 6, name: "Kalos", emoji: "🗼" },
+    { key: "mega", name: "Mega", emoji: "✨" },
     { key: "g7", gen: 7, name: "Alola", emoji: "🌺" },
     { key: "g8", gen: 8, name: "Galar", emoji: "⚽" },
     { key: "g9", gen: 9, name: "Paldea", emoji: "🍊" },
     { key: "hisui", name: "Hisui", emoji: "⏳" },
-    { key: "unown", name: "Unown", emoji: "🔡" },
-    { key: "mega", name: "Mega", emoji: "✨" },
   ];
 
   // Per-trainer catch records (same variant logic as the Safari dex).
