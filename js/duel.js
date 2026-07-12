@@ -1026,8 +1026,9 @@
         beats(talkBeats, () => {
           renderSprites(act.side); renderHp(act.side);
           const sendBeats = [[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]];
+          // Pure theater: the flash and the line, but NO stat surge — final
+          // mons don't get mechanically stronger (cut by request).
           if (isAce) sendBeats.push(["⚡ " + aceMon.name + " is giving it everything!", 1200, () => {
-            aceMon.atk *= 1.08;
             overlay.classList.add("ace-flash");
             setTimeout(() => overlay.classList.remove("ace-flash"), 1300);
             sfx("fanfare");
@@ -1173,24 +1174,11 @@
       // The blast connected — this mon must recharge next turn.
       if (act.recharge) m._recharge = true;
 
-      // 🎬 SIGNATURE MOVE — the boss's LAST mon landing its strongest attack
-      // gets a named call-out and a screen shake, once per battle. Wild mons
-      // don't get one (every wild is a "last mon" — the grass would never
-      // stop shaking), and in shared doubles the flag rides on the MON so
-      // the sibling slot can't replay it.
-      let sig = null;
-      if (u.ai && !opts.wild && !u._sigDone && !m._sigDone && !isStatus && (mv.pow || 0) > 0
-          && u.party.filter((x) => x.hp > 0).length === 1
-          && (mv.pow || 0) >= Math.max.apply(null, m.moves.map((x) => x.pow || 0))) {
-        u._sigDone = true; m._sigDone = true;
-        sig = ["💥 SIGNATURE — " + m.name + "'s " + mv.name.toUpperCase() + "!", 1300, () => {
-          overlay.classList.add("shake");
-          setTimeout(() => overlay.classList.remove("shake"), 800);
-          sfx("correct");
-        }];
-      }
+      // (The SIGNATURE call-out + screen shake for a boss's last mon was cut
+      // by request — endgame fights are hard enough, and it read like a free
+      // super move landing at the worst possible time.)
 
-      const steps = chug.concat(sig ? [sig, used] : [used]);
+      const steps = chug.concat([used]);
       if (!isStatus && tm) {
         steps.push([null, 500, () => {
           tm.hp = Math.max(0, tm.hp - act.dmg);
@@ -1239,17 +1227,13 @@
             const tln = bossLine(TAUNT_HALF, tm.id + tm.hpMax);
             koSteps.push(["🗣 " + tu.name + ": “" + tln + "”", 1600, () => { sfx("select"); sayBubble(tu, tln); }]);
           }
-          // 🎬 THE COMEBACK — the boss's ACE, first time it survives in deep
-          // red: a telegraphed rally and a one-time 25% heal. Beat it twice.
+          // (The COMEBACK 25% heal for a boss's ace in deep red was cut by
+          // request — no more free swings for the final mon. The ace still
+          // gets its defiant LINE below, but words don't restore HP.)
           if (tm.hp > 0 && tu.ai && !tu._comebackDone
               && tu.party.filter((x) => x.hp > 0).length === 1 && tm.hp <= tm.hpMax * 0.3) {
             tu._comebackDone = true;
-            const heal = Math.round(tm.hpMax * 0.25);
-            koSteps.push(["🗣 " + tu.name + ": “We are NOT done. Together — ONE more stand!”", 1800, () => { sfx("select"); sayBubble(tu, "We are NOT done. Together — ONE more stand!"); }]);
-            koSteps.push(["✨ " + tm.name + " dug deep — recovered " + heal + " HP!", 1300, () => {
-              tm.hp = Math.min(tm.hpMax, tm.hp + heal);
-              paintHp(tu); sfx("coin");
-            }]);
+            koSteps.push(["🗣 " + tu.name + ": “We are NOT done. ONE more stand!”", 1800, () => { sfx("select"); sayBubble(tu, "We are NOT done. ONE more stand!"); }]);
           }
           if (tm.hp <= 0 && u.ai && !tu.ai) {
             const gln = bossLine(GLOAT_KO, tm.id + m.id);

@@ -2113,3 +2113,8 @@ html, body { overscroll-behavior-y: contain; }
   border: 7px solid transparent; border-top-color: #2a2a30; }
 .duel-bubble.fade { opacity: 0; transition: opacity .55s ease; }
 @keyframes bubble-pop { from { transform: translateX(-50%) scale(.6); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+
+/* 💬 Foe-side bubbles hang BELOW the mon — their sprites sit at the top of
+   the arena and an above-the-head bubble clips off the screen. */
+.battle-sprite.foe .duel-bubble { bottom: auto; top: 100%; }
+.battle-sprite.foe .duel-bubble::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #2a2a30; }
