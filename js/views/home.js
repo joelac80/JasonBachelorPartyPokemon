@@ -54,30 +54,35 @@
   const MAP = [
     { id: "settings", r: "settings",    e: "⚙️", t: "Settings",        x: 8,  y: 10 },
     { id: "lodge",    r: "roster",      e: "🎴", t: "The Lodge",       x: 13, y: 50 },
-    { id: "tavern",   r: "drinks",      e: "🍺", t: "Lakeside Tavern", x: 32, y: 33 },
+    // 📦 The weekend's quieter corners, boxed up in one spot (was the Tavern).
+    { id: "vault", e: "📦", t: "The Vault", x: 32, y: 33, sub: [
+      { r: "brackets",     e: "🥊", t: "Party Brackets",  d: "Run a tournament — matchups launch real duels" },
+      { r: "predictions",  e: "🔮", t: "Oracle",          d: "Call it before it happens" },
+      { r: "challenges",   e: "🎣", t: "Daily Dares",     d: "The Dock — reel in the Catch of the Day" },
+      { r: "drinks",       e: "🍺", t: "Drink Tracker",   d: "The Lakeside Tavern's old ledger" },
+      { r: "superlatives", e: "🗳️", t: "Superlatives",    d: "Vote the end-of-weekend awards" },
+      { r: "hall",         e: "🌿", t: "Gallery",         d: "The Hall of Bulbasaur — photos & art wall" },
+      { r: "messages",     e: "💌", t: "Message Wall",    d: "Notes for the groom (sealed!)" },
+    ] },
     { id: "safari", e: "🔴", t: "Safari Zone", x: 52, y: 11, sub: [
       { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
       { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Masters" },
+      { r: "unown",   e: "🔡", t: "Unown Dex", d: "The living alphabet — 28 glyphs in the wild" },
+      { r: "megadex", e: "✨", t: "Mega-Dex", d: "Mega-Evolve every form in battle" },
       { r: "trade",   e: "🔁", t: "Trading Post", d: "Swap caught Pokémon — some evolve when traded!" },
     ] },
     { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
       { r: "regions",  e: "🗺", t: "The Journey",   d: "Every region — gyms → Elite Four → Champion, the Champions Cup & Movie Legends" },
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real turn-based duels — singles or doubles, sips on the line" },
-      { r: "brackets", e: "🥊", t: "Party Brackets", d: "Run a tournament — matchups launch real duels" },
     ] },
     { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
       { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
-      { r: "predictions", e: "🔮", t: "Oracle",     d: "Call it before it happens" },
       { r: "cards",       e: "🃏", t: "Card Table", d: "President, Euchre, King's Cup…" },
-      { r: "challenges",  e: "🎣", t: "Daily Dares", d: "The Dock — reel in the Catch of the Day" },
     ] },
     { id: "fame", e: "🏅", t: "Honors Hall", x: 67, y: 52, sub: [
       { r: "badges",       e: "🏅", t: "Weekend Badges",    d: "8 party badges + the live trophies" },
       { r: "feed",         e: "📸", t: "Snapshots",         d: "The photo feed — react + comment as your trainer" },
-      { r: "superlatives", e: "🗳️", t: "Superlatives",      d: "Vote the end-of-weekend awards" },
-      { r: "hall",         e: "🌿", t: "Gallery",           d: "The Hall of Bulbasaur — photos & art wall" },
-      { r: "messages",     e: "💌", t: "Message Wall",      d: "Notes for the groom (sealed!)" },
     ] },
     { id: "summit", e: "👑", t: "The Summit", x: 89, y: 12, sub: [
       { r: "ceremony", e: "👑", t: "Ceremony",    d: "Crown the champion + closing credits" },
@@ -87,7 +92,7 @@
     ] },
   ];
   const MAP_PATHS = [
-    ["settings", "lodge"], ["lodge", "tavern"], ["tavern", "safari"], ["tavern", "frontier"],
+    ["settings", "lodge"], ["lodge", "vault"], ["vault", "safari"], ["vault", "frontier"],
     ["frontier", "gamecorner"], ["safari", "gamecorner"], ["frontier", "fame"],
     ["gamecorner", "victory"], ["fame", "victory"], ["victory", "summit"],
   ];
@@ -174,30 +179,20 @@
       paintLive();
     }
 
-    // Quick actions for the signed-in trainer — log your own drink or a photo
-    // straight from the home screen (no navigating).
-    const meId = window.Sync && Sync.getMe && Sync.getMe();
-    if (meId && Store.attendee(meId)) {
-      const me = Store.attendee(meId);
-      const whichIn = el("input", { class: "in", placeholder: "Which one? (optional — e.g. Bud Light)" });
-      root.appendChild(el("h2", { class: "section-title" }, "⚡ Quick log — " + me.name));
-      root.appendChild(whichIn);
-      root.appendChild(el("div", { class: "drink-btns" }, Store.drinkTypes().map((d) =>
-        el("button", { class: "drink-btn", onClick: () => {
-          const label = whichIn.value.trim();
-          Store.logDrink(meId, d.type, label);
-          whichIn.value = "";
-          if (window.SFX) SFX.coin();
-          const added = (Store.state.drinks || []).slice(-1)[0];
-          U.toast(d.emoji + " " + d.type + (label ? " (" + label + ")" : "") + " logged for " + me.name,
-            "Undo", () => { if (added && added.id) { Store.update((s) => { s.drinks = (s.drinks || []).filter((x) => x.id !== added.id); }); } });
-        } }, [
-          el("span", { class: "drink-e" }, d.emoji), el("span", {}, d.type),
-        ]))));
-      root.appendChild(el("div", { class: "toolbar" }, [
-        el("button", { class: "btn subtle", onClick: () => { if (window.PhotoLog) PhotoLog.capture(); } }, "📸 Add a photo moment"),
-      ]));
-    }
+    // ⚡ Quick play — the crowd favorites, one tap from the front door.
+    // (The drink quick-log moved out with the Tavern; see 📦 The Vault.)
+    const QUICK = [
+      { r: "safari",  e: "🔴", t: "Safari Zone",  d: "Catch 'em" },
+      { r: "regions", e: "🗺", t: "The Journey",  d: "Gyms → Champions" },
+      { r: "battle",  e: "⚔️", t: "Battle Arena", d: "Real duels" },
+      { r: "tracker", e: "🔬", t: "Pokédex",      d: "The living dex" },
+    ];
+    root.appendChild(el("div", { class: "home-quick" }, QUICK.map((q) =>
+      el("a", { class: "hq-tile", href: "#/" + q.r }, [
+        el("span", { class: "hq-e" }, q.e),
+        el("span", { class: "hq-t" }, q.t),
+        el("span", { class: "hq-d" }, q.d),
+      ]))));
 
     const hero = el("section", { class: "hero" }, [
       p.heroImage
@@ -248,8 +243,11 @@
     const head = el("h2", { class: "section-title snap-head", onClick: () => { location.hash = "#/feed"; } },
       [el("span", {}, "📸 Snapshots"), el("span", { class: "snap-all" }, "See all →")]);
     root.appendChild(head);
+    root.appendChild(el("div", { class: "toolbar" }, [
+      el("button", { class: "btn subtle sm", onClick: () => { if (window.PhotoLog) PhotoLog.capture(); } }, "📸 Add a photo moment"),
+    ]));
     if (!photos.length) {
-      root.appendChild(el("p", { class: "hint" }, "No photos yet — tap 📸 above (or the Snapshots feed) to start the weekend's roll."));
+      root.appendChild(el("p", { class: "hint" }, "No photos yet — tap 📸 above (or the Snapshots feed) to start the roll."));
     } else {
       root.appendChild(el("div", { class: "snap-strip" }, photos.map((ph) =>
         el("figure", { class: "snap-shot", onClick: () => window.PhotoLog && PhotoLog.openDetail(ph.id, () => Router.render()) }, [

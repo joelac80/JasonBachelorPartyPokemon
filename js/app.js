@@ -93,6 +93,18 @@
       if (e.target.closest("a")) nav.classList.remove("open");
     });
   }
+  // 📦 The Vault — the tucked-away pages (post-weekend extras). Collapsed by
+  // default; the toggle flips it open without closing the menu.
+  const vaultBtn = document.getElementById("vault-toggle");
+  const vaultBox = document.getElementById("nav-vault");
+  if (vaultBtn && vaultBox) {
+    vaultBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = vaultBox.classList.toggle("hidden");
+      const arrow = document.getElementById("vault-arrow");
+      if (arrow) arrow.textContent = open ? "▸" : "▾";
+    });
+  }
 
   // ---- PWA: service worker + notifications --------------------------------
   // iPhones only support web notifications for Home-Screen-installed apps

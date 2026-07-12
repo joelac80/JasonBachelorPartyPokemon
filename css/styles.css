@@ -81,6 +81,24 @@ body {
   transition: background .15s, color .15s;
 }
 .nav a:hover { color: #fff; background: rgba(255,255,255,0.16); }
+/* 📦 The Vault — the tucked-away pages, collapsed behind one toggle. The
+   container uses display:contents so its links join the nav's own flex/grid. */
+.nav .vault-toggle { display: inline-block; background: none; border: none; cursor: pointer;
+  color: rgba(255,233,233,.7); font-weight: 700; font-size: 13px; padding: 8px 12px; border-radius: 8px; }
+.nav .vault-toggle:hover { color: #fff; background: rgba(255,255,255,.16); }
+.nav-vault { display: contents; }
+.nav-vault.hidden { display: none; }
+.nav-vault a { opacity: .82; }
+/* ⚡ Home quick-play tiles — catching & battling, front and center */
+.home-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0 14px; }
+.hq-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none;
+  background: linear-gradient(160deg, #fff, #f3eefe); border: 2.5px solid var(--pokered, #ee1515); border-radius: 14px;
+  padding: 12px 6px 10px; box-shadow: 0 3px 0 rgba(0,0,0,.08); transition: transform .12s; }
+.hq-tile:hover { transform: translateY(-2px); }
+.hq-e { font-size: 28px; line-height: 1; }
+.hq-t { font-family: var(--pixel, monospace); font-size: 11px; font-weight: 900; color: #2a2140; text-align: center; }
+.hq-d { font-size: 10px; color: #8a7fb0; text-align: center; }
+@media (max-width: 560px) { .home-quick { grid-template-columns: repeat(2, 1fr); } }
 .nav a.active { color: var(--pokered); background: var(--pokeyellow); }
 .nav-toggle {
   display: none; margin-left: auto; background: rgba(255,255,255,0.15);
