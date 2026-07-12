@@ -996,12 +996,13 @@
     battleHonorsFor(attId) {
       const out = [];
       const mv = this.movieWins(attId);
-      const mewtwo = mv.indexOf("mewtwo") >= 0, collector = mv.indexOf("collector") >= 0, entei = mv.indexOf("entei") >= 0;
-      if (mewtwo && collector && entei) out.push({ emoji: "🎬", title: "Silver Screen Legend", sub: "conquered every Movie Legend" });
+      const allFilms = (window.MOVIE_BOSSES || []).length || 10;
+      if (mv.length >= allFilms) out.push({ emoji: "🎬", title: "Silver Screen Legend", sub: "conquered every Movie Legend — the full filmography" });
       else {
-        if (mewtwo) out.push({ emoji: "🧬", title: "Clone Buster", sub: "toppled MEWTWO and his clones" });
-        if (collector) out.push({ emoji: "🎐", title: "Sky Liberator", sub: "freed the birds from the Collector" });
-        if (entei) out.push({ emoji: "🔥", title: "Dream Breaker", sub: "broke the Unown's spell over ENTEI" });
+        if (mv.indexOf("mewtwo") >= 0) out.push({ emoji: "🧬", title: "Clone Buster", sub: "toppled MEWTWO and his clones" });
+        if (mv.indexOf("collector") >= 0) out.push({ emoji: "🎐", title: "Sky Liberator", sub: "freed the birds from the Collector" });
+        if (mv.indexOf("entei") >= 0) out.push({ emoji: "🔥", title: "Dream Breaker", sub: "broke the Unown's spell over ENTEI" });
+        if (mv.length >= 4) out.push({ emoji: "🎞", title: "Film Buff", sub: "beat " + mv.length + " of " + allFilms + " Movie Legends" });
       }
       const tw = this.tourneyWins(attId);
       if (tw > 0) out.push({ emoji: "🏆", title: "Tournament Champion", sub: tw > 1 ? tw + "× Champions Cup winner" : "won the Champions Tournament" });
@@ -1029,8 +1030,19 @@
       if (mt > 0 && md.length >= mt) out.push({ emoji: "✨", title: "Mega Master", sub: "Mega-Evolved every form in battle" });
       else if (md.length >= 1) out.push({ emoji: "💠", title: "Mega Evolver", sub: "Mega-Evolved " + md.length + " form" + (md.length > 1 ? "s" : "") + " in battle" });
       if (this.secretWins(attId).indexOf("mega") >= 0) out.push({ emoji: "🌈", title: "Beyond Evolution", sub: "beat the Mega Judgment — Rayquaza, the primals, Zygarde & Floette" });
-      // 🐍 The Order of Kalos — every Zygarde form plus Xerneas & Yveltal.
-      if (this.secretWins(attId).indexOf("zygarde") >= 0) out.push({ emoji: "🐍", title: "Order Restored", sub: "felled Xerneas, Yveltal & every form of Zygarde" });
+      // Region specials — one honor per secret-battle clear (table-driven).
+      const SPECIAL_HONORS = {
+        zygarde: { emoji: "🐍", title: "Order Restored", sub: "felled Xerneas, Yveltal & every form of Zygarde" },
+        vigil: { emoji: "🌙", title: "Keeper of the Lakes", sub: "outlasted the Sinnoh Vigil — lake spirits to Regigigas" },
+        myths: { emoji: "🎵", title: "Storm Singer", sub: "quieted the Myths of Unova" },
+        tapus: { emoji: "🗿", title: "Guardians' Blessing", sub: "passed the rites of all four island Tapus" },
+        ultra: { emoji: "☄️", title: "Rift Sealer", sub: "sealed the Ultra Rift and returned Necrozma's light" },
+        monarchs: { emoji: "👊", title: "Crownless Conqueror", sub: "felled Galar's myths & riderless monarchs" },
+        dlc: { emoji: "🎭", title: "Mask & Disk", sub: "unmasked Kitakami and cracked the Indigo Disk" },
+        hoopa: { emoji: "🌀", title: "Ageless", sub: "won the Clash of Ages — Hoopa Unbound's every summons fell" },
+      };
+      const sw = this.secretWins(attId);
+      Object.keys(SPECIAL_HONORS).forEach((k) => { if (sw.indexOf(k) >= 0) out.push(SPECIAL_HONORS[k]); });
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.

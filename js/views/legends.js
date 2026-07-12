@@ -65,31 +65,100 @@
   // Unlocked once this trainer has toppled the gating Champion.
   function unlocked(lg, attId) { return Store.leagueWins(attId).indexOf(lg.needs) >= 0; }
 
-  // 🐍 THE ORDER OF KALOS — the region's special battle. Life (Xerneas) and
-  // Destruction (Yveltal) clash, and Zygarde rises through its forms to
-  // restore order: 10% → 50% → COMPLETE, the ace. 5v5, gated like the Kalos
-  // Legendary Challenge (beat DIANTHA); a win is a secret-battle record.
-  const ORDER = {
-    key: "zygarde", name: "THE ORDER OF KALOS", face: 10120, boost: 1.52, pts: 30, icon: "🐍",
-    needs: "diantha", champ: "DIANTHA", regions: ["Kalos"],
-    team: [716, 717, 10118, 718, 10120],   // Xerneas, Yveltal, Zygarde 10% → 50% → COMPLETE
-    quote: "Life blooms. Destruction circles. And beneath Kalos the cells stir — ten percent, fifty… until the ecosystem's guardian stands COMPLETE. Disturb the balance, and answer to ORDER itself.",
-    winChron: "restored the ORDER OF KALOS — Xerneas, Yveltal and every form of ZYGARDE, felled in one stand!",
-    loseChron: "ZYGARDE COMPLETE judged the balance undisturbed",
-    lead: "🐍 Xerneas and Yveltal — then Zygarde rises: 10%, 50%, and the COMPLETE form.",
-  };
+  // 🐍 REGION SPECIALS — one-off legendary boss battles beyond the per-gen
+  // challenges, each mounted on its era's Journey tab. Gated on that region's
+  // Champion (raw league win) — except the Clash of Ages, the capstone that
+  // demands ALL NINE Legendary Challenges. Wins record to s.secrets[att].
+  const SPECIALS = [
+    { key: "zygarde", tab: "Kalos", name: "THE ORDER OF KALOS", flair: "KALOS SPECIAL · Forms of Zygarde",
+      sub: "Kalos Special · Zygarde's forms + Xerneas & Yveltal · 5v5",
+      icon: "🐍", face: 10120, boost: 1.52, pts: 30, needs: "diantha", champ: "DIANTHA",
+      team: [716, 717, 10118, 718, 10120],
+      quote: "Life blooms. Destruction circles. And beneath Kalos the cells stir — ten percent, fifty… until the ecosystem's guardian stands COMPLETE. Disturb the balance, and answer to ORDER itself.",
+      winChron: "restored the ORDER OF KALOS — Xerneas, Yveltal and every form of ZYGARDE, felled in one stand!",
+      loseChron: "ZYGARDE COMPLETE judged the balance undisturbed",
+      lead: "🐍 Xerneas and Yveltal — then Zygarde rises: 10%, 50%, and the COMPLETE form." },
+    { key: "vigil", tab: "Sinnoh", name: "THE SINNOH VIGIL", flair: "SINNOH SPECIAL · Spirits of Lake & Moon",
+      sub: "Sinnoh Special · The lake spirits, moonlight, the sea's prince & the Colossus · 6v6",
+      icon: "🌙", face: 486, boost: 1.48, pts: 28, needs: "cynthia", champ: "CYNTHIA",
+      team: [480, 481, 482, 488, 490, 486],
+      quote: "Knowledge, Emotion and Willpower rise from their lakes. The crescent moon keeps the nightmares out, the Prince of the Sea sings — and the Colossus that towed the continents WAKES.",
+      winChron: "kept the SINNOH VIGIL — the lake spirits, Cresselia, Manaphy and REGIGIGAS all fell!",
+      loseChron: "the Vigil of Sinnoh stood unbroken",
+      lead: "🌙 Uxie, Mesprit and Azelf — then Cresselia and Manaphy, and REGIGIGAS, the sleeping Colossus." },
+    { key: "myths", tab: "Unova", name: "THE MYTHS OF UNOVA", flair: "UNOVA SPECIAL · Songs & Storms",
+      sub: "Unova Special · The storm genies, the colt, the song — and the landlord · 5v5",
+      icon: "🎵", face: 645, boost: 1.50, pts: 28, needs: "alder", champ: "ALDER",
+      team: [641, 642, 647, 648, 645],
+      quote: "Two genies wreck the skies while a colt of justice and a living melody try to hold the line — until the Abundance itself descends to settle the storm.",
+      winChron: "quieted the MYTHS OF UNOVA — genies grounded, the song stilled, LANDORUS bowed!",
+      loseChron: "Unova's storms howled another challenger away",
+      lead: "🎵 Tornadus and Thundurus tearing the sky, Keldeo and Meloetta holding the line — and LANDORUS to end it." },
+    { key: "tapus", tab: "Alola", name: "THE ISLAND GUARDIANS", flair: "ALOLA SPECIAL · Rites of the Tapu",
+      sub: "Alola Special · All four island Tapus, the chimera & the thunderclap · 6v6",
+      icon: "🗿", face: 807, boost: 1.54, pts: 32, needs: "kukui", champ: "PROF. KUKUI",
+      team: [785, 786, 787, 788, 773, 807],
+      quote: "Four islands, four guardians — war, wisdom, harvest and tide. A chimera built to kill monsters joins their rite, and the thunderclap Pokémon answers no master. Show respect… or be shown out.",
+      winChron: "passed the RITES OF THE TAPU — all four guardians, Silvally and ZERAORA honored the win!",
+      loseChron: "the island guardians rejected another offering",
+      lead: "🗿 Tapu Koko, Lele, Bulu and Fini — with Silvally, the type-shifting chimera, and ZERAORA, the thunderclap." },
+    { key: "ultra", tab: "Alola", name: "THE ULTRA RIFT", flair: "ALOLA SPECIAL · Beasts from Beyond",
+      sub: "Alola Special · Ultra Beasts pour through the wormhole — and the light-eater ascends · 6v6",
+      icon: "☄️", face: 10157, boost: 1.56, pts: 34, needs: "kukui", champ: "PROF. KUKUI",
+      team: [793, 794, 796, 797, 799, 10157],
+      quote: "The sky tears open and the beasts of Ultra Space pour through — parasite, swollen fist, living wire, rocket hull, glutton. And behind them all, drowned in stolen light… ULTRA NECROZMA.",
+      winChron: "sealed the ULTRA RIFT — five Ultra Beasts down, and ULTRA NECROZMA's light returned!",
+      loseChron: "the Rift swallowed another world's champion",
+      lead: "☄️ Nihilego, Buzzwole, Xurkitree, Celesteela and Guzzlord — then ULTRA NECROZMA, blinding and absolute." },
+    { key: "monarchs", tab: "Galar", name: "MYTHS & MONARCHS", flair: "GALAR SPECIAL · The Uncrowned",
+      sub: "Galar Special · The unseen myths and riderless monarchs of the Crown · 6v6",
+      icon: "👊", face: 809, boost: 1.56, pts: 34, needs: "leon", champ: "LEON",
+      team: [893, 896, 897, 905, 892, 809],
+      quote: "A jungle guardian who trusts no one, two riderless steeds of ice and shadow, a fury bottled in a whirlwind, a fist that strikes in a single blow — and the liquid-metal titan a thousand years in the making.",
+      winChron: "felled Galar's MYTHS & MONARCHS — Zarude, both steeds, Enamorus, Urshifu and MELMETAL!",
+      loseChron: "the uncrowned monarchs kept their myths",
+      lead: "👊 Zarude, Glastrier and Spectrier, Enamorus and Urshifu — and MELMETAL, the hex-nut titan." },
+    { key: "dlc", tab: "Paldea", name: "THE TEAL MASK & INDIGO DISK", flair: "PALDEA SPECIAL · Kitakami & Blueberry",
+      sub: "Paldea Special · The Loyal Three, the ogre, the poison behind it all — and Terapagos · 6v6",
+      icon: "🎭", face: 1024, boost: 1.58, pts: 36, needs: "geeta", champ: "GEETA",
+      team: [1014, 1015, 1016, 1025, 1017, 1024],
+      quote: "The village sings of three loyal heroes… but the mask tells another story. The ogre was the hero, the poison pulled the strings — and beneath the academy, the crystal turtle holds the Terastal secret.",
+      winChron: "unmasked Kitakami and cracked the Indigo Disk — the Loyal Three, Pecharunt, Ogerpon and TERAPAGOS!",
+      loseChron: "the mask stayed on and the disk stayed sealed",
+      lead: "🎭 Okidogi, Munkidori and Fezandipiti — Pecharunt's puppets — then OGERPON unmasked, and TERAPAGOS, the Terastal heart." },
+    { key: "hoopa", tab: "Paldea", name: "THE CLASH OF AGES", flair: "CAPSTONE · Hoopa & the Clash of Ages",
+      sub: "Capstone · Hoopa Unbound tears open its rings and summons the ages · 6v6",
+      icon: "🌀", face: 10086, boost: 1.60, pts: 40, gate: "legends9",
+      team: [381, 249, 10078, 10077, 384, 10086],
+      quote: "A hundred years in a bottle, and the djinn remembers everything. The rings open — Latios, Lugia, the primal land and sea, the sky serpent — every age you ever conquered, summoned back at once. UNBOUND.",
+      winChron: "won the CLASH OF AGES — Hoopa Unbound's every summons fell, and the rings closed for good!",
+      loseChron: "the rings of HOOPA UNBOUND swallowed another age",
+      lead: "🌀 Latios, Lugia, PRIMAL Groudon and Kyogre, Mega Rayquaza's wild ancestor sky-lord Rayquaza — and HOOPA UNBOUND itself." },
+  ];
 
-  function orderIntro(onGo) {
-    const src = SP[ORDER.face] || Store.sprite(ORDER.face);
+  function specialOpen(sp, attId) {
+    if (!attId) return false;
+    if (sp.gate === "legends9") return (Store.legendWins(attId) || []).length >= 9;
+    return Store.leagueWins(attId).indexOf(sp.needs) >= 0;
+  }
+  function specialLockText(sp) {
+    return sp.gate === "legends9"
+      ? "Conquer all NINE Legendary Challenges to tear open the rings."
+      : "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
+  }
+
+  function specialIntro(sp, onGo) {
+    const src = SP[sp.face] || Store.sprite(sp.face);
+    const n = sp.team.length;
     const lay = el("div", { class: "league-intro final legend-intro" }, [
       el("div", { class: "league-intro-inner" }, [
-        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, "🐍"),
-        el("div", { class: "league-intro-flair" }, "🐍 KALOS SPECIAL · Forms of Zygarde"),
-        el("div", { class: "league-intro-rank" }, "THE ORDER OF KALOS"),
-        el("div", { class: "league-intro-name" }, "🐍 5 v 5"),
-        el("div", { class: "league-intro-quote" }, "“" + ORDER.quote + "”"),
+        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, sp.icon),
+        el("div", { class: "league-intro-flair" }, sp.icon + " " + sp.flair),
+        el("div", { class: "league-intro-rank" }, sp.name),
+        el("div", { class: "league-intro-name" }, sp.icon + " " + n + " v " + n),
+        el("div", { class: "league-intro-quote" }, "“" + sp.quote + "”"),
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, "🐍 FACE THE ORDER"),
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, sp.icon + " FACE " + sp.name),
           el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
         ]),
       ]),
@@ -99,52 +168,52 @@
     requestAnimationFrame(() => lay.classList.add("go"));
   }
 
-  function challengeOrder(attId) {
-    const size = ORDER.team.length;
-    if (Duel.poolFor(attId).length < size) { alert("The Order fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
-    orderIntro(() => {
+  function challengeSpecial(sp, attId) {
+    const size = sp.team.length;
+    if (Duel.poolFor(attId).length < size) { alert(sp.name + " fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
+    specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
-        title: "vs THE ORDER OF KALOS — pick EXACTLY " + size,
-        hint: "🐍 " + size + "v" + size + " — Xerneas, Yveltal, then Zygarde climbing to COMPLETE. Bring your very best.",
+        title: "vs " + sp.name + " — pick EXACTLY " + size,
+        hint: sp.icon + " " + size + "v" + size + " — the lineup is hidden, and they hit like gods. Bring your very best.",
         onDone: (ids) => {
-          Duel.start({ mode: "local", title: "the Order of Kalos",
-            secret: { key: ORDER.key, name: ORDER.name, pts: ORDER.pts, icon: ORDER.icon, winChron: ORDER.winChron, loseChron: ORDER.loseChron },
+          Duel.start({ mode: "local", title: sp.name.toLowerCase(),
+            secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
             a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: ORDER.name, ai: true, monIds: ORDER.team.slice(), boost: ORDER.boost, vsFace: ORDER.face }] },
+            b: { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face }] },
             onResult: () => Router.render() });
         } });
     });
   }
 
-  function orderCard(attId) {
-    const open = Store.leagueWins(attId).indexOf(ORDER.needs) >= 0;
-    const beaten = !!(Store.secretWins && Store.secretWins(attId).indexOf(ORDER.key) >= 0);
-    const beatenBy = Store.state.attendees.filter((a) => Store.secretWins && Store.secretWins(a.id).indexOf(ORDER.key) >= 0);
-    const aceSrc = SP[ORDER.face] || Store.sprite(ORDER.face);
+  function specialCard(sp, attId) {
+    const open = specialOpen(sp, attId);
+    const beaten = !!(Store.secretWins && Store.secretWins(attId).indexOf(sp.key) >= 0);
+    const beatenBy = Store.state.attendees.filter((a) => Store.secretWins && Store.secretWins(a.id).indexOf(sp.key) >= 0);
+    const aceSrc = SP[sp.face] || Store.sprite(sp.face);
+    const n = sp.team.length;
     return el("div", { class: "league-stage legend-stage" + (beaten ? " cleared" : open ? " next" : " locked") }, [
-      el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, beaten ? "✅" : open ? ORDER.icon : "🔒")]),
+      el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, beaten ? "✅" : open ? sp.icon : "🔒")]),
       el("div", { class: "league-stage-card" }, [
         el("div", { class: "league-stage-head" }, [
-          el("span", { class: "league-mt" }, ORDER.icon),
+          el("span", { class: "league-mt" }, sp.icon),
           el("div", {}, [
-            el("div", { class: "gymc-badge" }, "The Order of Kalos"),
-            el("div", { class: "gymc-leader" }, "Kalos Special · Zygarde's forms + Xerneas & Yveltal · 5v5"),
+            el("div", { class: "gymc-badge" }, sp.name),
+            el("div", { class: "gymc-leader" }, sp.sub),
           ]),
           aceSrc ? el("img", { class: "league-ace" + ((beaten || beatenBy.length) ? " lit" : ""), src: aceSrc, alt: "" }) : null,
         ]),
-        open ? el("div", { class: "movie-lead" }, ORDER.lead) : null,
+        open ? el("div", { class: "movie-lead" }, sp.lead) : null,
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
-          el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, "🐍 " + a.name))) : null,
+          el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, sp.icon + " " + a.name))) : null,
         open
-          ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm", onClick: () => challengeOrder(attId) },
-              (beaten ? "🔁 Rematch the Order " : "🐍 Face the Order ") + "(5v5)")
-          : el("div", { class: "legend-lock" }, "🔒 Beat Champion " + ORDER.champ + " to disturb the balance."),
+          ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm", onClick: () => challengeSpecial(sp, attId) },
+              (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + " (" + n + "v" + n + ")")
+          : el("div", { class: "legend-lock" }, "🔒 " + specialLockText(sp)),
       ]),
     ]);
   }
 
-  // Cinematic entrance — the ace looms out of the dark, the trial's quote, then
-  // the choice to step in.
+  // ---- The per-generation trials: cinematic intro, challenge, and card ----
   function intro(lg, onGo) {
     const src = SP[lg.face] || Store.sprite(lg.face);
     const lay = el("div", { class: "league-intro final legend-intro" }, [
@@ -242,5 +311,7 @@
   window.Views = window.Views || {};
   window.Views.legends = view;
   // Shared with the combined Journey view — the trial cards, folded per region.
-  window.LegendChallenge = { LEGENDS: LEGENDS, card: legendCard, forRegions: forRegions, unlocked: unlocked, orderCard: orderCard };
+  window.LegendChallenge = { LEGENDS: LEGENDS, card: legendCard, forRegions: forRegions, unlocked: unlocked,
+    SPECIALS: SPECIALS, specialCard: specialCard,
+    specialsForRegion: function (tabName) { return SPECIALS.filter(function (sp) { return sp.tab === tabName; }); } };
 })();

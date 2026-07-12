@@ -119,11 +119,14 @@
         host.appendChild(journey);
       }
 
-      // 🎬 Movie Legends — Kanto & Johto only
-      if (t.movies && window.MovieLegends) {
-        host.appendChild(el("h3", { class: "rg-sub" }, "🎬 Movie Legends"));
-        host.appendChild(el("div", { class: "league-journey" },
-          MovieLegends.BOSSES.map(function (b) { return MovieLegends.card(b, attId); })));
+      // 🎬 Movie Legends — each film mounts in its own era's tab.
+      if (window.MovieLegends && MovieLegends.forRegion) {
+        var films = MovieLegends.forRegion(t.name);
+        if (films.length) {
+          host.appendChild(el("h3", { class: "rg-sub" }, "🎬 Movie Legends"));
+          host.appendChild(el("div", { class: "league-journey" },
+            films.map(function (b) { return MovieLegends.card(b, attId); })));
+        }
       }
 
       // 🌌 Legendary Challenge — this region's generation(s) of legendaries,
@@ -134,8 +137,9 @@
           host.appendChild(el("h3", { class: "rg-sub" }, "🌌 Legendary Challenge"));
           var trialHost = el("div", { class: "league-journey" },
             trials.map(function (lg) { return LegendChallenge.card(lg, attId); }));
-          // 🐍 Kalos special: the Order of Kalos (Zygarde's forms + Xerneas & Yveltal)
-          if (t.key === "kalos" && LegendChallenge.orderCard) trialHost.appendChild(LegendChallenge.orderCard(attId));
+          // Region specials (Order of Kalos, the Ultra Rift, the Clash of Ages…)
+          if (LegendChallenge.specialsForRegion) LegendChallenge.specialsForRegion(t.name)
+            .forEach(function (sp) { trialHost.appendChild(LegendChallenge.specialCard(sp, attId)); });
           host.appendChild(trialHost);
         }
       }
