@@ -65,6 +65,84 @@
   // Unlocked once this trainer has toppled the gating Champion.
   function unlocked(lg, attId) { return Store.leagueWins(attId).indexOf(lg.needs) >= 0; }
 
+  // 🐍 THE ORDER OF KALOS — the region's special battle. Life (Xerneas) and
+  // Destruction (Yveltal) clash, and Zygarde rises through its forms to
+  // restore order: 10% → 50% → COMPLETE, the ace. 5v5, gated like the Kalos
+  // Legendary Challenge (beat DIANTHA); a win is a secret-battle record.
+  const ORDER = {
+    key: "zygarde", name: "THE ORDER OF KALOS", face: 10120, boost: 1.52, pts: 30, icon: "🐍",
+    needs: "diantha", champ: "DIANTHA", regions: ["Kalos"],
+    team: [716, 717, 10118, 718, 10120],   // Xerneas, Yveltal, Zygarde 10% → 50% → COMPLETE
+    quote: "Life blooms. Destruction circles. And beneath Kalos the cells stir — ten percent, fifty… until the ecosystem's guardian stands COMPLETE. Disturb the balance, and answer to ORDER itself.",
+    winChron: "restored the ORDER OF KALOS — Xerneas, Yveltal and every form of ZYGARDE, felled in one stand!",
+    loseChron: "ZYGARDE COMPLETE judged the balance undisturbed",
+    lead: "🐍 Xerneas and Yveltal — then Zygarde rises: 10%, 50%, and the COMPLETE form.",
+  };
+
+  function orderIntro(onGo) {
+    const src = SP[ORDER.face] || Store.sprite(ORDER.face);
+    const lay = el("div", { class: "league-intro final legend-intro" }, [
+      el("div", { class: "league-intro-inner" }, [
+        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, "🐍"),
+        el("div", { class: "league-intro-flair" }, "🐍 KALOS SPECIAL · Forms of Zygarde"),
+        el("div", { class: "league-intro-rank" }, "THE ORDER OF KALOS"),
+        el("div", { class: "league-intro-name" }, "🐍 5 v 5"),
+        el("div", { class: "league-intro-quote" }, "“" + ORDER.quote + "”"),
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, "🐍 FACE THE ORDER"),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    sfx("fanfare");
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
+
+  function challengeOrder(attId) {
+    const size = ORDER.team.length;
+    if (Duel.poolFor(attId).length < size) { alert("The Order fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
+    orderIntro(() => {
+      Duel.pickParty({ attId: attId, min: size, max: size,
+        title: "vs THE ORDER OF KALOS — pick EXACTLY " + size,
+        hint: "🐍 " + size + "v" + size + " — Xerneas, Yveltal, then Zygarde climbing to COMPLETE. Bring your very best.",
+        onDone: (ids) => {
+          Duel.start({ mode: "local", title: "the Order of Kalos",
+            secret: { key: ORDER.key, name: ORDER.name, pts: ORDER.pts, icon: ORDER.icon, winChron: ORDER.winChron, loseChron: ORDER.loseChron },
+            a: { units: [{ attId: attId, monIds: ids }] },
+            b: { units: [{ npc: ORDER.name, ai: true, monIds: ORDER.team.slice(), boost: ORDER.boost, vsFace: ORDER.face }] },
+            onResult: () => Router.render() });
+        } });
+    });
+  }
+
+  function orderCard(attId) {
+    const open = Store.leagueWins(attId).indexOf(ORDER.needs) >= 0;
+    const beaten = !!(Store.secretWins && Store.secretWins(attId).indexOf(ORDER.key) >= 0);
+    const beatenBy = Store.state.attendees.filter((a) => Store.secretWins && Store.secretWins(a.id).indexOf(ORDER.key) >= 0);
+    const aceSrc = SP[ORDER.face] || Store.sprite(ORDER.face);
+    return el("div", { class: "league-stage legend-stage" + (beaten ? " cleared" : open ? " next" : " locked") }, [
+      el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, beaten ? "✅" : open ? ORDER.icon : "🔒")]),
+      el("div", { class: "league-stage-card" }, [
+        el("div", { class: "league-stage-head" }, [
+          el("span", { class: "league-mt" }, ORDER.icon),
+          el("div", {}, [
+            el("div", { class: "gymc-badge" }, "The Order of Kalos"),
+            el("div", { class: "gymc-leader" }, "Kalos Special · Zygarde's forms + Xerneas & Yveltal · 5v5"),
+          ]),
+          aceSrc ? el("img", { class: "league-ace" + ((beaten || beatenBy.length) ? " lit" : ""), src: aceSrc, alt: "" }) : null,
+        ]),
+        open ? el("div", { class: "movie-lead" }, ORDER.lead) : null,
+        beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
+          el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, "🐍 " + a.name))) : null,
+        open
+          ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm", onClick: () => challengeOrder(attId) },
+              (beaten ? "🔁 Rematch the Order " : "🐍 Face the Order ") + "(5v5)")
+          : el("div", { class: "legend-lock" }, "🔒 Beat Champion " + ORDER.champ + " to disturb the balance."),
+      ]),
+    ]);
+  }
+
   // Cinematic entrance — the ace looms out of the dark, the trial's quote, then
   // the choice to step in.
   function intro(lg, onGo) {
@@ -164,5 +242,5 @@
   window.Views = window.Views || {};
   window.Views.legends = view;
   // Shared with the combined Journey view — the trial cards, folded per region.
-  window.LegendChallenge = { LEGENDS: LEGENDS, card: legendCard, forRegions: forRegions, unlocked: unlocked };
+  window.LegendChallenge = { LEGENDS: LEGENDS, card: legendCard, forRegions: forRegions, unlocked: unlocked, orderCard: orderCard };
 })();

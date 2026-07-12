@@ -132,8 +132,11 @@
         var trials = LegendChallenge.forRegions(t.lg || []);
         if (trials.length) {
           host.appendChild(el("h3", { class: "rg-sub" }, "🌌 Legendary Challenge"));
-          host.appendChild(el("div", { class: "league-journey" },
-            trials.map(function (lg) { return LegendChallenge.card(lg, attId); })));
+          var trialHost = el("div", { class: "league-journey" },
+            trials.map(function (lg) { return LegendChallenge.card(lg, attId); }));
+          // 🐍 Kalos special: the Order of Kalos (Zygarde's forms + Xerneas & Yveltal)
+          if (t.key === "kalos" && LegendChallenge.orderCard) trialHost.appendChild(LegendChallenge.orderCard(attId));
+          host.appendChild(trialHost);
         }
       }
 

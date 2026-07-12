@@ -1029,6 +1029,8 @@
       if (mt > 0 && md.length >= mt) out.push({ emoji: "✨", title: "Mega Master", sub: "Mega-Evolved every form in battle" });
       else if (md.length >= 1) out.push({ emoji: "💠", title: "Mega Evolver", sub: "Mega-Evolved " + md.length + " form" + (md.length > 1 ? "s" : "") + " in battle" });
       if (this.secretWins(attId).indexOf("mega") >= 0) out.push({ emoji: "🌈", title: "Beyond Evolution", sub: "beat the Mega Judgment — Rayquaza, the primals, Zygarde & Floette" });
+      // 🐍 The Order of Kalos — every Zygarde form plus Xerneas & Yveltal.
+      if (this.secretWins(attId).indexOf("zygarde") >= 0) out.push({ emoji: "🐍", title: "Order Restored", sub: "felled Xerneas, Yveltal & every form of Zygarde" });
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.
