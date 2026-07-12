@@ -213,6 +213,73 @@
   function caughtCount(id) { return Store.dexCount(id); }   // partner freebie excluded
   function attendeeName(id) { const a = Store.attendee(id); return a ? a.name : id; }
 
+  // ── Catch bookkeeping (shared by the ball throw AND weaken-to-catch battles) ──
+  // Everything a landed catch writes: dex variant maps, the keepsake record,
+  // berry drops, points (+ helper share), the catch log and chron lines.
+  // Returns the display numbers the result card needs.
+  function recordCatch(tid, id, isShiny, ballUsed, viaMaster, helperId, nfo) {
+    // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
+    // auto-eaten in duels when a mon drops below 30% HP.
+    const berryDrop = Math.random() < 0.3;
+    // ✨ A shiny scores DOUBLE points. (No drinks are handed out for a catch.)
+    const pts = isShiny ? nfo.pts * 2 : nfo.pts;
+    const helperName = helperId ? attendeeName(helperId) : "";
+    // Helper shares the reward: half the points on a normal catch, the full
+    // haul when the assist lands a legendary.
+    const helperPts = helperId ? (nfo.leg ? pts : Math.max(1, Math.round(pts / 2))) : 0;
+    Store.update((s) => {
+      const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+      const prev = t.caught[id];
+      // Record which VARIANT you now own (normal vs shiny are separate dex
+      // entries). Preserve the other variant if you already had it, so the
+      // 502-slot encounter table keeps offering only what you're missing.
+      if (isShiny) { t.haveShiny = t.haveShiny || {}; t.haveShiny[id] = 1; }
+      else { t.have = t.have || {}; t.have[id] = 1; }
+      if (prev) {
+        if (prev.shiny) { t.haveShiny = t.haveShiny || {}; t.haveShiny[id] = 1; }
+        else { t.have = t.have || {}; t.have[id] = 1; }
+      }
+      // Keep the ball that first landed it (best-catch keepsake); showcase
+      // the shiny if either the old or new copy is shiny (it's the prize).
+      t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed,
+        shiny: ((prev && prev.shiny) || isShiny) || undefined,
+        nick: (prev && prev.nick) || undefined, kos: (prev && prev.kos) || undefined };
+      if (berryDrop) t.berries = (t.berries || 0) + 1;
+      t.catches = Object.keys(t.caught).length;
+      if (viaMaster) t.masterCatches = (t.masterCatches || 0) + 1;   // 🟣 Master Catcher
+      t.safariPts = (t.safariPts || 0) + pts;      // this trainer's own Safari points
+      if (helperId) {                              // credit the helper's assist + share
+        const h = s.pokedex.trainers[helperId] = s.pokedex.trainers[helperId] || { caught: {}, team: [], catches: 0 };
+        h.helps = (h.helps || 0) + 1;
+        h.assistPts = (h.assistPts || 0) + helperPts;
+      }
+      // Feed the championship: a catch scores its point-value for the
+      // catcher's team; the helper's team banks their share too.
+      Store.grantPoints(s, "safari", Store.teamOf(tid), pts);
+      if (helperId) Store.grantPoints(s, "safari", Store.teamOf(helperId), helperPts);
+      s.pokedex.log = s.pokedex.log || [];
+      s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, shiny: isShiny || undefined, ts: now() });
+      if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
+      if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY!!" : " — double points!"));
+      else if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : ""));
+      else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
+      if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
+    });
+    return { pts: pts, helperPts: helperPts, helperName: helperName, berryDrop: berryDrop };
+  }
+
+  // 🔡 A wild Unown catch feeds the Unown Dex (append-only), NOT the Pokédex,
+  // and still scores its points. Returns the trainer's decoded-glyph total.
+  function recordUnownCatch(tid, glyph, nfo) {
+    if (window.Store && Store.decodeUnown) Store.decodeUnown(tid, glyph);
+    Store.update((s) => {
+      const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+      t.safariPts = (t.safariPts || 0) + nfo.pts;
+      Store.grantPoints(s, "safari", Store.teamOf(tid), nfo.pts);
+    });
+    return ((Store.unownCaught && Store.unownCaught(tid)) || []).length;
+  }
+
   // ── Per-phone Safari session — deliberately NOT synced ──────────────────
   // The catcher this DEVICE is playing as, plus the in-progress wild encounter
   // and its boosts. Kept at module scope (not inside view()) so that a remote
@@ -292,6 +359,103 @@
         el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
       ]));
       current = null; busy = false; status = ""; shiny = false; clearBoosts();
+      renderStats(); renderBoard(); renderTeam(); renderDex();
+    }
+
+    // The "Gotcha!" result card — shared by the classic ball throw and the
+    // weaken-to-catch battle path (which adds its own `how` line).
+    function showCaughtCard(tid, id, isShiny, ballUsed, viaMaster, nfo, res, how) {
+      const catcherTeam = Store.team(Store.teamOf(tid));
+      sfx(isShiny ? "fanfare" : "win");
+      enc.innerHTML = "";
+      enc.appendChild(el("div", { class: "safari-card result win" + (isShiny ? " shiny" : "") }, [
+        el("img", { class: "safari-wild pop", src: (isShiny && SPS[id]) || SP[id], alt: nfo.name }),
+        el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + (isShiny ? "a ✨ SHINY " : "") + nfo.name + "!"),
+        how ? el("div", { class: "safari-legend-note" }, how) : null,
+        isShiny ? el("div", { class: "safari-legend-note" }, "✨ SHINY — its colors are different! Double points, marked in the dex forever.") : null,
+        nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 LEGENDARY — " + nfo.name + " joins " + attendeeName(tid) + "'s team!") : null,
+        el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
+        el("div", { class: "safari-payout" }, "🏆 +" + res.pts + " pt" + (res.pts > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + (catcherTeam ? " → " + catcherTeam.name + " on Victory Road!" : "!")),
+        res.helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + res.helperName + " — +" + res.helperPts + " pt" + (res.helperPts > 1 ? "s" : "") + " to their team" + (nfo.leg ? " (full legendary share!)" : "") + "!") : null,
+        res.berryDrop ? el("div", { class: "safari-combo-note" }, "🍓 It dropped a Sitrus Berry! (auto-heals your Pokémon in duels — 🍓×" + ((rec(tid).berries) || 1) + " in the bag)") : null,
+        el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+      ]));
+    }
+
+    // ⚔ Weaken-to-catch — the OPTIONAL battle path. Fight the wild one with up
+    // to 3 of your Pokémon; the lower its HP, the better the ball's odds
+    // (throw it mid-battle with the 🔴 button). But it's a gamble: KO it and
+    // the catch is LOST, and if your whole side faints it bolts. Your earned
+    // boosts still count — they set the odds floor the weakening builds on.
+    function battleToWeaken(nfo) {
+      if (busy || !current || pending || !window.Duel) return;
+      const tid = active();
+      if (!tid) return;
+      const ctx = { tid: tid, id: current, wasShiny: shiny, glyph: currentGlyph, nfo: nfo,
+        helperId: helper && helper !== tid ? helper : "", viaMaster: masterDone,
+        baseChance: chanceFor(nfo) };
+      // A wild Unown battles as the real #201 with its glyph; sentinels stay Safari-only.
+      const wid = ctx.glyph ? 201 : ctx.id;
+      const size = Math.min(3, Duel.poolFor(tid).length);
+      if (size < 1) return;
+      Duel.pickParty({ attId: tid, min: 1, max: size,
+        title: "⚔ vs wild " + nfo.name + " — pick up to " + size,
+        hint: "Weaken it, then hit 🔴 Throw Ball mid-battle — lower HP = better odds. KO it and the catch is LOST; if your side wipes, it bolts.",
+        onDone: (ids) => {
+          busy = true;
+          Duel.start({ mode: "local", broadcast: false,
+            a: { units: [{ attId: tid, monIds: ids }] },
+            b: { units: [{ npc: "Wild " + nfo.name, ai: true, monIds: [wid],
+              shiny: ctx.wasShiny ? [wid] : null, glyphs: ctx.glyph ? [ctx.glyph] : null }] },
+            wild: {
+              // Full HP = your boosted throw odds; every chunk of damage adds
+              // up to +65% (legendaries resist here too: +45%).
+              chanceFn: (frac) => Math.min(1, ctx.baseChance + (1 - frac) * (nfo.leg ? 0.45 : 0.65)),
+              onOutcome: (outcome) => finishWildBattle(outcome, ctx),
+            } });
+        } });
+    }
+
+    function finishWildBattle(outcome, ctx) {
+      busy = false;
+      if (current !== ctx.id) return;   // encounter already moved on
+      const tid = ctx.tid, nfo = ctx.nfo;
+      if (outcome === "caught") {
+        if (ctx.glyph) {
+          const total = recordUnownCatch(tid, ctx.glyph, nfo);
+          sfx("fanfare");
+          enc.innerHTML = "";
+          enc.appendChild(el("div", { class: "safari-card result win" }, [
+            el("img", { class: "safari-wild pop", src: SP[ctx.id], alt: nfo.name }),
+            el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " weakened and caught Unown " + ctx.glyph + "!"),
+            el("div", { class: "safari-payout" }, "🔡 " + total + "/28 decoded · +" + nfo.pts + " pts"),
+            el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+          ]));
+        } else {
+          const res = recordCatch(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, ctx.helperId, nfo);
+          showCaughtCard(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, nfo, res, "⚔ Weakened in battle, then caught!");
+        }
+      } else if (outcome === "ko") {
+        sfx("error");
+        enc.innerHTML = "";
+        enc.appendChild(el("div", { class: "safari-card result miss" }, [
+          el("img", { class: "safari-wild fled", src: SP[ctx.id], alt: nfo.name }),
+          el("div", { class: "safari-result-msg" }, "You knocked out " + nfo.name + "…"),
+          el("div", { class: "safari-payout miss" }, "💥 Too much power — a fainted Pokémon can't be caught. It's gone."),
+          el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+        ]));
+      } else {
+        Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });   // a wipe costs a sip
+        sfx("error");
+        enc.innerHTML = "";
+        enc.appendChild(el("div", { class: "safari-card result miss" }, [
+          el("img", { class: "safari-wild fled", src: SP[ctx.id], alt: nfo.name }),
+          el("div", { class: "safari-result-msg" }, "Your team was wiped out!"),
+          el("div", { class: "safari-payout miss" }, "😵 The wild " + nfo.name + " wandered off. Take a sip."),
+          el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+        ]));
+      }
+      current = null; status = ""; shiny = false; currentGlyph = null; clearBoosts();
       renderStats(); renderBoard(); renderTeam(); renderDex();
     }
 
@@ -452,8 +616,10 @@
         challengeArea = el("div", { class: "safari-actions safari-boosts" }, btns);
       }
       const suspense = el("div", { class: "safari-suspense" });
+      const canBattle = window.Duel && Duel.poolFor && Duel.poolFor(active()).length > 0;
       const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
         el("button", { class: "btn primary", onClick: () => throwBall(nfo), disabled: pending ? "true" : null }, [ballIcon(ball), " Throw " + ball.name]),
+        canBattle ? el("button", { class: "btn subtle", onClick: () => battleToWeaken(nfo), disabled: pending ? "true" : null }, "⚔ Battle to weaken") : null,
         el("button", { class: "btn subtle", onClick: () => { current = null; status = ""; clearBoosts(); renderEncounter(); } }, "Run"),
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [
@@ -582,86 +748,21 @@
         // still scores its points for the catcher's team.
         if (isUnownEnc(id)) {
           const g = unownGlyphOf(id);
-          if (window.Store && Store.decodeUnown) Store.decodeUnown(tid, g);
-          Store.update((s) => {
-            const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
-            t.safariPts = (t.safariPts || 0) + nfo.pts;
-            Store.grantPoints(s, "safari", Store.teamOf(tid), nfo.pts);
-          });
+          const total = recordUnownCatch(tid, g, nfo);
           sfx("fanfare");
-          const total = (Store.unownCaught && Store.unownCaught(tid) || []).length;
           revealId = id;
           status = "🔡 Caught Unown " + g + "! (" + total + "/28 decoded)";
           busy = false; renderEncounter();
           return;
         }
         const isShiny = shiny;
-        // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
-        // auto-eaten in duels when a mon drops below 30% HP.
-        const berryDrop = Math.random() < 0.3;
-        // ✨ A shiny scores DOUBLE points. (No drinks are handed out for a catch.)
-        const pts = isShiny ? nfo.pts * 2 : nfo.pts;
         const helperId = helper && helper !== tid ? helper : "";
-        const helperName = helperId ? attendeeName(helperId) : "";
-        // Helper shares the reward: half the points on a normal catch, the full
-        // haul when the assist lands a legendary.
-        const helperPts = helperId ? (nfo.leg ? pts : Math.max(1, Math.round(pts / 2))) : 0;
-        Store.update((s) => {
-          const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
-          const prev = t.caught[id];
-          // Record which VARIANT you now own (normal vs shiny are separate dex
-          // entries). Preserve the other variant if you already had it, so the
-          // 502-slot encounter table keeps offering only what you're missing.
-          if (isShiny) { t.haveShiny = t.haveShiny || {}; t.haveShiny[id] = 1; }
-          else { t.have = t.have || {}; t.have[id] = 1; }
-          if (prev) {
-            if (prev.shiny) { t.haveShiny = t.haveShiny || {}; t.haveShiny[id] = 1; }
-            else { t.have = t.have || {}; t.have[id] = 1; }
-          }
-          // Keep the ball that first landed it (best-catch keepsake); showcase
-          // the shiny if either the old or new copy is shiny (it's the prize).
-          t.caught[id] = { count: (prev ? prev.count : 0) + 1, ball: (prev && prev.ball) || ballUsed,
-            shiny: ((prev && prev.shiny) || isShiny) || undefined,
-            nick: (prev && prev.nick) || undefined, kos: (prev && prev.kos) || undefined };
-          if (berryDrop) t.berries = (t.berries || 0) + 1;
-          t.catches = Object.keys(t.caught).length;
-          if (viaMaster) t.masterCatches = (t.masterCatches || 0) + 1;   // 🟣 Master Catcher
-          t.safariPts = (t.safariPts || 0) + pts;      // this trainer's own Safari points
-          if (helperId) {                              // credit the helper's assist + share
-            const h = s.pokedex.trainers[helperId] = s.pokedex.trainers[helperId] || { caught: {}, team: [], catches: 0 };
-            h.helps = (h.helps || 0) + 1;
-            h.assistPts = (h.assistPts || 0) + helperPts;
-          }
-          // Feed the championship: a catch scores its point-value for the
-          // catcher's team; the helper's team banks their share too.
-          Store.grantPoints(s, "safari", Store.teamOf(tid), pts);
-          if (helperId) Store.grantPoints(s, "safari", Store.teamOf(helperId), helperPts);
-          s.pokedex.log = s.pokedex.log || [];
-          s.pokedex.log.unshift({ trainer: tid, dexId: id, name: nfo.name, ball: ballUsed, helper: helperId || undefined, master: viaMaster || undefined, shiny: isShiny || undefined, ts: now() });
-          if (s.pokedex.log.length > 80) s.pokedex.log.length = 80;
-          if (isShiny) Store.chron(s, "✨", "SHINY!! " + attendeeName(tid) + " caught a SHINY " + nfo.name + (nfo.leg ? " — a shiny LEGENDARY!!" : " — double points!"));
-          else if (nfo.leg) Store.chron(s, "🌟", "LEGENDARY! " + attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : ""));
-          else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
-          if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
-        });
+        const res = recordCatch(tid, id, isShiny, ballUsed, viaMaster, helperId, nfo);
         // (The old "complete the Gen 1-4 dex to unlock Gen 5-9" room gate is
         // retired — the Gen Ladder unlocks generations through BATTLES now.)
         // A roaming legendary stays out for the whole room (everyone can grab
         // their own) — it just wanders off on its own timer, no exclusive claim.
-        const catcherTeam = Store.team(Store.teamOf(tid));
-        sfx(isShiny ? "fanfare" : "win");
-        enc.innerHTML = "";
-        enc.appendChild(el("div", { class: "safari-card result win" + (isShiny ? " shiny" : "") }, [
-          el("img", { class: "safari-wild pop", src: (isShiny && SPS[id]) || SP[id], alt: nfo.name }),
-          el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught " + (isShiny ? "a ✨ SHINY " : "") + nfo.name + "!"),
-          isShiny ? el("div", { class: "safari-legend-note" }, "✨ SHINY — its colors are different! Double points, marked in the dex forever.") : null,
-          nfo.leg ? el("div", { class: "safari-legend-note" }, "🌟 LEGENDARY — " + nfo.name + " joins " + attendeeName(tid) + "'s team!") : null,
-          el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball dare!)" : "") + "!"]),
-          el("div", { class: "safari-payout" }, "🏆 +" + pts + " pt" + (pts > 1 ? "s" : "") + (isShiny ? " (✨ doubled)" : "") + (catcherTeam ? " → " + catcherTeam.name + " on Victory Road!" : "!")),
-          helperName ? el("div", { class: "safari-assist-note" }, "🤝 Assist from " + helperName + " — +" + helperPts + " pt" + (helperPts > 1 ? "s" : "") + " to their team" + (nfo.leg ? " (full legendary share!)" : "") + "!") : null,
-          berryDrop ? el("div", { class: "safari-combo-note" }, "🍓 It dropped a Sitrus Berry! (auto-heals your Pokémon in duels — 🍓×" + ((rec(tid).berries) || 1) + " in the bag)") : null,
-          el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
-        ]));
+        showCaughtCard(tid, id, isShiny, ballUsed, viaMaster, nfo, res, "");
       } else {
         Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });
         sfx("error");

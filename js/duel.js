@@ -623,7 +623,7 @@
       // Switches go first, then potions, then attacks by PRIORITY, then Speed
       // (desc). Ties break deterministically (side, then slot) so every phone
       // resolves identically. Speed is the effective value (para-halved, stage).
-      const rank = (o) => o.kind === "switch" ? 0 : o.kind === "potion" ? 1 : 2;
+      const rank = (o) => o.kind === "ball" ? 0 : o.kind === "switch" ? 1 : o.kind === "potion" ? 2 : 3;
       list.sort((a, b) => {
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
         const pa = a.pri || 0, pb = b.pri || 0;
@@ -642,6 +642,7 @@
       if (!o) { endResidual(); return; }               // → chip damage, then end of turn
       const u = sides[o.side].units[o.unit];
       if (mon(u).hp <= 0) { resolveNext(); return; }   // fainted before it could act → skip
+      if (o.kind === "ball") return resolveBall(o, u);
       if (o.kind === "switch") return resolveSwitch(o, u);
       if (o.kind === "potion") return resolvePotion(o, u);
       return resolveMove(o, u);   // status act-checks live inside resolveMove now
@@ -659,6 +660,40 @@
       const m = mon(u);
       m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
       m._flinch = false; m.seeded = false; m._recharge = false; m._charging = null; m._invuln = false;
+    }
+    // 🔴 Wild battles: a thrown ball spends the turn. Catch odds come from the
+    // wild mon's REMAINING HP via opts.wild.chanceFn — weaken it for a better
+    // shot, but a KO loses it. The roll was baked at pick time (deterministic).
+    function resolveBall(o, u) {
+      S.moved++;
+      const foe = sides[other(o.side)].units[0];
+      const wm = mon(foe);
+      const frac = Math.max(0, wm.hp / wm.hpMax);
+      const chance = Math.max(0.03, Math.min(1, (opts.wild && opts.wild.chanceFn) ? opts.wild.chanceFn(frac) : (0.3 + (1 - frac) * 0.5)));
+      const caught = (o.roll != null ? o.roll : 1) < chance;
+      menu.innerHTML = "";
+      if (caught) {
+        S.done = true;
+        beats([
+          ["🔴 " + u.name + " threw a Poké Ball!", 900, () => sfx("select")],
+          ["…shake… …shake…", 900, () => sfx("blip")],
+          ["✨ GOTCHA! " + wm.species + " was caught!", 1400, () => sfx("fanfare")],
+        ], () => { close(); try { if (opts.wild && opts.wild.onOutcome) opts.wild.onOutcome("caught", faintedOwnIds()); } catch (_) {} });
+        return;
+      }
+      beats([
+        ["🔴 " + u.name + " threw a Poké Ball!", 900, () => sfx("select")],
+        ["💨 " + wm.species + " broke free! (" + Math.round(chance * 100) + "% — weaken it for a better shot)", 1200, () => sfx("error")],
+      ], resolveNext);
+    }
+    // Which of side a's own mons are down — Nuzlocke deaths / wild-battle report.
+    function faintedOwnIds() {
+      const seen = [], out = [];
+      sides.a.units.forEach((u) => {
+        if (seen.indexOf(u.party) >= 0) return; seen.push(u.party);
+        u.party.forEach((m) => { if (m.hp <= 0) out.push(m.id); });
+      });
+      return out;
     }
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
@@ -1164,6 +1199,19 @@
           if (castUnsub) { castUnsub(); castUnsub = null; }
         }
       } catch (_) {}
+      // 🌿 Wild battle (Safari option / Nuzlocke grass) — pure exhibition.
+      // "caught" ends via resolveBall; landing here means the wild fainted
+      // ("ko" — the catch is lost) or your side wiped ("lost").
+      if (opts.wild) {
+        try { if (opts.wild.onOutcome) opts.wild.onOutcome(winSide === "a" ? "ko" : "lost", faintedOwnIds()); } catch (_) {}
+        return;
+      }
+      // 🩹 Nuzlocke battles never touch the real ladder — they report the run's
+      // deaths (every own mon that fainted) and the result to the run instead.
+      if (opts.nuzlocke) {
+        try { if (opts.nuzlocke.onEnd) opts.nuzlocke.onEnd(faintedOwnIds(), winSide); } catch (_) {}
+        return;
+      }
       // 👑 Pokémon League: Elite Four → LANCE → the silent one on Mt. Silver.
       // Off the leaderboards, like gyms — glory (and points) only.
       if (opts.league) {
@@ -1659,7 +1707,13 @@
           megaIds.map((mid) => el("button", { class: "btn mega-btn", onClick: () => megaEvolve(u, ptr, mid) },
             "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : "")))));
       }
-      const row = [
+      const row = [];
+      if (opts.wild && mode === "local" && !u.ai) {
+        row.push(el("button", { class: "btn primary sm", onClick: () => {
+          sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "ball", roll: Math.random() } });
+        } }, "🔴 Throw Ball"));
+      }
+      row.push(
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
           confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP. (Takes this turn.)",
             "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "potion" } }));
@@ -1667,8 +1721,7 @@
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
           confirmPanel("🍺 Liquid Courage — " + u.name + " finishes half their drink, then UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT.",
             "🍺 Chugged — power up!", () => { S.zmove = true; sfx("correct"); renderMenu(); });
-        } }, "🍺 Liquid Courage"),
-      ];
+        } }, "🍺 Liquid Courage"));
       if (bench(u).length) row.push(el("button", { class: "btn subtle sm", onClick: () => partyPanel(u, ptr, "switch", true) }, "🔄 Switch"));
       row.push(el("button", { class: "btn subtle sm", onClick: () => {
         if (!S.moved) {                           // nothing happened yet — just walk away (hot-seat only)

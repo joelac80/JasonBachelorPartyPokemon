@@ -1978,3 +1978,34 @@ html, body { overscroll-behavior-y: contain; }
 .lgb-cleared { font-family: var(--pixel, monospace); font-size: 11px; color: #ffe27a; }
 .lgb-lock { font-size: 12px; color: #d7b7b7; background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 10px; }
 .league-gate-banner .spin-btn { align-self: flex-start; }
+
+/* 🪦 Nuzlocke Run */
+.nuz-lab-head { font-family: var(--pixel, monospace); font-size: 14px; font-weight: 900; color: var(--pokered); margin-bottom: 6px; }
+.nuz-lab, .nuz-boxcard, .nuz-grass, .nuz-next, .nuz-hall, .nuz-summary { margin: 10px 0; padding: 12px 14px; }
+.nuz-starters { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.nuz-starter { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel);
+  border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; color: var(--ink); }
+.nuz-starter:hover { border-color: var(--pokered); box-shadow: 0 0 10px rgba(238,21,21,.35); }
+.nuz-starter img { width: 64px; height: 64px; image-rendering: pixelated; }
+.nuz-starter-n { font-weight: 800; font-size: 12px; }
+.nuz-rules { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted, #8a97a8); margin-top: 8px; }
+.nuz-box-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; margin-top: 6px; }
+.nuz-mon { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--panel); border: 1.5px solid var(--line); border-radius: 10px; padding: 6px 4px; }
+.nuz-mon img { width: 52px; height: 52px; image-rendering: pixelated; }
+.nuz-mon.dead { opacity: .85; }
+.nuz-mon.dead img { filter: grayscale(1) brightness(.55); }
+.nuz-rip { position: absolute; top: 2px; right: 4px; font-size: 15px; }
+.nuz-mon-n { font-size: 10px; font-weight: 700; text-align: center; line-height: 1.1; }
+.nuz-wild-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.nuz-wild-img { width: 84px; height: 84px; image-rendering: pixelated; }
+.nuz-wild-meta { font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+.nuz-foe-row { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.nuz-foe-img { width: 44px; height: 44px; image-rendering: pixelated; }
+.nuz-abandon { justify-content: flex-end; margin: 6px 0 14px; }
+.nuz-summary-line { font-family: var(--pixel, monospace); font-size: 11px; margin: 6px 0; }
+.nuz-hall-row { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.nuz-hall-row.crowned { background: linear-gradient(90deg, rgba(255,203,5,.18), transparent); border-radius: 8px; padding-left: 6px; }
+.nuz-hall-rank { font-family: var(--pixel, monospace); font-size: 12px; min-width: 28px; }
+.nuz-hall-name { font-weight: 800; }
+.nuz-hall-sub { font-size: 12px; color: var(--muted, #8a97a8); }

@@ -75,6 +75,7 @@
     { id: "frontier", e: "⚔️", t: "Battle Frontier", x: 46, y: 46, sub: [
       { r: "regions",  e: "🗺", t: "The Journey",   d: "Every region — gyms → Elite Four → Champion, the Champions Cup & Movie Legends" },
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real turn-based duels — singles or doubles, sips on the line" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "One starter, catches by battle, permadeath — fewest catches wears the crown" },
     ] },
     { id: "gamecorner", e: "🎰", t: "Game Corner", x: 68, y: 25, sub: [
       { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },

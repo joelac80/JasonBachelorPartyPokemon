@@ -988,6 +988,96 @@
         ["A", "B", "C", "D", "E"].forEach((g) => { if (a.indexOf(g) < 0) a.push(g); });
       });
     },
+    // 🪦 Nuzlocke — the hardcore Kanto run: pick ONE starter, catch wilds by
+    // battling them down, take the 8 Kanto gyms IN ORDER, then the Kanto
+    // Elite Four and BLUE. Any of YOUR Pokémon that faints is dead for the
+    // rest of the run; lose the whole box and the run is over. One live run
+    // per trainer (s.nuzlocke, newest-edit-wins on sync); finished runs are
+    // enshrined in s.nuzlockeHof (append-only) — fewest catches wears the crown.
+    nuzRun(attId) { return (this.state.nuzlocke || {})[attId] || null; },
+    // Ids still standing in this run's box.
+    nuzAlive(attId) {
+      const r = this.nuzRun(attId);
+      return r ? r.box.filter((m) => !m.dead).map((m) => m.id) : [];
+    },
+    _nuzName(attId) { return ((this.attendee(attId) || {}).name || attId); },
+    _nuzEdit(attId, fn) {
+      if (!attId) return;
+      this.update((s) => {
+        const r = (s.nuzlocke || {})[attId];
+        if (!r) return;
+        fn(r, s);
+        r.upd = Date.now();
+      });
+    },
+    nuzStart(attId, starterId) {
+      if (!attId || !starterId) return;
+      this.update((s) => {
+        s.nuzlocke = s.nuzlocke || {};
+        s.nuzlocke[attId] = { starter: starterId, box: [{ id: starterId }], badges: [], league: [],
+          catches: 1, deaths: 0, over: "", startTs: Date.now(), upd: Date.now() };
+        Store.chron(s, "🪦", this._nuzName(attId) + " began a NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
+      });
+    },
+    // Give up the current run (a fresh nuzStart replaces it). Tombstoned, not
+    // deleted, so a lagging phone's copy can't resurrect it on merge.
+    nuzAbandon(attId) { this._nuzEdit(attId, (r) => { if (!r.over) r.over = "abandoned"; }); },
+    // A wild catch joins the box (one of each species per run — dupes ignored).
+    nuzCatch(attId, monId) {
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over || r.box.some((m) => m.id === monId)) return;
+        r.box.push({ id: monId });
+        r.catches += 1;
+        Store.chron(s, "🪦", this._nuzName(attId) + " caught " + (((window.DEX || {})[monId] || {}).n || "#" + monId) + " for the Nuzlocke box (" + r.catches + " caught).");
+      });
+    },
+    // Permadeath: every own mon that fainted in a nuzlocke battle dies for the
+    // run. If the whole box is gone, the run is OVER.
+    nuzDeaths(attId, ids) {
+      if (!ids || !ids.length) return;
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over) return;
+        const fallen = [];
+        ids.forEach((id) => {
+          const m = r.box.find((x) => x.id === id && !x.dead);
+          if (m) { m.dead = 1; r.deaths += 1; fallen.push(((window.DEX || {})[id] || {}).n || "#" + id); }
+        });
+        if (!fallen.length) return;
+        Store.chron(s, "🪦", "RIP — " + this._nuzName(attId) + "'s " + fallen.join(", ") + " fainted in the Nuzlocke. Gone for the run.");
+        if (!r.box.some((m) => !m.dead)) {
+          r.over = "wiped";
+          Store.chron(s, "💀", this._nuzName(attId) + "'s Nuzlocke run is OVER — the whole box is gone. " + r.badges.length + " badge" + (r.badges.length === 1 ? "" : "s") + ", " + r.catches + " caught, " + r.deaths + " lost.");
+        }
+      });
+    },
+    nuzBadge(attId, idx) {
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over || r.badges.indexOf(idx) >= 0) return;
+        r.badges.push(idx);
+        Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + r.badges.length + "/8 — no losses allowed!");
+      });
+    },
+    // An Elite Four / Champion stage falls. Beating BLUE completes the run —
+    // it's enshrined in the Nuzlocke hall with its catch count.
+    nuzStage(attId, key) {
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over || r.league.indexOf(key) >= 0) return;
+        r.league.push(key);
+        if (key === "blue") {
+          r.over = "champion"; r.doneTs = Date.now();
+          s.nuzlockeHof = s.nuzlockeHof || [];
+          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs });
+          Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + this._nuzName(attId) + " beat BLUE with permadeath on — " + r.catches + " caught, " + r.deaths + " lost along the way. LEGEND.");
+        } else {
+          Store.chron(s, "🪦", this._nuzName(attId) + " toppled a Nuzlocke Elite Four stage (" + r.league.length + "/5)!");
+        }
+      });
+    },
+    // Completed runs, best (fewest catches) first — the Nuzlocke crown board.
+    nuzHall() {
+      return (this.state.nuzlockeHof || []).slice().sort((a, b) => (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
+    },
+
     // 🎖 Battle Honors — per-trainer awards for the EXTRA challenge ladders
     // (Movie Legends, the Champions Tournament, canon-villain ambushes, Mt.
     // Silver, and the nine-region Top Champion). Unlike liveTrophies (one holder
@@ -1043,6 +1133,14 @@
       };
       const sw = this.secretWins(attId);
       Object.keys(SPECIAL_HONORS).forEach((k) => { if (sw.indexOf(k) >= 0) out.push(SPECIAL_HONORS[k]); });
+      // 🪦 Nuzlocke — completed hardcore runs (fewest catches is the flex).
+      const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
+      if (nz.length) {
+        const best = nz.reduce((a, b) => (b.catches < a.catches ? b : a));
+        out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered Kanto with permadeath on — " + best.catches + " Pokémon caught" });
+        if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });
+        if (nz.some((r) => !r.deaths)) out.push({ emoji: "💎", title: "Deathless", sub: "won a Nuzlocke without losing a single Pokémon" });
+      }
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.
@@ -1255,6 +1353,18 @@
         const arr = nmd[tid] = nmd[tid] || [];
         (pmd[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
+      // 🪦 Nuzlocke: one live run per trainer, EDITED in place — the copy with
+      // the newest edit wins (deaths/badges only ever move forward on the
+      // owner's own phone). The hall of finished runs unions by (att, ts).
+      const pnz = (prev && prev.nuzlocke) || {};
+      const nnz = next.nuzlocke = next.nuzlocke || {};
+      Object.keys(pnz).forEach((tid) => {
+        const mine = pnz[tid], theirs = nnz[tid];
+        if (!theirs || (mine && (mine.upd || 0) > (theirs.upd || 0))) nnz[tid] = mine;
+      });
+      const pnh = (prev && prev.nuzlockeHof) || [];
+      const nnh = next.nuzlockeHof = next.nuzlockeHof || [];
+      pnh.forEach((r) => { if (!nnh.some((x) => x.att === r.att && x.ts === r.ts)) nnh.push(r); });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};
       const ntw = next.tourneyWins = next.tourneyWins || {};
