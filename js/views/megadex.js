@@ -121,6 +121,15 @@
         el("div", { class: "unown-progress" }, [el("span", { style: { width: Math.round((done / total) * 100) + "%" } })]),
       ]));
 
+      // 🧭 Gen Ladder: Mega Evolution awakens with Kalos (beat ALDER → Gen 6).
+      if (window.Store && Store.genCapFor && Store.genCapFor(attId) < 6) {
+        host.appendChild(el("div", { class: "unown-seal" }, [
+          el("div", { class: "unown-seal-ico" }, "🔒✨"),
+          el("div", { class: "unown-seal-txt" }, "Mega Evolution awakens in Kalos. Beat Champion ALDER (Unova, in The Journey) to unlock the ✨ Mega Evolve button in battle — then fill this wall."),
+          el("button", { class: "btn primary sm", onClick: () => { location.hash = "#/regions"; } }, "🗺 To The Journey"),
+        ]));
+      }
+
       if (done >= total) host.appendChild(el("div", { class: "unown-complete" }, "🎉 Every stone awakened — MEGA MASTER!"));
 
       const tabForms = all.filter((f) => era(f.id) === TABS[curTab].key);

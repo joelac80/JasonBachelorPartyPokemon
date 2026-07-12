@@ -468,42 +468,27 @@
     if (Sync.onStateApplied) Sync.onStateApplied(checkTradeInbox);
     setTimeout(checkTradeInbox, 1500);   // catch offers that arrived while away
 
-    // 🎉 Gen 5-9 unlock — a room-wide moment. When the synced flag flips true
-    // (someone completed the Gen 1-4 dex), every phone celebrates ONCE.
-    const GEN59_SEEN_KEY = "jasonBachHub.gen59Seen";
-    function showGen59Party(by) {
-      if (!window.Modal) return;
-      let ctrl;
-      const showcase = [658, 700, 778, 887, 571, 1000];   // iconic Gen 5-9 faces
-      const sprites = el("div", { class: "gen59-pop-row" }, showcase
-        .map((id) => (window.DEX_SPRITES || {})[id]).filter(Boolean)
-        .map((src) => el("img", { class: "gen59-pop-mon", src: src, alt: "" })));
-      const body = el("div", { class: "gen59-pop" }, [
-        el("div", { class: "gen59-pop-emoji" }, "🎉"),
-        el("div", { class: "gen59-pop-title" }, "GEN 5-9 UNLOCKED!"),
-        el("div", { class: "gen59-pop-sub" }, "Thanks to " + by + " completing the ENTIRE Gen 1-4 Pokédex, 532 more Pokémon (#494–#1025) now roam the Safari — for everyone!"),
-        sprites,
-        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-          el("button", { class: "btn spin-btn", onClick: () => { if (ctrl) ctrl.close(); location.hash = "#/safari"; } }, "🔴 To the Safari!"),
-          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Nice!"),
-        ]),
-      ]);
-      ctrl = Modal.open("New Pokémon incoming!", body, null, { noFooter: true });
-    }
-    function checkGen59Unlock() {
+    // 🧭 Gen Ladder unlock — celebrate when THIS device's signed-in trainer
+    // climbs a rung (their battles opened a new generation in the wild).
+    const GENCAP_SEEN_KEY = "jasonBachHub.genCapSeen";
+    function checkGenClimb() {
       try {
-        if (!(Store.state.pokedex && Store.state.pokedex.gen59Unlocked)) return;
-        if (localStorage.getItem(GEN59_SEEN_KEY)) return;    // already celebrated on this device
-        localStorage.setItem(GEN59_SEEN_KEY, "1");
-        const by = (Store.state.pokedex.gen59By) || "a trainer";
-        notify("🎉 Gen 5-9 UNLOCKED!", "Thanks to " + by + " — 532 more Pokémon now roam the Safari!");
+        const me = Sync.getMe && Sync.getMe();
+        if (!me || !Store.genCapFor) return;
+        const cap = Store.genCapFor(me);
+        const seen = parseInt(localStorage.getItem(GENCAP_SEEN_KEY) || "1", 10) || 1;
+        if (cap <= seen) return;
+        localStorage.setItem(GENCAP_SEEN_KEY, String(cap));
+        if (seen < 1 || cap === 1) return;
+        const span = Store.GEN_SPANS[cap - 1];
+        notify("🧭 GEN " + cap + " UNLOCKED!", "Your battles opened Gen " + cap + " — #" + span[0] + "–#" + span[1] + " now roam YOUR Safari!");
         if (window.SFX && SFX.fanfare) SFX.fanfare();
-        showGen59Party(by);
+        U.toast("🧭 GEN " + cap + " UNLOCKED — #" + span[0] + "–#" + span[1] + " join your wild!", "🔴 Safari", () => { location.hash = "#/safari"; });
       } catch (_) {}
     }
-    Store.subscribe(checkGen59Unlock);
-    if (Sync.onStateApplied) Sync.onStateApplied(checkGen59Unlock);
-    setTimeout(checkGen59Unlock, 1800);
+    Store.subscribe(checkGenClimb);
+    if (Sync.onStateApplied) Sync.onStateApplied(checkGenClimb);
+    setTimeout(checkGenClimb, 1800);
 
     // 📬 topbar inbox badge: shows (with a count) while offers addressed to
     // ME are waiting — tap it to land on the Trading Post.

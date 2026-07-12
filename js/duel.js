@@ -1649,9 +1649,11 @@
       if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99)));
       menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
       // ✨ Mega Evolve — offered when the active mon has a mega form, this side
-      // hasn't used its Mega yet, and it's a local (vs-AI) battle.
+      // hasn't used its Mega yet, it's a local (vs-AI) battle, and the trainer
+      // has reached Kalos on the Gen Ladder (beat ALDER → Gen 6).
       const megaIds = (window.MEGA_BY_BASE && MEGA_BY_BASE[m.id]) || null;
-      if (mode === "local" && !u.ai && megaIds && megaIds.length && !m.megaId && !S.megaSide[ptr.side]) {
+      const megaOpen = !(window.Store && Store.genCapFor) || Store.genCapFor(u.attId) >= 6;
+      if (mode === "local" && !u.ai && megaOpen && megaIds && megaIds.length && !m.megaId && !S.megaSide[ptr.side]) {
         const F = window.MEGA_FORMS || {};
         menu.appendChild(el("div", { class: "battle-menu-row mega-row" },
           megaIds.map((mid) => el("button", { class: "btn mega-btn", onClick: () => megaEvolve(u, ptr, mid) },

@@ -154,10 +154,29 @@
     })();
   }
 
+  // 🧭 The Gen Ladder: a region's gyms open only after the PREVIOUS region's
+  // Champion falls, in order (Johto & Kanto are the free starting block).
+  // Checked via the ladder cap so out-of-order wins can never skip a region.
+  const REGION_NEEDS = { Johto: null, Kanto: null,
+    Hoenn: { gen: 3, name: "LANCE" }, Sinnoh: { gen: 4, name: "STEVEN" },
+    Unova: { gen: 5, name: "CYNTHIA" }, Kalos: { gen: 6, name: "ALDER" },
+    Alola: { gen: 7, name: "DIANTHA" }, Galar: { gen: 8, name: "PROF. KUKUI" },
+    Paldea: { gen: 9, name: "LEON" } };
+  // The reason this trainer can't fight here yet, or "" when open.
+  function gymLockedWhy(idx, attId) {
+    const need = REGION_NEEDS[GYMS[idx].region];
+    if (!need || !attId) return "";
+    const cap = (Store.genCapFor ? Store.genCapFor(attId) : 9);
+    return cap >= need.gen ? ""
+      : "The road to " + GYMS[idx].region + " opens when you beat Champion " + need.name + " (The Journey).";
+  }
+
   function challengeGym(idx) {
     const gym = GYMS[idx];
     const size = gym.team.length;
     const go = (attId) => {
+      const why = gymLockedWhy(idx, attId);
+      if (why) { alert("🔒 " + why); return; }
       if (Duel.poolFor(attId).length < size) {
         alert("Leader " + gym.leader + " runs " + size + " Pokémon — you need " + size + " of your own to challenge (catch more in the Safari!).");
         return;
@@ -176,11 +195,14 @@
     if (me) go(me); else openPicker("Who challenges Leader " + gym.leader + "?", (a) => go(a.id));
   }
 
-  function circuitCard(idx) {
+  // attId (optional) locks the card for THAT trainer's Gen Ladder progress;
+  // without it the lock is enforced at challenge time instead.
+  function circuitCard(idx, attId) {
     const g = GYMS[idx];
     const holders = Store.gymHolders(idx);
     const ico = U.energyIcon(g.type);
-    return el("div", { class: "gymc-card" + (holders.length ? " earned" : "") }, [
+    const why = gymLockedWhy(idx, attId || (window.Sync && Sync.getMe && Sync.getMe()) || "");
+    return el("div", { class: "gymc-card" + (holders.length ? " earned" : "") + (why ? " locked" : "") }, [
       el("div", { class: "gymc-head" }, [
         ico ? el("img", { class: "gymc-ico", src: ico, alt: g.type }) : null,
         el("div", { class: "gymc-names" }, [
@@ -194,7 +216,8 @@
             return el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(id) }, "🏅 " + (a ? a.name : id));
           }))
         : el("div", { class: "gymc-holders none" }, "No badge holders yet"),
-      el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, "⚔ Challenge (" + g.team.length + "v" + g.team.length + ")"),
+      why ? el("div", { class: "gymc-lock" }, "🔒 " + why)
+          : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, "⚔ Challenge (" + g.team.length + "v" + g.team.length + ")"),
     ]);
   }
 
@@ -206,7 +229,7 @@
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
     root.appendChild(el("p", { class: "hint" },
-      "Even match: bring EXACTLY as many Pokémon as the leader runs — their team stays hidden until each comes out of its ball. Everyone can earn every badge; sweep all 16 Johto & Kanto to become CHAMPION. The 8 Hoenn badges unlock the Hoenn Elite Four; the 8 Sinnoh badges unlock Sinnoh's. Lose = 3 sips." +
+      "🧭 THE GEN LADDER: start in Johto & Kanto with Gen 1 in the wild. All 8 Johto badges spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs. Lose = 3 sips." +
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
 
     // Group the circuit by region so 32 gyms stay readable.

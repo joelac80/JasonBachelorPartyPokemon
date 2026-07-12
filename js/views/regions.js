@@ -11,23 +11,33 @@
   const TABS = [
     { key: "kanto-johto", name: "Kanto & Johto", emoji: "🗾", gen: "Gen 1 & 2", gym: ["Johto", "Kanto"], lg: ["Johto", "Kanto"], gate: true, movies: true,
       note: "The original journey — all 16 Johto & Kanto gyms, the Elite Four, Champion LANCE, the silent summit of Mt. Silver, and two big-screen legends." },
-    { key: "hoenn", name: "Hoenn", emoji: "🌊", gen: "Gen 3", gym: ["Hoenn"], lg: ["Hoenn"],
+    { key: "hoenn", name: "Hoenn", emoji: "🌊", gen: "Gen 3", gym: ["Hoenn"], lg: ["Hoenn"], needs: { champ: "lance", name: "LANCE", prev: "Kanto & Johto" },
       note: "Eight gyms, then the Elite Four and Champion STEVEN." },
-    { key: "sinnoh", name: "Sinnoh", emoji: "🏔", gen: "Gen 4", gym: ["Sinnoh"], lg: ["Sinnoh"],
+    { key: "sinnoh", name: "Sinnoh", emoji: "🏔", gen: "Gen 4", gym: ["Sinnoh"], lg: ["Sinnoh"], needs: { champ: "steven", name: "STEVEN", prev: "Hoenn" },
       note: "Eight gyms, the Elite Four, and CYNTHIA's final battle." },
-    { key: "unova", name: "Unova", emoji: "🏙", gen: "Gen 5", gym: ["Unova"], lg: ["Unova"],
+    { key: "unova", name: "Unova", emoji: "🏙", gen: "Gen 5", gym: ["Unova"], lg: ["Unova"], needs: { champ: "cynthia", name: "CYNTHIA", prev: "Sinnoh" },
       note: "Eight gyms, the Elite Four, and Champion ALDER." },
-    { key: "kalos", name: "Kalos", emoji: "🗼", gen: "Gen 6", gym: ["Kalos"], lg: ["Kalos"],
-      note: "Eight gyms, the Elite Four, and Champion DIANTHA." },
-    { key: "alola", name: "Alola", emoji: "🌺", gen: "Gen 7", gym: ["Alola"], lg: ["Alola"],
+    { key: "kalos", name: "Kalos", emoji: "🗼", gen: "Gen 6", gym: ["Kalos"], lg: ["Kalos"], needs: { champ: "alder", name: "ALDER", prev: "Unova" },
+      note: "Eight gyms, the Elite Four, and Champion DIANTHA. Mega Evolution awakens here." },
+    { key: "alola", name: "Alola", emoji: "🌺", gen: "Gen 7", gym: ["Alola"], lg: ["Alola"], needs: { champ: "diantha", name: "DIANTHA", prev: "Kalos" },
       note: "The Island Challenge — four Kahunas, the Elite Four, and Prof. KUKUI." },
-    { key: "galar", name: "Galar", emoji: "⚽", gen: "Gen 8", gym: ["Galar"], lg: ["Galar"],
+    { key: "galar", name: "Galar", emoji: "⚽", gen: "Gen 8", gym: ["Galar"], lg: ["Galar"], needs: { champ: "kukui", name: "PROF. KUKUI", prev: "Alola" },
       note: "Eight gyms, the Champion Cup, and Champion LEON." },
-    { key: "paldea", name: "Paldea", emoji: "🍊", gen: "Gen 9", gym: ["Paldea"], lg: ["Paldea"],
+    { key: "paldea", name: "Paldea", emoji: "🍊", gen: "Gen 9", gym: ["Paldea"], lg: ["Paldea"], needs: { champ: "leon", name: "LEON", prev: "Galar" },
       note: "Eight gyms, the Elite Four, and Top Champion GEETA." },
-    { key: "cup", name: "Champions Cup", emoji: "🏆", gen: "Endgame", cup: true,
+    { key: "cup", name: "Champions Cup", emoji: "🏆", gen: "Endgame", cup: true, needs: { champ: "geeta", name: "GEETA", prev: "Paldea" },
       note: "Beyond every region — a 16-legend single-elimination bracket. Every Elite Four, every Champion, RED and BLUE, drawn fresh into one tournament." },
   ];
+  // Locked for this trainer until the gating Champion falls (Gen Ladder). The
+  // check rides the LADDER CAP (which climbs strictly in order), so a stray
+  // out-of-order win can never skip a region. The Cup gates on GEETA herself.
+  const TAB_MIN_GEN = { hoenn: 3, sinnoh: 4, unova: 5, kalos: 6, alola: 7, galar: 8, paldea: 9 };
+  function tabLocked(t, attId) {
+    if (!t.needs || !attId) return false;
+    if (t.cup) return Store.leagueWins(attId).indexOf("geeta") < 0;
+    const min = TAB_MIN_GEN[t.key];
+    return min ? (Store.genCapFor ? Store.genCapFor(attId) : 9) < min : false;
+  }
 
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
@@ -39,7 +49,7 @@
     if (!attId) { root.appendChild(el("p", { class: "hint" }, "Add trainers first (Squad page).")); return; }
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id }, a.name + "'s journey")));
     sel.value = attId;
-    sel.addEventListener("change", () => { attId = sel.value; rebuild(); });
+    sel.addEventListener("change", () => { attId = sel.value; paintTabs(); rebuild(); });
     root.appendChild(sel);
 
     const tabBar = el("div", { class: "rg-tabs" });
@@ -50,9 +60,10 @@
     function paintTabs() {
       tabBar.innerHTML = "";
       TABS.forEach((t, i) => {
-        tabBar.appendChild(el("button", { class: "rg-tab" + (i === curTab ? " on" : ""),
+        const locked = tabLocked(t, attId);
+        tabBar.appendChild(el("button", { class: "rg-tab" + (i === curTab ? " on" : "") + (locked ? " locked" : ""),
           onClick: () => { if (curTab !== i) { curTab = i; paintTabs(); rebuild(); window.scrollTo(0, 0); } } }, [
-          el("span", { class: "rg-tab-emoji" }, t.emoji),
+          el("span", { class: "rg-tab-emoji" }, locked ? "🔒" : t.emoji),
           el("span", { class: "rg-tab-name" }, t.name),
           el("span", { class: "rg-tab-gen" }, t.gen),
         ]));
@@ -67,6 +78,17 @@
         el("p", { class: "hint", style: { marginTop: "-4px" } }, t.note),
       ]));
 
+      // 🧭 Gen Ladder gate: this region hasn't opened for this trainer yet.
+      if (tabLocked(t, attId)) {
+        host.appendChild(el("div", { class: "unown-seal" }, [
+          el("div", { class: "unown-seal-ico" }, "🔒" + t.emoji),
+          el("div", { class: "unown-seal-txt" }, "The road to " + t.name + " is closed. Beat " +
+            (t.needs.champ === "geeta" ? "Top Champion" : "Champion") + " " + t.needs.name +
+            " to finish " + t.needs.prev + " — then " + t.name + (t.cup ? "" : " and its generation of Pokémon") + " open up."),
+        ]));
+        return;
+      }
+
       // 🏆 Champions Cup — the endgame bracket (no gyms/league; its own view)
       if (t.cup) {
         if (window.ChampionsCup) ChampionsCup.render(host);
@@ -79,7 +101,7 @@
       const gymIdxs = GC ? (t.gym || []).reduce(function (acc, r) { return acc.concat(GC.idxsForRegion(r)); }, []) : [];
       if (gymIdxs.length) {
         host.appendChild(el("h3", { class: "rg-sub" }, "🏟 Gyms — " + gymIdxs.length));
-        host.appendChild(el("div", { class: "gymc-grid" }, gymIdxs.map(function (i) { return GC.card(i); })));
+        host.appendChild(el("div", { class: "gymc-grid" }, gymIdxs.map(function (i) { return GC.card(i, attId); })));
       }
 
       // 👑 Elite Four + Champion (+ Victory Road gate for the first region)

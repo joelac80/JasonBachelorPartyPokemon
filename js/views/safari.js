@@ -181,7 +181,10 @@
   // Gen 5-9 (#494+) only appear in the wild — and in the dex grid — once this
   // trainer has completed the Gen 1-4 normal dex (all 493 base forms).
   const GEN14_MAX = (window.Store && Store.GEN14_MAX) || 493;
-  function poolIds(tid) { return Store.gen59Unlocked(tid) ? IDS : IDS.filter((id) => id <= GEN14_MAX); }
+  // 🧭 The Gen Ladder: each trainer's wild pool runs up to THEIR unlocked
+  // generation (start Gen 1; battles in The Journey open the rest).
+  function maxIdFor(tid) { return (Store.genMaxIdFor && Store.genMaxIdFor(tid)) || GEN14_MAX; }
+  function poolIds(tid) { const cap = maxIdFor(tid); return IDS.filter((id) => id <= cap); }
 
   // The encounter table is 502 slots — a normal AND a shiny of every species —
   // minus the (species, variant) pairs THIS trainer already owns. So once you
@@ -486,9 +489,10 @@
       // a fresh rustle in the grass can stir a ROAMING LEGENDARY the whole
       // room races for (live rooms only; one storm at a time).
       if (window.Sync && Sync.isLive && Sync.isLive() && Sync.startRoam && !(Sync.roam && Sync.roam()) && Math.random() < 1 / 40) {
-        // Roamers stay classic (Gen 1-4) so the room-wide event never hands a
-        // locked later-gen legendary to someone who hasn't unlocked them.
-        const wild = IDS.filter((x) => x <= GEN14_MAX && DEX[x].leg);
+        // Roamers stay within what the WALKING trainer has unlocked, so the
+        // room event never hands out a legendary from a locked generation.
+        const roamCap = Math.min(maxIdFor(active()), GEN14_MAX);
+        const wild = IDS.filter((x) => x <= roamCap && DEX[x].leg);
         if (wild.length) {
           const pickId = wild[(Math.random() * wild.length) | 0];
           Sync.startRoam(pickId);
@@ -640,9 +644,8 @@
           else Store.chron(s, "🔴", attendeeName(tid) + " caught " + nfo.name + "!" + (viaMaster ? " (Master Ball dare!)" : "") + (helperName ? " (assist: " + helperName + ")" : ""));
           if (Store._milestone(s.pokedex.log.length)) Store.chron(s, "🎉", "🔴 " + s.pokedex.log.length + " Pokémon caught this weekend!");
         });
-        // 🌍 Did that catch complete the Gen 1-4 dex? If so, unlock Gen 5-9 for
-        // the whole room (the popup fires from the synced flag via app.js).
-        Store.checkGen59Unlock(tid);
+        // (The old "complete the Gen 1-4 dex to unlock Gen 5-9" room gate is
+        // retired — the Gen Ladder unlocks generations through BATTLES now.)
         // A roaming legendary stays out for the whole room (everyone can grab
         // their own) — it just wanders off on its own timer, no exclusive claim.
         const catcherTeam = Store.team(Store.teamOf(tid));
@@ -805,7 +808,6 @@
       const caught = rec(tid).caught || {};
       const shinyMode = dexMode === "shiny";
       const pool = poolIds(tid);
-      const unlocked = Store.gen59Unlocked(tid);
       const nNorm = pool.reduce((n, id) => n + (ownsNormal(tid, id) ? 1 : 0), 0);
       const nShiny = pool.reduce((n, id) => n + (ownsShiny(tid, id) ? 1 : 0), 0);
       dexHost.appendChild(el("h2", { class: "section-title" },
@@ -815,23 +817,17 @@
         el("button", { class: "btn sm" + (shinyMode ? " subtle" : " primary"), onClick: () => { dexMode = "normal"; renderDex(); } }, "Regular · " + nNorm),
         el("button", { class: "btn sm" + (shinyMode ? " primary" : " subtle"), onClick: () => { dexMode = "shiny"; renderDex(); } }, "✨ Shiny · " + nShiny),
       ]));
-      // 🔒 Gen 5-9 gate: show progress toward the unlock until the Gen 1-4 normal
-      // dex is complete, then celebrate the newly-opened later generations.
-      if (!unlocked) {
-        const have = IDS.reduce((n, id) => n + (id <= GEN14_MAX && ownsNormal(tid, id) ? 1 : 0), 0);
-        const locked = (IDS.length > GEN14_MAX) ? (IDS.length - GEN14_MAX) : 0;
-        dexHost.appendChild(el("div", { class: "dex-lock" }, [
-          el("div", { class: "dex-lock-title" }, "🔒 Gen 5-9 locked"),
-          el("div", { class: "dex-lock-sub" }, "The FIRST trainer to complete the Gen 1-4 Pokédex — all " + GEN14_MAX + " base forms — unlocks " + locked + " more Pokémon in the wild for EVERYONE! " + attendeeName(tid) + ": " + have + " / " + GEN14_MAX + "."),
-          el("div", { class: "dex-lock-bar" }, [el("div", { class: "dex-lock-fill", style: { width: Math.round(have / GEN14_MAX * 100) + "%" } })]),
-        ]));
-      } else if (IDS.length > GEN14_MAX) {
-        const by = (Store.state.pokedex && Store.state.pokedex.gen59By) || "a trainer";
-        dexHost.appendChild(el("div", { class: "dex-lock open" }, [
-          el("div", { class: "dex-lock-title" }, "🎉 Gen 5-9 UNLOCKED!"),
-          el("div", { class: "dex-lock-sub" }, "Thanks to " + by + ", the Gen 1-4 dex is complete — Gen 5-9 now roam the Safari for the whole room."),
-        ]));
-      }
+      // 🧭 The Gen Ladder — this trainer's world so far, and what battle opens
+      // the next generation. Battling (not dex completion) drives the climb.
+      const cap = (Store.genCapFor && Store.genCapFor(tid)) || 1;
+      const goal = Store.nextGenGoal && Store.nextGenGoal(tid);
+      dexHost.appendChild(el("div", { class: "dex-lock" + (goal ? "" : " open") }, [
+        el("div", { class: "dex-lock-title" }, (goal ? "🧭" : "🎉") + " Gen " + cap + " of 9 unlocked" + (goal ? "" : " — the whole world!")),
+        el("div", { class: "dex-lock-sub" }, goal
+          ? "#1–#" + pool.length + " roam the wild for " + attendeeName(tid) + ". To unlock Gen " + goal.gen + ": " + goal.text + "."
+          : "All 1025 Pokémon roam the wild for " + attendeeName(tid) + " — every region conquered."),
+        goal ? el("div", { class: "dex-lock-bar" }, [el("div", { class: "dex-lock-fill", style: { width: Math.round(cap / 9 * 100) + "%" } })]) : null,
+      ]));
       const grid = el("div", { class: "safari-dex" });
       pool.forEach((id) => {
         const got = shinyMode ? ownsShiny(tid, id) : ownsNormal(tid, id);

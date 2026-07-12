@@ -693,6 +693,11 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .unown-secret-sub { font-size: 12px; opacity: .92; margin-bottom: 8px; }
 .unown-secret-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
 .unown-secret-mon { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 6px rgba(180,108,255,.5)); }
+/* 🧭 Gen Ladder locks */
+.gymc-card.locked { opacity: .78; }
+.gymc-card.locked .gymc-ico { filter: grayscale(1); }
+.gymc-lock { font-size: 11px; color: #8a7fb0; background: rgba(0,0,0,.06); border-radius: 8px; padding: 6px 8px; }
+.rg-tab.locked { opacity: .62; filter: saturate(.4); }
 /* ✨ Mega-Dex wall */
 .mega-sub { font-family: var(--pixel, monospace); font-size: 11px; font-weight: 800; color: #5a3fa0; margin: 8px 0 4px; }
 .mega-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }

@@ -660,13 +660,63 @@
       });
       return true;
     },
-    // How many species the dex is measured against right now — 493 until the
-    // room unlocks the later gens, then the whole National Dex. Mega/Primal
-    // forms (ids 10000+) live in DEX for battles but are NOT catchable — they
-    // must never inflate the target.
-    dexTarget() {
-      if (!this.gen59Unlocked()) return this.GEN14_MAX;
-      const n = Object.keys(window.DEX || {}).filter((id) => +id <= 1025).length;
+    // 🧭 THE GEN LADDER — region-by-region progression. Every trainer starts
+    // with Gen 1 in the wild; BATTLING opens the world (no dex completion
+    // required). Earn all 8 Johto badges → Gen 2. Then each Champion beaten in
+    // journey order spills the next generation into the Safari and opens the
+    // next region's gyms: LANCE→Gen 3/Hoenn, STEVEN→Gen 4/Sinnoh,
+    // CYNTHIA→Gen 5/Unova, ALDER→Gen 6/Kalos (+Mega Evolution),
+    // DIANTHA→Gen 7/Alola, KUKUI→Gen 8/Galar, LEON→Gen 9/Paldea.
+    // GEETA stays the summit. Per-trainer, driven by their own recorded wins —
+    // weekend veterans keep every unlock their battles already earned.
+    GEN_SPANS: [[1, 151], [152, 251], [252, 386], [387, 493], [494, 649], [650, 721], [722, 809], [810, 905], [906, 1025]],
+    genOf(id) {
+      for (let g = 0; g < this.GEN_SPANS.length; g++) if (id <= this.GEN_SPANS[g][1]) return g + 1;
+      return 9;
+    },
+    GEN_LADDER: [
+      { gen: 2, badges: { start: 0, count: 8 }, goal: "earn all 8 JOHTO badges", where: "the Gym Circuit" },
+      { gen: 3, champ: "lance", champName: "LANCE", opens: "Hoenn" },
+      { gen: 4, champ: "steven", champName: "STEVEN", opens: "Sinnoh" },
+      { gen: 5, champ: "cynthia", champName: "CYNTHIA", opens: "Unova" },
+      { gen: 6, champ: "alder", champName: "ALDER", opens: "Kalos" },
+      { gen: 7, champ: "diantha", champName: "DIANTHA", opens: "Alola" },
+      { gen: 8, champ: "kukui", champName: "PROF. KUKUI", opens: "Galar" },
+      { gen: 9, champ: "leon", champName: "LEON", opens: "Paldea" },
+    ],
+    // The highest generation this trainer has unlocked (1..9).
+    genCapFor(attId) {
+      if (!attId) return 1;
+      const w = this.leagueWins(attId);
+      let cap = 1;
+      for (let i = 0; i < this.GEN_LADDER.length; i++) {
+        const step = this.GEN_LADDER[i];
+        const met = step.badges
+          ? this.gymBadgesInRange(attId, step.badges.start, step.badges.count) >= step.badges.count
+          : w.indexOf(step.champ) >= 0;
+        if (met) cap = step.gen; else break;   // the ladder climbs IN ORDER
+      }
+      return cap;
+    },
+    // Highest catchable dex id for this trainer.
+    genMaxIdFor(attId) { return this.GEN_SPANS[this.genCapFor(attId) - 1][1]; },
+    // What unlocks the NEXT generation — for banners. Null when maxed.
+    nextGenGoal(attId) {
+      const cap = this.genCapFor(attId);
+      if (cap >= 9) return null;
+      const step = this.GEN_LADDER[cap - 1];
+      return { gen: step.gen,
+        text: step.badges ? (step.goal + " in " + step.where)
+          : ("beat Champion " + step.champName + " in The Journey" + (step.opens ? " — " + step.opens + " opens too" : "")) };
+    },
+    // How many species this trainer's dex is measured against (their gen cap).
+    // Mega/Primal forms (ids 10000+) are battle-only and never counted. With no
+    // trainer given, measure against the room's furthest climber.
+    dexTarget(attId) {
+      let maxId;
+      if (attId) maxId = this.genMaxIdFor(attId);
+      else maxId = (this.state.attendees || []).reduce((m, a) => Math.max(m, this.genMaxIdFor(a.id)), this.GEN_SPANS[0][1]);
+      const n = Object.keys(window.DEX || {}).filter((id) => +id <= maxId).length;
       return n || this.GEN14_MAX;
     },
 

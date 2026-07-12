@@ -89,7 +89,14 @@
     requestAnimationFrame(() => lay.classList.add("go"));
   }
 
+  // 🧭 Gen Ladder: the big-screen legends only answer trainers who've
+  // conquered Kanto & Johto — beaten Champion LANCE, in order (cap ≥ 3).
+  function moviesLocked(attId) {
+    return !attId || (Store.genCapFor ? Store.genCapFor(attId) : 9) < 3;
+  }
+
   function challenge(b, attId) {
+    if (moviesLocked(attId)) { alert("🔒 The Movie Legends answer only Champions — beat LANCE in The Journey first."); return; }
     const size = b.team.length;
     const startWith = (ids) => {
       Duel.start({ mode: "local", title: b.name + " — " + b.film,
@@ -122,8 +129,9 @@
     const ace = b.team[b.team.length - 1];
     const aceSrc = SP[ace] || Store.sprite(ace);
     const n = b.team.length, vs = n + "v" + n;
-    return el("div", { class: "league-stage movie-stage" + (mineBeat ? " cleared" : " next") }, [
-      el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, mineBeat ? "✅" : b.icon)]),
+    const locked = moviesLocked(attId);
+    return el("div", { class: "league-stage movie-stage" + (mineBeat ? " cleared" : locked ? " locked" : " next") }, [
+      el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, mineBeat ? "✅" : locked ? "🔒" : b.icon)]),
       el("div", { class: "league-stage-card" }, [
         el("div", { class: "league-stage-head" }, [
           el("span", { class: "league-mt" }, b.icon),
@@ -133,11 +141,13 @@
           ]),
           aceSrc ? el("img", { class: "league-ace" + ((mineBeat || anyBeat) ? " lit" : ""), src: aceSrc, alt: "" }) : null,
         ]),
-        el("div", { class: "movie-lead" }, b.lead),
+        locked ? null : el("div", { class: "movie-lead" }, b.lead),
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, "🎬 " + a.name))) : null,
-        el("button", { class: "btn " + (mineBeat ? "subtle" : "primary") + " sm", onClick: () => challenge(b, attId) },
-          (mineBeat ? "🔁 Rematch " : b.icon + " Challenge " + b.name + " ") + "(" + vs + ")"),
+        locked
+          ? el("div", { class: "legend-lock" }, "🔒 The big screen waits for a Champion — beat LANCE in The Journey first.")
+          : el("button", { class: "btn " + (mineBeat ? "subtle" : "primary") + " sm", onClick: () => challenge(b, attId) },
+              (mineBeat ? "🔁 Rematch " : b.icon + " Challenge " + b.name + " ") + "(" + vs + ")"),
       ]),
     ]);
   }
