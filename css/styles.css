@@ -2009,3 +2009,10 @@ html, body { overscroll-behavior-y: contain; }
 .nuz-hall-rank { font-family: var(--pixel, monospace); font-size: 12px; min-width: 28px; }
 .nuz-hall-name { font-weight: 800; }
 .nuz-hall-sub { font-size: 12px; color: var(--muted, #8a97a8); }
+
+/* 🗼 Battle Tower */
+.tower-card { margin: 10px 0; padding: 12px 14px; }
+.tower-card.tycoon { border: 2.5px solid #ffcb05; box-shadow: 0 0 16px rgba(255,203,5,.35);
+  background: linear-gradient(135deg, #2a2312, #3a2c14); color: #fff; }
+.tower-card.tycoon .nuz-lab-head { color: #ffcb05; }
+.tower-card.tycoon .hint { color: #e8dfc0; }

@@ -305,6 +305,11 @@
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
         ai: !!u.ai, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
         vsFace: u.vsFace || null,                      // 🎬 boss portrait for the VS intro
+        // 🎭 A boss can hide its last N party mons (u.reserve) — off the ball
+        // row and VS intro until they're actually sent out ("one more!"), and
+        // speak lines (u.speak = {partyIdx: [lines]}) before a send-out.
+        reserve: Math.max(0, Math.min(u.reserve || 0, party.length - 1)),
+        speak: u.speak || null,
         party: party, cur: 0, potions: 2, courage: true, armed: false };
     }
     const sides = {
@@ -363,6 +368,15 @@
       S.first = ax >= bx ? "a" : "b";
     }
     S.actor = { side: S.first, unit: firstLiving(S.first) };
+    // 🎭 Hidden reserves: how many of each side's party slots are visible on
+    // the ball row right now. A hidden mon reveals itself the moment it's sent
+    // out — the count ticks UP and the room goes "…it has ANOTHER one?!"
+    S.reveal = {};
+    ["a", "b"].forEach((sd) => {
+      const total = sideMons(sd).length;
+      const rsv = sides[sd].units.reduce((mx, u) => Math.max(mx, u.reserve || 0), 0);
+      S.reveal[sd] = total - Math.min(rsv, Math.max(0, total - 1));
+    });
 
     // ---- arena DOM ----
     // Perspective: each phone draws ITS OWN side at the bottom with back
@@ -424,7 +438,10 @@
     // it's fainted, so both trainers can see how many each has left.
     function paintParty(s) {
       const row = sides[s] && sides[s]._balls; if (!row) return;
-      const mons = sideMons(s);
+      let mons = sideMons(s);
+      // 🎭 hidden reserves stay off the row until sent out — the total grows.
+      const rv = S.reveal && S.reveal[s];
+      if (rv != null && rv < mons.length) mons = mons.slice(0, Math.max(1, rv));
       row.innerHTML = "";
       if (mons.length <= 1) { row.style.display = "none"; return; }
       row.style.display = "";
@@ -902,14 +919,23 @@
       // set up (so queued next-turn orders apply against fresh state).
       if (act.kind === "next") {
         u.cur = act.to; S.moved++;
-        renderSprites(act.side); renderHp(act.side);
+        // 🎭 sending out a hidden reserve reveals it — the ball row grows.
+        const surprise = S.reveal && act.to >= (S.reveal[act.side] || 0);
+        if (surprise) S.reveal[act.side] = act.to + 1;
         const fin = () => {
           S.repl = S.repl.filter((s) => !(s.side === act.side && s.unit === act.unit));
           promptReplace(); done();
         };
-        if (instant) { fin(); return; }
+        if (instant) { renderSprites(act.side); renderHp(act.side); fin(); return; }
         menu.innerHTML = "";
-        beats([[u.name + " sent out " + mon(u).name + "!", 1100, () => sfx("blip")]], fin);
+        // The trainer gets their line BEFORE the reveal (Volo's Giratina moment),
+        // then the sprite appears with the classic send-out beat.
+        const talk = (u.speak && u.speak[act.to]) || null;
+        const talkBeats = talk ? talk.map((ln) => ["🗣 " + u.name + ": “" + ln + "”", 2200, () => sfx("select")]) : [];
+        beats(talkBeats, () => {
+          renderSprites(act.side); renderHp(act.side);
+          beats([[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]], fin);
+        });
         return;
       }
       if (act.kind === "forfeit") {
@@ -1210,6 +1236,12 @@
       // deaths (every own mon that fainted) and the result to the run instead.
       if (opts.nuzlocke) {
         try { if (opts.nuzlocke.onEnd) opts.nuzlocke.onEnd(faintedOwnIds(), winSide); } catch (_) {}
+        return;
+      }
+      // 🗼 Battle Tower: streaks live in the tower's own ledger — never the
+      // real ladder, Elo, or leaderboards.
+      if (opts.tower) {
+        try { if (opts.tower.onEnd) opts.tower.onEnd(winSide); } catch (_) {}
         return;
       }
       // 👑 Pokémon League: Elite Four → LANCE → the silent one on Mt. Silver.
@@ -1750,8 +1782,9 @@
             return;
           }
           // Gym leaders keep their team in the balls — one ball per mon,
-          // identities hidden until they're sent out.
-          u.party.forEach(() => mons.push(el("div", { class: "battle-ball-inner vs-mon" })));
+          // identities hidden until they're sent out. (Hidden reserves don't
+          // even get a ball — you're not supposed to know they exist.)
+          u.party.slice(0, u.party.length - (u.reserve || 0)).forEach(() => mons.push(el("div", { class: "battle-ball-inner vs-mon" })));
           return;
         }
         const m = mon(u);

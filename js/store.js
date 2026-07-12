@@ -1078,6 +1078,31 @@
       return (this.state.nuzlockeHof || []).slice().sort((a, b) => (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
 
+    // 🗼 Battle Tower — 4v4 double-battle streaks vs randomized trainers.
+    // Per-trainer {streak, best}; a loss resets streak, best is forever.
+    towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0 }; },
+    towerWin(attId, foeName, tycoon) {
+      if (!attId) return;
+      this.update((s) => {
+        s.tower = s.tower || {};
+        const t = s.tower[attId] = s.tower[attId] || { streak: 0, best: 0 };
+        t.streak += 1; t.best = Math.max(t.best || 0, t.streak); t.upd = Date.now();
+        const nm = this._nuzName(attId);
+        if (tycoon) Store.chron(s, "🗼", nm + " toppled TOWER TYCOON PALMER — Battle Tower streak " + t.streak + "!!");
+        else if (t.streak % 5 === 0) Store.chron(s, "🗼", nm + " is on a Battle Tower HEATER — " + t.streak + " straight!");
+      });
+    },
+    towerLoss(attId, foeName) {
+      if (!attId) return;
+      this.update((s) => {
+        s.tower = s.tower || {};
+        const t = s.tower[attId] = s.tower[attId] || { streak: 0, best: 0 };
+        const had = t.streak;
+        t.streak = 0; t.upd = Date.now();
+        if (had >= 3) Store.chron(s, "🗼", this._nuzName(attId) + "'s Battle Tower streak ends at " + had + " — " + (foeName || "the tower") + " takes it.");
+      });
+    },
+
     // 🎖 Battle Honors — per-trainer awards for the EXTRA challenge ladders
     // (Movie Legends, the Champions Tournament, canon-villain ambushes, Mt.
     // Silver, and the nine-region Top Champion). Unlike liveTrophies (one holder
@@ -1130,9 +1155,15 @@
         monarchs: { emoji: "👊", title: "Crownless Conqueror", sub: "felled Galar's myths & riderless monarchs" },
         dlc: { emoji: "🎭", title: "Mask & Disk", sub: "unmasked Kitakami and cracked the Indigo Disk" },
         hoopa: { emoji: "🌀", title: "Ageless", sub: "won the Clash of Ages — Hoopa Unbound's every summons fell" },
+        volo: { emoji: "⚱️", title: "Ginkgo's Reckoning", sub: "saw through VOLO's smile — all eight, Giratina and Giratina again" },
       };
       const sw = this.secretWins(attId);
       Object.keys(SPECIAL_HONORS).forEach((k) => { if (sw.indexOf(k) >= 0) out.push(SPECIAL_HONORS[k]); });
+      // 🗼 Battle Tower — streak plaques (7 = the Tycoon's silver print).
+      const tb = (this.towerOf(attId) || {}).best || 0;
+      if (tb >= 21) out.push({ emoji: "🗼", title: "Tower Legend", sub: "a 21-win Battle Tower streak — the gold print" });
+      else if (tb >= 7) out.push({ emoji: "🗼", title: "Tower Ace", sub: "a 7-win streak — took Tower Tycoon PALMER's silver print" });
+      else if (tb >= 3) out.push({ emoji: "🛗", title: "Tower Climber", sub: "a " + tb + "-win Battle Tower streak" });
       // 🪦 Nuzlocke — completed hardcore runs (fewest catches is the flex).
       const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
       if (nz.length) {
@@ -1365,6 +1396,16 @@
       const pnh = (prev && prev.nuzlockeHof) || [];
       const nnh = next.nuzlockeHof = next.nuzlockeHof || [];
       pnh.forEach((r) => { if (!nnh.some((x) => x.att === r.att && x.ts === r.ts)) nnh.push(r); });
+      // 🗼 Battle Tower: best is a high-water mark (max); the live streak
+      // follows whichever copy was updated last.
+      const ptr2 = (prev && prev.tower) || {};
+      const ntr2 = next.tower = next.tower || {};
+      Object.keys(ptr2).forEach((tid) => {
+        const a = ptr2[tid], b = ntr2[tid];
+        if (!b) { ntr2[tid] = a; return; }
+        if ((a.upd || 0) > (b.upd || 0)) { b.streak = a.streak; b.upd = a.upd; }
+        b.best = Math.max(b.best || 0, a.best || 0);
+      });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};
       const ntw = next.tourneyWins = next.tourneyWins || {};

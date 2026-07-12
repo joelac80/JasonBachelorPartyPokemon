@@ -9,6 +9,7 @@
     .add("jeopardy", V.jeopardy)
     .add("brackets", V.brackets)
     .add("battle", V.battle)
+    .add("tower", V.tower)
     .add("nuzlocke", V.nuzlocke)
     .add("safari", V.safari)
     .add("drinks", V.drinks)

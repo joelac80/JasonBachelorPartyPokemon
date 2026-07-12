@@ -86,6 +86,24 @@
       winChron: "kept the SINNOH VIGIL — the lake spirits, Cresselia, Manaphy and REGIGIGAS all fell!",
       loseChron: "the Vigil of Sinnoh stood unbroken",
       lead: "🌙 Uxie, Mesprit and Azelf — then Cresselia and Manaphy, and REGIGIGAS, the sleeping Colossus." },
+    { key: "volo", tab: "Sinnoh", name: "VOLO", flair: "SINNOH SPECIAL · The Ginkgo Guild Merchant",
+      sub: "Sinnoh Special · The friendly antique dealer finally shows his hand · 6v6…?",
+      icon: "⚱️", face: 445, boost: 1.42, pts: 34, needs: "cynthia", champ: "CYNTHIA",
+      // What the card admits to: six. What he's hiding behind his back: the
+      // Renegade — twice. Party order IS the script: Garchomp 6th ("that's his
+      // ace, it's over"), then Giratina Altered, then… Origin.
+      team: [442, 407, 468, 10230, 448, 445, 487, 10007],
+      playerSize: 6, reserve: 2,
+      speak: {
+        6: ["No… no, this isn't how it ends. I've dug too deep, waited too long, come too FAR!",
+            "The Renegade heeds ME now. From beyond the veil — GIRATINA!"],
+        7: ["Hah… hahaha! You thought that was the end? That it was finally over?!",
+            "Giratina fell once before and returned CHANGED — behold its ORIGIN FORME!"],
+      },
+      quote: "Lovely weather for a dig, isn't it? I've traded plates, pored over myths, smiled at every passing trainer… all for this moment. Show me everything you have — and I will show you what I've been keeping behind my smile.",
+      winChron: "saw through VOLO's smile and beat ALL EIGHT — Garchomp, then Giratina… and Giratina AGAIN!",
+      loseChron: "VOLO tucked his relics away, smiling — 'another time, perhaps'",
+      lead: "⚱️ Spiritomb, Roserade, Togekiss, Hisuian Arcanine, Lucario… and a Garchomp to rival Cynthia's. Surely that's everything. Surely." },
     { key: "myths", tab: "Unova", name: "THE MYTHS OF UNOVA", flair: "UNOVA SPECIAL · Songs & Storms",
       sub: "Unova Special · The storm genies, the colt, the song — and the landlord · 5v5",
       icon: "🎵", face: 645, boost: 1.50, pts: 28, needs: "alder", champ: "ALDER",
@@ -149,7 +167,7 @@
 
   function specialIntro(sp, onGo) {
     const src = SP[sp.face] || Store.sprite(sp.face);
-    const n = sp.team.length;
+    const n = sp.playerSize || sp.team.length;   // hidden reserves don't advertise
     const lay = el("div", { class: "league-intro final legend-intro" }, [
       el("div", { class: "league-intro-inner" }, [
         src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, sp.icon),
@@ -169,7 +187,7 @@
   }
 
   function challengeSpecial(sp, attId) {
-    const size = sp.team.length;
+    const size = sp.playerSize || sp.team.length;
     if (Duel.poolFor(attId).length < size) { alert(sp.name + " fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
     specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
@@ -179,7 +197,9 @@
           Duel.start({ mode: "local", title: sp.name.toLowerCase(),
             secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
             a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face }] },
+            // reserve/speak: Volo's hidden Giratina + his lines when they emerge.
+            b: { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face,
+              reserve: sp.reserve || 0, speak: sp.speak || null }] },
             onResult: () => Router.render() });
         } });
     });
@@ -190,7 +210,7 @@
     const beaten = !!(Store.secretWins && Store.secretWins(attId).indexOf(sp.key) >= 0);
     const beatenBy = Store.state.attendees.filter((a) => Store.secretWins && Store.secretWins(a.id).indexOf(sp.key) >= 0);
     const aceSrc = SP[sp.face] || Store.sprite(sp.face);
-    const n = sp.team.length;
+    const n = sp.playerSize || sp.team.length;   // the card only admits to six
     return el("div", { class: "league-stage legend-stage" + (beaten ? " cleared" : open ? " next" : " locked") }, [
       el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, beaten ? "✅" : open ? sp.icon : "🔒")]),
       el("div", { class: "league-stage-card" }, [
