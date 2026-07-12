@@ -215,6 +215,32 @@
     const ref = Modal.open(opts.title || "Choose your party", body, null, {});
   }
 
+  // Lead picker — from a fixed set of ids, tap one to send out first. Returns
+  // the same ids reordered with the chosen mon at the front (rest keep order).
+  // Used between gauntlet battles so a one-squad run can re-lead each round.
+  function pickLead(opts) {
+    const ids = (opts.ids || []).slice();
+    if (ids.length < 2) { opts.onDone(ids); return; }
+    let ref;
+    const grid = el("div", { class: "duel-lead-grid" }, ids.map((id) => {
+      const st = statsFor(id);
+      const shiny = isShinyFor(opts.attId, id);
+      const src = frontSprite(id, shiny);
+      return el("button", { class: "duel-lead-pick" + (shiny ? " is-shiny" : ""), title: st.name, onClick: () => {
+        if (ref) ref.close();
+        opts.onDone([id].concat(ids.filter((x) => x !== id)));
+      } }, [
+        src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
+        el("span", { class: "duel-lead-name" }, st.name),
+      ]);
+    }));
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, opts.hint || "Fully healed. Tap the Pokémon to send out first — the rest wait on the bench."),
+      grid,
+    ]);
+    ref = Modal.open(opts.title || "Choose your lead", body, null, {});
+  }
+
   // Simple trainer picker (modal) — used to choose a double-battle partner.
   function pickTrainer(opts) {
     const skip = opts.exclude || [];
@@ -1616,5 +1642,5 @@
     return { receiveActs: receiveActs, receiveRx: receiveRx, close: close };
   }
 
-  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer };
+  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead };
 })();

@@ -265,7 +265,14 @@
           onResult: (winSide) => { if (winSide === "a") runAt(i + 1); else finishRun(i, false); } });
       };
       if (mode === "fixed") {
-        if (fixed) { go(fixed); return; }
+        // Between battles: same six, fully healed — but let them re-pick who
+        // leads against the next foe.
+        if (fixed) {
+          Duel.pickLead({ attId: attId, ids: fixed, title: "Next up: " + o.name + " (" + (i + 1) + "/" + total + ")",
+            hint: "🛡 Same squad, fully healed. Choose who leads against " + o.name + " — the rest wait on the bench.",
+            onDone: (ids) => { fixed = ids; go(ids); } });
+          return;
+        }
         Duel.pickParty({ attId: attId, min: size, max: size, title: "Your ONE gauntlet squad — pick 6",
           hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile six! First up: " + o.name + ".",
           onDone: (ids) => { fixed = ids; go(ids); } });
