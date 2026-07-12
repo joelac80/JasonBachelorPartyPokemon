@@ -883,6 +883,21 @@
     },
     // 🌀 Secret battles won (hidden endgame duels) — keys like "unown".
     secretWins(attId) { return ((this.state.secrets || {})[attId] || []).slice(); },
+    // ✨ Mega-Dex — mega/primal forms this trainer has Mega-Evolved in battle
+    // (append-only, sync-unioned). Unlocked by USE, not by catching.
+    megaDexCaught(attId) { return ((this.state.megadex || {})[attId] || []).slice(); },
+    megaDexTotal() { return Object.keys(window.MEGA_FORMS || {}).length || 0; },
+    recordMega(attId, megaId) {
+      if (!attId || !megaId) return;
+      this.update((s) => {
+        s.megadex = s.megadex || {}; const a = s.megadex[attId] = s.megadex[attId] || [];
+        if (a.indexOf(megaId) < 0) {
+          a.push(megaId);
+          const nm = (window.MEGA_FORMS && MEGA_FORMS[megaId] && MEGA_FORMS[megaId].n) || ("Mega #" + megaId);
+          Store.chron(s, "✨", ((Store.attendee(attId) || {}).name || attId) + " Mega-Evolved into " + nm + " in battle! (" + a.length + " logged)");
+        }
+      });
+    },
     // 🔡 Unown Dex — the living alphabet. All 28 glyphs; decoded ones are
     // stored per trainer (append-only, sync-unioned).
     UNOWN_GLYPHS: "ABCDEFGHIJKLMNOPQRSTUVWXYZ!?".split(""),
@@ -953,6 +968,11 @@
       else if (un.length >= 1) out.push({ emoji: "🔠", title: "Unown Reader", sub: "decoded " + un.length + " of 28 Unown" });
       // 🌀 Secret battle — the Unown's Judgment (Arceus & the creation trio).
       if (this.secretWins(attId).indexOf("unown") >= 0) out.push({ emoji: "🌀", title: "The Original One", sub: "answered the Unown's Judgment — Arceus & the creation trio" });
+      // ✨ Mega-Dex — mega forms used in battle, and the Mega Judgment.
+      const md = this.megaDexCaught(attId), mt = this.megaDexTotal();
+      if (mt > 0 && md.length >= mt) out.push({ emoji: "✨", title: "Mega Master", sub: "Mega-Evolved every form in battle" });
+      else if (md.length >= 1) out.push({ emoji: "💠", title: "Mega Evolver", sub: "Mega-Evolved " + md.length + " form" + (md.length > 1 ? "s" : "") + " in battle" });
+      if (this.secretWins(attId).indexOf("mega") >= 0) out.push({ emoji: "🌈", title: "Beyond Evolution", sub: "beat the Mega Judgment — Rayquaza, the primals, Zygarde & Floette" });
       return out;
     },
     // Flat roll-up of every trainer's honors, for the ceremony credits.
@@ -1157,6 +1177,13 @@
       Object.keys(psc).forEach((tid) => {
         const arr = nsc[tid] = nsc[tid] || [];
         (psc[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+      });
+      // ✨ Mega-Dex: append-only mega form ids Mega-Evolved per trainer.
+      const pmd = (prev && prev.megadex) || {};
+      const nmd = next.megadex = next.megadex || {};
+      Object.keys(pmd).forEach((tid) => {
+        const arr = nmd[tid] = nmd[tid] || [];
+        (pmd[tid] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
       });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};

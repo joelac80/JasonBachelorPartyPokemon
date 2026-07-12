@@ -13,6 +13,7 @@
     .add("drinks", V.drinks)
     .add("tracker", V.tracker)
     .add("unown", V.unown)
+    .add("megadex", V.megadex)
     .add("trade", V.trade)
     .add("gyms", V.gyms)
     .add("league", V.league)

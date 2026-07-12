@@ -349,7 +349,8 @@
       // seeing the others; then all orders resolve fastest-first (real-Pokémon
       // style). phase: "select" (picking) | "resolve" (playing out) | "replace"
       // (sending out fainted slots at end of turn).
-      phase: "select", orders: {}, sel: [], res: [], repl: [], turnDone: null };
+      phase: "select", orders: {}, sel: [], res: [], repl: [], turnDone: null,
+      megaSide: { a: false, b: false } };   // ✨ one Mega Evolution per side per battle
     if (!S.first) {
       // The faster lead goes first (real Gen-2 base Speed). Deterministic
       // tie-break (challenger first) so every phone — players, partners, and
@@ -374,8 +375,9 @@
     };
     function monImg(s, u) {
       const m = mon(u);
-      const back = s === myView ? backSprite(m.id, m.shiny) : "";
-      const src = back || frontSprite(m.id, m.shiny);
+      const sid = m.megaId || m.id;                 // ✨ mega forms swap the sprite
+      const back = s === myView ? backSprite(sid, m.shiny) : "";
+      const src = back || frontSprite(sid, m.shiny);
       return src
         ? el("img", { class: "battle-sprite-img", src: src, alt: "",
             style: s === myView && !back ? { transform: "scaleX(-1)" } : {} })
@@ -1549,6 +1551,29 @@
       doMove(u, ptr, 99, (livingEnemies(ptr.side)[0] || { i: 0 }).i);   // nothing → Struggle
     }
 
+    // ✨ Mega Evolution — a free pre-move transform (doesn't cost the turn).
+    // Swaps the active mon's stats/types/sprite/name to its mega form, once per
+    // side per battle, and records the form to the trainer's Mega-Dex.
+    function megaEvolve(u, ptr, megaId) {
+      const m = mon(u);
+      const meg = statsFor(megaId);
+      const ratio = m.hpMax ? (m.hp / m.hpMax) : 1;
+      const was = m.name;
+      m.megaId = megaId;
+      m.hpMax = meg.hpMax;
+      m.hp = Math.max(1, Math.round(meg.hpMax * ratio));
+      m.x = meg.x; m.types = meg.types; m.spe = meg.spe;
+      m.atk = meg.atk * (1 + Math.min(0.2, 0.02 * (m.kos0 || 0)));
+      m.name = meg.name;
+      S.megaSide[ptr.side] = true;
+      try { if (u.attId && window.Store && Store.recordMega) Store.recordMega(u.attId, megaId); } catch (_) {}
+      renderSprites(ptr.side); renderHp(ptr.side);
+      if (u._monEl) { u._monEl.classList.add("mega-go"); setTimeout(() => { if (u._monEl) u._monEl.classList.remove("mega-go"); }, 1000); }
+      sfx("fanfare");
+      msg.textContent = "✨ " + was + " Mega Evolved into " + meg.name + "!";
+      renderMenu();
+    }
+
     function renderMenu() {
       if (S.done) return;
       menu.innerHTML = "";
@@ -1617,6 +1642,15 @@
       const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)));
       if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99)));
       menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
+      // ✨ Mega Evolve — offered when the active mon has a mega form, this side
+      // hasn't used its Mega yet, and it's a local (vs-AI) battle.
+      const megaIds = (window.MEGA_BY_BASE && MEGA_BY_BASE[m.id]) || null;
+      if (mode === "local" && !u.ai && megaIds && megaIds.length && !m.megaId && !S.megaSide[ptr.side]) {
+        const F = window.MEGA_FORMS || {};
+        menu.appendChild(el("div", { class: "battle-menu-row mega-row" },
+          megaIds.map((mid) => el("button", { class: "btn mega-btn", onClick: () => megaEvolve(u, ptr, mid) },
+            "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : "")))));
+      }
       const row = [
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
           confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP. (Takes this turn.)",
