@@ -1874,3 +1874,14 @@ html, body { overscroll-behavior-y: contain; }
 .rg-tab-gen { font-family: var(--pixel, monospace); font-size: 8px; opacity: .8; white-space: nowrap; }
 .rg-region-head { margin-top: 4px; }
 .rg-sub { font-family: var(--pixel, monospace); font-size: 13px; color: var(--pokered); margin: 14px 0 4px; }
+
+/* ⚔ Region League Gauntlet — the gate-style entry banner */
+.league-gate-banner { background: linear-gradient(135deg, #2a1230, #4a1c2c); border: 2.5px solid #ee1515;
+  border-radius: 14px; padding: 12px 14px; margin: 4px 0 10px; box-shadow: 0 0 16px rgba(238,21,21,.3); color: #fff;
+  display: flex; flex-direction: column; gap: 6px; }
+.league-gate-banner.locked { border-color: #6a5a55; background: linear-gradient(135deg, #262230, #322a2c); box-shadow: none; opacity: .92; }
+.lgb-head { font-family: var(--pixel, monospace); font-size: 15px; font-weight: 900; color: #ffcb05; letter-spacing: .5px; }
+.lgb-sub { font-size: 12px; color: #e8dce0; line-height: 1.4; }
+.lgb-cleared { font-family: var(--pixel, monospace); font-size: 11px; color: #ffe27a; }
+.lgb-lock { font-size: 12px; color: #d7b7b7; background: rgba(0,0,0,.25); border-radius: 8px; padding: 6px 10px; }
+.league-gate-banner .spin-btn { align-self: flex-start; }

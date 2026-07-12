@@ -227,82 +227,150 @@
     });
   }
 
-  // 🏰 Hall of Fame Gauntlet — fight EVERY enshrined team back-to-back. Two
-  // modes: pick a fresh six each battle, or bring one squad for the whole run
-  // (fully healed between rounds).
-  function runGauntlet(attId, mode, teamList, label) {
-    const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
-    const total = teams.length;
+  const nowTs = () => (Date.now ? Date.now() : 0);
+
+  // ---- Gauntlet engine: fight a list of opponents back-to-back. Two modes:
+  // pick a fresh six each battle, or bring one squad for the whole run (healed
+  // between). opponents: [{ name, monIds, boost }]. opts: { title, modalTitle,
+  // wonTitle, wonMsg, onWinAll(mode, lastParty) }.
+  function gauntletRun(attId, mode, opponents, opts) {
+    opts = opts || {};
+    const total = opponents.length;
     if (!total) return;
     const size = 6;
-    if (Duel.poolFor(attId).length < size) { alert("The Gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
-    const regKey = label || "All";
-    let fixed = null;
+    if (Duel.poolFor(attId).length < size) { alert("This gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
+    let fixed = null, lastParty = null;
 
     const finishRun = (cleared, won) => {
-      if (won) {
-        try { Store.update((s) => {
-          Store.chron(s, "🏰", ((Store.attendee(attId) || {}).name || attId) +
-            " ran the " + (label ? label.toUpperCase() + " " : "") + "HALL OF FAME GAUNTLET and toppled all " + total + " enshrined teams" +
-            (mode === "fixed" ? " — with ONE squad, no less!" : ", swapping squads each round!"));
-          // 🏰 record the clear (keep the harder mode: fixed one-squad beats fresh swap)
-          s.gauntlets = s.gauntlets || {};
-          const g = s.gauntlets[attId] = s.gauntlets[attId] || {};
-          if (g[regKey] !== "fixed") g[regKey] = mode;
-        }); } catch (_) {}
-        sfx("fanfare");
-      }
+      if (won) { try { if (opts.onWinAll) opts.onWinAll(mode, lastParty); } catch (_) {} sfx("fanfare"); }
       let ctrl;
       const body = el("div", { class: "league-intro-inner", style: { textAlign: "center", padding: "8px", gap: "10px" } }, [
         el("div", { style: { fontSize: "52px" } }, won ? "🏆" : "🛡"),
-        el("div", { class: "trn-crown-rank" }, won ? "GAUNTLET CLEARED!" : "GAUNTLET OVER"),
-        el("div", { class: "trn-crown-name" }, won
-          ? "Defeated all " + total + " Hall of Fame team" + (total > 1 ? "s" : "") + "!"
-          : "You fell after " + cleared + " / " + total + ". Run it back?"),
+        el("div", { class: "trn-crown-rank" }, won ? (opts.wonTitle || "GAUNTLET CLEARED!") : "GAUNTLET OVER"),
+        el("div", { class: "trn-crown-name" }, won ? (opts.wonMsg || ("Defeated all " + total + "!")) : "You fell after " + cleared + " / " + total + ". Run it back?"),
         el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); Router.render(); } }, "Done"),
       ]);
-      ctrl = Modal.open("🏰 Hall of Fame Gauntlet", body, null, { noFooter: true });
+      ctrl = Modal.open(opts.modalTitle || "🏰 Gauntlet", body, null, { noFooter: true });
     };
 
     const runAt = (i) => {
       if (i >= total) { finishRun(total, true); return; }
-      const h = teams[i];
-      const champ = (Store.attendee(h.attId) || {}).name || h.attId;
+      const o = opponents[i];
       const go = (party) => {
-        Duel.start({ mode: "local", title: "Hall of Fame Gauntlet (" + (i + 1) + "/" + total + ")",
+        lastParty = party;
+        Duel.start({ mode: "local", title: (opts.title || "Gauntlet") + " (" + (i + 1) + "/" + total + ")",
           gauntlet: true,
           a: { units: [{ attId: attId, monIds: party }] },
-          b: { units: [{ npc: "HOF " + champ, ai: true, monIds: (h.party || []).slice() }] },
+          b: { units: [{ npc: o.name, ai: true, monIds: (o.monIds || []).slice(), boost: o.boost || undefined }] },
           onResult: (winSide) => { if (winSide === "a") runAt(i + 1); else finishRun(i, false); } });
       };
       if (mode === "fixed") {
         if (fixed) { go(fixed); return; }
-        Duel.pickParty({ attId: attId, min: size, max: size, title: "Your ONE Gauntlet squad — pick 6",
-          hint: "🛡 ONE team for the entire gauntlet (fully healed between battles). No swaps — choose a versatile six! First up: " + champ + "'s team.",
+        Duel.pickParty({ attId: attId, min: size, max: size, title: "Your ONE gauntlet squad — pick 6",
+          hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile six! First up: " + o.name + ".",
           onDone: (ids) => { fixed = ids; go(ids); } });
       } else {
-        Duel.pickParty({ attId: attId, min: size, max: size, title: "Round " + (i + 1) + "/" + total + " — vs " + champ + "'s team",
-          hint: "🔄 Fresh 6 for THIS battle — counter their lineup. Win to advance to the next enshrined team.",
+        Duel.pickParty({ attId: attId, min: size, max: size, title: "Round " + (i + 1) + "/" + total + " — vs " + o.name,
+          hint: "🔄 Fresh 6 for THIS battle. Win to advance to the next.",
           onDone: go });
       }
     };
     runAt(0);
   }
 
+  function gauntletModePicker(attId, note, onPick) {
+    let ctrl;
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, note),
+      el("div", { class: "gauntlet-modes" }, [
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); onPick("fresh"); } }, "🔄 Swap squads — pick a fresh 6 every battle"),
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); onPick("fixed"); } }, "🏆 One squad — same 6 all the way (harder!)"),
+      ]),
+    ]);
+    ctrl = Modal.open("⚔ Gauntlet — choose your style", body, null, { noFooter: true });
+  }
+
+  // 🏰 Hall of Fame Gauntlet — every enshrined team back-to-back.
+  function runGauntlet(attId, mode, teamList, label) {
+    const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
+    if (!teams.length) return;
+    const regKey = label || "All";
+    const opponents = teams.map((h) => ({ name: "HOF " + ((Store.attendee(h.attId) || {}).name || h.attId), monIds: h.party || [] }));
+    gauntletRun(attId, mode, opponents, {
+      title: "Hall of Fame Gauntlet", modalTitle: "🏰 Hall of Fame Gauntlet",
+      wonTitle: "GAUNTLET CLEARED!", wonMsg: "Defeated all " + teams.length + " Hall of Fame team" + (teams.length > 1 ? "s" : "") + "!",
+      onWinAll: (m) => { try { Store.update((s) => {
+        Store.chron(s, "🏰", ((Store.attendee(attId) || {}).name || attId) +
+          " ran the " + (label ? label.toUpperCase() + " " : "") + "HALL OF FAME GAUNTLET and toppled all " + teams.length + " enshrined teams" +
+          (m === "fixed" ? " — with ONE squad, no less!" : ", swapping squads each round!"));
+        s.gauntlets = s.gauntlets || {}; const g = s.gauntlets[attId] = s.gauntlets[attId] || {};
+        if (g[regKey] !== "fixed") g[regKey] = m;
+      }); } catch (_) {} },
+    });
+  }
+
   function gauntletChoice(attId, teamList, label) {
     const teams = (teamList && teamList.slice()) || (Store.state.hof || []).slice();
     const n = teams.length;
-    let ctrl;
-    const body = el("div", { class: "modal-form" }, [
-      el("p", { class: "hint" }, "Face all " + n + " enshrined team" + (n > 1 ? "s" : "") + " back-to-back, in order. Lose once and the run ends. One-squad is the tougher badge. Pick your style:"),
-      el("div", { class: "gauntlet-modes" }, [
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fresh", teams, label); } },
-          "🔄 Swap squads — pick a fresh 6 every battle"),
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); runGauntlet(attId, "fixed", teams, label); } },
-          "🏆 One squad — same 6 all the way (harder!)"),
-      ]),
+    gauntletModePicker(attId,
+      "Face all " + n + " enshrined team" + (n > 1 ? "s" : "") + " back-to-back, in order. Lose once and the run ends. One-squad is the tougher badge.",
+      (mode) => runGauntlet(attId, mode, teams, label));
+  }
+
+  // ⚔ Region League Gauntlet — the Elite Four, then the Champion, back-to-back.
+  function leagueStagesForRun(stageIdxs) {
+    return (stageIdxs || []).filter((i) => LEAGUE[i] && LEAGUE[i].key !== "red");
+  }
+  function recordLeagueRun(attId, runIdxs, mode, label, championParty) {
+    try { Store.update((s) => {
+      s.league = s.league || {};
+      const w = s.league[attId] = s.league[attId] || [];
+      const teamId = (Store.attendee(attId) || {}).team || "";
+      const stages = runIdxs.map((i) => LEAGUE[i]);
+      const champStage = stages[stages.length - 1];
+      let champFresh = false;
+      stages.forEach((st) => {
+        if (w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); if (st === champStage) champFresh = true; }
+      });
+      if (champFresh && champStage && championParty && championParty.length) {
+        s.hof = s.hof || [];
+        s.hof.push({ attId: attId, ts: nowTs(), party: championParty.slice(), key: champStage.key, champ: champStage.name, rank: champStage.rank, region: champStage.region || "", viaGauntlet: mode });
+      }
+      s.leagueRuns = s.leagueRuns || {}; const g = s.leagueRuns[attId] = s.leagueRuns[attId] || {};
+      const key = label || "League";
+      if (g[key] !== "fixed") g[key] = mode;
+      Store.chron(s, "⚔", ((Store.attendee(attId) || {}).name || attId) + " conquered the entire " + (label || "League") +
+        " Elite Four & Champion in ONE gauntlet run" + (mode === "fixed" ? " — with a single squad!" : "!"));
+    }); } catch (_) {}
+  }
+  function leagueGauntlet(attId, stageIdxs, label) {
+    const runIdxs = leagueStagesForRun(stageIdxs);
+    if (!runIdxs.length) return;
+    const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost }; });
+    gauntletModePicker(attId,
+      "Face the " + (label || "League") + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",
+      (mode) => gauntletRun(attId, mode, opponents, {
+        title: (label || "League") + " Gauntlet", modalTitle: "⚔ " + (label || "League") + " Gauntlet",
+        wonTitle: "LEAGUE CONQUERED!", wonMsg: "You ran the whole " + (label || "League") + " — all " + opponents.length + " — in one go!",
+        onWinAll: (m, lastParty) => recordLeagueRun(attId, runIdxs, m, label, lastParty),
+      }));
+  }
+
+  // The gate-style entry banner for a region's League Gauntlet.
+  function leagueGate(attId, stageIdxs, label) {
+    const runIdxs = leagueStagesForRun(stageIdxs);
+    if (!runIdxs.length) return null;
+    const why = leagueBlocked(attId, runIdxs[0]);
+    const n = runIdxs.length;
+    const run = ((Store.state.leagueRuns || {})[attId] || {})[label || "League"];
+    return el("div", { class: "league-gate-banner" + (why ? " locked" : "") }, [
+      el("div", { class: "lgb-head" }, "⚔ The " + (label || "League") + " Gauntlet"),
+      el("div", { class: "lgb-sub" }, "Face all " + n + " — the Elite Four, then the Champion — back-to-back, healed between. One run, no retreat."),
+      run ? el("div", { class: "lgb-cleared" }, run === "fixed" ? "🏆 Cleared with ONE squad!" : "🏰 Cleared — swap squads") : null,
+      why ? el("div", { class: "lgb-lock" }, "🔒 " + why)
+          : el("button", { class: "btn spin-btn", onClick: () => leagueGauntlet(attId, stageIdxs, label) },
+              (run ? "🔁 Run the Gauntlet again" : "⚔ Enter the Gauntlet") + " (" + n + " in a row)"),
     ]);
-    ctrl = Modal.open("🏰 Hall of Fame Gauntlet", body, null, { noFooter: true });
   }
 
   // 🏛 Battle of Fame — a champion's enshrined team steps down from its
@@ -536,5 +604,6 @@
   window.PokeLeague = {
     stageNode: stageNode, gateCard: gateCard, renderHOF: renderHOF,
     stageIdxsForRegions: stageIdxsForRegions, revealed: revealed,
+    leagueGate: leagueGate,
   };
 })();

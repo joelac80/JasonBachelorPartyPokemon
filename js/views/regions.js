@@ -87,6 +87,8 @@
       const stageIdxs = PL ? PL.stageIdxsForRegions(t.lg || []) : [];
       if (stageIdxs.length) {
         host.appendChild(el("h3", { class: "rg-sub" }, "👑 Elite Four & Champion"));
+        // ⚔ Gate-style entry to run the whole Elite Four → Champion as one gauntlet.
+        if (PL.leagueGate) { const gate = PL.leagueGate(attId, stageIdxs, t.name); if (gate) host.appendChild(gate); }
         const journey = el("div", { class: "league-journey" });
         if (t.gate) journey.appendChild(PL.gateCard(attId));
         stageIdxs.forEach(function (i) { journey.appendChild(PL.stageNode(i, attId)); });

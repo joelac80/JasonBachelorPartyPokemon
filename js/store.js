@@ -1088,12 +1088,19 @@
       Object.keys(ptw).forEach((tid) => { ntw[tid] = Math.max(ntw[tid] || 0, ptw[tid] || 0); });
       // 🏰 Gauntlet clears: per trainer per region — keep the HARDER mode
       // (fixed / one-squad beats fresh / swap-squads).
+      const harder = (a, b) => (a === "fixed" || b === "fixed") ? "fixed" : (a || b);
       const pgn = (prev && prev.gauntlets) || {};
       const ngn = next.gauntlets = next.gauntlets || {};
-      const harder = (a, b) => (a === "fixed" || b === "fixed") ? "fixed" : (a || b);
       Object.keys(pgn).forEach((tid) => {
         const dst = ngn[tid] = ngn[tid] || {};
         Object.keys(pgn[tid] || {}).forEach((reg) => { dst[reg] = harder(dst[reg], pgn[tid][reg]); });
+      });
+      // ⚔ League gauntlet runs (Elite Four → Champion in one go): same rule.
+      const plr = (prev && prev.leagueRuns) || {};
+      const nlr = next.leagueRuns = next.leagueRuns || {};
+      Object.keys(plr).forEach((tid) => {
+        const dst = nlr[tid] = nlr[tid] || {};
+        Object.keys(plr[tid] || {}).forEach((reg) => { dst[reg] = harder(dst[reg], plr[tid][reg]); });
       });
       // ❓ Jeopardy board is versioned content (like admin config) — keep
       // whichever side has the newer deck so a phone on an older version can't
