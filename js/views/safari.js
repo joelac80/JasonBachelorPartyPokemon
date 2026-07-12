@@ -184,7 +184,15 @@
   // 🧭 The Gen Ladder: each trainer's wild pool runs up to THEIR unlocked
   // generation (start Gen 1; battles in The Journey open the rest).
   function maxIdFor(tid) { return (Store.genMaxIdFor && Store.genMaxIdFor(tid)) || GEN14_MAX; }
-  function poolIds(tid) { const cap = maxIdFor(tid); return IDS.filter((id) => id <= cap); }
+  function poolIds(tid) {
+    const cap = maxIdFor(tid);
+    const pool = IDS.filter((id) => id <= cap);
+    // 🏔 Hisui: once this trainer beats CYNTHIA, the temporal rift opens and
+    // the ancient forms (ids 10229+, outside the National span) roam their
+    // grass too — normal AND shiny, like any other species.
+    if (window.HISUI_WILD && Store.hisuiUnlocked && Store.hisuiUnlocked(tid)) HISUI_WILD.forEach((id) => pool.push(id));
+    return pool;
+  }
 
   // The encounter table is 502 slots — a normal AND a shiny of every species —
   // minus the (species, variant) pairs THIS trainer already owns. So once you
@@ -922,11 +930,14 @@
       // the next generation. Battling (not dex completion) drives the climb.
       const cap = (Store.genCapFor && Store.genCapFor(tid)) || 1;
       const goal = Store.nextGenGoal && Store.nextGenGoal(tid);
+      const hisui = !!(window.HISUI_WILD && Store.hisuiUnlocked && Store.hisuiUnlocked(tid));
+      const baseCount = pool.length - (hisui ? HISUI_WILD.length : 0);
       dexHost.appendChild(el("div", { class: "dex-lock" + (goal ? "" : " open") }, [
         el("div", { class: "dex-lock-title" }, (goal ? "🧭" : "🎉") + " Gen " + cap + " of 9 unlocked" + (goal ? "" : " — the whole world!")),
-        el("div", { class: "dex-lock-sub" }, goal
-          ? "#1–#" + pool.length + " roam the wild for " + attendeeName(tid) + ". To unlock Gen " + goal.gen + ": " + goal.text + "."
-          : "All 1025 Pokémon roam the wild for " + attendeeName(tid) + " — every region conquered."),
+        el("div", { class: "dex-lock-sub" }, (goal
+          ? "#1–#" + baseCount + " roam the wild for " + attendeeName(tid) + ". To unlock Gen " + goal.gen + ": " + goal.text + "."
+          : "All 1025 Pokémon roam the wild for " + attendeeName(tid) + " — every region conquered.")
+          + (hisui ? " 🏔 And through the rift, " + HISUI_WILD.length + " HISUIAN forms of old roam too." : "")),
         goal ? el("div", { class: "dex-lock-bar" }, [el("div", { class: "dex-lock-fill", style: { width: Math.round(cap / 9 * 100) + "%" } })]) : null,
       ]));
       const grid = el("div", { class: "safari-dex" });

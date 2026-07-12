@@ -1078,6 +1078,11 @@
       return (this.state.nuzlockeHof || []).slice().sort((a, b) => (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
 
+    // 🏔 HISUI — beating CYNTHIA (the summit of Gen 4) tears the temporal
+    // rift: Arceus speaks, and the ancient region's forms roam this trainer's
+    // Safari (plus the Hisui specials on the Sinnoh tab).
+    hisuiUnlocked(attId) { return this.leagueWins(attId).indexOf("cynthia") >= 0; },
+
     // 🗼 Battle Tower — 4v4 double-battle streaks vs randomized trainers.
     // Per-trainer {streak, best}; a loss resets streak, best is forever.
     towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0 }; },
@@ -1156,6 +1161,8 @@
         dlc: { emoji: "🎭", title: "Mask & Disk", sub: "unmasked Kitakami and cracked the Indigo Disk" },
         hoopa: { emoji: "🌀", title: "Ageless", sub: "won the Clash of Ages — Hoopa Unbound's every summons fell" },
         volo: { emoji: "⚱️", title: "Ginkgo's Reckoning", sub: "saw through VOLO's smile — all eight, Giratina and Giratina again" },
+        nobles: { emoji: "🏔", title: "Warden of Old", sub: "quelled all five Frenzied Nobles of ancient Hisui" },
+        almighty: { emoji: "⏳", title: "Chosen of Arceus", sub: "outlasted Origin Dialga, Origin Palkia — and the Almighty itself" },
       };
       const sw = this.secretWins(attId);
       Object.keys(SPECIAL_HONORS).forEach((k) => { if (sw.indexOf(k) >= 0) out.push(SPECIAL_HONORS[k]); });

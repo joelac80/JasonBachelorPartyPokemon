@@ -492,6 +492,45 @@
     if (Sync.onStateApplied) Sync.onStateApplied(checkGenClimb);
     setTimeout(checkGenClimb, 1800);
 
+    // 🏔 THE TEMPORAL RIFT — once per trainer, the first time this device sees
+    // their CYNTHIA win: the Legends-Arceus opening. The sky tears, time runs
+    // backward, and the voice of Arceus welcomes them to HISUI (the ancient
+    // forms join their Safari + the Hisui specials open on the Sinnoh tab).
+    const HISUI_SEEN_KEY = "jasonBachHub.hisuiSeen";
+    function checkHisuiRift() {
+      try {
+        const me = Sync.getMe && Sync.getMe();
+        if (!me || !Store.hisuiUnlocked || !Store.hisuiUnlocked(me)) return;
+        const seen = (localStorage.getItem(HISUI_SEEN_KEY) || "").split(",").filter(Boolean);
+        if (seen.indexOf(me) >= 0) return;
+        seen.push(me);
+        localStorage.setItem(HISUI_SEEN_KEY, seen.join(","));
+        if (document.querySelector(".hisui-rift")) return;
+        const arc = Store.sprite(493);
+        const lay = U.el("div", { class: "hisui-rift" }, [
+          U.el("div", { class: "hisui-rift-inner" }, [
+            arc ? U.el("img", { class: "hisui-rift-arceus", src: arc, alt: "Arceus" }) : U.el("div", { class: "hisui-rift-mt" }, "🏔"),
+            U.el("div", { class: "hisui-rift-flair" }, "⏳ THE SKY TEARS OPEN"),
+            U.el("div", { class: "hisui-rift-voice" }, "“ALL POKÉMON EXIST TO HELP PEOPLE. YOU HAVE PROVEN YOURSELF AT THE SUMMIT OF SINNOH…”"),
+            U.el("div", { class: "hisui-rift-voice" }, "“I AM ARCEUS. SEEK OUT ALL POKÉMON. I WILL BE WAITING — IN THE TIME BEFORE TIME.”"),
+            U.el("div", { class: "hisui-rift-name" }, "WELCOME TO HISUI"),
+            U.el("div", { class: "hisui-rift-sub" }, "🏔 " + ((window.HISUI_WILD || []).length || 16) + " ancient Hisuian forms now roam YOUR Safari — and the Hisui trials open on the Sinnoh tab: quell the FRENZIED NOBLES, then face the origins of time and space."),
+            U.el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+              U.el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); location.hash = "#/safari"; } }, "🏔 Step through the rift"),
+              U.el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Wake up later"),
+            ]),
+          ]),
+        ]);
+        document.body.appendChild(lay);
+        if (window.SFX && SFX.fanfare) SFX.fanfare();
+        requestAnimationFrame(() => lay.classList.add("go"));
+        notify("🏔 HISUI UNLOCKED!", "Arceus has spoken — the ancient forms roam your Safari.");
+      } catch (_) {}
+    }
+    Store.subscribe(checkHisuiRift);
+    if (Sync.onStateApplied) Sync.onStateApplied(checkHisuiRift);
+    setTimeout(checkHisuiRift, 2600);
+
     // 📬 topbar inbox badge: shows (with a count) while offers addressed to
     // ME are waiting — tap it to land on the Trading Post.
     function updateInboxBadge() {

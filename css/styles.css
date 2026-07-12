@@ -2016,3 +2016,21 @@ html, body { overscroll-behavior-y: contain; }
   background: linear-gradient(135deg, #2a2312, #3a2c14); color: #fff; }
 .tower-card.tycoon .nuz-lab-head { color: #ffcb05; }
 .tower-card.tycoon .hint { color: #e8dfc0; }
+
+/* 🏔 The Temporal Rift — Hisui unlock cinematic */
+.hisui-rift { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+  padding: 18px; background: radial-gradient(ellipse at 50% 18%, rgba(120,80,200,.55), rgba(4,4,14,.97) 62%);
+  opacity: 0; transition: opacity .9s ease; }
+.hisui-rift.go { opacity: 1; }
+.hisui-rift-inner { max-width: 420px; text-align: center; display: flex; flex-direction: column; gap: 12px;
+  align-items: center; color: #efe9ff; }
+.hisui-rift-arceus { width: 132px; height: 132px; image-rendering: pixelated;
+  filter: drop-shadow(0 0 26px rgba(255,215,120,.85)); animation: hisui-float 3.2s ease-in-out infinite; }
+@keyframes hisui-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.hisui-rift-mt { font-size: 64px; }
+.hisui-rift-flair { font-family: var(--pixel, monospace); font-size: 12px; letter-spacing: 2px; color: #b9a5f2; }
+.hisui-rift-voice { font-family: var(--pixel, monospace); font-size: 13px; line-height: 1.7; color: #ffe9b3;
+  text-shadow: 0 0 12px rgba(255,215,120,.5); }
+.hisui-rift-name { font-family: var(--pixel, monospace); font-size: 22px; font-weight: 900; color: #fff;
+  letter-spacing: 3px; text-shadow: 0 0 18px rgba(160,120,255,.8); margin-top: 4px; }
+.hisui-rift-sub { font-size: 13px; color: #cfc4ea; line-height: 1.5; }

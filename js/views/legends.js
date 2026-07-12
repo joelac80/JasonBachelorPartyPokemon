@@ -104,6 +104,29 @@
       winChron: "saw through VOLO's smile and beat ALL EIGHT — Garchomp, then Giratina… and Giratina AGAIN!",
       loseChron: "VOLO tucked his relics away, smiling — 'another time, perhaps'",
       lead: "⚱️ Spiritomb, Roserade, Togekiss, Hisuian Arcanine, Lucario… and a Garchomp to rival Cynthia's. Surely that's everything. Surely." },
+    { key: "nobles", tab: "Sinnoh", name: "THE FRENZIED NOBLES", flair: "HISUI SPECIAL · Lords & Ladies of Old",
+      sub: "Hisui Special · Through the rift — the five frenzied Nobles of ancient Sinnoh · 5v5",
+      icon: "🏔", face: 900, boost: 1.46, pts: 30, needs: "cynthia", champ: "CYNTHIA",
+      team: [900, 10237, 10230, 10232, 10243],
+      quote: "Lightning splits the old sky and the wardens cry out — the Nobles are FRENZIED, golden and blind with it. Kleavor rages in the fieldlands. Calm them the only way this era knows how.",
+      winChron: "quelled all five FRENZIED NOBLES of Hisui — Kleavor's rage broke first, Avalugg's last!",
+      loseChron: "the frenzied Nobles of Hisui raged on",
+      lead: "🏔 Lord Kleavor, Lady Lilligant, Lord Arcanine, Lord Electrode and Lord Avalugg — all five, golden-eyed and frenzied." },
+    { key: "almighty", tab: "Sinnoh", name: "THE ALMIGHTY SINNOH", flair: "HISUI SPECIAL · Origins of Time & Space",
+      sub: "Hisui Special · The true forms of the creation dragons — and whatever spoke through the rift · 3v3…?",
+      icon: "⏳", face: 10245, boost: 1.55, pts: 38, needs: "cynthia", champ: "CYNTHIA", after: "nobles",
+      // The card admits to the two dragons + one more slot. The one more slot
+      // is the voice from the rift itself.
+      team: [10245, 10246, 493],
+      playerSize: 3, reserve: 1,
+      speak: {
+        2: ["THE DRAGONS OF TIME AND SPACE KNEEL. THE WORLD HOLDS ITS BREATH.",
+            "I AM THE ONE WHO SPOKE THROUGH THE RIFT. I AM ARCEUS — AND I AM NOT DONE WITH YOU."],
+      },
+      quote: "Atop the Temple of Sinnoh the sky splits twice — once for TIME, once for SPACE. The mountain folk call what stands behind them 'almighty Sinnoh'. You have heard its voice already. Now answer it.",
+      winChron: "conquered THE ALMIGHTY SINNOH — Origin Dialga, Origin Palkia… and ARCEUS itself answered!",
+      loseChron: "time and space closed over another challenger",
+      lead: "⏳ Origin Dialga bends the hours, Origin Palkia folds the miles. And the third ball on their belt… is not a ball." },
     { key: "myths", tab: "Unova", name: "THE MYTHS OF UNOVA", flair: "UNOVA SPECIAL · Songs & Storms",
       sub: "Unova Special · The storm genies, the colt, the song — and the landlord · 5v5",
       icon: "🎵", face: 645, boost: 1.50, pts: 28, needs: "alder", champ: "ALDER",
@@ -157,12 +180,17 @@
   function specialOpen(sp, attId) {
     if (!attId) return false;
     if (sp.gate === "legends9") return (Store.legendWins(attId) || []).length >= 9;
-    return Store.leagueWins(attId).indexOf(sp.needs) >= 0;
+    if (Store.leagueWins(attId).indexOf(sp.needs) < 0) return false;
+    // Chained specials: `after` names a secret that must fall first
+    // (the Almighty Sinnoh only answers the keeper of the Nobles).
+    if (sp.after && Store.secretWins(attId).indexOf(sp.after) < 0) return false;
+    return true;
   }
   function specialLockText(sp) {
-    return sp.gate === "legends9"
-      ? "Conquer all NINE Legendary Challenges to tear open the rings."
-      : "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
+    if (sp.gate === "legends9") return "Conquer all NINE Legendary Challenges to tear open the rings.";
+    if (sp.after === "nobles") return "Quell THE FRENZIED NOBLES first — the temple only answers their keeper.";
+    if (sp.after) return "Another trial stands before this one.";
+    return "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
   }
 
   function specialIntro(sp, onGo) {
