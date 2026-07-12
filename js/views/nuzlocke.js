@@ -49,9 +49,36 @@
     return pool[pool.length - 1];
   }
 
+  // 📈 The run's LEVEL CAP — climbs with progress and drives two things:
+  // every mon in a run battle DISPLAYS at this level (a fresh run reads
+  // Lv14, not Lv50), and box mons EVOLVE when the cap crosses their real
+  // evolution level. Misty-era cap is 24, per the house rules.
+  function runLevel(run) {
+    const act = run.act === 2 ? 2 : 1;
+    const k = run.badges.filter((i) => i >= KANTO_GYM0).length;
+    const j = run.badges.filter((i) => i < KANTO_GYM0).length;
+    if (act === 1) {
+      if (k < 8) return [14, 24, 28, 32, 36, 40, 44, 48][k];
+      return 50 + run.league.length * 2;               // Elite Four era → 58 past BLUE
+    }
+    if (j < 8) return [58, 60, 62, 64, 66, 68, 70, 72][j];
+    return 78;                                         // Mt. Silver
+  }
+
+  // Which forms this box mon could evolve into at the current cap. Real
+  // level-up lines use their true level (Squirtle→Wartortle at 16); stone /
+  // trade / friendship lines stand in at 32 (data/evo-levels.js).
+  function evoTargetsFor(m, run) {
+    if (!m || m.dead) return [];
+    const rows = (window.EVO_LEVELS || {})[m.id] || [];
+    const cap = runLevel(run);
+    return rows.filter((r) => r.lvl <= cap && DEX[r.to]);
+  }
+
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
   let wildId = 0;
+  let evoOpen = false;
 
   function view(root) {
     const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
@@ -140,12 +167,13 @@
     host.appendChild(el("div", { class: "safari-stats" }, [
       act === 1 ? stat("🏅 " + kBadges + "/8", "Kanto badges") : stat("🏅 " + jBadges + "/8", "Johto badges"),
       act === 1 ? stat("👑 " + run.league.length + "/5", "League stages") : stat("🗻 " + (run.league.indexOf("red") >= 0 ? "1" : "0") + "/1", "Mt. Silver"),
+      stat("📈 Lv " + runLevel(run), "Run level"),
       stat(run.catches, "Caught"),
       stat("🪦 " + run.deaths, "Lost forever"),
     ]));
     host.appendChild(el("div", { class: "safari-card nuz-boxcard" }, [
       el("div", { class: "nuz-lab-head" }, "📦 The box — " + alive.length + " standing"),
-      el("div", { class: "nuz-box-grid" }, run.box.map((m) => boxMon(m))),
+      el("div", { class: "nuz-box-grid" }, run.box.map((m) => boxMon(m, run))),
     ]));
 
     // The grass — wild catches (battle-only).
@@ -228,6 +256,9 @@
       }
     }
 
+    // 🎉 Any evolutions unlocked by the current level cap? Offer the first.
+    setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
+
     // Bail-out (tombstones the run; a new start replaces it).
     host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
       el("button", { class: "btn subtle sm", onClick: () => {
@@ -238,12 +269,68 @@
   }
 
   function stat(v, l) { return el("div", { class: "safari-stat" }, [el("div", { class: "safari-stat-v" }, String(v)), el("div", { class: "safari-stat-l" }, l)]); }
-  function boxMon(m) {
+  function boxMon(m, run) {
+    // A living mon past its evolution level wears a ⬆ button (for the ones
+    // who said "not now" — or missed the prompt).
+    const canEvo = run && !run.over && evoTargetsFor(m, run).length > 0;
     return el("div", { class: "nuz-mon" + (m.dead ? " dead" : ""), title: monName(m.id) + (m.dead ? " — RIP" : "") }, [
       Store.sprite(m.id) ? el("img", { src: Store.sprite(m.id), alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
       m.dead ? el("span", { class: "nuz-rip" }, "🪦") : null,
+      canEvo ? el("button", { class: "nuz-evo-btn", title: "Ready to evolve!", onClick: () => promptEvolve(run, m) }, "⬆") : null,
       el("span", { class: "nuz-mon-n" }, monName(m.id)),
     ]);
+  }
+
+  // 🎉 "What? Squirtle is evolving!" — the run's level cap crossed a real
+  // evolution level. Choice-capable (Eevee), declinable (an Everstone moment:
+  // no more nagging, but the box card keeps its ⬆).
+  function promptEvolve(run, m) {
+    const targets = evoTargetsFor(m, run);
+    if (!targets.length || evoOpen) return;
+    evoOpen = true;
+    let ctrl;
+    const done = () => { evoOpen = false; Router.render(); };
+    const evolveTo = (to) => {
+      ctrl.close();
+      const before = m.id;
+      Store.nuzEvolve(me, before, to);
+      const type = ((DEX[to] || {}).t || [])[0] || "";
+      if (window.EvoFX && EvoFX.play) {
+        EvoFX.play({ beforeSrc: Store.sprite(before), afterSrc: Store.sprite(to),
+          beforeName: monName(before), afterName: monName(to), type: type, onComplete: done });
+        // Safety valve: if the cinematic is interrupted (navigation, etc.)
+        // its onComplete never fires — don't let that wedge future prompts.
+        setTimeout(() => { if (evoOpen) done(); }, 9000);
+      } else done();
+    };
+    const body = el("div", { class: "modal-form" }, [
+      el("div", { class: "evo-prompt-head" }, [
+        Store.sprite(m.id) ? el("img", { class: "evo-prompt-img", src: Store.sprite(m.id), alt: "" }) : null,
+        el("p", { class: "hint" }, "🎉 The run has reached Lv " + runLevel(run) + " — " + monName(m.id) + " is past its evolution level!"),
+      ]),
+      el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, targets.map((t) =>
+        el("button", { class: "btn primary", onClick: () => evolveTo(t.to) }, [
+          Store.sprite(t.to) ? el("img", { class: "evo-opt-img", src: Store.sprite(t.to), alt: "" }) : null,
+          " Evolve into " + monName(t.to) + " (Lv " + t.lvl + ")",
+        ])).concat([
+        el("button", { class: "btn subtle", onClick: () => { ctrl.close(); Store.nuzNoEvo(me, m.id); evoOpen = false; Router.render(); } }, "Not now (hold an Everstone)"),
+      ])),
+    ]);
+    ctrl = Modal.open("🎉 " + monName(m.id) + " is evolving!", body, null, { noFooter: true });
+  }
+  // Auto-offer the first eligible evolution — never over a battle or modal;
+  // if one's up (the gym win is still playing out), keep checking until the
+  // screen clears, then pop the moment.
+  function checkEvolutions(run, tries) {
+    if (evoOpen || !/^#\/nuzlocke/.test(location.hash)) return;
+    if (document.querySelector(".battle, .modal-overlay, .evo-stage")) {
+      if ((tries || 0) < 40) setTimeout(() => checkEvolutions(null, (tries || 0) + 1), 700);
+      return;
+    }
+    const r = Store.nuzRun(me);
+    if (!r || r.over) return;
+    const m = r.box.find((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length);
+    if (m) promptEvolve(r, m);
   }
 
   // ── Battles — all report to the RUN, never the real ladder ────────────────
@@ -261,7 +348,7 @@
     partyThen(run, 3, "⚔ vs wild " + monName(id) + " — up to 3",
       "Weaken it, then 🔴 Throw Ball mid-battle. KO = catch lost. Faints are FOREVER.",
       (ids) => {
-        Duel.start({ mode: "local", broadcast: false,
+        Duel.start({ mode: "local", broadcast: false, level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: "Wild " + monName(id), ai: true, monIds: [id] }] },
           wild: {
@@ -294,7 +381,7 @@
     partyThen(run, 6, "⚔ Nuzlocke gym — Leader " + g.leader,
       "Bring up to 6 of the living. Every faint in there is permanent.",
       (ids) => {
-        Duel.start({ mode: "local",
+        Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
             monIds: g.team.slice(0, Math.min(g.team.length, hc.size)), boost: hc.boost }] },
@@ -339,7 +426,7 @@
     partyThen(run, 6, "❗ Ambush — " + t.title + " " + t.name,
       "No badge, no points — just survival. Every faint is permanent.",
       (ids) => {
-        Duel.start({ mode: "local",
+        Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(0, Math.min(t.team.length, hc.size)), boost: Math.min(1.1, hc.boost) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
@@ -354,7 +441,7 @@
     partyThen(run, 6, "⚔ Nuzlocke league — " + st.rank + " " + st.name,
       "The endgame. Every faint is permanent — and a wipe ends the run.",
       (ids) => {
-        Duel.start({ mode: "local",
+        Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: st.team.slice(), boost: st.boost || 1.1 }] },
           nuzlocke: { onEnd: (fainted, winSide) => {

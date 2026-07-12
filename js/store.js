@@ -1050,6 +1050,26 @@
         }
       });
     },
+    // 🎉 Level-gated evolution: the run's level cap crossed this mon's real
+    // evolution level and the trainer said yes — the box entry BECOMES the
+    // evolved form (death flag and all history ride along).
+    nuzEvolve(attId, fromId, toId) {
+      this._nuzEdit(attId, (r, s) => {
+        const m = r.box.find((x) => x.id === fromId && !x.dead);
+        if (!m || r.over) return;
+        m.id = toId; delete m.noEvo;
+        const n = (id) => ((window.DEX || {})[id] || {}).n || ("#" + id);
+        Store.chron(s, "🎉", this._nuzName(attId) + "'s " + n(fromId) + " evolved into " + n(toId) + " mid-Nuzlocke!");
+      });
+    },
+    // "Not now" (an Everstone moment) — stop the prompt from nagging; the box
+    // card keeps a manual ⬆ Evolve button while it stays eligible.
+    nuzNoEvo(attId, monId) {
+      this._nuzEdit(attId, (r) => {
+        const m = r.box.find((x) => x.id === monId && !x.dead);
+        if (m) m.noEvo = 1;
+      });
+    },
     nuzBadge(attId, idx) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.badges.indexOf(idx) >= 0) return;

@@ -509,7 +509,9 @@
         u._faceEl = faceSrc ? el("img", { class: "duel-boss-face", src: faceSrc, alt: "" }) : null;
         box.appendChild(el("div", { class: "battle-hp-mem" + (u._faceEl ? " with-face" : "") }, [
           u._faceEl,
-          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv50"), u._statusEl]),
+          // opts.level: a battle-wide display level (the Nuzlocke's run cap) \u2014
+          // purely cosmetic, so a fresh run reads Lv14 instead of Lv50.
+          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv" + (opts.level || 50)), u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
             el("div", { class: "battle-hp-track" }, [u._fill]),
@@ -1356,7 +1358,9 @@
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         outro,
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
-      ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => promptEvolutions(() => offerRematch(wLabel, winSide)), 700); if (done) done(); });
+      // Nuzlocke runs level-gate their OWN evolutions (the box, not the real
+      // dex) — the 3-KO prompt here would evolve the wrong Squirtle.
+      ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); });
       if (!record) return;
       // End the room broadcast no matter which branch records below —
       // watchers' screens resolve and the LIVE banner clears.

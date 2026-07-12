@@ -2118,3 +2118,9 @@ html, body { overscroll-behavior-y: contain; }
    the arena and an above-the-head bubble clips off the screen. */
 .battle-sprite.foe .duel-bubble { bottom: auto; top: 100%; }
 .battle-sprite.foe .duel-bubble::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #2a2a30; }
+
+/* 🎉 Nuzlocke evolve button on box cards */
+.nuz-evo-btn { position: absolute; top: 2px; left: 4px; border: 1.5px solid #2a7a2a; background: #eaffea;
+  color: #1c6b1c; border-radius: 8px; font-size: 12px; font-weight: 900; padding: 1px 5px; cursor: pointer;
+  animation: nuz-evo-pulse 1.6s ease-in-out infinite; }
+@keyframes nuz-evo-pulse { 0%,100% { box-shadow: 0 0 0 rgba(60,200,60,0); } 50% { box-shadow: 0 0 8px rgba(60,200,60,.8); } }
