@@ -74,7 +74,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔡 The Unown Dex"),
-      el("p", { class: "page-sub" }, "The living alphabet of Spell of the Unown — 28 glyphs in all. Break ENTEI's spell in the Movie Legends, then read them out of the ruins one by one." ),
+      el("p", { class: "page-sub" }, "The living alphabet of Spell of the Unown — 28 glyphs in all. Break ENTEI's spell in the Movie Legends, then catch the Unown as they roam the Safari Zone." ),
     ]));
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
@@ -102,16 +102,13 @@
       if (sealed) {
         host.appendChild(el("div", { class: "unown-seal" }, [
           el("div", { class: "unown-seal-ico" }, "🔒🔥"),
-          el("div", { class: "unown-seal-txt" }, "The alphabet is sealed. Defeat ENTEI in “Spell of the Unown” (Movie Legends, in The Journey) to break the spell — the Unown will begin to answer."),
+          el("div", { class: "unown-seal-txt" }, "The alphabet is sealed. Defeat ENTEI in “Spell of the Unown” (Movie Legends, in The Journey) to break the spell — then the Unown roam the Safari Zone for you to catch."),
           el("button", { class: "btn primary sm", onClick: () => { location.hash = "#/regions"; } }, "🎬 To the Movie Legends"),
         ]));
       } else if (done < total) {
-        host.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-          el("button", { class: "btn spin-btn", onClick: () => {
-            const g = Store.searchUnown && Store.searchUnown(attId);
-            if (g) { sfx("correct"); paint(); const cell = host.querySelector('.unown-cell[data-g="' + (g === "!" ? "EXCL" : g === "?" ? "QUES" : g) + '"]');
-              if (cell) { cell.classList.add("just"); } }
-          } }, "🔍 Search the ruins — decode a glyph"),
+        host.appendChild(el("div", { class: "unown-roam" }, [
+          el("span", {}, "🔡 The spell is broken — Unown now roam the Safari Zone. Catch the rest out in the wild!"),
+          el("button", { class: "btn primary sm", onClick: () => { location.hash = "#/safari"; } }, "🌿 To the Safari"),
         ]));
         host.appendChild(el("div", { class: "unown-secret locked" }, [
           el("div", { class: "unown-secret-tag" }, "🔒 SECRET BATTLE — " + (total - done) + " glyph" + (total - done > 1 ? "s" : "") + " to go"),

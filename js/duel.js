@@ -272,7 +272,8 @@
     function makeUnit(u) {
       // NPC units (gym leaders) have no attendee — just a name and an AI flag.
       const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
-      const party = (u.monIds || []).filter(Boolean).map((id) => {
+      const party = (u.monIds || []).map((id, i) => {
+        if (!id) return null;
         const m = statsFor(id); m.hp = m.hpMax;
         // ✨ shiny is a trainer's own catch — but an NPC boss can FORCE it via
         // u.shiny (true = all, or an array of ids). Mewtwo uses this to field his
@@ -291,9 +292,12 @@
         // harder than any gym — rank boost keeps the ladder a ladder.
         if (u.boost) { m.atk *= u.boost; m.hpMax = Math.round(m.hpMax * u.boost); m.hp = m.hpMax; }
         m.species = m.name;
-        if (rec0.nick) m.name = rec0.nick;          // nicknames scream in battle text
+        // 🔡 A boss can field lettered Unown (u.glyphs, aligned to monIds) so a
+        // swarm can spell a word — the sprite + name follow the glyph.
+        if (u.glyphs && u.glyphs[i]) { m.glyph = u.glyphs[i]; m.name = "Unown " + m.glyph; m.species = m.name; }
+        else if (rec0.nick) m.name = rec0.nick;     // nicknames scream in battle text
         return m;
-      });
+      }).filter(Boolean);
       if (!party.length) { const m = statsFor(1); m.hp = m.hpMax; party.push(m); }
       // 🍓 one Sitrus Berry per trainer per battle, if their bag has any
       // (snapshotted at setup so every phone agrees).
@@ -376,8 +380,10 @@
     function monImg(s, u) {
       const m = mon(u);
       const sid = m.megaId || m.id;                 // ✨ mega forms swap the sprite
-      const back = s === myView ? backSprite(sid, m.shiny) : "";
-      const src = back || frontSprite(sid, m.shiny);
+      // 🔡 lettered Unown draw from the glyph sprite sheet (front only — bosses).
+      const glyph = m.glyph && window.UNOWN_SPRITES && UNOWN_SPRITES[m.glyph];
+      const back = (s === myView && !glyph) ? backSprite(sid, m.shiny) : "";
+      const src = glyph || back || frontSprite(sid, m.shiny);
       return src
         ? el("img", { class: "battle-sprite-img", src: src, alt: "",
             style: s === myView && !back ? { transform: "scaleX(-1)" } : {} })

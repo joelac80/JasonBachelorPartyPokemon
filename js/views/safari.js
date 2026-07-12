@@ -28,9 +28,28 @@
   // climbing as your normal dex fills). A shiny catch scores DOUBLE points and
   // is marked forever in the dex.
   const SHINY_RATE = 1 / 8;
-  const IDS = Object.keys(DEX).map(Number);
+  // The wild pool is real catchable species only — the National dex (1–1025).
+  // Mega/Primal forms live in DEX too (ids 10000+) but are battle-only, never
+  // wild catches, so they're excluded here.
+  const IDS = Object.keys(DEX).map(Number).filter((id) => id <= 1025);
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
   function now() { try { return Date.now(); } catch (_) { return 0; } }
+
+  // 🔡 Wild Unown — once ENTEI's spell is broken (3rd Movie battle), the living
+  // alphabet roams the Safari. Each glyph gets a sentinel encounter id (90000+)
+  // whose sprite resolves from UNOWN_SPRITES; a catch feeds the Unown Dex
+  // (s.unown), NOT the regular Pokédex, so the two stay separate.
+  const UNOWN_ENC0 = 90000;
+  const UGLYPHS = (window.Store && Store.UNOWN_GLYPHS) || "ABCDEFGHIJKLMNOPQRSTUVWXYZ!?".split("");
+  (function () { var U = window.UNOWN_SPRITES || {}; UGLYPHS.forEach(function (g, i) { if (U[g]) SP[UNOWN_ENC0 + i] = U[g]; }); })();
+  function isUnownEnc(id) { return id >= UNOWN_ENC0; }
+  function unownGlyphOf(id) { return isUnownEnc(id) ? (UGLYPHS[id - UNOWN_ENC0] || "?") : null; }
+  // Glyphs this trainer can still meet in the wild (seal broken + not yet decoded).
+  function unownWildFor(tid) {
+    if (!tid || !(window.Store && Store.unownSealBroken && Store.unownSealBroken(tid))) return [];
+    const have = (Store.unownCaught && Store.unownCaught(tid)) || [];
+    return UGLYPHS.filter((g) => have.indexOf(g) < 0);
+  }
 
   const TIER_COLOR = { Common: "#8a97a8", Evolved: "#5fbf6a", Strong: "#3aa0e6", Elite: "#7a5aa0", Legendary: "#e6b800" };
   const DARES = [
@@ -96,6 +115,10 @@
   // 4%-base celebration (and boosts only work at half strength on them).
   const TIER_BASE = { Common: 0.55, Evolved: 0.40, Strong: 0.25, Elite: 0.15, Legendary: 0.04 };
   function info(id) {
+    if (isUnownEnc(id)) {   // 🔡 a wild Unown glyph — rare, ~mid catch rate, a big score
+      const g = unownGlyphOf(id);
+      return { name: "Unown " + g, x: 180, leg: false, base: 0.22, pts: 8, flee: 0.10, tier: "Unown", color: "#7a5aa0", unown: g };
+    }
     const d = DEX[id] || { x: 60 }; const x = d.x, leg = !!d.leg;
     const tier = leg ? "Legendary" : x >= 200 ? "Elite" : x >= 140 ? "Strong" : x >= 90 ? "Evolved" : "Common";
     const base = TIER_BASE[tier];
@@ -195,7 +218,7 @@
   // catches independently. The old design synced the catcher in shared state,
   // which made three phones fight over one encounter (Suicune kept resetting).
   let myCatcher = "";
-  let current = null, busy = false, status = "", level = 0, helper = "", shiny = false, revealId = null;
+  let current = null, busy = false, status = "", level = 0, helper = "", shiny = false, revealId = null, currentGlyph = null;
   let berryDone = false, rallyDone = false, masterDone = false;   // boost earned
   let dareLocked = false, berryLost = false, rallyLost = false, masterLost = false;  // bailed
   let pending = null, penaltyMsg = "";                  // pending = {kind,prompt,pct}
@@ -458,7 +481,7 @@
     }
 
     function findOne() {
-      current = null; revealId = null; busy = false; status = ""; clearBoosts();
+      current = null; revealId = null; busy = false; status = ""; currentGlyph = null; clearBoosts();
       // 🌩 No buttons, no summons — once in a rare while the sky just breaks:
       // a fresh rustle in the grass can stir a ROAMING LEGENDARY the whole
       // room races for (live rooms only; one storm at a time).
@@ -474,13 +497,20 @@
       }
       // Draw from the 502-slot table (un-owned normals + un-owned shinies).
       const tid = active();
-      const draw = randomEncounter(tid);
-      current = draw.id; shiny = draw.shiny;
+      let draw = randomEncounter(tid);
+      // 🔡 …but every so often the grass shimmers with an Unown instead. They
+      // only roam once the spell is broken, and only glyphs you've yet to read.
+      const wildU = unownWildFor(tid);
+      if (wildU.length && Math.random() < 0.22) {
+        const g = wildU[(Math.random() * wildU.length) | 0];
+        draw = { id: UNOWN_ENC0 + UGLYPHS.indexOf(g), shiny: false };
+      }
+      current = draw.id; shiny = draw.shiny; currentGlyph = unownGlyphOf(current);
       // Pokédex "seen": it appeared in front of the active trainer. Only write
       // (and thus sync) if it's genuinely new — re-walking to an already-seen
-      // mon shouldn't churn the room.
+      // mon shouldn't churn the room. (Unown live in their own dex — skip here.)
       const t0 = tid && ((Store.state.pokedex || {}).trainers || {})[tid];
-      if (tid && !(t0 && t0.seen && t0.seen[current])) Store.update((s) => {
+      if (tid && !currentGlyph && !(t0 && t0.seen && t0.seen[current])) Store.update((s) => {
         const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
         t.seen = t.seen || {}; t.seen[current] = 1;
       });
@@ -544,6 +574,23 @@
         busy = false; renderEncounter(); return;
       }
       if (outcome === "catch") {
+        // 🔡 A wild Unown → the Unown Dex (append-only), NOT the Pokédex, and it
+        // still scores its points for the catcher's team.
+        if (isUnownEnc(id)) {
+          const g = unownGlyphOf(id);
+          if (window.Store && Store.decodeUnown) Store.decodeUnown(tid, g);
+          Store.update((s) => {
+            const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+            t.safariPts = (t.safariPts || 0) + nfo.pts;
+            Store.grantPoints(s, "safari", Store.teamOf(tid), nfo.pts);
+          });
+          sfx("fanfare");
+          const total = (Store.unownCaught && Store.unownCaught(tid) || []).length;
+          revealId = id;
+          status = "🔡 Caught Unown " + g + "! (" + total + "/28 decoded)";
+          busy = false; renderEncounter();
+          return;
+        }
         const isShiny = shiny;
         // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
         // auto-eaten in duels when a mon drops below 30% HP.
