@@ -440,7 +440,10 @@
     function renderSprites(s) {
       const w = sprites[s]; w.innerHTML = "";
       sides[s].units.forEach((u, i) => {
-        const mw = el("div", { class: "battle-mon mon" + i + (unitAlive(u) ? "" : " fainted") }, [monImg(s, u)]);
+        // Fainted styling follows the ACTIVE mon's HP, not unitAlive — a slot
+        // whose active is down but has a bench is "alive", yet its corpse must
+        // NOT pop back up when a sibling's replacement re-renders the side.
+        const mw = el("div", { class: "battle-mon mon" + i + (mon(u).hp > 0 ? "" : " fainted") }, [monImg(s, u)]);
         u._monEl = mw;
         w.appendChild(mw);
       });
@@ -852,10 +855,19 @@
       const dSide = other(o.side);
       let tUnit = o.tUnit, tu = sides[dSide].units[tUnit];
       if (!tu || mon(tu).hp <= 0) {                    // chosen target fainted → re-target
-        const foes = livingEnemies(o.side);
+        // Re-target needs a mon actually STANDING on the field — a slot whose
+        // active fainted this turn still counts as "alive" via its bench, but
+        // there's nothing there to hit until it sends the replacement out.
+        // (This is the spread double-KO case: both foes drop at once, and the
+        // slower attacker's queued move must fizzle, not punch a corpse.)
+        const standing = sides[dSide].units.map((fu, i) => ({ fu: fu, i: i })).filter((x) => mon(x.fu).hp > 0);
         if (!isStatus) {
-          if (!foes.length) { resolveNext(); return; } // no one left to hit → the move fizzles
-          tUnit = foes[0].i; tu = sides[dSide].units[tUnit];
+          if (!standing.length) {                      // no one left on the field
+            menu.innerHTML = "";
+            beats([[m.name + " has no target left…", 900, () => sfx("error")]], resolveNext);
+            return;
+          }
+          tUnit = standing[0].i; tu = sides[dSide].units[tUnit];
         }
       }
       const tm = tu ? mon(tu) : null;
