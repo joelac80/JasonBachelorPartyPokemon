@@ -1,6 +1,7 @@
 /* home.js — landing hub: hero, countdown, fan badges, Oak's tip, nav. */
 (function () {
   const { el } = U;
+  let liveUnsub = null;   // so re-rendering Home doesn't stack live-battle subscribers
 
   function countdownParts(target) {
     const now = new Date();
@@ -151,7 +152,8 @@
     if (window.Sync) {
       const liveHost = el("div", {});
       root.appendChild(liveHost);
-      Sync.onLiveBattle((data) => {
+      if (liveUnsub) { try { liveUnsub(); } catch (_) {} liveUnsub = null; }
+      liveUnsub = Sync.onLiveBattle((data) => {
         liveHost.innerHTML = "";
         if (!data || data.state !== "live") return;
         const btn = el("button", { class: "btn primary sm" }, "👀 Watch");

@@ -36,7 +36,7 @@
   // ---- presence + challenges (live multiplayer) ----
   let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
-  let presenceList = [], roamLast = null;
+  let presenceList = [], roamLast = null, lastLive = null;
   const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [], photoReactSubs = [];
   const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
   let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
@@ -140,6 +140,7 @@
     if (liveUnsub) liveUnsub();
     liveUnsub = liveRef.onSnapshot((d) => {
       const data = d.exists ? d.data() : null;
+      lastLive = data;                          // remembered so new subscribers can catch up
       liveSubs.forEach((f) => { try { f(data); } catch (_) {} });
     }, function () {});
     // Remote duel channel: one doc holding the matchup + an append-only list
@@ -220,7 +221,7 @@
     if (duelUnsub) { duelUnsub(); duelUnsub = null; }
     if (roamUnsub) { roamUnsub(); roamUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; roamLast = null;
+    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; roamLast = null; lastLive = null;
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
 
@@ -394,7 +395,7 @@
       if (!liveRef) return;
       liveRef.set({ state: "done", winner: winner || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
-    onLiveBattle(fn) { liveSubs.push(fn); return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); }; },
+    onLiveBattle(fn) { liveSubs.push(fn); if (lastLive) { try { fn(lastLive); } catch (_) {} } return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); }; },
 
     // ---- remote duels (turn-by-turn across phones) ----
     // The accepter writes the matchup; each phone appends its turn acts.

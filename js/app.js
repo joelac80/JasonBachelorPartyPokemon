@@ -587,6 +587,10 @@
     // resolve when the referee reports the winner.
     const handledLive = {};
     let specHandle = null, latestLive = null;
+    // Only ONE "watch this battle" popup at a time — a new battle (or the end of
+    // the current one) dismisses any offer still on screen so they never stack.
+    let liveOfferCtrl = null, liveOfferId = "";
+    function closeLiveOffer() { if (liveOfferCtrl) { try { liveOfferCtrl.close(); } catch (_) {} liveOfferCtrl = null; liveOfferId = ""; } }
     function openSpectator(data) {
       if (data && data.mode === "duel-remote") { openDuelWatch(); return; }   // turn-by-turn watch
       if (!window.Battle || !Battle.spectate || specHandle || !data) return;
@@ -625,22 +629,24 @@
           notify("⚔ Battle starting!", data.aName + " vs " + data.bName +
             (data.stakes ? " · " + data.stakes : data.event ? " · " + data.event : ""));
           if (window.SFX && SFX.blip) SFX.blip();
-          let ctrl;
+          closeLiveOffer();                              // a fresh battle replaces any stale offer
           const body = el("div", { class: "chal-modal" }, [
             el("div", { class: "chal-line" }, "⚔ " + data.aName + " vs " + data.bName + " — the battle is on!"),
             data.stakes ? el("div", { class: "chal-ev" }, data.stakes) : null,
             data.event ? el("div", { class: "chal-ev" }, "Event: " + data.event) : null,
             el("div", { class: "toolbar" }, [
-              el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); openSpectator(data); } }, "👀 Watch & cheer"),
-              el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Dismiss"),
+              el("button", { class: "btn primary", onClick: () => { closeLiveOffer(); openSpectator(data); } }, "👀 Watch & cheer"),
+              el("button", { class: "btn subtle", onClick: () => { closeLiveOffer(); } }, "Dismiss"),
             ]),
           ]);
-          ctrl = Modal.open("Battle starting!", body, null, {});
+          liveOfferId = data.id;
+          liveOfferCtrl = Modal.open("Battle starting!", body, null, { onClose: () => { liveOfferCtrl = null; liveOfferId = ""; } });
         }
       }
-      if (data.state === "done" && specHandle) {
-        specHandle.finish(data.winner || data.aName);
-        specHandle = null;
+      // The battle's over — pull down the offer popup and finish any spectator.
+      if (data.state === "done") {
+        if (liveOfferId === data.id) closeLiveOffer();
+        if (specHandle) { specHandle.finish(data.winner || data.aName); specHandle = null; }
       }
       // Stakes battles (badges, League chambers, Mt. Silver) ping the room
       // with the result — even the phones that didn't watch.

@@ -6,7 +6,14 @@
     open(title, body, onSave, opts) {
       opts = opts || {};
       const overlay = el("div", { class: "modal-overlay" });
-      const close = () => overlay.remove();
+      let closed = false;
+      // close is idempotent and fires opts.onClose once — no matter HOW it's
+      // dismissed (button, ×, overlay tap, Escape, or a route change).
+      const close = () => {
+        if (closed) return; closed = true;
+        overlay.remove();
+        if (opts.onClose) { try { opts.onClose(); } catch (_) {} }
+      };
 
       const footer = opts.noFooter ? null : el("div", { class: "modal-footer" }, [
         el("button", { class: "btn subtle", onClick: close }, "Cancel"),
