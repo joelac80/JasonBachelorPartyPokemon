@@ -1149,12 +1149,15 @@
       if (act.recharge) m._recharge = true;
 
       // 🎬 SIGNATURE MOVE — the boss's LAST mon landing its strongest attack
-      // gets a named call-out and a screen shake, once per battle.
+      // gets a named call-out and a screen shake, once per battle. Wild mons
+      // don't get one (every wild is a "last mon" — the grass would never
+      // stop shaking), and in shared doubles the flag rides on the MON so
+      // the sibling slot can't replay it.
       let sig = null;
-      if (u.ai && !u._sigDone && !isStatus && (mv.pow || 0) > 0
+      if (u.ai && !opts.wild && !u._sigDone && !m._sigDone && !isStatus && (mv.pow || 0) > 0
           && u.party.filter((x) => x.hp > 0).length === 1
           && (mv.pow || 0) >= Math.max.apply(null, m.moves.map((x) => x.pow || 0))) {
-        u._sigDone = true;
+        u._sigDone = true; m._sigDone = true;
         sig = ["💥 SIGNATURE — " + m.name + "'s " + mv.name.toUpperCase() + "!", 1300, () => {
           overlay.classList.add("shake");
           setTimeout(() => overlay.classList.remove("shake"), 800);

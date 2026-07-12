@@ -161,17 +161,51 @@
     // ⚡ Quick play — the crowd favorites, one tap from the front door.
     // (The drink quick-log moved out with the Tavern; see 📦 The Vault.)
     const QUICK = [
-      { r: "safari",  e: "🔴", t: "Safari Zone",  d: "Catch 'em" },
-      { r: "regions", e: "🗺", t: "The Journey",  d: "Gyms → Champions" },
-      { r: "battle",  e: "⚔️", t: "Battle Arena", d: "Real duels" },
-      { r: "party",   e: "🎉", t: "Party Central", d: "Everything else" },
+      { r: "safari",   e: "🔴", t: "Safari Zone",  d: "Catch 'em" },
+      { r: "regions",  e: "🗺", t: "The Journey",  d: "Gyms → Champions" },
+      { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Real duels" },
+      { r: "tower",    e: "🗼", t: "Battle Tower", d: "Streaks & PALMER" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke",     d: "Permadeath run" },
+      { r: "party",    e: "🎉", t: "Party Central", d: "Everything else" },
     ];
-    root.appendChild(el("div", { class: "home-quick" }, QUICK.map((q) =>
+    root.appendChild(el("div", { class: "home-quick six" }, QUICK.map((q) =>
       el("a", { class: "hq-tile", href: "#/" + q.r }, [
         el("span", { class: "hq-e" }, q.e),
         el("span", { class: "hq-t" }, q.t),
         el("span", { class: "hq-d" }, q.d),
       ]))));
+
+    // 🧭 YOUR JOURNEY — the signed-in trainer's battle career, front and
+    // center: ladder progress, tower streak, nuzlocke run, dex haul. Every
+    // chip is a door to the thing it's bragging about.
+    (function journeyStrip() {
+      const me = window.Sync && Sync.getMe && Sync.getMe();
+      const a = me && Store.attendee(me);
+      if (!a || !Store.genCapFor) return;
+      const cap = Store.genCapFor(me);
+      const goal = Store.nextGenGoal && Store.nextGenGoal(me);
+      const tw = Store.towerOf ? Store.towerOf(me) : { streak: 0, best: 0 };
+      const run = Store.nuzRun ? Store.nuzRun(me) : null;
+      const t = ((Store.state.pokedex || {}).trainers || {})[me] || {};
+      const caught = Object.keys(t.caught || {}).length;
+      const hisui = Store.hisuiUnlocked && Store.hisuiUnlocked(me);
+      const chips = [
+        { r: "regions", e: "🧭", t: "Gen " + cap + "/9" + (hisui ? " +⏳" : ""),
+          d: goal ? "Next: " + goal.text : "the whole world is open" },
+        { r: "tower", e: "🗼", t: tw.streak ? "Streak " + tw.streak : "Best " + (tw.best || 0),
+          d: tw.streak ? "floor " + (tw.streak + 1) + " awaits" : (tw.best ? "climb again" : "enter the tower") },
+        { r: "nuzlocke", e: run && !run.over ? (run.act === 2 ? "🗻" : "🪦") : "🪦",
+          t: run && !run.over ? (run.act === 2 ? "Act II live" : (run.badges || []).length + " badge" + ((run.badges || []).length === 1 ? "" : "s")) : (run && (run.over === "champion" || run.over === "legend") ? "Crowned" : "No run"),
+          d: run && !run.over ? run.catches + " caught · " + run.deaths + " lost" : (run && run.over === "legend" ? "🗻 Nuzlocke LEGEND" : run && run.over === "champion" ? "champion — go again?" : "pick a starter") },
+        { r: "dex", e: "📕", t: caught + " caught", d: "open the Pokédex" },
+      ];
+      root.appendChild(el("div", { class: "journey-strip" },
+        [el("span", { class: "journey-lab" }, "🎮 " + a.name.split(" ")[0] + "'s journey")].concat(
+          chips.map((c) => el("a", { class: "journey-chip", href: "#/" + c.r }, [
+            el("span", { class: "jc-e" }, c.e),
+            el("span", {}, [el("span", { class: "jc-t" }, c.t), el("span", { class: "jc-d" }, c.d)]),
+          ])))));
+    })();
 
     const hero = el("section", { class: "hero" }, [
       p.heroImage
