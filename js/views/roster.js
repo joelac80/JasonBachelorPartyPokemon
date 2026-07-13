@@ -277,11 +277,23 @@
       ]));
     });
 
-    root.appendChild(el("div", { class: "toolbar" }, [
-      el("button", { class: "btn primary", onClick: () => {
+    // ➕ NAME-FIRST creation: the old flow made a card literally called "New
+    // Trainer" and hoped the edit modal got filled in — half the room ended
+    // up named New Trainer. No record exists until a real name is typed.
+    const addRow = el("div", { class: "toolbar" });
+    function paintAdd(creating) {
+      addRow.innerHTML = "";
+      if (!creating) {
+        addRow.appendChild(el("button", { class: "btn primary", onClick: () => paintAdd(true) }, "+ Add trainer"));
+        return;
+      }
+      const nameIn = el("input", { class: "in", placeholder: "Trainer's name…", autocapitalize: "words", style: { maxWidth: "220px" } });
+      const make = () => {
+        const nm = (nameIn.value || "").trim();
+        if (!nm) { try { nameIn.focus(); } catch (_) {} return; }
         const id = uid("trainer");
         Store.update((s) => s.attendees.push({
-          id, name: "New Trainer", nickname: "", team: "", type: "normal",
+          id, name: nm, nickname: "", team: "", type: "normal",
           rank: "Gym Leader", role: "The Squad", favorite: "", favoriteId: 0,
           photo: "", catchphrase: "",
         }));
@@ -296,8 +308,15 @@
         }
         Router.render();
         setTimeout(() => editCard(id), 30);
-      } }, "+ Add trainer"),
-    ]));
+      };
+      nameIn.addEventListener("keydown", (e) => { if (e.key === "Enter") make(); });
+      addRow.appendChild(nameIn);
+      addRow.appendChild(el("button", { class: "btn primary sm", onClick: make }, "✓ Create"));
+      addRow.appendChild(el("button", { class: "btn subtle sm", onClick: () => paintAdd(false) }, "✕"));
+      setTimeout(() => { try { nameIn.focus(); } catch (_) {} }, 60);
+    }
+    paintAdd(false);
+    root.appendChild(addRow);
   }
 
   // ---- 📕 the favorite picker — the signup ritual, shared with the tour ---
