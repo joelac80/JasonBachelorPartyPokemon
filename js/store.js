@@ -1050,6 +1050,33 @@
         Store.chron(s, "🪦", this._nuzName(attId) + " began a " + label + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
       });
     },
+    // 🎬 The Movie Marathon: no starter, no roads — a CASTING CALL. The run
+    // opens with a drafted cast of six (full power, no level caps) and the
+    // filmography is the whole campaign. region:"movie".
+    nuzStartMovie(attId, ids) {
+      if (!attId || !ids || ids.length < 1) return;
+      this.update((s) => {
+        s.nuzlocke = s.nuzlocke || {};
+        s.nuzlocke[attId] = { starter: ids[0], box: ids.map((id) => ({ id: id })), badges: [], league: [],
+          catches: ids.length, deaths: 0, over: "", startTs: Date.now(), upd: Date.now(),
+          mode: "", region: "movie", seed: (Math.floor(Math.random() * 2147483647) || 1) };
+        const names = ids.map((id) => (((window.DEX || {})[id] || {}).n || "#" + id)).join(", ");
+        Store.chron(s, "🎬", this._nuzName(attId) + " held a casting call and premiered a MOVIE MARATHON NUZLOCKE — " + ((window.MOVIE_BOSSES || []).length || 16) + " films, one cast (" + names + "), every faint forever!");
+      });
+    },
+    // 🌟 The co-star rule: a beaten film's legend may join the cast — but ONLY
+    // into a seat opened by a death. The cast never grows past six standing.
+    nuzRecruit(attId, monId, filmName) {
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over || r.region !== "movie" || !monId) return;
+        if (r.box.some((m) => m.id === monId)) return;
+        if (r.box.filter((m) => !m.dead).length >= 6) return;
+        r.box.push({ id: monId });
+        r.catches += 1;
+        const n = ((window.DEX || {})[monId] || {}).n || ("#" + monId);
+        Store.chron(s, "🌟", "THE CO-STAR RULE — " + n + " stepped off the screen" + (filmName ? " of " + filmName : "") + " and joined " + this._nuzName(attId) + "'s cast!");
+      });
+    },
     // 🕰 Through the Ages: crossing a generation border. The whole box —
     // survivors and tombstones alike — is left with the professor (archived
     // in r.retired for the ending), and a brand-new regional starter becomes
@@ -1172,6 +1199,17 @@
           return ts;
         };
         const REG = window.NUZ_REGIONS || [];
+        if (r.region === "movie") {                            // 🎬 the movie marathon
+          const REEL = window.MOVIE_BOSSES || [];
+          const lastB = REEL[REEL.length - 1];
+          if (lastB && key === lastB.key) {
+            r.over = "premiere"; r.doneTs = enshrine("movie", "nuzlocke-movie", lastB.name, "Marathon Premiere", "The Filmography");
+            Store.chron(s, "🎬", "THE CREDITS ROLL!!! " + nm + " survived the ENTIRE FILMOGRAPHY — " + REEL.length + " films of movie legends with permadeath on, " + tally + ". A premiere for the ages of cinema.");
+          } else {
+            Store.chron(s, "🎬", nm + " survived another premiere — " + r.league.length + "/" + (REEL.length || 16) + " films in the MOVIE MARATHON NUZLOCKE!");
+          }
+          return;
+        }
         if (!r.region) {                                       // legacy Kanto→Johto structure
           if (key === "blue") {
             r.act = 2; r.champTs = enshrine("champion", "nuzlocke", "BLUE", "Nuzlocke Champion", "Kanto");
@@ -1237,7 +1275,7 @@
     // Completed runs on the crown board: highest tier first (master and the
     // ages walk > legend > champion), then fewest catches — the classic flex.
     nuzHall() {
-      const w = { master: 3, ages: 3, legend: 2 };
+      const w = { master: 3, ages: 3, movie: 2.5, legend: 2 };
       return (this.state.nuzlockeHof || []).slice().sort((a, b) =>
         ((w[b.tier] || 1) - (w[a.tier] || 1)) || (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
@@ -1367,6 +1405,7 @@
         const best = nz.reduce((a, b) => (b.catches < a.catches ? b : a));
         if (nz.some((r) => r.tier === "master")) out.push({ emoji: "🌍", title: "Master Nuzlocke", sub: "all nine regions, every trainer, permadeath on — the ultimate run" });
         if (nz.some((r) => r.tier === "ages")) out.push({ emoji: "🕰", title: "Trainer of the Ages", sub: "nine generations, a fresh team each era, one unbroken journey — permadeath on" });
+        if (nz.some((r) => r.tier === "movie")) out.push({ emoji: "🎬", title: "Marathon Premiere", sub: "survived the entire filmography — every movie legend at full power, permadeath on" });
         if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "took the run past the Champion — and RED still fell" });
         out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered " + (best.region || "Kanto") + " with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });

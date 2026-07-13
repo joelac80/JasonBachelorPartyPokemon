@@ -13,6 +13,13 @@
     🌍 MASTER RANDOMIZER — all nine regions in canon order: 68 gyms, every
        Elite Four, every Champion (RED included) — 114 battles, randomized
        teams, one level curve climbing 14 → 100, permadeath the whole way.
+    🎬 MOVIE MARATHON — the attrition epic: no starter, no grass, no caps.
+       A casting call drafts SIX non-legendaries at full power, then the
+       entire filmography rolls in release order — every movie legend at
+       full boss strength, permadeath through every credits. The co-star
+       rule is the only lifeline: a beaten film's legend may join the cast,
+       but ONLY into a seat opened by a death. Survive all 16 films for
+       the Marathon Premiere crown.
     🕰 THROUGH THE AGES — the same nine-region walk with CLASSIC teams and
        the region curve resetting every generation (each region plays Lv
        14 → 48 → league, like Kanto did). What makes the reset fair: at
@@ -145,6 +152,7 @@
   // Mt. Silver peak at 62). Alola's four kahunas stride the same span.
   // The master gauntlet is ONE long curve: Lv14 at gym 1 → Lv100 at GEETA.
   function runLevel(run) {
+    if (run.region === "movie") return 100;          // 🎬 full power, no caps
     if (run.region === "master") {
       const total = seqFor(run).length;              // 114 battles, 14 → 100
       return Math.min(100, 14 + Math.round((doneCount(run) * 86) / Math.max(1, total - 1)));
@@ -290,9 +298,10 @@
   function renderStartScreen(host, lastRun) {
     if (lastRun && lastRun.over) {
       const alive = lastRun.box.filter((m) => !m.dead).length;
-      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master" || lastRun.over === "ages";
+      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master" || lastRun.over === "ages" || lastRun.over === "premiere";
       const headline = lastRun.over === "master" ? "🌍 MASTER OF ALL REGIONS — nine regions, every trainer, permadeath on!"
         : lastRun.over === "ages" ? "🕰 TRAINER OF THE AGES — nine generations, nine teams, one unbroken journey!"
+        : lastRun.over === "premiere" ? "🎬 THE CREDITS ROLL — the whole filmography survived, permadeath on!"
         : lastRun.over === "legend" ? "🗻 LEGEND — past the crown, and RED still fell!"
         : lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
         : lastRun.over === "wiped" ? "💀 The run ended — the whole box was lost." : "🏳️ Run abandoned.";
@@ -314,55 +323,72 @@
     }
     const R = regionByKey(newRegion) || REGIONS[0] || { name: "Kanto", prof: "Oak", gymN: 8, champ: "BLUE", starters: [1, 4, 7, 25], league: [] };
     const first = REGIONS[0] || R;
+    const movie = newKind === "movie";
+    const filmN = (window.MOVIE_BOSSES || []).length || 16;
     const starterIds = newKind === "master" ? ALL_STARTERS : newKind === "ages" ? first.starters : R.starters;
     host.appendChild(el("div", { class: "safari-card nuz-lab" }, [
-      el("div", { class: "nuz-lab-head" }, newKind === "master" ? "🧪 The Professors' Summit"
+      el("div", { class: "nuz-lab-head" }, movie ? "🎥 The Casting Call"
+        : newKind === "master" ? "🧪 The Professors' Summit"
         : "🧪 Professor " + ((newKind === "ages" ? first.prof : R.prof) || "Oak") + "'s Lab"),
-      el("p", { class: "hint" }, "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
-      // Four structures: 🎯 a region's exclusive run on the classic curve,
+      el("p", { class: "hint" }, movie
+        ? "“Lights. Cameras. Permadeath. Six seats in the cast — and every legend on the reel is waiting at FULL power.”"
+        : "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
+      // Five structures: 🎯 a region's exclusive run on the classic curve,
       // 🎲 the same region with every trainer's team rerolled, 🌍 the master
-      // gauntlet (all nine, randomized, one 14→100 curve), or 🕰 the ages
-      // walk (all nine, classic, curve + team resetting each generation).
+      // gauntlet (all nine, randomized, one 14→100 curve), 🕰 the ages walk
+      // (all nine, classic, curve + team resetting each generation), or 🎬
+      // the movie marathon (drafted cast of 6 vs the filmography, no caps).
       el("div", { class: "dex-toggle" }, [
         el("button", { class: "btn sm" + (newKind === "classic" ? " primary" : " subtle"), onClick: () => { newKind = "classic"; Router.render(); } }, "🎯 Region Run"),
         el("button", { class: "btn sm" + (newKind === "random" ? " primary" : " subtle"), onClick: () => { newKind = "random"; Router.render(); } }, "🎲 Region Randomizer"),
         el("button", { class: "btn sm" + (newKind === "master" ? " primary" : " subtle"), onClick: () => { newKind = "master"; Router.render(); } }, "🌍 Master Randomizer"),
         el("button", { class: "btn sm" + (newKind === "ages" ? " primary" : " subtle"), onClick: () => { newKind = "ages"; Router.render(); } }, "🕰 Through the Ages"),
+        el("button", { class: "btn sm" + (movie ? " primary" : " subtle"), onClick: () => { newKind = "movie"; Router.render(); } }, "🎬 Movie Marathon"),
       ]),
       newKind === "master"
         ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — every gym, every Elite Four, every Champion (RED included): 114 battles on one Lv 14→100 curve, every team randomized, permadeath the whole way. The ultimate run.")
         : newKind === "ages"
           ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey — and at the very end, the road leads home: PROFESSOR OAK waits in Pallet Town as the LAST BOSS.")
-          : newKind === "random"
-            ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
-            : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
+          : movie
+            ? el("p", { class: "hint" }, "🎬 The attrition epic: draft ANY six non-legendaries — that's the whole cast, full power, no level caps, no wild grass. Then the entire filmography rolls in release order: " + filmN + " films, every movie legend at full boss strength, MEWTWO on opening night. A beaten film's legend may join the cast — but only over a fallen seat.")
+            : newKind === "random"
+              ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
+              : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
       newKind === "classic" || newKind === "random" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
         el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; Router.render(); } }, r.emoji + " " + r.name))) : null,
       newKind === "master" ? el("p", { class: "hint" }, "A master run begins in Kanto — but the professors have gathered: choose ANY starter from the whole saga.") : null,
       newKind === "ages" ? el("p", { class: "hint" }, "The journey begins where it all began — Gen 1, Professor Oak's lab.") : null,
-      el("div", { class: "nuz-starters" }, starterIds.map((id) =>
-        el("button", { class: "nuz-starter", onClick: () => {
-          const label = newKind === "master" ? "🌍 MASTER RANDOMIZER (all nine regions!)"
-            : newKind === "ages" ? "🕰 THROUGH THE AGES (nine generations, a fresh team each era!)"
-            : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
-          if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
-          Store.nuzStart(me, id, newKind === "random" || newKind === "master" ? "random" : "",
-            newKind === "master" ? "master" : newKind === "ages" ? "ages" : newRegion);
-          wildId = 0; sfx("fanfare"); Router.render();
-        } }, [
-          Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
-          el("span", { class: "nuz-starter-n" }, monName(id)),
-        ]))),
+      movie
+        ? el("div", { class: "safari-actions" }, [
+            el("button", { class: "btn primary spin-btn", onClick: () => draftCast() }, "🎥 Hold the casting call — draft your 6"),
+          ])
+        : el("div", { class: "nuz-starters" }, starterIds.map((id) =>
+          el("button", { class: "nuz-starter", onClick: () => {
+            const label = newKind === "master" ? "🌍 MASTER RANDOMIZER (all nine regions!)"
+              : newKind === "ages" ? "🕰 THROUGH THE AGES (nine generations, a fresh team each era!)"
+              : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
+            if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
+            Store.nuzStart(me, id, newKind === "random" || newKind === "master" ? "random" : "",
+              newKind === "master" ? "master" : newKind === "ages" ? "ages" : newRegion);
+            wildId = 0; sfx("fanfare"); Router.render();
+          } }, [
+            Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
+            el("span", { class: "nuz-starter-n" }, monName(id)),
+          ]))),
       el("div", { class: "nuz-rules" }, [
         el("div", {}, "📜 House rules:"),
-        el("div", {}, "• Catch wilds by BATTLING them — weaken, then throw mid-fight. KO it and it's lost."),
+        movie ? null : el("div", {}, "• Catch wilds by BATTLING them — weaken, then throw mid-fight. KO it and it's lost."),
         el("div", {}, "• Any of your Pokémon that faints is dead for the rest of the run."),
         el("div", {}, newKind === "master"
           ? "• Nine regions in canon order: 68 gyms, nine leagues, RED on Mt. Silver — the LAST Champion crowns the MASTER."
           : newKind === "ages"
             ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. After the last Champion, one road remains: PROFESSOR OAK in Pallet Town — beat the LAST BOSS to be crowned TRAINER OF THE AGES."
-            : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
-        el("div", {}, "• Catch as many as you want… but the crown board ranks by FEWEST catches."),
+            : movie
+              ? "• " + filmN + " films in release order, every boss at FULL power. No catching — the only reinforcements are co-star legends, and only a death opens their seat. Survive the whole reel for the MARATHON PREMIERE."
+              : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
+        el("div", {}, movie
+          ? "• The crown board still counts the cast: fewest recruits (and fewest tombstones) is the flex."
+          : "• Catch as many as you want… but the crown board ranks by FEWEST catches."),
       ]),
     ]));
   }
@@ -370,15 +396,18 @@
   // ── Screen 2: the live run ─────────────────────────────────────────────────
   function renderRun(host, run) {
     const gateR = agesGate(run);
-    if (run.region) renderRegionHead(host, run);
+    const movie = run.region === "movie";
+    if (movie) renderMovieHead(host, run);
+    else if (run.region) renderRegionHead(host, run);
     else renderActHead(host, run);
     renderBoxCard(host, run);
     if (gateR) {
       // 🕰 A generation border: no grass, no battles — the professor first.
       renderAgesGate(host, run, gateR);
     } else {
-      renderGrass(host, run);
-      if (run.region) renderRegionNext(host, run);
+      if (!movie) renderGrass(host, run);         // 🎬 no wild grass on a film set
+      if (movie) renderMovieNext(host, run);
+      else if (run.region) renderRegionNext(host, run);
       else renderActNext(host, run);
       // 🎉 Any evolutions unlocked by the current level cap? Offer them all.
       setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
@@ -471,6 +500,96 @@
     ]));
   }
 
+  // ── 🎬 The Movie Marathon ──────────────────────────────────────────────────
+  // The casting call: draft ANY six non-legendary species — that's the cast.
+  function draftCast() {
+    const pool = Object.keys(DEX).map(Number)
+      .filter((id) => id >= 1 && id <= 1025 && !DEX[id].leg);
+    Duel.pickParty({ attId: me, min: 6, max: 6, pool: pool,
+      title: "🎥 Casting call — draft your cast of SIX",
+      hint: "Any six non-legendary species, full power, no level caps. This cast is ALL you get — legends only ever join over a fallen seat.",
+      onDone: (ids) => {
+        if (!ids || ids.length < 6) return;
+        const names = ids.map((id) => monName(id)).join(", ");
+        if (!confirm("Premiere the 🎬 MOVIE MARATHON with this cast — " + names + "? " + ((window.MOVIE_BOSSES || []).length || 16) + " films at full power, permadeath is ON — no take-backs.")) return;
+        Store.nuzStartMovie(me, ids);
+        wildId = 0; sfx("fanfare"); Router.render();
+      } });
+  }
+  function nextFilm(run) {
+    return (window.MOVIE_BOSSES || []).find((b) => run.league.indexOf(b.key) < 0) || null;
+  }
+  function renderMovieHead(host, run) {
+    const REEL = window.MOVIE_BOSSES || [];
+    const n = run.league.length;
+    const b = nextFilm(run);
+    host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+      el("div", { class: "nuz-lab-head" }, "🎬 MOVIE MARATHON — Film " + Math.min(n + 1, REEL.length) + "/" + REEL.length + (b ? ": " + b.film : "")),
+      el("p", { class: "hint" }, "The attrition epic: one drafted cast against every movie legend at FULL power — no level caps, no wild grass, no second takes. Only a fallen seat lets a film's legend join the cast."),
+    ]));
+    host.appendChild(el("div", { class: "safari-stats" }, [
+      stat("🎬 " + n + "/" + REEL.length, "Films survived"),
+      stat("🎭 " + run.box.filter((m) => !m.dead).length + "/6", "Cast standing"),
+      stat("⭐ " + Math.max(0, run.catches - 6), "Co-stars"),
+      stat("🪦 " + run.deaths, "Lost forever"),
+    ]));
+  }
+  // NOW SHOWING — the next film on the reel, full billing.
+  function renderMovieNext(host, run) {
+    const next = el("div", { class: "safari-card nuz-next" });
+    host.appendChild(next);
+    const b = nextFilm(run);
+    if (!b) { next.appendChild(el("div", { class: "nuz-lab-head" }, "🏁 The reel is empty — the marathon is complete!")); return; }
+    next.appendChild(el("div", { class: "nuz-lab-head" }, b.icon + " NOW SHOWING — " + b.film));
+    next.appendChild(el("p", { class: "hint" }, b.name + " · " + b.title + ". " + b.lead));
+    next.appendChild(el("div", { class: "nuz-foe-row" }, b.team.map((id) =>
+      Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+    next.appendChild(el("div", { class: "enc-quote" }, "“" + b.quote + "”"));
+    next.appendChild(el("div", { class: "safari-actions" }, [
+      el("button", { class: "btn primary", onClick: () => battleMovie(run, b) }, "🎬 PREMIERE — face " + b.name),
+    ]));
+    next.appendChild(el("p", { class: "hint" }, "Full power on both sides of the screen, every faint forever. Win with a fallen seat in the cast, and the film's legend may step off the screen…"));
+  }
+  function battleMovie(run, b) {
+    partyThen(run, 6, "🎬 " + b.film + " — vs " + b.name,
+      "Full power, no caps — and every faint is permanent.",
+      (ids) => {
+        Duel.start({ mode: "local",
+          a: { units: [{ attId: me, monIds: ids }] },
+          b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
+          nuzlocke: { onEnd: (fainted, winSide) => {
+            Store.nuzDeaths(me, fainted || []);
+            if (winSide === "a") { Store.nuzStage(me, b.key); sfx("fanfare"); offerCostar(b); }
+            Router.render();
+          } } });
+      });
+  }
+  // 🌟 The co-star rule — fired after a film falls. Waits for the battle
+  // screen to clear, then offers the film's legend IF a seat is open.
+  function offerCostar(b) {
+    const id = b.costar;
+    if (!id) return;
+    let tries = 0;
+    (function whenClear() {
+      if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
+      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
+      const run = Store.nuzRun(me);
+      if (!run || run.over || run.region !== "movie") return;
+      if (run.box.some((m) => m.id === id) || run.box.filter((m) => !m.dead).length >= 6) return;
+      let ctrl;
+      const body = el("div", { class: "modal-form" }, [
+        el("p", { class: "hint" }, "🌟 THE CO-STAR RULE — there's an empty seat in the cast, and the legend of " + b.film + " steps off the screen to fill it."),
+        Store.sprite(id) ? el("img", { class: "evo-prompt-img", src: Store.sprite(id), alt: "", style: { display: "block", margin: "0 auto" } }) : null,
+        el("div", { class: "nuz-lab-head", style: { textAlign: "center" } }, monName(id)),
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn primary", onClick: () => { ctrl.close(); Store.nuzRecruit(me, id, b.film); sfx("fanfare"); Router.render(); } }, "🌟 Welcome to the cast"),
+          el("button", { class: "btn subtle", onClick: () => ctrl.close() }, "Decline — the moment passes"),
+        ]),
+      ]);
+      ctrl = Modal.open("🌟 A co-star steps forward!", body, null, { noFooter: true });
+    })();
+  }
+
   // 🕰 The generation border — the emotional center of the ages walk. The
   // old team (tombstones and all) retires to the professor who watched it
   // grow; three new partners wait in the next region's lab. No grass, no
@@ -497,7 +616,7 @@
   function renderBoxCard(host, run) {
     const alive = run.box.filter((m) => !m.dead);
     host.appendChild(el("div", { class: "safari-card nuz-boxcard" }, [
-      el("div", { class: "nuz-lab-head" }, "📦 The box — " + alive.length + " standing"),
+      el("div", { class: "nuz-lab-head" }, (run.region === "movie" ? "🎭 The cast — " : "📦 The box — ") + alive.length + " standing"),
       el("div", { class: "nuz-box-grid" }, run.box.map((m) => boxMon(m, run))),
     ]));
   }
@@ -951,7 +1070,7 @@
         el("span", { class: "nuz-hall-name" }, aName(r.att)),
         el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost"
           + (r.mode === "random" ? " · 🎲" : "")
-          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "ages" ? " · 🕰 AGES" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
+          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "ages" ? " · 🕰 AGES" : r.tier === "movie" ? " · 🎬 PREMIERE" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
           + (r.deaths === 0 ? " · 💎 deathless" : "")),
       ]))),
     ]));
