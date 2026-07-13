@@ -1,28 +1,73 @@
 /* nuzlocke.js — 🪦 The Nuzlocke Run: a true hardcore challenge mode.
-   Pick ONE Kanto starter, then live off the land: wild Gen 1 Pokémon are
-   caught by BATTLING them down (weaken-to-catch — there's no free throw
-   here), the 8 Kanto gyms fall IN ORDER, then the Kanto Elite Four and
-   Champion BLUE. The rule that makes it a Nuzlocke: any of YOUR Pokémon
-   that faints in a run battle is DEAD for the rest of the run. Lose the
-   whole box and the run is over. Catch as many as you like — but the
-   crown board ranks champions by FEWEST catches, so every recruit costs
-   bragging rights. Runs never touch the real ladder (no badges, league
-   wins, dex entries or points) — state lives in Store.nuzlocke/nuzlockeHof. */
+   Pick ONE starter, then live off the land: wilds are caught by BATTLING
+   them down (weaken-to-catch — no free throw), the gyms fall IN ORDER, then
+   the Elite Four and the Champion. The rule that makes it a Nuzlocke: any
+   of YOUR Pokémon that faints in a run battle is DEAD for the rest of the
+   run. Lose the whole box and the run is over.
+   THREE structures (data/nuz-regions.js):
+    🎯 REGION run — any of the nine regions as its own exclusive run, the
+       proven level-scaling pattern (Lv14 → 48 gyms, league to ~58) applied
+       region by region. Johto keeps RED past the crown for the Legend tier.
+    🎲 REGION RANDOMIZER — same region, same caps and team sizes, but every
+       trainer fields seeded-random era Pokémon.
+    🌍 MASTER RANDOMIZER — all nine regions in canon order: 68 gyms, every
+       Elite Four, every Champion (RED included) — 114 battles, randomized
+       teams, one level curve climbing 14 → 100, permadeath the whole way.
+   Legacy runs (Kanto Act I → Johto Act II) keep working untouched.
+   Runs never touch the real ladder — state lives in Store.nuzlocke/HoF. */
 (function () {
   const { el } = U;
   const DEX = window.DEX || {};
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
 
-  const STARTERS = [1, 4, 7, 25];                  // Bulbasaur / Charmander / Squirtle / Pikachu
-  const KANTO_GYM0 = 8;                            // Kanto gyms live at circuit idx 8-15
-  const JOHTO_GYM0 = 0;                            // 🗻 Act II: Johto gyms live at idx 0-7
+  const REGIONS = window.NUZ_REGIONS || [];
+  const regionByKey = (k) => REGIONS.find((r) => r.key === k) || null;
+  // Starters are gifts, never wild — across every generation.
+  const ALL_STARTERS = REGIONS.reduce((a, r) => a.concat(r.starters), []);
+  const KANTO_GYM0 = 8;                            // legacy Act I: Kanto gyms at idx 8-15
+  const JOHTO_GYM0 = 0;                            // legacy Act II: Johto gyms at idx 0-7
   const KANTO_E4 = ["lorelei", "brunok", "agatha", "lance4", "blue"];
+
+  // ── The battle SEQUENCE of a region-aware run ────────────────────────────
+  // Every gym in circuit order, then that region's Elite Four + Champion —
+  // region by region for the master gauntlet (RED's Mt. Silver peak sits
+  // right after Johto's league, exactly where the canon puts it).
+  function seqFor(run) {
+    const regions = run.region === "master" ? REGIONS : [regionByKey(run.region)].filter(Boolean);
+    const seq = [];
+    regions.forEach((R) => {
+      for (let i = 0; i < R.gymN; i++) seq.push({ t: "gym", idx: R.gym0 + i, R: R });
+      R.league.forEach((k) => seq.push({ t: "stage", key: k, R: R }));
+      if (R.peak) seq.push({ t: "stage", key: R.peak, R: R, peak: 1 });
+    });
+    return seq;
+  }
+  function nextStep(run) {
+    const seq = seqFor(run);
+    for (let i = 0; i < seq.length; i++) {
+      const s = seq[i];
+      const done = s.t === "gym" ? run.badges.indexOf(s.idx) >= 0 : run.league.indexOf(s.key) >= 0;
+      if (!done) return s;
+    }
+    return null;
+  }
+  function doneCount(run) { return run.badges.length + run.league.length; }
+  function curRegion(run) {
+    if (run.region && run.region !== "master") return regionByKey(run.region);
+    const s = nextStep(run);
+    return s ? s.R : REGIONS[REGIONS.length - 1];
+  }
+
   // Wild pools — no legendaries (they'd trivialize the run) and no starters
-  // (yours is a gift). Act I roams Gen 1; the Johto act adds Gen 2.
+  // (yours is a gift). Region runs roam the cumulative national dex through
+  // their gen (a Hoenn run still meets a Pidgey); the master gauntlet's
+  // grass grows with every region it enters. Legacy: Gen 1, then +Gen 2.
   function wildsFor(run) {
-    const max = (run && run.act === 2) ? 251 : 151;
+    let max = 151;
+    if (run && run.region) { const R = curRegion(run); max = R ? R.dexMax : 1025; }
+    else if (run && run.act === 2) max = 251;
     return Object.keys(DEX).map(Number)
-      .filter((id) => id >= 1 && id <= max && !DEX[id].leg && STARTERS.indexOf(id) < 0);
+      .filter((id) => id >= 1 && id <= max && !DEX[id].leg && ALL_STARTERS.indexOf(id) < 0);
   }
 
   function gymAt(i) { return (window.GymCircuit && GymCircuit.GYMS && GymCircuit.GYMS[i]) || null; }
@@ -40,7 +85,7 @@
   // re-rolling the dice. Each roll burns a slot (running away included).
   const ENC_PER_ERA = 3;
   function eraKey(run) {
-    return (run.act === 2 ? 2 : 1) + ":" + run.badges.length + ":" + run.league.length;
+    return (run.region || (run.act === 2 ? 2 : 1)) + ":" + run.badges.length + ":" + run.league.length;
   }
   function encLeft(run) {
     const used = run.encKey === eraKey(run) ? (run.encN || 0) : 0;
@@ -68,8 +113,24 @@
   // 📈 The run's LEVEL CAP — climbs with progress and drives two things:
   // every mon in a run battle DISPLAYS at this level (a fresh run reads
   // Lv14, not Lv50), and box mons EVOLVE when the cap crosses their real
-  // evolution level. Misty-era cap is 24, per the house rules.
+  // evolution level. Region runs follow THE pattern (14 → 48 across the
+  // gyms — Misty-era 24 per the house rules — league 50 + 2/stage, the
+  // Mt. Silver peak at 62). Alola's four kahunas stride the same span.
+  // The master gauntlet is ONE long curve: Lv14 at gym 1 → Lv100 at GEETA.
   function runLevel(run) {
+    if (run.region === "master") {
+      const total = seqFor(run).length;              // 114 battles, 14 → 100
+      return Math.min(100, 14 + Math.round((doneCount(run) * 86) / Math.max(1, total - 1)));
+    }
+    if (run.region) {
+      const R = regionByKey(run.region);
+      const g = run.badges.length;
+      const caps = R && R.gymN === 4 ? [14, 26, 37, 48] : [14, 24, 28, 32, 36, 40, 44, 48];
+      if (R && g < R.gymN) return caps[g];
+      const l = run.league.length;
+      if (!R || l < R.league.length) return 50 + l * 2;   // league era → 58 at the Champion
+      return 62;                                          // the peak (Mt. Silver)
+    }
     const act = run.act === 2 ? 2 : 1;
     const k = run.badges.filter((i) => i >= KANTO_GYM0).length;
     const j = run.badges.filter((i) => i < KANTO_GYM0).length;
@@ -159,7 +220,8 @@
   let me = "";
   let wildId = 0;
   let evoOpen = false;
-  let newMode = "";          // starter-lab pick: "" classic | "random" 🎲
+  let newKind = "classic";   // starter-lab pick: "classic" | "random" | "master"
+  let newRegion = "kanto";   // starter-lab region (classic/random structures)
 
   function view(root) {
     const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
@@ -167,7 +229,7 @@
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🪦 Nuzlocke Run"),
-      el("p", { class: "page-sub" }, "The true challenge: one starter, catches only by battle, gyms in order — and any Pokémon that faints is gone for the whole run. Fewest catches wears the crown."),
+      el("p", { class: "page-sub" }, "The true challenge: one starter, catches only by battle, gyms in order — and any Pokémon that faints is gone for the whole run. Run a single region, randomize it, or take the 🌍 master gauntlet across all nine. Fewest catches wears the crown."),
     ]));
 
     // Trainer picker (per phone, like the Safari).
@@ -190,31 +252,47 @@
   function renderStartScreen(host, lastRun) {
     if (lastRun && lastRun.over) {
       const alive = lastRun.box.filter((m) => !m.dead).length;
-      const headline = lastRun.over === "legend" ? "🗻 LEGEND — two regions, permadeath on, RED defeated!"
+      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master";
+      const headline = lastRun.over === "master" ? "🌍 MASTER OF ALL REGIONS — nine regions, every trainer, permadeath on!"
+        : lastRun.over === "legend" ? "🗻 LEGEND — past the crown, and RED still fell!"
         : lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
         : lastRun.over === "wiped" ? "💀 The run ended — the whole box was lost." : "🏳️ Run abandoned.";
-      host.appendChild(el("div", { class: "safari-card nuz-summary" + (lastRun.over === "champion" || lastRun.over === "legend" ? " result win" : " result miss") }, [
+      host.appendChild(el("div", { class: "safari-card nuz-summary" + (won ? " result win" : " result miss") }, [
         el("div", { class: "safari-result-msg" }, headline),
         el("div", { class: "nuz-summary-line" },
-          lastRun.badges.length + "/8 badges · " + lastRun.league.length + "/5 league stages · " +
+          lastRun.badges.length + " badge" + (lastRun.badges.length === 1 ? "" : "s") + " · " +
+          lastRun.league.length + " league stage" + (lastRun.league.length === 1 ? "" : "s") + " · " +
           lastRun.catches + " caught · " + lastRun.deaths + " lost · " + alive + " survived"),
         el("div", { class: "nuz-box-grid" }, lastRun.box.map((m) => boxMon(m))),
       ]));
     }
+    const R = regionByKey(newRegion) || REGIONS[0] || { name: "Kanto", prof: "Oak", gymN: 8, champ: "BLUE", starters: [1, 4, 7, 25], league: [] };
+    const starterIds = newKind === "master" ? ALL_STARTERS : R.starters;
     host.appendChild(el("div", { class: "safari-card nuz-lab" }, [
-      el("div", { class: "nuz-lab-head" }, "🧪 Professor Oak's Lab"),
+      el("div", { class: "nuz-lab-head" }, newKind === "master" ? "🧪 The Professors' Summit" : "🧪 Professor " + (R.prof || "Oak") + "'s Lab"),
       el("p", { class: "hint" }, "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
-      // 🎲 Classic keeps the canon leaders; Randomizer rerolls every team you
-      // face (same caps, same sizes — different Pokémon every single run).
+      // Three structures: 🎯 a region's exclusive run on the classic curve,
+      // 🎲 the same region with every trainer's team rerolled, or 🌍 the
+      // master gauntlet — all nine regions, all trainers, randomized.
       el("div", { class: "dex-toggle" }, [
-        el("button", { class: "btn sm" + (newMode ? " subtle" : " primary"), onClick: () => { newMode = ""; Router.render(); } }, "🎯 Classic"),
-        el("button", { class: "btn sm" + (newMode ? " primary" : " subtle"), onClick: () => { newMode = "random"; Router.render(); } }, "🎲 Randomizer"),
+        el("button", { class: "btn sm" + (newKind === "classic" ? " primary" : " subtle"), onClick: () => { newKind = "classic"; Router.render(); } }, "🎯 Region Run"),
+        el("button", { class: "btn sm" + (newKind === "random" ? " primary" : " subtle"), onClick: () => { newKind = "random"; Router.render(); } }, "🎲 Region Randomizer"),
+        el("button", { class: "btn sm" + (newKind === "master" ? " primary" : " subtle"), onClick: () => { newKind = "master"; Router.render(); } }, "🌍 Master Randomizer"),
       ]),
-      newMode ? el("p", { class: "hint" }, "🎲 Every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped) — a fresh gauntlet every run.") : null,
-      el("div", { class: "nuz-starters" }, STARTERS.map((id) =>
+      newKind === "master"
+        ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — every gym, every Elite Four, every Champion (RED included): 114 battles on one Lv 14→100 curve, every team randomized, permadeath the whole way. The ultimate run.")
+        : newKind === "random"
+          ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
+          : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
+      newKind !== "master" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
+        el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; Router.render(); } }, r.emoji + " " + r.name))) : null,
+      newKind === "master" ? el("p", { class: "hint" }, "A master run begins in Kanto — but the professors have gathered: choose ANY starter from the whole saga.") : null,
+      el("div", { class: "nuz-starters" }, starterIds.map((id) =>
         el("button", { class: "nuz-starter", onClick: () => {
-          if (!confirm("Start a " + (newMode ? "🎲 RANDOMIZER " : "") + "Nuzlocke run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
-          Store.nuzStart(me, id, newMode);
+          const label = newKind === "master" ? "🌍 MASTER RANDOMIZER (all nine regions!)"
+            : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
+          if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
+          Store.nuzStart(me, id, newKind === "classic" ? "" : "random", newKind === "master" ? "master" : newRegion);
           wildId = 0; sfx("fanfare"); Router.render();
         } }, [
           Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
@@ -224,7 +302,9 @@
         el("div", {}, "📜 House rules:"),
         el("div", {}, "• Catch wilds by BATTLING them — weaken, then throw mid-fight. KO it and it's lost."),
         el("div", {}, "• Any of your Pokémon that faints is dead for the rest of the run."),
-        el("div", {}, "• 8 Kanto gyms in order → Kanto Elite Four → Champion BLUE = the crown."),
+        el("div", {}, newKind === "master"
+          ? "• Nine regions in canon order: 68 gyms, nine leagues, RED on Mt. Silver — the LAST Champion crowns the MASTER."
+          : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
         el("div", {}, "• Catch as many as you want… but the crown board ranks by FEWEST catches."),
       ]),
     ]));
@@ -232,7 +312,27 @@
 
   // ── Screen 2: the live run ─────────────────────────────────────────────────
   function renderRun(host, run) {
-    const alive = run.box.filter((m) => !m.dead);
+    if (run.region) renderRegionHead(host, run);
+    else renderActHead(host, run);
+    renderBoxCard(host, run);
+    renderGrass(host, run);
+    if (run.region) renderRegionNext(host, run);
+    else renderActNext(host, run);
+
+    // 🎉 Any evolutions unlocked by the current level cap? Offer them all.
+    setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
+
+    // Bail-out (tombstones the run; a new start replaces it).
+    host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
+      el("button", { class: "btn subtle sm", onClick: () => {
+        if (!confirm("Abandon this Nuzlocke run? It ends here — badges, box and all.")) return;
+        Store.nuzAbandon(me); wildId = 0; sfx("error"); Router.render();
+      } }, "🏳️ Abandon run"),
+    ]));
+  }
+
+  // Banner + progress strip for LEGACY act runs (Kanto Act I → Johto Act II).
+  function renderActHead(host, run) {
     const act = run.act === 2 ? 2 : 1;
     const kBadges = run.badges.filter((i) => i >= KANTO_GYM0).length;
     const jBadges = run.badges.filter((i) => i < KANTO_GYM0).length;
@@ -251,7 +351,6 @@
       ]));
     }
 
-    // Progress strip + the box.
     host.appendChild(el("div", { class: "safari-stats" }, [
       act === 1 ? stat("🏅 " + kBadges + "/8", "Kanto badges") : stat("🏅 " + jBadges + "/8", "Johto badges"),
       act === 1 ? stat("👑 " + run.league.length + "/5", "League stages") : stat("🗻 " + (run.league.indexOf("red") >= 0 ? "1" : "0") + "/1", "Mt. Silver"),
@@ -259,14 +358,61 @@
       stat(run.catches, "Caught"),
       stat("🪦 " + run.deaths, "Lost forever"),
     ]));
+  }
+
+  // Banner + progress strip for REGION and MASTER runs.
+  function renderRegionHead(host, run) {
+    const master = run.region === "master";
+    const R = curRegion(run);
+    const gymsDone = R ? run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length : 0;
+    const leagueDone = R ? R.league.filter((k) => run.league.indexOf(k) >= 0).length : 0;
+
+    if (master) {
+      host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+        el("div", { class: "nuz-lab-head" }, "🌍 MASTER RANDOMIZER — Region " + (REGIONS.indexOf(R) + 1) + "/9: " + (R ? R.emoji + " " + R.name : "")),
+        el("p", { class: "hint" }, "Every gym, every Elite Four, every Champion across all nine regions — " +
+          doneCount(run) + "/" + seqFor(run).length + " battles down, randomized teams all the way, permadeath from the first step to the last."),
+      ]));
+    } else if (run.crowned && !run.over) {
+      // Johto region run, crown banked — RED is optional glory.
+      host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+        el("div", { class: "nuz-lab-head" }, "🗻 PAST THE CROWN — MT. SILVER"),
+        el("p", { class: "hint" }, "You're already a Nuzlocke CHAMPION (it's in the Hall of Fame). RED waits at the peak for the Legend tier. Or retire with the crown."),
+        el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn subtle sm", onClick: () => {
+            if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
+            Store.nuzRetire(me); wildId = 0; Router.render();
+          } }, "👑 Retire as Champion"),
+        ]),
+      ]));
+    } else {
+      host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+        el("div", { class: "nuz-lab-head" }, (R ? R.emoji + " THE " + R.name.toUpperCase() + " RUN" : "") + (run.mode === "random" ? " — 🎲 RANDOMIZER" : "")),
+      ]));
+    }
+
+    host.appendChild(el("div", { class: "safari-stats" }, [
+      stat("🏅 " + gymsDone + "/" + (R ? R.gymN : 8), (R ? R.name : "") + " badges"),
+      stat("👑 " + leagueDone + "/" + (R ? R.league.length : 5), "League stages"),
+      master ? stat("⚔ " + doneCount(run) + "/" + seqFor(run).length, "Gauntlet") : null,
+      stat((run.mode === "random" ? "🎲 " : "📈 ") + "Lv " + runLevel(run), run.mode === "random" ? "Randomizer" : "Run level"),
+      stat(run.catches, "Caught"),
+      stat("🪦 " + run.deaths, "Lost forever"),
+    ]));
+  }
+
+  function renderBoxCard(host, run) {
+    const alive = run.box.filter((m) => !m.dead);
     host.appendChild(el("div", { class: "safari-card nuz-boxcard" }, [
       el("div", { class: "nuz-lab-head" }, "📦 The box — " + alive.length + " standing"),
       el("div", { class: "nuz-box-grid" }, run.box.map((m) => boxMon(m, run))),
     ]));
+  }
 
-    // The grass — wild catches (battle-only). Every stretch of road holds
-    // only ENC_PER_ERA encounters, each roll burns one (no re-rolls), and a
-    // species met once never appears again.
+  // The grass — wild catches (battle-only). Every stretch of road holds
+  // only ENC_PER_ERA encounters, each roll burns one (no re-rolls), and a
+  // species met once never appears again.
+  function renderGrass(host, run) {
     const grass = el("div", { class: "safari-card nuz-grass" });
     host.appendChild(grass);
     const left = encLeft(run);
@@ -287,7 +433,6 @@
         grass.appendChild(el("p", { class: "hint" }, "🚧 No wild Pokémon left on the road to the next badge — win it to reach fresh grass (" + ENC_PER_ERA + " new encounters)."));
       }
     } else {
-      const wnfo = DEX[wildId] || {};
       grass.appendChild(el("div", { class: "nuz-lab-head" }, "🌿 A wild " + monName(wildId) + " appeared!"));
       grass.appendChild(el("div", { class: "nuz-wild-row" }, [
         Store.sprite(wildId) ? el("img", { class: "nuz-wild-img", src: Store.sprite(wildId), alt: monName(wildId) }) : null,
@@ -301,8 +446,13 @@
         el("button", { class: "btn subtle", onClick: () => { wildId = 0; renderKeepScroll(); } }, "Run away"),
       ]));
     }
+  }
 
-    // The gauntlet: next gym, the league ladder — or Mt. Silver.
+  // Next battle for LEGACY act runs: Kanto gym → Kanto E4 → Johto gym → RED.
+  function renderActNext(host, run) {
+    const act = run.act === 2 ? 2 : 1;
+    const kBadges = run.badges.filter((i) => i >= KANTO_GYM0).length;
+    const jBadges = run.badges.filter((i) => i < KANTO_GYM0).length;
     const next = el("div", { class: "safari-card nuz-next" });
     host.appendChild(next);
     if (act === 1 && kBadges < 8) {
@@ -355,17 +505,64 @@
         next.appendChild(el("p", { class: "hint" }, "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
       }
     }
+  }
 
-    // 🎉 Any evolutions unlocked by the current level cap? Offer the first.
-    setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
-
-    // Bail-out (tombstones the run; a new start replaces it).
-    host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
-      el("button", { class: "btn subtle sm", onClick: () => {
-        if (!confirm("Abandon this Nuzlocke run? It ends here — badges, box and all.")) return;
-        Store.nuzAbandon(me); wildId = 0; sfx("error"); Router.render();
-      } }, "🏳️ Abandon run"),
-    ]));
+  // Next battle for REGION and MASTER runs — driven by the sequence.
+  function renderRegionNext(host, run) {
+    const next = el("div", { class: "safari-card nuz-next" });
+    host.appendChild(next);
+    const step = nextStep(run);
+    if (!step) { next.appendChild(el("div", { class: "nuz-lab-head" }, "🏁 Nothing left to fight — the run is complete!")); return; }
+    const R = step.R;
+    const master = run.region === "master";
+    if (step.t === "gym") {
+      const idx = step.idx;
+      const g = gymAt(idx);
+      const n = idx - R.gym0 + 1;
+      const hc = gymHandicap(run);
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 " + R.name + " Gym " + n + "/" + R.gymN + " — Leader " + (g ? g.leader : "?")));
+      if (g) {
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) =>
+          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
+        ]));
+        next.appendChild(el("p", { class: "hint" }, master
+          ? "The master road runs through EVERY gym in the saga — and villains prowl the stretches between them…"
+          : "Gyms fall IN ORDER — no skipping ahead. And villains prowl the roads between them…"));
+      }
+      return;
+    }
+    const st = stageFor(step.key);
+    if (step.peak) {
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
+      if (st) {
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-red").map((id) =>
+          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Climb — battle RED"),
+        ]));
+        next.appendChild(el("p", { class: "hint" }, master
+          ? "The silent one guards the road out of Johto — the master gauntlet goes THROUGH him."
+          : "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
+      }
+      return;
+    }
+    const li = R.league.indexOf(step.key);
+    next.appendChild(el("div", { class: "nuz-lab-head" }, "👑 " + R.name + " League — " + li + "/" + R.league.length));
+    if (st) {
+      next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) =>
+        Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+      next.appendChild(el("div", { class: "safari-actions" }, [
+        el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
+      ]));
+      const isFinal = master && R === REGIONS[REGIONS.length - 1] && step.key === R.champKey;
+      next.appendChild(el("p", { class: "hint" }, isFinal
+        ? "THE FINAL BATTLE of the master gauntlet — beat " + st.name + " and every trainer in the saga has fallen to one box."
+        : step.key === R.champKey
+          ? (master ? "Beat the Champion and the next region opens — the gauntlet rolls on." : "Beat the Champion and the crown is yours" + (R.peak ? " — then Mt. Silver calls." : "."))
+          : "The " + R.name + " Elite Four stands between you and the Champion."));
+    }
   }
 
   function stat(v, l) { return el("div", { class: "safari-stat" }, [el("div", { class: "safari-stat-v" }, String(v)), el("div", { class: "safari-stat-l" }, l)]); }
@@ -483,15 +680,28 @@
 
   // The run's difficulty CURVE: a fresh box is a Squirtle and a Pidgey, so
   // early leaders meet you halfway — 3 mons at ~70% strength — and ramp to
-  // their full squad at full power by badge 8. Act II starts near full
-  // strength (you're a champion now) and climbs past it.
+  // their full squad at full power by the last badge.
   // Gym scaling, SPLIT since devolution took over the stat curve:
   //  - size: matches the encounter economy (a badge-1 box is 2-4 mons).
   //  - support ×0.9 flat: the devolved fodder is already Squirtle-tier —
   //    let it actually land hits instead of double-discounting it.
-  //  - ace on the old 0.72→1.0 curve: the leader's REAL, undevolved ace is
+  //  - ace on the 0.72→1.0 curve: the leader's REAL, undevolved ace is
   //    the boss moment, and this is what keeps a cap-14 Steelix beatable.
+  // Region runs ride the SAME proven curve (Alola's four kahunas stride it
+  // double); the master gauntlet ramps on OVERALL progress instead — full
+  // size by the Kanto league, full strength by mid-Johto, then a hair past.
   function gymHandicap(run) {
+    if (run.region === "master") {
+      const done = doneCount(run);
+      return { size: Math.min(6, 3 + Math.floor(done / 3)),
+        boost: Math.min(1.1, 0.72 + done * 0.02),
+        support: Math.min(1.1, 0.9 + done * 0.01) };
+    }
+    if (run.region) {
+      const R = regionByKey(run.region);
+      const step = Math.min(7, run.badges.length * (R && R.gymN === 4 ? 2 : 1));
+      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.9 };
+    }
     const act = run.act === 2 ? 2 : 1;
     const step = act === 1
       ? run.badges.filter((i) => i >= KANTO_GYM0).length
@@ -504,6 +714,19 @@
   // on the ace curve.
   function gymBoosts(team, hc) {
     return team.map((_, i) => (i === team.length - 1 ? hc.boost : (hc.support || hc.boost)));
+  }
+  // League-stage strength for region-aware runs: the canon Kanto ramp
+  // (1.1 → 1.18 at the Champion, RED at 1.25) instead of the real ladder's
+  // late-gen 1.5s — a nuzlocke box earns its stats the hard way. The master
+  // gauntlet adds a shade per region crossed (its box has grown too).
+  const E4_RAMP = [1.1, 1.1, 1.12, 1.14, 1.18];
+  function stageBoost(run, st) {
+    if (!run.region) return st.boost || 1.1;
+    const R = REGIONS.find((x) => x.league.indexOf(st.key) >= 0 || x.peak === st.key);
+    if (!R) return st.boost || 1.1;
+    const base = st.key === R.peak ? 1.25 : E4_RAMP[Math.max(0, R.league.indexOf(st.key))];
+    if (run.region !== "master") return base;
+    return Math.min(1.4, base + REGIONS.indexOf(R) * 0.02);
   }
 
   function battleGym(run, idx, g) {
@@ -526,17 +749,30 @@
 
   // ❗ Villains prowl the roads between Nuzlocke gyms (~28% after a win) —
   // same rogues' gallery as the main circuit, but HERE every faint is
-  // forever. You can slip away… for a sip and a little shame.
+  // forever. Region-aware runs only meet era-true villains (no Nemona
+  // jumping a Kanto run). You can slip away… for a sip and a little shame.
+  function ambushPool(run) {
+    const all = window.CANON_TRAINERS || [];
+    if (!run || !run.region) return all;
+    const R = curRegion(run);
+    const gen = R ? R.gen : 9;
+    const genOf = {}; REGIONS.forEach((x) => { genOf[x.name] = x.gen; });
+    return all.filter((t) => {
+      const g = genOf[(t.story && t.story.region) || t.region];
+      return !g || g <= gen;
+    });
+  }
   function maybeAmbush() {
-    const pool = window.CANON_TRAINERS || [];
-    if (!pool.length || Math.random() > 0.28) return;
-    const t = pool[(Math.random() * pool.length) | 0];
+    if (Math.random() > 0.28) return;
     let tries = 0;
     (function whenClear() {
       if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
       const run = Store.nuzRun(me);
       if (!run || run.over || !Store.nuzAlive(me).length) return;
+      const pool = ambushPool(run);
+      if (!pool.length) return;
+      const t = pool[(Math.random() * pool.length) | 0];
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
         el("p", { class: "hint" }, "❗ On the road out of the gym, a villain blocks the path — and in a NUZLOCKE, every faint is FOREVER."),
@@ -574,7 +810,7 @@
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
-          b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: st.boost || 1.1 }] },
+          b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: stageBoost(run, st) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             if (winSide === "a") { Store.nuzStage(me, st.key); sfx("fanfare"); }
@@ -583,7 +819,7 @@
       });
   }
 
-  // ── The crown board — completed runs, fewest catches first ───────────────
+  // ── The crown board — highest tier first, then fewest catches ─────────────
   function renderHall(host) {
     const hall = Store.nuzHall();
     if (!hall.length) return;
@@ -592,7 +828,10 @@
       el("div", {}, hall.map((r, i) => el("div", { class: "nuz-hall-row" + (i === 0 ? " crowned" : "") }, [
         el("span", { class: "nuz-hall-rank" }, i === 0 ? "👑" : "#" + (i + 1)),
         el("span", { class: "nuz-hall-name" }, aName(r.att)),
-        el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost" + (r.mode === "random" ? " · 🎲" : "") + (r.tier === "legend" ? " · 🗻 LEGEND" : "") + (r.deaths === 0 ? " · 💎 deathless" : "")),
+        el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost"
+          + (r.mode === "random" ? " · 🎲" : "")
+          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
+          + (r.deaths === 0 ? " · 💎 deathless" : "")),
       ]))),
     ]));
   }

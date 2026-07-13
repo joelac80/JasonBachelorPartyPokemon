@@ -1983,6 +1983,7 @@ html, body { overscroll-behavior-y: contain; }
 .nuz-lab-head { font-family: var(--pixel, monospace); font-size: 14px; font-weight: 900; color: var(--pokered); margin-bottom: 6px; }
 .nuz-lab, .nuz-boxcard, .nuz-grass, .nuz-next, .nuz-hall, .nuz-summary { margin: 10px 0; padding: 12px 14px; }
 .nuz-starters { display: flex; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.nuz-regions { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
 .nuz-starter { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel);
   border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; color: var(--ink); }
 .nuz-starter:hover { border-color: var(--pokered); box-shadow: 0 0 10px rgba(238,21,21,.35); }

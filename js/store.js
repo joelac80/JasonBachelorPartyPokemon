@@ -1026,14 +1026,20 @@
     },
     // mode: "" = classic (canon leaders), "random" = 🎲 Randomizer — same
     // leaders, caps and team sizes, but seeded-random species every run.
-    nuzStart(attId, starterId, mode) {
+    // region: a NUZ_REGIONS key = that region's exclusive run, "master" =
+    // the all-nine-regions gauntlet, "" = the legacy Kanto→Johto structure.
+    nuzStart(attId, starterId, mode, region) {
       if (!attId || !starterId) return;
       this.update((s) => {
         s.nuzlocke = s.nuzlocke || {};
         s.nuzlocke[attId] = { starter: starterId, box: [{ id: starterId }], badges: [], league: [],
           catches: 1, deaths: 0, over: "", startTs: Date.now(), upd: Date.now(),
-          mode: mode === "random" ? "random" : "", seed: (Math.floor(Math.random() * 2147483647) || 1) };
-        Store.chron(s, "🪦", this._nuzName(attId) + " began a " + (mode === "random" ? "🎲 RANDOMIZER " : "") + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
+          mode: mode === "random" ? "random" : "", region: region || "",
+          seed: (Math.floor(Math.random() * 2147483647) || 1) };
+        const R = (window.NUZ_REGIONS || []).find((x) => x.key === region);
+        const label = region === "master" ? "🌍 MASTER RANDOMIZER "
+          : (R ? R.name.toUpperCase() + " " : "") + (mode === "random" ? "🎲 RANDOMIZER " : "");
+        Store.chron(s, "🪦", this._nuzName(attId) + " began a " + label + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
       });
     },
     // Give up the current run (a fresh nuzStart replaces it). Tombstoned, not
@@ -1104,41 +1110,82 @@
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.badges.indexOf(idx) >= 0) return;
         r.badges.push(idx);
-        Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + r.badges.length + "/8 — no losses allowed!");
+        const R = (window.NUZ_REGIONS || []).find((x) => x.key === r.region);
+        const total = r.region === "master" ? 68 : R ? R.gymN : 8;
+        Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + r.badges.length + "/" + total + " — no losses allowed!");
       });
     },
-    // An Elite Four / Champion stage falls. BLUE crowns the run (enshrined in
-    // the Nuzlocke hall AND the real Hall of Fame) — then THE JOHTO ACT opens:
-    // 8 more gyms in order and RED on Mt. Silver for the Legend tier.
+    // An Elite Four / Champion stage falls. Champions crown the run (enshrined
+    // in the Nuzlocke hall AND the real Hall of Fame). Legacy runs open THE
+    // JOHTO ACT after BLUE; a Johto region run offers RED past the crown for
+    // the Legend tier; the MASTER gauntlet only crowns at the very last
+    // Champion (GEETA) — everything before is a milestone on the road.
     nuzStage(attId, key) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.league.indexOf(key) >= 0) return;
         r.league.push(key);
         const alive = r.box.filter((m) => !m.dead).map((m) => m.id);
-        if (key === "blue") {
-          r.act = 2; r.champTs = Date.now();
+        const nm = this._nuzName(attId);
+        const tally = r.catches + " caught, " + r.deaths + " lost";
+        const enshrine = (tier, hofKey, champ, rank, regionName) => {
+          const ts = Date.now();
           s.nuzlockeHof = s.nuzlockeHof || [];
-          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.champTs, tier: "champion", mode: r.mode || "" });
+          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: ts, tier: tier, mode: r.mode || "", region: regionName || "" });
           s.hof = s.hof || [];
-          s.hof.push({ attId: attId, ts: r.champTs, party: alive.slice(0, 6), key: "nuzlocke", champ: "BLUE", rank: "Nuzlocke Champion", region: "Kanto" });
-          Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + this._nuzName(attId) + " beat BLUE with permadeath on — " + r.catches + " caught, " + r.deaths + " lost. And Johto is calling…");
-        } else if (key === "red") {
-          r.over = "legend"; r.doneTs = Date.now();
-          s.nuzlockeHof = s.nuzlockeHof || [];
-          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "legend", mode: r.mode || "" });
-          s.hof = s.hof || [];
-          s.hof.push({ attId: attId, ts: r.doneTs, party: alive.slice(0, 6), key: "nuzlocke-red", champ: "RED", rank: "Nuzlocke Legend", region: "Johto" });
-          Store.chron(s, "🗻", "NUZLOCKE LEGEND!!! " + this._nuzName(attId) + " climbed Mt. Silver with permadeath on and defeated RED — " + r.catches + " caught, " + r.deaths + " lost across TWO regions. Nothing left to prove.");
+          s.hof.push({ attId: attId, ts: ts, party: alive.slice(0, 6), key: hofKey, champ: champ, rank: rank, region: regionName || "" });
+          return ts;
+        };
+        const REG = window.NUZ_REGIONS || [];
+        if (!r.region) {                                       // legacy Kanto→Johto structure
+          if (key === "blue") {
+            r.act = 2; r.champTs = enshrine("champion", "nuzlocke", "BLUE", "Nuzlocke Champion", "Kanto");
+            Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + nm + " beat BLUE with permadeath on — " + tally + ". And Johto is calling…");
+          } else if (key === "red") {
+            r.over = "legend"; r.doneTs = enshrine("legend", "nuzlocke-red", "RED", "Nuzlocke Legend", "Johto");
+            Store.chron(s, "🗻", "NUZLOCKE LEGEND!!! " + nm + " climbed Mt. Silver with permadeath on and defeated RED — " + tally + " across TWO regions. Nothing left to prove.");
+          } else {
+            Store.chron(s, "🪦", nm + " toppled a Nuzlocke Elite Four stage (" + r.league.length + "/5)!");
+          }
+          return;
+        }
+        if (r.region === "master") {                           // 🌍 the all-regions gauntlet
+          const last = REG[REG.length - 1];
+          const R = REG.find((x) => x.champKey === key || x.peak === key);
+          if (last && key === last.champKey) {
+            r.over = "master"; r.doneTs = enshrine("master", "nuzlocke-master", last.champ, "Master Nuzlocke", "All regions");
+            Store.chron(s, "🌍", "MASTER OF ALL REGIONS!!! " + nm + " conquered every gym, every Elite Four and every Champion across all NINE regions with permadeath on — " + tally + ". The ultimate Nuzlocke is COMPLETE.");
+          } else if (R && key === R.champKey) {
+            const crowns = REG.filter((x) => r.league.indexOf(x.champKey) >= 0).length;
+            Store.chron(s, "🏆", nm + " conquered " + R.name + " in the MASTER NUZLOCKE (" + crowns + "/9 regions) — permadeath still on, the road goes on…");
+          } else if (R && key === R.peak) {
+            Store.chron(s, "🗻", nm + " toppled RED on Mt. Silver mid-MASTER NUZLOCKE — and kept walking.");
+          } else {
+            Store.chron(s, "🪦", nm + " toppled a Nuzlocke league stage in the master gauntlet!");
+          }
+          return;
+        }
+        const R = REG.find((x) => x.key === r.region);         // region-exclusive run
+        if (R && key === R.peak) {
+          r.over = "legend"; r.doneTs = enshrine("legend", "nuzlocke-red", R.peakName || "RED", "Nuzlocke Legend", R.name);
+          Store.chron(s, "🗻", "NUZLOCKE LEGEND!!! " + nm + " went past the crown and defeated " + (R.peakName || "RED") + " on Mt. Silver with permadeath on — " + tally + ". Nothing left to prove.");
+        } else if (R && key === R.champKey) {
+          r.crowned = 1; r.champTs = enshrine("champion", "nuzlocke-" + R.key, R.champ, "Nuzlocke Champion", R.name);
+          if (!R.peak) r.over = "champion";
+          Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + nm + " conquered " + R.name + " with permadeath on — " + tally + "." + (R.peak ? " And Mt. Silver is calling…" : ""));
         } else {
-          Store.chron(s, "🪦", this._nuzName(attId) + " toppled a Nuzlocke Elite Four stage (" + r.league.length + "/5)!");
+          Store.chron(s, "🪦", nm + " toppled a " + (R ? R.name : "") + " Nuzlocke league stage (" + r.league.length + "/5)!");
         }
       });
     },
     // Bank the crown and stop — a champion who walks away stays a champion.
-    nuzRetire(attId) { this._nuzEdit(attId, (r) => { if (!r.over && r.act === 2) r.over = "champion"; }); },
-    // Completed runs, best (fewest catches) first — the Nuzlocke crown board.
+    // (Legacy act-II runs, or a Johto region run with RED still waiting.)
+    nuzRetire(attId) { this._nuzEdit(attId, (r) => { if (!r.over && (r.act === 2 || r.crowned)) r.over = "champion"; }); },
+    // Completed runs on the crown board: highest tier first (master > legend >
+    // champion), then fewest catches — the classic flex.
     nuzHall() {
-      return (this.state.nuzlockeHof || []).slice().sort((a, b) => (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
+      const w = { master: 3, legend: 2 };
+      return (this.state.nuzlockeHof || []).slice().sort((a, b) =>
+        ((w[b.tier] || 1) - (w[a.tier] || 1)) || (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
 
     // 🏔 HISUI — beating CYNTHIA (the summit of Gen 4) tears the temporal
@@ -1264,8 +1311,9 @@
       const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
       if (nz.length) {
         const best = nz.reduce((a, b) => (b.catches < a.catches ? b : a));
-        if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "two regions of permadeath — and RED still fell" });
-        out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered Kanto with permadeath on — " + best.catches + " Pokémon caught" });
+        if (nz.some((r) => r.tier === "master")) out.push({ emoji: "🌍", title: "Master Nuzlocke", sub: "all nine regions, every trainer, permadeath on — the ultimate run" });
+        if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "took the run past the Champion — and RED still fell" });
+        out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered " + (best.region || "Kanto") + " with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });
         if (nz.some((r) => !r.deaths)) out.push({ emoji: "💎", title: "Deathless", sub: "won a Nuzlocke without losing a single Pokémon" });
       }
