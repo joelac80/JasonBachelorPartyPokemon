@@ -20,6 +20,11 @@
        rule is the only lifeline: a beaten film's legend may join the cast,
        but ONLY into a seat opened by a death. Survive all 16 films for
        the Marathon Premiere crown.
+    🎒 THE LONG WALK — one box, nine regions, the region curve resetting to
+       14 at every border. Your Pokémon PERSIST (no team reset, no gates) —
+       veterans steamroll each region's early gyms, but permadeath never
+       resets, encounters stay scarce, and ~115 battles of attrition erode
+       the box. Classic teams; RED mandatory; GEETA crowns the trek.
     🕰 THROUGH THE AGES — the same nine-region walk with CLASSIC teams and
        the region curve resetting every generation (each region plays Lv
        14 → 48 → league, like Kanto did). What makes the reset fair: at
@@ -45,7 +50,9 @@
   // Every gym in circuit order, then that region's Elite Four + Champion —
   // region by region for the master gauntlet (RED's Mt. Silver peak sits
   // right after Johto's league, exactly where the canon puts it).
-  const allRegions = (run) => run.region === "master" || run.region === "ages";
+  const allRegions = (run) => run.region === "master" || run.region === "ages" || run.region === "trek";
+  // Ages and the Long Walk share the region-reset curve; only ages resets the BOX.
+  const regionReset = (run) => run.region === "ages" || run.region === "trek";
   function seqFor(run) {
     const regions = allRegions(run) ? REGIONS : [regionByKey(run.region)].filter(Boolean);
     const seq = [];
@@ -157,9 +164,9 @@
       const total = seqFor(run).length;              // 114 battles, 14 → 100
       return Math.min(100, 14 + Math.round((doneCount(run) * 86) / Math.max(1, total - 1)));
     }
-    if (run.region === "ages") {
-      // 🕰 The whole point of the ages walk: the region curve RESETS each
-      // generation — a fresh team earns 14 → 48 → league all over again.
+    if (regionReset(run)) {
+      // 🕰/🎒 The region curve RESETS each generation — ages earns it with a
+      // fresh team; the Long Walk carries ONE box through every reset.
       const R = curRegion(run) || REGIONS[0];
       const g = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
       const caps = R.gymN === 4 ? [14, 26, 37, 48] : [14, 24, 28, 32, 36, 40, 44, 48];
@@ -298,9 +305,10 @@
   function renderStartScreen(host, lastRun) {
     if (lastRun && lastRun.over) {
       const alive = lastRun.box.filter((m) => !m.dead).length;
-      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master" || lastRun.over === "ages" || lastRun.over === "premiere";
+      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master" || lastRun.over === "ages" || lastRun.over === "premiere" || lastRun.over === "trek";
       const headline = lastRun.over === "master" ? "🌍 MASTER OF ALL REGIONS — nine regions, every trainer, permadeath on!"
         : lastRun.over === "ages" ? "🕰 TRAINER OF THE AGES — nine generations, nine teams, one unbroken journey!"
+        : lastRun.over === "trek" ? "🎒 THE LONG WALK IS OVER — one team, nine regions, border to border!"
         : lastRun.over === "premiere" ? "🎬 THE CREDITS ROLL — the whole filmography survived, permadeath on!"
         : lastRun.over === "legend" ? "🗻 LEGEND — past the crown, and RED still fell!"
         : lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
@@ -325,11 +333,12 @@
     const first = REGIONS[0] || R;
     const movie = newKind === "movie";
     const filmN = (window.MOVIE_BOSSES || []).length || 16;
-    const starterIds = newKind === "master" ? ALL_STARTERS : newKind === "ages" ? first.starters : R.starters;
+    const starterIds = newKind === "master" ? ALL_STARTERS
+      : newKind === "ages" || newKind === "trek" ? first.starters : R.starters;
     host.appendChild(el("div", { class: "safari-card nuz-lab" }, [
       el("div", { class: "nuz-lab-head" }, movie ? "🎥 The Casting Call"
         : newKind === "master" ? "🧪 The Professors' Summit"
-        : "🧪 Professor " + ((newKind === "ages" ? first.prof : R.prof) || "Oak") + "'s Lab"),
+        : "🧪 Professor " + ((newKind === "ages" || newKind === "trek" ? first.prof : R.prof) || "Oak") + "'s Lab"),
       el("p", { class: "hint" }, movie
         ? "“Lights. Cameras. Permadeath. Six seats in the cast — and every legend on the reel is waiting at FULL power.”"
         : "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
@@ -343,21 +352,24 @@
         el("button", { class: "btn sm" + (newKind === "random" ? " primary" : " subtle"), onClick: () => { newKind = "random"; Router.render(); } }, "🎲 Region Randomizer"),
         el("button", { class: "btn sm" + (newKind === "master" ? " primary" : " subtle"), onClick: () => { newKind = "master"; Router.render(); } }, "🌍 Master Randomizer"),
         el("button", { class: "btn sm" + (newKind === "ages" ? " primary" : " subtle"), onClick: () => { newKind = "ages"; Router.render(); } }, "🕰 Through the Ages"),
+        el("button", { class: "btn sm" + (newKind === "trek" ? " primary" : " subtle"), onClick: () => { newKind = "trek"; Router.render(); } }, "🎒 The Long Walk"),
         el("button", { class: "btn sm" + (movie ? " primary" : " subtle"), onClick: () => { newKind = "movie"; Router.render(); } }, "🎬 Movie Marathon"),
       ]),
       newKind === "master"
         ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — every gym, every Elite Four, every Champion (RED included): 114 battles on one Lv 14→100 curve, every team randomized, permadeath the whole way. The ultimate run.")
         : newKind === "ages"
           ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey — and at the very end, the road leads home: PROFESSOR OAK waits in Pallet Town as the LAST BOSS.")
-          : movie
-            ? el("p", { class: "hint" }, "🎬 The attrition epic: draft ANY six non-legendaries — that's the whole cast, full power, no level caps, no wild grass. Then the entire filmography rolls in release order: " + filmN + " films, every movie legend at full boss strength, MEWTWO on opening night. A beaten film's legend may join the cast — but only over a fallen seat.")
+          : newKind === "trek"
+            ? el("p", { class: "hint" }, "🎒 One team, nine regions: the level curve resets to 14 at every border, but your BOX walks the whole way — every catch, every scar, every survivor, Kanto to Paldea. Your veterans will bully each region's early gyms… and permadeath will spend nine regions collecting its toll. Classic leaders, RED on the road, GEETA at the end.")
+            : movie
+              ? el("p", { class: "hint" }, "🎬 The attrition epic: draft ANY six non-legendaries — that's the whole cast, full power, no level caps, no wild grass. Then the entire filmography rolls in release order: " + filmN + " films, every movie legend at full boss strength, MEWTWO on opening night. A beaten film's legend may join the cast — but only over a fallen seat.")
             : newKind === "random"
               ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
               : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
       newKind === "classic" || newKind === "random" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
         el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; Router.render(); } }, r.emoji + " " + r.name))) : null,
       newKind === "master" ? el("p", { class: "hint" }, "A master run begins in Kanto — but the professors have gathered: choose ANY starter from the whole saga.") : null,
-      newKind === "ages" ? el("p", { class: "hint" }, "The journey begins where it all began — Gen 1, Professor Oak's lab.") : null,
+      newKind === "ages" || newKind === "trek" ? el("p", { class: "hint" }, "The journey begins where it all began — Gen 1, Professor Oak's lab.") : null,
       movie
         ? el("div", { class: "safari-actions" }, [
             el("button", { class: "btn primary spin-btn", onClick: () => draftCast() }, "🎥 Hold the casting call — draft your 6"),
@@ -366,10 +378,11 @@
           el("button", { class: "nuz-starter", onClick: () => {
             const label = newKind === "master" ? "🌍 MASTER RANDOMIZER (all nine regions!)"
               : newKind === "ages" ? "🕰 THROUGH THE AGES (nine generations, a fresh team each era!)"
+              : newKind === "trek" ? "🎒 LONG WALK (one team through all nine regions!)"
               : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
             if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
             Store.nuzStart(me, id, newKind === "random" || newKind === "master" ? "random" : "",
-              newKind === "master" ? "master" : newKind === "ages" ? "ages" : newRegion);
+              newKind === "master" ? "master" : newKind === "ages" ? "ages" : newKind === "trek" ? "trek" : newRegion);
             wildId = 0; sfx("fanfare"); Router.render();
           } }, [
             Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
@@ -383,7 +396,9 @@
           ? "• Nine regions in canon order: 68 gyms, nine leagues, RED on Mt. Silver — the LAST Champion crowns the MASTER."
           : newKind === "ages"
             ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. After the last Champion, one road remains: PROFESSOR OAK in Pallet Town — beat the LAST BOSS to be crowned TRAINER OF THE AGES."
-            : movie
+            : newKind === "trek"
+              ? "• Nine regions in canon order, canon teams, the curve resetting to 14 at every border — but your box NEVER resets. One team walks the whole saga (RED included); GEETA crowns THE LONG WALK."
+              : movie
               ? "• " + filmN + " films in release order, every boss at FULL power. No catching — the only reinforcements are co-star legends, and only a death opens their seat. Survive the whole reel for the MARATHON PREMIERE."
               : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
         el("div", {}, movie
@@ -472,6 +487,12 @@
         el("p", { class: "hint" }, "The whole saga, one generation at a time — team #" + teamN + " carries the torch, " +
           doneCount(run) + "/" + seqFor(run).length + " battles down. At every border the box retires and a new era begins at Lv 14. Permadeath never retires."),
       ]));
+    } else if (run.region === "trek") {
+      host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+        el("div", { class: "nuz-lab-head" }, "🎒 THE LONG WALK — Gen " + (R ? R.gen : "?") + "/9: " + (R ? R.emoji + " " + R.name : "")),
+        el("p", { class: "hint" }, "One team, the whole saga — " + doneCount(run) + "/" + seqFor(run).length +
+          " battles walked. The curve resets to Lv " + runLevel(run) + " here, but the box never resets: every survivor remembers every region, and permadeath is keeping score."),
+      ]));
     } else if (run.crowned && !run.over) {
       // Johto region run, crown banked — RED is optional glory.
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
@@ -493,7 +514,7 @@
     host.appendChild(el("div", { class: "safari-stats" }, [
       stat("🏅 " + gymsDone + "/" + (R ? R.gymN : 8), (R ? R.name : "") + " badges"),
       stat("👑 " + leagueDone + "/" + (R ? R.league.length : 5), "League stages"),
-      master || ages ? stat("⚔ " + doneCount(run) + "/" + seqFor(run).length, master ? "Gauntlet" : "The saga") : null,
+      master || ages || run.region === "trek" ? stat("⚔ " + doneCount(run) + "/" + seqFor(run).length, master ? "Gauntlet" : run.region === "trek" ? "The walk" : "The saga") : null,
       stat((run.mode === "random" ? "🎲 " : "📈 ") + "Lv " + runLevel(run), run.mode === "random" ? "Randomizer" : "Run level"),
       stat(run.catches, "Caught"),
       stat("🪦 " + run.deaths, "Lost forever"),
@@ -773,7 +794,9 @@
           ? "The silent one guards the road out of Johto — the master gauntlet goes THROUGH him."
           : ages
             ? "The last page of Gen 2 — the ages walk goes THROUGH him, with the team that grew up here."
-            : "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
+            : run.region === "trek"
+              ? "The silent one guards the road out of Johto — the long walk goes THROUGH him."
+              : "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
       }
       return;
     }
@@ -785,14 +808,18 @@
       next.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
       ]));
-      const isFinal = (master || ages) && R === REGIONS[REGIONS.length - 1] && step.key === R.champKey;
+      const trek = run.region === "trek";
+      const isFinal = (master || ages || trek) && R === REGIONS[REGIONS.length - 1] && step.key === R.champKey;
       next.appendChild(el("p", { class: "hint" }, isFinal
         ? (master
           ? "THE FINAL BATTLE of the master gauntlet — beat " + st.name + " and every trainer in the saga has fallen to one box."
-          : "Beat " + st.name + " and every league in the saga has fallen — then one last road: home to Pallet Town, where PROFESSOR OAK waits.")
+          : trek
+            ? "THE LAST BATTLE of the long walk — beat " + st.name + " and ONE TEAM has carried the whole saga, border to border."
+            : "Beat " + st.name + " and every league in the saga has fallen — then one last road: home to Pallet Town, where PROFESSOR OAK waits.")
         : step.key === R.champKey
           ? (master ? "Beat the Champion and the next region opens — the gauntlet rolls on."
             : ages ? "Beat the Champion and Gen " + R.gen + " closes — a new generation (and a brand-new team) waits at the border."
+            : trek ? "Beat the Champion and the next region opens — same team, fresh Lv 14 curve, permadeath still counting."
             : "Beat the Champion and the crown is yours" + (R.peak ? " — then Mt. Silver calls." : "."))
           : "The " + R.name + " Elite Four stands between you and the Champion."));
     }
@@ -930,8 +957,9 @@
         boost: Math.min(1.1, 0.72 + done * 0.02),
         support: Math.min(1.1, 0.9 + done * 0.01) };
     }
-    if (run.region === "ages") {
-      // Fresh box each generation → the leader curve resets with it.
+    if (regionReset(run)) {
+      // The leader curve resets with the region (ages: fresh box earns it;
+      // trek: the veteran box gets a soft landing, the ACE still ramps).
       const R = curRegion(run) || REGIONS[0];
       const g = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
       const step = Math.min(7, g * (R.gymN === 4 ? 2 : 1));
@@ -1072,7 +1100,7 @@
         el("span", { class: "nuz-hall-name" }, aName(r.att)),
         el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost"
           + (r.mode === "random" ? " · 🎲" : "")
-          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "ages" ? " · 🕰 AGES" : r.tier === "movie" ? " · 🎬 PREMIERE" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
+          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "ages" ? " · 🕰 AGES" : r.tier === "trek" ? " · 🎒 LONG WALK" : r.tier === "movie" ? " · 🎬 PREMIERE" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
           + (r.deaths === 0 ? " · 💎 deathless" : "")),
       ]))),
     ]));

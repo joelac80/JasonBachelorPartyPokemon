@@ -1046,6 +1046,7 @@
         const R = (window.NUZ_REGIONS || []).find((x) => x.key === region);
         const label = region === "master" ? "🌍 MASTER RANDOMIZER "
           : region === "ages" ? "🕰 THROUGH-THE-AGES "
+          : region === "trek" ? "🎒 LONG-WALK "
           : (R ? R.name.toUpperCase() + " " : "") + (mode === "random" ? "🎲 RANDOMIZER " : "");
         Store.chron(s, "🪦", this._nuzName(attId) + " began a " + label + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
       });
@@ -1167,8 +1168,8 @@
         const REG = window.NUZ_REGIONS || [];
         let n = r.badges.length, total = 8, where = "";
         if (r.region === "master") { total = 68; }
-        else if (r.region === "ages") {
-          // The ages walk resets per generation — count within THIS region.
+        else if (r.region === "ages" || r.region === "trek") {
+          // Region-reset walks — count within THIS region.
           const R = REG.find((x) => idx >= x.gym0 && idx < x.gym0 + x.gymN);
           if (R) { n = r.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length; total = R.gymN; where = " (" + R.name + ")"; }
         } else {
@@ -1238,6 +1239,22 @@
           }
           return;
         }
+        if (r.region === "trek") {                             // 🎒 The Long Walk
+          const last = REG[REG.length - 1];
+          const R = REG.find((x) => x.champKey === key || x.peak === key);
+          if (last && key === last.champKey) {
+            r.over = "trek"; r.doneTs = enshrine("trek", "nuzlocke-trek", last.champ, "The Long Walk", "All regions, one team");
+            Store.chron(s, "🎒", "THE LONG WALK IS OVER!!! " + nm + " carried ONE team through all nine regions — every border, every reset curve, RED and all — with permadeath on. " + tally + ". The box that walked the whole saga.");
+          } else if (R && key === R.champKey) {
+            const crowns = REG.filter((x) => r.league.indexOf(x.champKey) >= 0).length;
+            Store.chron(s, "🏆", nm + " conquered " + R.name + " on the LONG WALK (" + crowns + "/9 regions) — same team, next border, the curve resets again…");
+          } else if (R && key === R.peak) {
+            Store.chron(s, "🗻", nm + " toppled RED on Mt. Silver — the long walk goes on, one team heavier with the memory.");
+          } else {
+            Store.chron(s, "🪦", nm + " toppled a Nuzlocke league stage on the long walk!");
+          }
+          return;
+        }
         if (r.region === "ages") {                             // 🕰 Through the Ages
           const last = REG[REG.length - 1];
           const R = REG.find((x) => x.champKey === key || x.peak === key);
@@ -1275,7 +1292,7 @@
     // Completed runs on the crown board: highest tier first (master and the
     // ages walk > legend > champion), then fewest catches — the classic flex.
     nuzHall() {
-      const w = { master: 3, ages: 3, movie: 2.5, legend: 2 };
+      const w = { master: 3, ages: 3, trek: 2.7, movie: 2.5, legend: 2 };
       return (this.state.nuzlockeHof || []).slice().sort((a, b) =>
         ((w[b.tier] || 1) - (w[a.tier] || 1)) || (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
@@ -1346,11 +1363,13 @@
         + this.movieWins(attId).length + this.legendWins(attId).length + this.secretWins(attId).length;
       const tdexTotal = canon.length + gymTotal + leagueTotal + filmTotal + legendsTotal;
       // Nuzlocke climbs by TIER, not count: crown → RED → one ultimate →
-      // ALL THREE ultimates (master + ages + movie). The hardest platinum here.
+      // ALL FOUR ultimates (master + ages + trek + movie). The hardest
+      // platinum on the wall, by design.
       const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
       const nzHas = (t) => nz.some((r) => r.tier === t);
-      const nzUlt = ["master", "ages", "movie"].filter(nzHas).length;
-      const nzTier = nzUlt >= 3 ? 4 : nzUlt >= 1 ? 3 : nzHas("legend") ? 2 : nzHas("champion") ? 1 : 0;
+      const ULT = ["master", "ages", "trek", "movie"];
+      const nzUlt = ULT.filter(nzHas).length;
+      const nzTier = nzUlt >= ULT.length ? 4 : nzUlt >= 1 ? 3 : nzHas("legend") ? 2 : nzHas("champion") ? 1 : 0;
       const defs = [
         { key: "collector", emoji: "🔴", title: "The Collector", unit: "species caught",
           v: this.dexCount(attId), at: [25, 150, 500, 1025] },
@@ -1369,7 +1388,7 @@
         { key: "nuzlocke", emoji: "🪦", title: "Permadeath Proof", unit: "",
           v: nzTier, at: [1, 2, 3, 4],
           steps: ["win any Nuzlocke crown", "topple RED for the Legend tier",
-            "finish an ULTIMATE run (Master, Ages or Movie)", "finish ALL THREE ultimates"] },
+            "finish an ULTIMATE run (Master, Ages, Long Walk or Movie)", "finish ALL FOUR ultimates"] },
         { key: "films", emoji: "🎬", title: "Silver Screen", unit: "films beaten",
           v: this.movieWins(attId).length, at: [1, 8, 12, filmTotal] },
         { key: "legends", emoji: "🌌", title: "Legend Seeker", unit: "legends & story beats",
@@ -1477,6 +1496,7 @@
         if (nz.some((r) => r.tier === "master")) out.push({ emoji: "🌍", title: "Master Nuzlocke", sub: "all nine regions, every trainer, permadeath on — the ultimate run" });
         if (nz.some((r) => r.tier === "ages")) out.push({ emoji: "🕰", title: "Trainer of the Ages", sub: "nine generations, a fresh team each era, one unbroken journey — permadeath on" });
         if (nz.some((r) => r.tier === "movie")) out.push({ emoji: "🎬", title: "Marathon Premiere", sub: "survived the entire filmography — every movie legend at full power, permadeath on" });
+        if (nz.some((r) => r.tier === "trek")) out.push({ emoji: "🎒", title: "The Long Walk", sub: "one team through all nine regions, the curve resetting at every border — permadeath all the way" });
         if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "took the run past the Champion — and RED still fell" });
         out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered " + (best.region || "Kanto") + " with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });
