@@ -990,9 +990,11 @@
   // ❗ Villains prowl the roads between Nuzlocke gyms (~28% after a win) —
   // same rogues' gallery as the main circuit, but HERE every faint is
   // forever. Region-aware runs only meet era-true villains (no Nemona
-  // jumping a Kanto run). You can slip away… for a sip and a little shame.
+  // jumping a Kanto run). PROF. OAK never prowls: in a nuzlocke he's the
+  // ages walk's LAST BOSS — the professor doesn't jump people on roads.
+  // You can slip away… for a sip and a little shame.
   function ambushPool(run) {
-    const all = window.CANON_TRAINERS || [];
+    const all = (window.CANON_TRAINERS || []).filter((t) => t.name !== "PROF. OAK");
     if (!run || !run.region) return all;
     const R = curRegion(run);
     const gen = R ? R.gen : 9;
