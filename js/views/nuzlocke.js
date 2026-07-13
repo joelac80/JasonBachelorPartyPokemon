@@ -84,11 +84,16 @@
   // Which forms this box mon could evolve into at the current cap. Real
   // level-up lines use their true level (Squirtle→Wartortle at 16); stone /
   // trade / friendship lines stand in at 32 (data/evo-levels.js).
+  // SPLIT FAMILIES (Slowbro/Slowking, Gardevoir/Gallade, Glalie/Froslass…):
+  // the branches carry different levels, so waiting for "the other one" could
+  // never happen — the moment ANY branch is within the cap, EVERY branch is
+  // offered. Reaching one fork must never force the other's choice on you.
   function evoTargetsFor(m, run) {
     if (!m || m.dead) return [];
-    const rows = (window.EVO_LEVELS || {})[m.id] || [];
+    const rows = ((window.EVO_LEVELS || {})[m.id] || []).filter((r) => DEX[r.to]);
     const cap = runLevel(run);
-    return rows.filter((r) => r.lvl <= cap && DEX[r.to]);
+    if (rows.length > 1) return rows.some((r) => r.lvl <= cap) ? rows : [];
+    return rows.filter((r) => r.lvl <= cap);
   }
 
   // ⬇ The reverse walk: what a species DEVOLVES to at a given cap. A Lv14

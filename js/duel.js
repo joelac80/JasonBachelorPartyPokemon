@@ -1057,6 +1057,10 @@
     // applies the same acts, so every phone increments identically — that
     // keeps the count safe under last-write-wins state sync.
     function creditKO(u, m) {
+      // Nuzlocke runs level-gate their OWN evolutions and never touch the
+      // real dex — no EXP credit (it would silently bank KOs on the REAL
+      // Squirtle of the same species) and no "(2/3 KOs to evolve)" chatter.
+      if (opts.nuzlocke) return null;
       m.kos = (m.kos || 0) + 1;
       try {
         Store.update((s) => {
@@ -1742,8 +1746,12 @@
       const accMod = stageMul(m.stg ? m.stg.acc : 0);
       const miss = !armed && mv.acc < 101 && (Math.random() * 100 >= mv.acc * accMod);
       const highCrit = !!(mv.fx && mv.fx.crit === "high");
-      const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.18 : 0.08));
-      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 2 : 1) * (0.85 + Math.random() * 0.15)));
+      // Crit odds run canon-flavored: 5% base, 12.5% for high-crit moves
+      // (Slash, Razor Leaf…), and crits hit ×1.5 — not ×2 — so a lucky
+      // streak stings instead of deleting the run. Liquid Courage still
+      // guarantees the crit (that one's earned in sips).
+      const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.125 : 0.05));
+      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
       // Secondary effect: does it proc? (self-buff status moves always do.)
       let fxHit = false, slpTurns = 0;
       if (mv.fx && !miss) {
