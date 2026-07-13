@@ -180,6 +180,9 @@ body {
 }
 .hero-sub { font-family: var(--pixel); font-size: 14px; color: var(--pokeblue); margin: 0 0 10px; }
 .hero-blurb { max-width: 620px; margin: 0 auto; color: var(--ink-dim); font-size: 15px; }
+/* The app's motto line — the story in one breath. */
+.hero-motto { font-family: var(--pixel, monospace); font-weight: 800; font-size: 13px; letter-spacing: 0.5px;
+  color: var(--ink); margin-top: 8px; }
 
 /* countdown */
 .countdown { text-align: center; margin: 22px auto; }

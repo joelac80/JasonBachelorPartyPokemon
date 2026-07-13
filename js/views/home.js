@@ -1,52 +1,12 @@
-/* home.js — landing hub: hero, countdown, fan badges, Oak's tip, nav. */
+/* home.js — the front door, focused on the two things this app IS:
+   CATCHING and BATTLING. The hero tells the story (friends brought
+   together by a shared love of the Pokémon world), the pillars below it
+   are the doors — Safari/Pokédex/Trading Post and Arena/Journey/Tower/
+   Nuzlocke — plus the signed-in trainer's live career strip and the
+   overworld map. Everything else lives behind 🎉 Party Central. */
 (function () {
   const { el } = U;
   let liveUnsub = null;   // so re-rendering Home doesn't stack live-battle subscribers
-
-  function countdownParts(target) {
-    const now = new Date();
-    const diff = target - now;
-    if (isNaN(diff)) return null;
-    if (diff <= 0) return { done: true };
-    const s = Math.floor(diff / 1000);
-    return {
-      done: false,
-      days: Math.floor(s / 86400),
-      hours: Math.floor((s % 86400) / 3600),
-      mins: Math.floor((s % 3600) / 60),
-      secs: s % 60,
-    };
-  }
-
-  // Live cross-feature trophies (Ash Ketchum, Master Catcher, Best Helper,
-  // Battle Champ) — earned in the mini-games, surfaced on the front door.
-  function liveTrophies() {
-    const trophies = Store.liveTrophies();
-    if (!trophies.length) return null;
-    return el("div", { class: "trophy-strip" }, trophies.map((t) =>
-      el("div", { class: "trophy" }, [
-        el("span", { class: "trophy-emoji" }, t.emoji),
-        el("div", { class: "trophy-txt" }, [
-          el("div", { class: "trophy-title" }, t.title),
-          el("div", { class: "trophy-holder" }, t.holder),
-          el("div", { class: "trophy-sub" }, t.sub),
-        ]),
-      ])));
-  }
-
-  function oakTip() {
-    const o = Store.state.oakTip || {};
-    if (!o.quote) return null;
-    return el("div", { class: "oak-tip" }, [
-      o.image
-        ? el("img", { src: o.image, alt: "Oak's tip" })
-        : el("div", { class: "oak-ball" }, "👴"),
-      el("div", {}, [
-        el("div", { class: "oak-quote" }, "“" + o.quote + "”"),
-        o.attribution ? el("div", { class: "oak-attr" }, "— " + o.attribution) : null,
-      ]),
-    ]);
-  }
 
   // ---- Overworld region map (replaces the tile grid) ----------------------
   // Nine landmarks in a 100 x 64 viewBox. Single-destination landmarks link
@@ -67,13 +27,13 @@
       { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Permadeath Kanto → Johto → RED — fewest catches wears the crown" },
       { r: "dex",      e: "📕", t: "Pokédex",       d: "Every collection on one page — Gen 1-9, Hisui, Unown & Mega" },
     ] },
-    { id: "victory",  r: "victoryroad", e: "🏆", t: "Victory Road",    x: 84, y: 40 },
-    // 🎉 Everything that isn't catching or battling lives in Party Central.
-    { id: "party", r: "party", e: "🎉", t: "Party Central", x: 68, y: 22 },
+    // 🎉 Everything that isn't catching or battling lives in Party Central
+    // (Victory Road's team scoreboard included — see the nav).
+    { id: "party", r: "party", e: "🎉", t: "Party Central", x: 80, y: 34 },
   ];
   const MAP_PATHS = [
     ["settings", "lodge"], ["lodge", "plateau"], ["safari", "plateau"],
-    ["safari", "party"], ["plateau", "victory"], ["party", "victory"],
+    ["safari", "party"], ["plateau", "party"],
   ];
 
   // A town's menu of buildings.
@@ -129,7 +89,6 @@
 
   function view(root) {
     const p = Store.state.party;
-    const target = new Date(p.startDate);
 
     // Live-battle strip — lists EVERY room battle currently on, so anyone who
     // dismissed the alert can pick which one to jump into and watch.
@@ -158,22 +117,40 @@
       paintLive();
     }
 
-    // ⚡ Quick play — the crowd favorites, one tap from the front door.
-    // (The drink quick-log moved out with the Tavern; see 📦 The Vault.)
-    const QUICK = [
-      { r: "safari",   e: "🔴", t: "Safari Zone",  d: "Catch 'em" },
-      { r: "regions",  e: "🗺", t: "The Journey",  d: "Gyms → Champions" },
-      { r: "battle",   e: "⚔️", t: "Battle Arena", d: "Real duels" },
-      { r: "tower",    e: "🗼", t: "Battle Tower", d: "Streaks & PALMER" },
-      { r: "nuzlocke", e: "🪦", t: "Nuzlocke",     d: "Permadeath run" },
-      { r: "party",    e: "🎉", t: "Party Central", d: "Everything else" },
-    ];
-    root.appendChild(el("div", { class: "home-quick six" }, QUICK.map((q) =>
-      el("a", { class: "hq-tile", href: "#/" + q.r }, [
-        el("span", { class: "hq-e" }, q.e),
-        el("span", { class: "hq-t" }, q.t),
-        el("span", { class: "hq-d" }, q.d),
-      ]))));
+    // ── THE STORY — what this app is, right at the front door ──────────────
+    const hero = el("section", { class: "hero" }, [
+      p.heroImage
+        ? el("img", { class: "hero-img", src: p.heroImage, alt: p.title })
+        : el("div", { class: "hero-ball" }),
+      el("div", { class: "hero-badge" }, "For the love of Pokémon"),
+      el("h1", { class: "hero-title" }, p.title || "Pokémon Party HQ"),
+      p.subtitle ? el("p", { class: "hero-sub" }, p.subtitle) : null,
+      p.location ? el("p", { class: "cd-loc" }, "📍 " + p.location) : null,
+      el("p", { class: "hero-blurb" }, "This is a place for friends who grew up loving the world of Pokémon — one app on every phone that turns a room into a region. Catch across all nine generations, battle each other for real, and walk the whole saga side by side: every gym, every Champion, every legend, every film."),
+      el("p", { class: "hero-blurb hero-motto" }, "Catch 'em. Battle 'em. Never travel alone."),
+      p.blurb ? el("p", { class: "hero-blurb" }, p.blurb) : null,
+    ]);
+    root.appendChild(hero);
+
+    // ── THE TWO PILLARS — catching and battling, every door on one screen ──
+    const tile = (q) => el("a", { class: "hq-tile", href: "#/" + q.r }, [
+      el("span", { class: "hq-e" }, q.e),
+      el("span", { class: "hq-t" }, q.t),
+      el("span", { class: "hq-d" }, q.d),
+    ]);
+    root.appendChild(el("h2", { class: "section-title" }, "🔴 Catch 'em"));
+    root.appendChild(el("div", { class: "home-quick six" }, [
+      { r: "safari",  e: "🔴", t: "Safari Zone",    d: "Find, boost, throw — Gen 1-9, shinies 1-in-16" },
+      { r: "dex",     e: "📕", t: "Pokédex",        d: "Every collection — Hisui, Unown, Mega, Trainers" },
+      { r: "trade",   e: "🔁", t: "Trading Post",   d: "Swap with friends — some only evolve by trade" },
+    ].map(tile)));
+    root.appendChild(el("h2", { class: "section-title" }, "⚔️ Battle 'em"));
+    root.appendChild(el("div", { class: "home-quick" }, [
+      { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
+      { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions of gyms → Champions" },
+      { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Five permadeath epics" },
+    ].map(tile)));
 
     // 🧭 YOUR JOURNEY — the signed-in trainer's battle career, front and
     // center: ladder progress, tower streak, nuzlocke run, dex haul. Every
@@ -207,67 +184,10 @@
           ])))));
     })();
 
-    const hero = el("section", { class: "hero" }, [
-      p.heroImage
-        ? el("img", { class: "hero-img", src: p.heroImage, alt: p.title })
-        : el("div", { class: "hero-ball" }),
-      el("div", { class: "hero-badge" }, "Party HQ"),
-      el("h1", { class: "hero-title" }, p.title || "Pokémon Party"),
-      el("p", { class: "hero-sub" }, p.subtitle || ""),
-      p.location ? el("p", { class: "cd-loc" }, "📍 " + p.location) : null,
-      p.venue ? el("p", { class: "hero-blurb" }, p.venue) : null,
-      el("p", { class: "hero-blurb" }, p.blurb || ""),
-    ]);
-
-    const cd = el("div", { class: "countdown" });
-    function renderCd() {
-      const parts = countdownParts(target);
-      cd.innerHTML = "";
-      if (!parts) { cd.appendChild(el("p", { class: "cd-note" }, "Set the party date in Settings.")); return; }
-      if (parts.done) { cd.appendChild(el("p", { class: "cd-live" }, "🔥 It's GO time — the party is on!")); return; }
-      const unit = (n, label) => el("div", { class: "cd-unit" }, [
-        el("span", { class: "cd-num" }, String(n).padStart(2, "0")),
-        el("span", { class: "cd-label" }, label),
-      ]);
-      cd.appendChild(el("div", { class: "cd-title" }, "Trainers assemble in"));
-      cd.appendChild(el("div", { class: "cd-row" }, [
-        unit(parts.days, "days"), unit(parts.hours, "hrs"),
-        unit(parts.mins, "min"), unit(parts.secs, "sec"),
-      ]));
-    }
-    renderCd();
-    const timer = setInterval(() => {
-      if (!document.body.contains(cd)) { clearInterval(timer); return; }
-      renderCd();
-    }, 1000);
-
-    root.appendChild(hero);
-    root.appendChild(cd);
-    const trophies = liveTrophies();
-    if (trophies) { root.appendChild(el("h2", { class: "section-title" }, "🏅 Live Trophies")); root.appendChild(trophies); }
-    const oak = oakTip();
-    if (oak) { root.appendChild(el("h2", { class: "section-title" }, "Oak's Tip")); root.appendChild(oak); }
+    // The map keeps the world explorable — Party Central is the one door to
+    // everything that isn't catching or battling (photos, games, honors).
     root.appendChild(el("h2", { class: "section-title" }, "Explore the Region"));
     root.appendChild(overworld());
-
-    // 📸 Snapshots strip — the latest photo moments, scroll sideways; tap one
-    // to open it, or the header to jump to the full feed.
-    const photos = (Store.state.photos || []).slice(0, 20);
-    const head = el("h2", { class: "section-title snap-head", onClick: () => { location.hash = "#/feed"; } },
-      [el("span", {}, "📸 Snapshots"), el("span", { class: "snap-all" }, "See all →")]);
-    root.appendChild(head);
-    root.appendChild(el("div", { class: "toolbar" }, [
-      el("button", { class: "btn subtle sm", onClick: () => { if (window.PhotoLog) PhotoLog.capture(); } }, "📸 Add a photo moment"),
-    ]));
-    if (!photos.length) {
-      root.appendChild(el("p", { class: "hint" }, "No photos yet — tap 📸 above (or the Snapshots feed) to start the roll."));
-    } else {
-      root.appendChild(el("div", { class: "snap-strip" }, photos.map((ph) =>
-        el("figure", { class: "snap-shot", onClick: () => window.PhotoLog && PhotoLog.openDetail(ph.id, () => Router.render()) }, [
-          el("img", { class: "snap-img", src: ph.img, alt: ph.caption || "" }),
-          ph.by ? el("figcaption", { class: "snap-by" }, ph.by) : null,
-        ]))));
-    }
   }
 
   window.Views = window.Views || {};

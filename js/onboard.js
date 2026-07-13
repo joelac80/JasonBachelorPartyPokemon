@@ -1,8 +1,8 @@
-/* onboard.js — the first-open tour. Seven quick slides that walk a fresh
-   phone through the whole weekend: who you are, the room code, catching,
-   battling, and how everything scores. Skippable at any moment; picking a
-   trainer + room happens INSIDE the tour so nobody has to find Settings.
-   Replayable from the Field Guide. */
+/* onboard.js — the first-open tour. Seven quick slides that open on what
+   the app IS — friends brought together by a love of the Pokémon world —
+   then the three pillars: CATCHING, BATTLING, and the NUZLOCKE epics.
+   Skippable at any moment; picking a trainer + room happens INSIDE the
+   tour so nobody has to find Settings. Replayable from the Field Guide. */
 (function () {
   const OKEY = "jasonBachHub.onboarded";
 
@@ -66,23 +66,23 @@
     }
 
     const SLIDES = [
-      { e: "👋", t: "Welcome to the world of Pokémon… parties!",
-        d: "This app is your party's scoreboard, Pokédex, and referee, all in one. Seven quick slides and you're ready (or skip and wing it — the ? button always has your back)." },
+      { e: "👋", t: "For the love of Pokémon",
+        d: "This app is for friends who grew up with this world — one screen on every phone that turns a room into a region. Catch across all nine generations, battle each other for real, and walk the whole saga side by side. Seven quick slides and you're a trainer (or skip and wing it — the ? button always has your back)." },
       { e: "🎴", t: "Who are you, trainer?",
-        d: "Tap yourself. Everything you log — catches, duel wins, drinks, dares — follows YOU all weekend, on leaderboards, your profile, and the final poster.",
+        d: "Tap yourself (or create yourself). Everything you do — every catch, every badge, every duel win, every run — follows YOU: your Pokédex, your profile, your place in the Hall of Fame.",
         body: () => { paintGrid(); return grid; } },
-      { e: "🔗", t: "Join the crew's room",
-        d: "Type the room code the crew is using and every phone shares ONE live scoreboard — battles, catches and drinks sync in real time. Leave it blank to run solo; you can join any time in ⚙️ Settings.",
+      { e: "🔗", t: "Join your friends' room",
+        d: "Type the room code the crew is using and every phone shares ONE living world — catches, battles and gym badges sync in real time. Leave it blank to run solo; you can join any time in ⚙️ Settings.",
         body: () => el("div", { class: "field" }, [roomIn]) },
-      { e: "🔔", t: "Turn on alerts",
-        d: "Get pinged when you're challenged, when a badge battle kicks off, when a trade offer lands in your inbox, and when it's YOUR move in a duel. iPhone: this works best from the Home Screen app (Share → Add to Home Screen).",
+      { e: "🔴", t: "Catch 'em — all nine generations",
+        d: "The Safari Zone is the engine: find a wild Pokémon, earn boosts, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
+      { e: "⚔️", t: "Battle 'em — for real",
+        d: "Real turn-based duels, each trainer on their own phone — moves, types, crits, potions, sips on the line. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion, the Battle Tower, canon rivals ambushing the roads, Movie Legends, and the legends themselves. Big fights broadcast live — the whole room watches and cheers." },
+      { e: "🪦", t: "…then dare the Nuzlocke",
+        d: "The ultimate test, five ways: one region on the classic curve, a 🎲 randomizer, the 🌍 114-battle master gauntlet, 🕰 Through the Ages (nine generations, a fresh team each era — Professor Oak waits at the very end), or the 🎬 Movie Marathon against every film legend. Any Pokémon that faints is gone FOREVER — fewest catches wears the crown." },
+      { e: "🔔", t: "One last thing — alerts, then go",
+        d: "Get pinged when you're challenged, when a battle goes live, and when it's YOUR move (iPhone: best from the Home Screen app — Share → Add to Home Screen). Games, photos and everything else live in 🎉 Party Central; the ? up top opens the Field Guide. Now go — your friends are waiting.",
         body: () => { paintNote(); return noteHost; } },
-      { e: "🔴", t: "Catch Pokémon in the Safari",
-        d: "The Safari Zone is the engine: do dares to earn boosts, then throw. ✨ 1-in-16 encounters are SHINY. Swap at the Trading Post (some Pokémon ONLY evolve by trade), and your caught team fights for you everywhere else." },
-      { e: "⚔️", t: "Battle on your own phones",
-        d: "Real turn-based Lv50 duels — each trainer plays on their own phone. Every KO = 2 sips, losers toast 4. 🧪 Potion = 3 sips to heal 120; 🍺 finish half your drink for a can't-miss crit. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion (plus Mt. Silver, the Movie Legends, and the Champions Cup). Big fights broadcast live — the whole room watches and cheers." },
-      { e: "🏆", t: "Everything scores",
-        d: "Jeopardy, the Oracle, the Card Table, drinks, dares — every win feeds your team's total on Victory Road, and Sunday's Ceremony crowns the champion. Lost later? Tap the ? up top for the Field Guide. Now go." },
     ];
 
     // Static overlay + skip button; only the card's CONTENT changes per

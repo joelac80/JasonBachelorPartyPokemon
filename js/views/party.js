@@ -36,6 +36,36 @@
       el("h1", {}, "🎉 Party Central"),
       el("p", { class: "page-sub" }, "Everything that isn't catching or battling — the games, the honors, the record of the weekend, and the Vault."),
     ]));
+
+    // ⏳ Countdown to the gathering (moved here from Home — party logistics
+    // live with the party). Ticks live while a date is set in ⚙️ Settings.
+    (function countdown() {
+      const target = new Date((Store.state.party || {}).startDate);
+      if (isNaN(target - 0)) return;
+      const cd = el("div", { class: "countdown" });
+      root.appendChild(cd);
+      function paint() {
+        const diff = target - new Date();
+        cd.innerHTML = "";
+        if (diff <= 0) { cd.appendChild(el("p", { class: "cd-live" }, "🔥 It's GO time — the party is on!")); return; }
+        const s = Math.floor(diff / 1000);
+        const unit = (n, label) => el("div", { class: "cd-unit" }, [
+          el("span", { class: "cd-num" }, String(n).padStart(2, "0")),
+          el("span", { class: "cd-label" }, label),
+        ]);
+        cd.appendChild(el("div", { class: "cd-title" }, "Trainers assemble in"));
+        cd.appendChild(el("div", { class: "cd-row" }, [
+          unit(Math.floor(s / 86400), "days"), unit(Math.floor((s % 86400) / 3600), "hrs"),
+          unit(Math.floor((s % 3600) / 60), "min"), unit(s % 60, "sec"),
+        ]));
+      }
+      paint();
+      const timer = setInterval(() => {
+        if (!document.body.contains(cd)) { clearInterval(timer); return; }
+        paint();
+      }, 1000);
+    })();
+
     SECTIONS.forEach((sec) => {
       root.appendChild(el("h2", { class: "section-title" }, sec.head));
       root.appendChild(el("div", { class: "party-grid" }, sec.items.map((q) =>
