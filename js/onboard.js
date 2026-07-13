@@ -110,16 +110,18 @@
 
     function finish(apply) {
       markSeen();
-      if (apply && sel) {
-        const a = Store.attendee(sel);
-        Sync.setMe(sel);
+      if (apply) {
+        // Apply whatever was actually filled in — a typed room code must
+        // stick even when the tour is skipped before picking a trainer.
+        const a = sel ? Store.attendee(sel) : null;
+        if (sel) Sync.setMe(sel);
         const room = roomIn.value.trim();
         if (room) {
           Sync.save("", room, (a && a.name) || "");
           Sync.enable();
           if (window.AppNotify && AppNotify.supported() && AppNotify.permission() === "default") AppNotify.request(function () {});
         }
-        if (window.SFX && SFX.win) SFX.win();
+        if (sel && window.SFX && SFX.win) SFX.win();
       }
       lay.remove();
       if (window.Router) Router.render();

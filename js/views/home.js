@@ -7,6 +7,7 @@
 (function () {
   const { el } = U;
   let liveUnsub = null;   // so re-rendering Home doesn't stack live-battle subscribers
+  let roomUnsub = null;   // ditto for the hero's live sync-status line
 
   function view(root) {
     const p = Store.state.party;
@@ -44,16 +45,36 @@
         ? el("img", { class: "hero-img", src: p.heroImage, alt: p.title })
         : el("div", { class: "hero-ball" }),
       el("div", { class: "hero-badge" }, "For the love of Pokémon"),
-      el("h1", { class: "hero-title" }, p.title || "Pokémon Party HQ"),
+      el("h1", { class: "hero-title" }, p.title || "Pokémon Journey"),
       p.subtitle ? el("p", { class: "hero-sub" }, p.subtitle) : null,
       p.location ? el("p", { class: "cd-loc" }, "📍 " + p.location) : null,
       el("p", { class: "hero-blurb" }, "This is a place for friends who grew up loving the world of Pokémon — one app on every phone that turns a room into a region. Catch across all nine generations, battle each other for real, and walk the whole saga side by side: every gym, every Champion, every legend, every film."),
       el("p", { class: "hero-blurb hero-motto" }, "Catch 'em. Battle 'em. Never travel alone."),
       (function roomLine() {
+        // The room chip tells the TRUTH about sync — "saved but only on this
+        // phone" must never look identical to "live with the crew". Repaints
+        // itself as the connection state changes.
         const c = (window.Sync && Sync.getConf && Sync.getConf()) || {};
         const room = (c.room || "").trim();
-        return el("a", { class: "hero-room", href: "#/settings" },
-          c.enabled && room ? "🔗 Room " + room + " · live with the crew" : "🔗 Playing solo — join a room in Settings");
+        const chip = el("a", { class: "hero-room", href: "#/settings" }, "");
+        const paint = () => {
+          chip.classList.remove("sync-bad");
+          if (!room) { chip.textContent = "🔗 Playing solo — join a room in Settings"; return; }
+          if (!c.enabled) { chip.textContent = "🔗 Room " + room + " · sync is OFF — tap to turn it on"; return; }
+          const st = (window.Sync && Sync.status && Sync.status()) || { state: "off" };
+          if (st.state === "error") {
+            chip.textContent = "⚠️ Room " + room + " — NOT syncing: " + (st.msg || "can't reach the room") + " (tap to fix)";
+            chip.classList.add("sync-bad");
+          } else if (st.state === "connecting") chip.textContent = "🔗 Room " + room + " · connecting…";
+          else if (st.state === "live") chip.textContent = "🔗 Room " + room + " · ✓ live with the crew";
+          else chip.textContent = "🔗 Room " + room + " · waking the connection…";
+        };
+        if (window.Sync && Sync.onStatus) {
+          if (roomUnsub) { try { roomUnsub(); } catch (_) {} }
+          roomUnsub = Sync.onStatus(() => { if (chip.isConnected) paint(); });
+        }
+        paint();
+        return chip;
       })(),
       p.blurb ? el("p", { class: "hero-blurb" }, p.blurb) : null,
     ]);

@@ -300,6 +300,25 @@
     }, 350);
   }
 
+  // 🎴 IDENTITY LIFEBOAT + foreign-room adoption, in one place. `obj` is the
+  // room's parsed state — or null when the room doc doesn't exist yet (first
+  // one in seeds it fresh). A foreign wipe protects the new room from the old
+  // room's data, but it must never delete the PERSON holding the phone: the
+  // trainer created moments earlier in the welcome tour was vanishing the
+  // instant the room loaded (and conf.me then pointed at a ghost, hiding
+  // every picker). The signed-in trainer's PROFILE crosses the border —
+  // progress (catches, badges, runs) stays behind in the old room.
+  function adoptForeign(obj) {
+    const meRec = conf.me && window.Store && Store.attendee(conf.me);
+    applying = true;
+    try { if (obj) Store.adoptRemote(obj); else Store.freshSlate(); }
+    finally { applying = false; }
+    if (meRec && !Store.attendee(meRec.id)) {
+      const copy = JSON.parse(JSON.stringify(meRec));
+      Store.update((s) => { s.attendees.push(copy); });
+    }
+  }
+
   function onSnap(doc) {
     // Does the local cache belong to ANOTHER room? (Empty owner = solo history
     // — carrying solo progress into your FIRST room is intended.)
@@ -307,8 +326,9 @@
     const foreign = !!(conf.room && owner && owner !== conf.room);
     if (!doc.exists) {
       // First in the room. A foreign cache must NOT become the new room's
-      // seed — room B starts from a fresh slate, not room A's people.
-      if (foreign) { applying = true; try { Store.freshSlate(); } finally { applying = false; } }
+      // seed — room B starts from a fresh slate, not room A's people (but the
+      // signed-in trainer rides along — see adoptForeign).
+      if (foreign) adoptForeign(null);
       setStateRoom(conf.room);
       push(); return;
     }
@@ -316,11 +336,12 @@
     if (data.writer === clientId) { setStatus("live", "Synced"); setStateRoom(conf.room); return; }  // our own echo
     if (!data.stateJson) return;
     let obj; try { obj = JSON.parse(data.stateJson); } catch (_) { return; }
-    applying = true;
-    try {
-      if (foreign) Store.adoptRemote(obj);   // wholesale — no merge with the old room's cache
-      else Store.applyRemote(obj);
-    } finally { applying = false; }
+    if (foreign) {
+      adoptForeign(obj);   // wholesale — no merge with the old room's cache
+    } else {
+      applying = true;
+      try { Store.applyRemote(obj); } finally { applying = false; }
+    }
     setStateRoom(conf.room);
     // If our local party config (teams/events) is NEWER than what just arrived,
     // the sender was lagging — the merge kept ours; now re-assert it to the room
@@ -364,6 +385,8 @@
         usingDefault: !conf.config, projectId: (conf.config || DEFAULT_CONFIG).projectId };
     },
     isSupported() { return true; },
+    // exposed for tests: the foreign-room adoption + identity lifeboat
+    _adoptForeign(obj) { return adoptForeign(obj); },
     // Save config/room/name from the Settings form (does not auto-enable).
     // Leaving the config blank means "use the party's baked-in project".
     save(rawConfig, room, name) {

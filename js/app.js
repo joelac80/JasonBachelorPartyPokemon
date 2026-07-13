@@ -46,7 +46,7 @@
   // Brand: your Pokémon (sprite + name) when signed in as a trainer, else the
   // party title. Evolving updates it live (currentForm is re-read on change).
   function syncTitle() {
-    const t = (Store.state.party && Store.state.party.title) || "Pokémon Party HQ";
+    const t = (Store.state.party && Store.state.party.title) || "Pokémon Journey";
     document.title = t;
     const brand = document.getElementById("brand-title");
     const ball = document.querySelector(".brand-ball");
@@ -245,6 +245,12 @@
         dot.title = (state === "live" && msg && msg !== "Synced") ? "Live — " + msg : (TITLE[state] || "Live sync");
       });
     }
+    // 🎴 Self-heal a GHOST identity: conf.me pointing at a trainer that no
+    // longer exists locally (an old foreign-room wipe could orphan it — which
+    // then hid every "who's playing" picker behind a nameless lock AND kept
+    // the welcome tour from re-offering the trainer step). Sign the ghost out
+    // so the pickers and the tour come back.
+    try { if (Sync.getMe && Sync.getMe() && window.Store && !Store.attendee(Sync.getMe())) Sync.setMe(""); } catch (_) {}
     Sync.init();
 
     // First-open onboarding tour: six quick slides that walk a fresh phone
