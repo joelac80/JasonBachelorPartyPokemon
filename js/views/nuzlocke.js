@@ -485,24 +485,37 @@
   // early leaders meet you halfway — 3 mons at ~70% strength — and ramp to
   // their full squad at full power by badge 8. Act II starts near full
   // strength (you're a champion now) and climbs past it.
+  // Gym scaling, SPLIT since devolution took over the stat curve:
+  //  - size: matches the encounter economy (a badge-1 box is 2-4 mons).
+  //  - support ×0.9 flat: the devolved fodder is already Squirtle-tier —
+  //    let it actually land hits instead of double-discounting it.
+  //  - ace on the old 0.72→1.0 curve: the leader's REAL, undevolved ace is
+  //    the boss moment, and this is what keeps a cap-14 Steelix beatable.
   function gymHandicap(run) {
     const act = run.act === 2 ? 2 : 1;
     const step = act === 1
       ? run.badges.filter((i) => i >= KANTO_GYM0).length
       : run.badges.filter((i) => i < KANTO_GYM0).length;      // 0..7
-    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04 };
-    return { size: 6, boost: 0.95 + step * 0.02 };
+    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.9 };
+    const b2 = 0.95 + step * 0.02;                             // act II: uniform (no devolution overlap)
+    return { size: 6, boost: b2, support: b2 };
+  }
+  // Per-mon boost array: everyone at the support rate, the ace (always last)
+  // on the ace curve.
+  function gymBoosts(team, hc) {
+    return team.map((_, i) => (i === team.length - 1 ? hc.boost : (hc.support || hc.boost)));
   }
 
   function battleGym(run, idx, g) {
     const hc = gymHandicap(run);
+    const team = foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g));
     partyThen(run, 6, "⚔ Nuzlocke gym — Leader " + g.leader,
       "Bring up to 6 of the living. Every faint in there is permanent.",
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
-            monIds: foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)), boost: hc.boost }] },
+            monIds: team, boost: gymBoosts(team, hc) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); maybeAmbush(); }
