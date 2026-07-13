@@ -40,15 +40,21 @@ Kept for reference / pointing the app at a different project:
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // The shared state document.
+    // The shared state document. `get` only — never `list`: allowing list
+    // would let any signed-in client ENUMERATE every room code. With list
+    // off, the room code works like a secret key: you can only read a room
+    // you already know the name of.
     match /rooms/{room} {
-      allow read: if request.auth != null;
+      allow get: if request.auth != null;
+      allow list: if false;
       // Cap the doc so a runaway write can't blow past Firestore's 1 MiB limit.
       allow write: if request.auth != null
                    && request.resource.data.stateJson.size() < 950000;
     }
     // Sub-channels: presence, challenges, the live battle, and photo moments.
-    // (These are separate so heartbeats/photos never touch the state doc.)
+    // (These are separate so heartbeats/photos never touch the state doc.
+    // Listing WITHIN a room is fine — reaching this path already requires
+    // knowing the room code.)
     match /rooms/{room}/{sub}/{docId} {
       allow read, write: if request.auth != null;
     }
