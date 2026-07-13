@@ -601,7 +601,8 @@
     window.addEventListener("hashchange", updateInboxBadge);
     updateInboxBadge();
 
-    // 🌩 roaming legendary — alert every phone, first catch wins.
+    // 🌩 roaming legendary — alert every phone; everyone can catch their own
+    // before it wanders off (20 min, see Sync.roam).
     const handledRoam = {};
     Sync.onRoam((data) => {
       if (!data || !data.id) return;
@@ -609,21 +610,17 @@
         handledRoam[data.id] = 1;
         if (data.t && Date.now() - data.t > 1200000) return;   // stale event
         const nm = (window.DEX && DEX[data.monId] && DEX[data.monId].n) || "legendary";
-        notify("🌩 Roaming legendary!", "A wild " + nm + " is loose — first catch claims it!");
+        notify("🌩 Roaming legendary!", "A wild " + nm + " is loose — go catch yours before it wanders off!");
         if (window.SFX && SFX.fanfare) SFX.fanfare();
         let rctrl;
         const rbody = el("div", { class: "chal-modal" }, [
-          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the party! First trainer to catch it claims the only one in the region."),
+          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the party! Every trainer can catch their own — but it wanders off in about 20 minutes."),
           el("div", { class: "toolbar" }, [
             el("button", { class: "btn primary", onClick: () => { if (rctrl) rctrl.close(); location.hash = "#/safari"; } }, "🎯 Hunt it"),
             el("button", { class: "btn subtle", onClick: () => { if (rctrl) rctrl.close(); } }, "Let it roam"),
           ]),
         ]);
         rctrl = Modal.open("Roaming legendary!", rbody, null, { noFooter: true });
-      }
-      if (data.state === "done" && data.claimedBy && !handledRoam[data.id + "d"]) {
-        handledRoam[data.id + "d"] = 1;
-        notify("🌩 Claimed!", data.claimedBy + " caught the roaming legendary!");
       }
     });
 

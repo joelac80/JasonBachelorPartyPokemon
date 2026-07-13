@@ -631,9 +631,13 @@
         const stakes = opts.gym ? "🏅 " + ((opts.gym.badge || "Gym") + " Badge") + " on the line"
           : lg ? (lg.key === "red" ? "🗻 Mt. Silver — facing RED" : "👑 " + ((lg.rank || "League") + " " + (lg.name || "")).trim())
           : opts.hof ? "🏛 Battle of Fame" : "";
+        // `shared` MUST travel with the setup: without it a watcher rebuilds a
+        // shared-party double (Battle Tower) as two separate 4-mon parties —
+        // 8 party balls and the same lead mon standing in both field slots.
         const setup = { mode: "local", title: title, first: S.first,
           gym: opts.gym || null, league: lg || null, hof: opts.hof || null,
-          a: { units: ((opts.a || {}).units || []) }, b: { units: ((opts.b || {}).units || []) } };
+          a: { shared: !!(opts.a || {}).shared, units: ((opts.a || {}).units || []) },
+          b: { shared: !!(opts.b || {}).shared, units: ((opts.b || {}).units || []) } };
         castId = Sync.startRemoteDuel && Sync.startRemoteDuel(setup);
         if (castId) {
           net = { send: function (act) { try { Sync.sendDuelAct(castId, act); } catch (_) {} } };
