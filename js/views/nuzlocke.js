@@ -286,7 +286,7 @@
   let wildId = 0;
   let wildShiny = 0;        // ✨ this encounter rolled shiny (1-in-16)
   let evoOpen = false;
-  let newKind = "classic";   // starter-lab pick: "classic" | "random" | "master"
+  let slot = "";             // 💾 which of the six save slots is open on this phone
   let newRegion = "kanto";   // starter-lab region (classic/random structures)
 
   function view(root) {
@@ -301,21 +301,70 @@
     // Trainer picker (per phone, like the Safari).
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
       Store.state.attendees.map((a) => el("option", { value: a.id, selected: me === a.id ? "true" : null }, a.name))));
-    sel.addEventListener("change", () => { me = sel.value; wildId = 0; Router.render(); });
+    sel.addEventListener("change", () => { me = sel.value; slot = ""; wildId = 0; wildShiny = 0; Router.render(); });
     root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Running as:"), sel]));
 
     const body = el("div", {});
     root.appendChild(body);
     if (!me) { body.appendChild(el("p", { class: "empty" }, "👆 Pick a trainer to start (or continue) a run.")); renderHall(body); return; }
 
-    const run = Store.nuzRun(me);
+    if (!slot) slot = defaultSlot();
+    slotStrip(body);
+    const run = Store.nuzRun(me, slot);
+    if (slot === "legacy" && (!run || run.over)) {
+      if (run) renderStartScreen(body, run, true);
+      body.appendChild(el("p", { class: "hint" }, "🗻 The original Kanto→Johto structure has retired — start fresh runs in the six slots above."));
+      renderHall(body);
+      return;
+    }
     if (!run || run.over) { renderStartScreen(body, run); renderHall(body); return; }
     renderRun(body, run);
     renderHall(body);
   }
 
+  // 💾 THE SAVE SLOTS — one run of EACH structure can live at once. The strip
+  // doubles as the structure picker: tap a slot to jump between runs (or to
+  // that structure's starter lab when the slot is empty / finished).
+  function defaultSlot() {
+    for (let i = 0; i < Store.NUZ_SLOTS.length; i++) {
+      const r = Store.nuzRun(me, Store.NUZ_SLOTS[i]);
+      if (r && !r.over) return Store.NUZ_SLOTS[i];
+    }
+    const lg = Store.nuzRun(me, "legacy");
+    if (lg && !lg.over) return "legacy";
+    return "region";
+  }
+  function slotStrip(host) {
+    const DEF = [
+      { k: "region", e: "🎯", t: "Region Run" },
+      { k: "random", e: "🎲", t: "Region Randomizer" },
+      { k: "master", e: "🌍", t: "Master Randomizer" },
+      { k: "ages", e: "🕰", t: "Through the Ages" },
+      { k: "trek", e: "🎒", t: "The Long Walk" },
+      { k: "movie", e: "🎬", t: "Movie Marathon" },
+    ];
+    const lg = Store.nuzRun(me, "legacy");
+    const defs = lg ? DEF.concat([{ k: "legacy", e: "🗻", t: "Legacy Run" }]) : DEF;
+    host.appendChild(el("div", { class: "dex-toggle nuz-slots" }, defs.map((d) => {
+      const r = Store.nuzRun(me, d.k);
+      const st = !r ? "empty"
+        : !r.over ? "▶ live"
+        : r.over === "wiped" ? "💀 wiped"
+        : r.over === "abandoned" ? "🏳️ ended"
+        : "🏆 done";
+      return el("button", { class: "btn sm" + (slot === d.k ? " primary" : " subtle"), onClick: () => {
+        slot = d.k; wildId = 0; wildShiny = 0; Router.render();
+      } }, [
+        el("span", {}, d.e + " " + d.t),
+        el("span", { class: "nuz-slot-st" + (r && !r.over ? " live" : "") }, st),
+      ]);
+    })));
+    host.appendChild(el("p", { class: "hint" }, "💾 Six save slots — one run of EACH structure at once. Tap a slot to jump between runs; each keeps its own box, roads and crown."));
+  }
+
   // ── Screen 1: no run (or finished run) → the starter lab ──────────────────
-  function renderStartScreen(host, lastRun) {
+  function renderStartScreen(host, lastRun, summaryOnly) {
+    const newKind = slot === "region" ? "classic" : slot;
     if (lastRun && lastRun.over) {
       const alive = lastRun.box.filter((m) => !m.dead).length;
       const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master" || lastRun.over === "ages" || lastRun.over === "premiere" || lastRun.over === "trek";
@@ -355,19 +404,8 @@
       el("p", { class: "hint" }, movie
         ? "“Lights. Cameras. Permadeath. Six seats in the cast — and every legend on the reel is waiting at FULL power.”"
         : "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
-      // Five structures: 🎯 a region's exclusive run on the classic curve,
-      // 🎲 the same region with every trainer's team rerolled, 🌍 the master
-      // gauntlet (all nine, randomized, one 14→100 curve), 🕰 the ages walk
-      // (all nine, classic, curve + team resetting each generation), or 🎬
-      // the movie marathon (drafted cast of 6 vs the filmography, no caps).
-      el("div", { class: "dex-toggle" }, [
-        el("button", { class: "btn sm" + (newKind === "classic" ? " primary" : " subtle"), onClick: () => { newKind = "classic"; Router.render(); } }, "🎯 Region Run"),
-        el("button", { class: "btn sm" + (newKind === "random" ? " primary" : " subtle"), onClick: () => { newKind = "random"; Router.render(); } }, "🎲 Region Randomizer"),
-        el("button", { class: "btn sm" + (newKind === "master" ? " primary" : " subtle"), onClick: () => { newKind = "master"; Router.render(); } }, "🌍 Master Randomizer"),
-        el("button", { class: "btn sm" + (newKind === "ages" ? " primary" : " subtle"), onClick: () => { newKind = "ages"; Router.render(); } }, "🕰 Through the Ages"),
-        el("button", { class: "btn sm" + (newKind === "trek" ? " primary" : " subtle"), onClick: () => { newKind = "trek"; Router.render(); } }, "🎒 The Long Walk"),
-        el("button", { class: "btn sm" + (movie ? " primary" : " subtle"), onClick: () => { newKind = "movie"; Router.render(); } }, "🎬 Movie Marathon"),
-      ]),
+      // The structure comes from the SLOT strip above — this lab only ever
+      // starts the one structure whose slot is open.
       newKind === "master"
         ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — every gym, every Elite Four, every Champion (RED included): 114 battles on one Lv 14→100 curve, every team randomized, permadeath the whole way. The ultimate run.")
         : newKind === "ages"
@@ -438,14 +476,14 @@
       else if (run.region) renderRegionNext(host, run);
       else renderActNext(host, run);
       // 🎉 Any evolutions unlocked by the current level cap? Offer them all.
-      setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
+      setTimeout(() => { const r = Store.nuzRun(me, slot); if (r && !r.over) checkEvolutions(r); }, 450);
     }
 
     // Bail-out (tombstones the run; a new start replaces it).
     host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
       el("button", { class: "btn subtle sm", onClick: () => {
         if (!confirm("Abandon this Nuzlocke run? It ends here — badges, box and all.")) return;
-        Store.nuzAbandon(me); wildId = 0; sfx("error"); Router.render();
+        Store.nuzAbandon(me, slot); wildId = 0; sfx("error"); Router.render();
       } }, "🏳️ Abandon run"),
     ]));
   }
@@ -464,7 +502,7 @@
         el("div", { class: "safari-actions" }, [
           el("button", { class: "btn subtle sm", onClick: () => {
             if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
-            Store.nuzRetire(me); wildId = 0; Router.render();
+            Store.nuzRetire(me, slot); wildId = 0; Router.render();
           } }, "👑 Retire as Champion"),
         ]),
       ]));
@@ -514,7 +552,7 @@
         el("div", { class: "safari-actions" }, [
           el("button", { class: "btn subtle sm", onClick: () => {
             if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
-            Store.nuzRetire(me); wildId = 0; Router.render();
+            Store.nuzRetire(me, slot); wildId = 0; Router.render();
           } }, "👑 Retire as Champion"),
         ]),
       ]));
@@ -592,8 +630,8 @@
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || []);
-            if (winSide === "a") { Store.nuzStage(me, b.key); sfx("fanfare"); offerCostar(b); }
+            Store.nuzDeaths(me, fainted || [], "movie");
+            if (winSide === "a") { Store.nuzStage(me, b.key, "movie"); sfx("fanfare"); offerCostar(b); }
             Router.render();
           } } });
       });
@@ -607,7 +645,7 @@
     (function whenClear() {
       if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
-      const run = Store.nuzRun(me);
+      const run = Store.nuzRun(me, "movie");
       if (!run || run.over || run.region !== "movie") return;
       if (run.box.some((m) => m.id === id) || run.box.filter((m) => !m.dead).length >= 6) return;
       let ctrl;
@@ -670,7 +708,7 @@
           el("button", { class: "btn spin-btn", onClick: () => {
             const id = rollWild(run);
             if (!id) { alert("The grass is quiet — every species on this road has already been met."); return; }
-            Store.nuzEncounter(me, id, eraKey(run));
+            Store.nuzEncounter(me, id, eraKey(run), slot);
             // ✨ the run rolls its OWN shinies — same 1-in-16 as the Safari.
             wildShiny = Math.random() < 1 / 16 ? 1 : 0;
             wildId = id; sfx(wildShiny ? "fanfare" : "blip"); renderKeepScroll();
@@ -873,7 +911,7 @@
     const acted = {};                        // box slots already evolved here
     const settle = () => {
       // Whatever wasn't touched holds its Everstone — the auto-check stays quiet.
-      eligible.forEach((m, i) => { if (!acted[i] && !m.dead) { try { Store.nuzNoEvo(me, m.id); } catch (_) {} } });
+      eligible.forEach((m, i) => { if (!acted[i] && !m.dead) { try { Store.nuzNoEvo(me, m.id, slot); } catch (_) {} } });
       evoOpen = false; Router.render();
     };
     const rows = eligible.map((m, i) => {
@@ -883,7 +921,7 @@
         if (acted[i]) return;
         acted[i] = 1;
         const before = m.id;
-        Store.nuzEvolve(me, before, to);
+        Store.nuzEvolve(me, before, to, slot);
         sfx("fanfare");
         row.innerHTML = "";
         row.classList.add("done");
@@ -923,7 +961,7 @@
       if ((tries || 0) < 40) setTimeout(() => checkEvolutions(null, (tries || 0) + 1), 700);
       return;
     }
-    const r = Store.nuzRun(me);
+    const r = Store.nuzRun(me, slot);
     if (!r || r.over) return;
     const fresh = r.box.some((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length);
     if (fresh) promptEvolve(r);
@@ -936,7 +974,7 @@
     return run.box.filter((m) => !m.dead && m.shiny && ids.indexOf(m.id) >= 0).map((m) => m.id);
   }
   function partyThen(run, maxSize, title, hint, go) {
-    const alive = Store.nuzAlive(me);
+    const alive = Store.nuzAlive(me, slot);
     if (!alive.length) return;
     Duel.pickParty({ attId: me, min: 1, max: Math.min(maxSize, alive.length), pool: alive,
       title: title, hint: hint, onDone: go });
@@ -956,8 +994,8 @@
           wild: {
             chanceFn: (frac) => Math.min(1, base + (1 - frac) * 0.65),
             onOutcome: (outcome, fainted) => {
-              Store.nuzDeaths(me, fainted || []);
-              if (outcome === "caught") { Store.nuzCatch(me, id, shiny); sfx("fanfare"); }
+              Store.nuzDeaths(me, fainted || [], slot);
+              if (outcome === "caught") { Store.nuzCatch(me, id, shiny, slot); sfx("fanfare"); }
               else sfx("error");
               wildId = 0; wildShiny = 0; Router.render();
             },
@@ -1035,8 +1073,8 @@
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
             monIds: team, boost: gymBoosts(team, hc) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || []);
-            if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); maybeAmbush(); }
+            Store.nuzDeaths(me, fainted || [], slot);
+            if (winSide === "a") { Store.nuzBadge(me, idx, slot); sfx("fanfare"); maybeAmbush(); }
             Router.render();
           } } });
       });
@@ -1065,8 +1103,8 @@
     (function whenClear() {
       if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
-      const run = Store.nuzRun(me);
-      if (!run || run.over || !Store.nuzAlive(me).length) return;
+      const run = Store.nuzRun(me, slot);
+      if (!run || run.over || !Store.nuzAlive(me, slot).length) return;
       const pool = ambushPool(run);
       if (!pool.length) return;
       const t = pool[(Math.random() * pool.length) | 0];
@@ -1094,7 +1132,7 @@
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || []);
+            Store.nuzDeaths(me, fainted || [], slot);
             Store.update((s) => Store.chron(s, "❗", aName(me) + (winSide === "a" ? " fought off " : " survived ") + t.title + " " + t.name + "'s Nuzlocke ambush" + (winSide === "a" ? "!" : " — barely.")));
             Router.render();
           } } });
@@ -1109,8 +1147,8 @@
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: stageBoost(run, st) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || []);
-            if (winSide === "a") { Store.nuzStage(me, st.key); sfx("fanfare"); }
+            Store.nuzDeaths(me, fainted || [], slot);
+            if (winSide === "a") { Store.nuzStage(me, st.key, slot); sfx("fanfare"); }
             Router.render();
           } } });
       });

@@ -1035,20 +1035,59 @@
     // rest of the run; lose the whole box and the run is over. One live run
     // per trainer (s.nuzlocke, newest-edit-wins on sync); finished runs are
     // enshrined in s.nuzlockeHof (append-only) — fewest catches wears the crown.
-    nuzRun(attId) { return (this.state.nuzlocke || {})[attId] || null; },
+    // ═══ 💾 SIX SAVE SLOTS — one live run of EACH structure at once ═══
+    // Runs live in s.nuzRuns[attId][slot]; s.nuzlocke[attId] stays as an
+    // ALIAS of the trainer's ACTIVE run (the one touched last) so legacy
+    // clients, old data and slot-less calls keep working unchanged.
+    NUZ_SLOTS: ["region", "random", "master", "ages", "trek", "movie"],
+    nuzSlotOf(region, mode) {
+      if (region === "master" || region === "ages" || region === "trek" || region === "movie") return region;
+      if (region) return mode === "random" ? "random" : "region";
+      return "legacy";
+    },
+    // The slot map, with two jobs on every access: adopt the alias into its
+    // slot (migrates pre-slot saves), and RE-LINK the alias to the slot's
+    // object (JSON reloads split the two into separate copies).
+    _nuzMap(s, attId) {
+      s.nuzRuns = s.nuzRuns || {};
+      const m = s.nuzRuns[attId] = s.nuzRuns[attId] || {};
+      const old = (s.nuzlocke || {})[attId];
+      if (old) {
+        const k = this.nuzSlotOf(old.region, old.mode);
+        if (!m[k] || m[k] === old || (old.upd || 0) > (m[k].upd || 0)) m[k] = old;
+        s.nuzlocke[attId] = m[k];
+      }
+      return m;
+    },
+    nuzRun(attId, slot) {
+      if (!attId) return null;
+      const m = this._nuzMap(this.state, attId);
+      if (slot) return m[slot] || null;
+      const alias = (this.state.nuzlocke || {})[attId];
+      if (alias) return alias;
+      let best = null;
+      Object.keys(m).forEach((k) => {
+        const r = m[k]; if (!r) return;
+        if (!best || ((!r.over) !== (!best.over) ? !r.over : (r.upd || 0) > (best.upd || 0))) best = r;
+      });
+      return best;
+    },
     // Ids still standing in this run's box.
-    nuzAlive(attId) {
-      const r = this.nuzRun(attId);
+    nuzAlive(attId, slot) {
+      const r = this.nuzRun(attId, slot);
       return r ? r.box.filter((m) => !m.dead).map((m) => m.id) : [];
     },
     _nuzName(attId) { return ((this.attendee(attId) || {}).name || attId); },
-    _nuzEdit(attId, fn) {
+    _nuzEdit(attId, fn, slot) {
       if (!attId) return;
       this.update((s) => {
-        const r = (s.nuzlocke || {})[attId];
+        const m = this._nuzMap(s, attId);
+        const r = slot ? m[slot] : (s.nuzlocke || {})[attId];
         if (!r) return;
         fn(r, s);
         r.upd = Date.now();
+        s.nuzlocke = s.nuzlocke || {};
+        s.nuzlocke[attId] = r;                 // touching a run makes it ACTIVE
       });
     },
     // mode: "" = classic (canon leaders), "random" = 🎲 Randomizer — same
@@ -1060,16 +1099,19 @@
     nuzStart(attId, starterId, mode, region) {
       if (!attId || !starterId) return;
       this.update((s) => {
-        s.nuzlocke = s.nuzlocke || {};
-        s.nuzlocke[attId] = { starter: starterId, box: [{ id: starterId }], badges: [], league: [],
+        const m = Store._nuzMap(s, attId);       // adopt any pre-slot save first
+        const run = { starter: starterId, box: [{ id: starterId }], badges: [], league: [],
           catches: 1, deaths: 0, over: "", startTs: Date.now(), upd: Date.now(),
           mode: mode === "random" ? "random" : "", region: region || "",
           seed: (Math.floor(Math.random() * 2147483647) || 1) };
         if (region === "ages") {
           const first = (window.NUZ_REGIONS || [])[0];
-          s.nuzlocke[attId].curRegion = first ? first.key : "kanto";
-          s.nuzlocke[attId].retired = [];
+          run.curRegion = first ? first.key : "kanto";
+          run.retired = [];
         }
+        m[Store.nuzSlotOf(run.region, run.mode)] = run;
+        s.nuzlocke = s.nuzlocke || {};
+        s.nuzlocke[attId] = run;
         const R = (window.NUZ_REGIONS || []).find((x) => x.key === region);
         const label = region === "master" ? "🌍 MASTER RANDOMIZER "
           : region === "ages" ? "🕰 THROUGH-THE-AGES "
@@ -1084,10 +1126,13 @@
     nuzStartMovie(attId, ids) {
       if (!attId || !ids || ids.length < 1) return;
       this.update((s) => {
-        s.nuzlocke = s.nuzlocke || {};
-        s.nuzlocke[attId] = { starter: ids[0], box: ids.map((id) => ({ id: id })), badges: [], league: [],
+        const m = Store._nuzMap(s, attId);
+        const run = { starter: ids[0], box: ids.map((id) => ({ id: id })), badges: [], league: [],
           catches: ids.length, deaths: 0, over: "", startTs: Date.now(), upd: Date.now(),
           mode: "", region: "movie", seed: (Math.floor(Math.random() * 2147483647) || 1) };
+        m.movie = run;
+        s.nuzlocke = s.nuzlocke || {};
+        s.nuzlocke[attId] = run;
         const names = ids.map((id) => (((window.DEX || {})[id] || {}).n || "#" + id)).join(", ");
         Store.chron(s, "🎬", this._nuzName(attId) + " held a casting call and premiered a MOVIE MARATHON NUZLOCKE — " + ((window.MOVIE_BOSSES || []).length || 16) + " films, one cast (" + names + "), every faint forever!");
       });
@@ -1103,7 +1148,7 @@
         r.catches += 1;
         const n = ((window.DEX || {})[monId] || {}).n || ("#" + monId);
         Store.chron(s, "🌟", "THE CO-STAR RULE — " + n + " stepped off the screen" + (filmName ? " of " + filmName : "") + " and joined " + this._nuzName(attId) + "'s cast!");
-      });
+      }, "movie");
     },
     // ⬇ Reverse-evolution map for the Long Walk's border resets (lazy).
     _nuzPre() {
@@ -1131,13 +1176,13 @@
         r.curRegion = regionKey;
         const n = ((window.DEX || {})[starterId] || {}).n || ("#" + starterId);
         Store.chron(s, "🕰", this._nuzName(attId) + " left their team with Professor " + (prev ? prev.prof : "Oak") + " and sailed for " + (R ? R.name : regionKey) + " — a new generation begins with " + n + "!");
-      });
+      }, "ages");
     },
     // Give up the current run (a fresh nuzStart replaces it). Tombstoned, not
     // deleted, so a lagging phone's copy can't resurrect it on merge.
-    nuzAbandon(attId) { this._nuzEdit(attId, (r) => { if (!r.over) r.over = "abandoned"; }); },
+    nuzAbandon(attId, slot) { this._nuzEdit(attId, (r) => { if (!r.over) r.over = "abandoned"; }, slot); },
     // A wild catch joins the box (one of each species per run — dupes ignored).
-    nuzCatch(attId, monId, shiny) {
+    nuzCatch(attId, monId, shiny, slot) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.box.some((m) => m.id === monId)) return;
         const rec = { id: monId };
@@ -1146,11 +1191,11 @@
         r.catches += 1;
         const n = ((window.DEX || {})[monId] || {}).n || ("#" + monId);
         Store.chron(s, shiny ? "✨" : "🪦", this._nuzName(attId) + " caught " + (shiny ? "a ✨ SHINY " + n + " for the Nuzlocke box — 1-in-16, under permadeath!" : n + " for the Nuzlocke box (" + r.catches + " caught)."));
-      });
+      }, slot);
     },
     // Permadeath: every own mon that fainted in a nuzlocke battle dies for the
     // run. If the whole box is gone, the run is OVER.
-    nuzDeaths(attId, ids) {
+    nuzDeaths(attId, ids, slot) {
       if (!ids || !ids.length) return;
       this._nuzEdit(attId, (r, s) => {
         if (r.over) return;
@@ -1165,42 +1210,42 @@
           r.over = "wiped";
           Store.chron(s, "💀", this._nuzName(attId) + "'s Nuzlocke run is OVER — the whole box is gone. " + r.badges.length + " badge" + (r.badges.length === 1 ? "" : "s") + ", " + r.catches + " caught, " + r.deaths + " lost.");
         }
-      });
+      }, slot);
     },
     // 🎉 Level-gated evolution: the run's level cap crossed this mon's real
     // evolution level and the trainer said yes — the box entry BECOMES the
     // evolved form (death flag and all history ride along).
-    nuzEvolve(attId, fromId, toId) {
+    nuzEvolve(attId, fromId, toId, slot) {
       this._nuzEdit(attId, (r, s) => {
         const m = r.box.find((x) => x.id === fromId && !x.dead);
         if (!m || r.over) return;
         m.id = toId; delete m.noEvo;
         const n = (id) => ((window.DEX || {})[id] || {}).n || ("#" + id);
         Store.chron(s, "🎉", this._nuzName(attId) + "'s " + n(fromId) + " evolved into " + n(toId) + " mid-Nuzlocke!");
-      });
+      }, slot);
     },
     // "Not now" (an Everstone moment) — stop the prompt from nagging; the box
     // card keeps a manual ⬆ Evolve button while it stays eligible.
-    nuzNoEvo(attId, monId) {
+    nuzNoEvo(attId, monId, slot) {
       this._nuzEdit(attId, (r) => {
         const m = r.box.find((x) => x.id === monId && !x.dead);
         if (m) m.noEvo = 1;
-      });
+      }, slot);
     },
     // 👣 A wild encounter was rolled: the species goes on the run's SEEN list
     // (no-dupes clause — once met, never again) and burns one of the era's
     // limited encounter slots. `eraKey` names the current stretch of road
     // (act:badges:league) — a new badge/stage resets the counter.
-    nuzEncounter(attId, wildId, eraKey) {
+    nuzEncounter(attId, wildId, eraKey, slot) {
       this._nuzEdit(attId, (r) => {
         if (r.over) return;
         r.seen = r.seen || [];
         if (wildId && r.seen.indexOf(wildId) < 0) r.seen.push(wildId);
         if (r.encKey !== eraKey) { r.encKey = eraKey; r.encN = 0; }
         r.encN = (r.encN || 0) + 1;
-      });
+      }, slot);
     },
-    nuzBadge(attId, idx) {
+    nuzBadge(attId, idx, slot) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.badges.indexOf(idx) >= 0) return;
         r.badges.push(idx);
@@ -1216,14 +1261,14 @@
           if (R) total = R.gymN;
         }
         Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + n + "/" + total + where + " — no losses allowed!");
-      });
+      }, slot);
     },
     // An Elite Four / Champion stage falls. Champions crown the run (enshrined
     // in the Nuzlocke hall AND the real Hall of Fame). Legacy runs open THE
     // JOHTO ACT after BLUE; a Johto region run offers RED past the crown for
     // the Legend tier; the MASTER gauntlet only crowns at the very last
     // Champion (GEETA) — everything before is a milestone on the road.
-    nuzStage(attId, key) {
+    nuzStage(attId, key, slot) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.league.indexOf(key) >= 0) return;
         r.league.push(key);
@@ -1325,11 +1370,11 @@
         } else {
           Store.chron(s, "🪦", nm + " toppled a " + (R ? R.name : "") + " Nuzlocke league stage (" + r.league.length + "/5)!");
         }
-      });
+      }, slot);
     },
     // Bank the crown and stop — a champion who walks away stays a champion.
     // (Legacy act-II runs, or a Johto region run with RED still waiting.)
-    nuzRetire(attId) { this._nuzEdit(attId, (r) => { if (!r.over && (r.act === 2 || r.crowned)) r.over = "champion"; }); },
+    nuzRetire(attId, slot) { this._nuzEdit(attId, (r) => { if (!r.over && (r.act === 2 || r.crowned)) r.over = "champion"; }, slot); },
     // 🎒 The border reset: the Lv 14 curve pulls every LIVING box mon back
     // down its line (Venusaur walks into Johto as Bulbasaur — it will earn
     // its evolutions all over again as the caps climb). Tombstones keep the
@@ -1775,6 +1820,16 @@
       // 🪦 Nuzlocke: one live run per trainer, EDITED in place — the copy with
       // the newest edit wins (deaths/badges only ever move forward on the
       // owner's own phone). The hall of finished runs unions by (att, ts).
+      // 💾 slot map: per trainer per SLOT, the copy touched last wins.
+      const pnr = (prev && prev.nuzRuns) || {};
+      const nnr = next.nuzRuns = next.nuzRuns || {};
+      Object.keys(pnr).forEach((att) => {
+        nnr[att] = nnr[att] || {};
+        Object.keys(pnr[att] || {}).forEach((k) => {
+          const a = pnr[att][k], b = nnr[att][k];
+          if (a && (!b || (a.upd || 0) > (b.upd || 0))) nnr[att][k] = a;
+        });
+      });
       const pnz = (prev && prev.nuzlocke) || {};
       const nnz = next.nuzlocke = next.nuzlocke || {};
       Object.keys(pnz).forEach((tid) => {
