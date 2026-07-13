@@ -13,6 +13,12 @@
     🌍 MASTER RANDOMIZER — all nine regions in canon order: 68 gyms, every
        Elite Four, every Champion (RED included) — 114 battles, randomized
        teams, one level curve climbing 14 → 100, permadeath the whole way.
+    🕰 THROUGH THE AGES — the same nine-region walk with CLASSIC teams and
+       the region curve resetting every generation (each region plays Lv
+       14 → 48 → league, like Kanto did). What makes the reset fair: at
+       every border the WHOLE TEAM retires to the professor and a brand-new
+       regional starter begins the next era — nine generations, nine teams,
+       one unbroken journey. Catches and deaths count across the saga.
    Legacy runs (Kanto Act I → Johto Act II) keep working untouched.
    Runs never touch the real ladder — state lives in Store.nuzlocke/HoF. */
 (function () {
@@ -32,8 +38,9 @@
   // Every gym in circuit order, then that region's Elite Four + Champion —
   // region by region for the master gauntlet (RED's Mt. Silver peak sits
   // right after Johto's league, exactly where the canon puts it).
+  const allRegions = (run) => run.region === "master" || run.region === "ages";
   function seqFor(run) {
-    const regions = run.region === "master" ? REGIONS : [regionByKey(run.region)].filter(Boolean);
+    const regions = allRegions(run) ? REGIONS : [regionByKey(run.region)].filter(Boolean);
     const seq = [];
     regions.forEach((R) => {
       for (let i = 0; i < R.gymN; i++) seq.push({ t: "gym", idx: R.gym0 + i, R: R });
@@ -53,9 +60,17 @@
   }
   function doneCount(run) { return run.badges.length + run.league.length; }
   function curRegion(run) {
-    if (run.region && run.region !== "master") return regionByKey(run.region);
+    if (run.region && !allRegions(run)) return regionByKey(run.region);
     const s = nextStep(run);
     return s ? s.R : REGIONS[REGIONS.length - 1];
+  }
+  // 🕰 Ages only: the border gate. The next battle sits in a region the
+  // current box doesn't belong to yet → the run pauses at the professor's
+  // lab until a new starter is chosen (returns that region, else null).
+  function agesGate(run) {
+    if (run.region !== "ages") return null;
+    const step = nextStep(run);
+    return step && step.R.key !== (run.curRegion || (REGIONS[0] || {}).key) ? step.R : null;
   }
 
   // Wild pools — no legendaries (they'd trivialize the run) and no starters
@@ -121,6 +136,17 @@
     if (run.region === "master") {
       const total = seqFor(run).length;              // 114 battles, 14 → 100
       return Math.min(100, 14 + Math.round((doneCount(run) * 86) / Math.max(1, total - 1)));
+    }
+    if (run.region === "ages") {
+      // 🕰 The whole point of the ages walk: the region curve RESETS each
+      // generation — a fresh team earns 14 → 48 → league all over again.
+      const R = curRegion(run) || REGIONS[0];
+      const g = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
+      const caps = R.gymN === 4 ? [14, 26, 37, 48] : [14, 24, 28, 32, 36, 40, 44, 48];
+      if (g < R.gymN) return caps[g];
+      const l = R.league.filter((k) => run.league.indexOf(k) >= 0).length;
+      if (l < R.league.length) return 50 + l * 2;
+      return 62;                                     // Gen 2's peak (RED)
     }
     if (run.region) {
       const R = regionByKey(run.region);
@@ -252,11 +278,13 @@
   function renderStartScreen(host, lastRun) {
     if (lastRun && lastRun.over) {
       const alive = lastRun.box.filter((m) => !m.dead).length;
-      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master";
+      const won = lastRun.over === "champion" || lastRun.over === "legend" || lastRun.over === "master" || lastRun.over === "ages";
       const headline = lastRun.over === "master" ? "🌍 MASTER OF ALL REGIONS — nine regions, every trainer, permadeath on!"
+        : lastRun.over === "ages" ? "🕰 TRAINER OF THE AGES — nine generations, nine teams, one unbroken journey!"
         : lastRun.over === "legend" ? "🗻 LEGEND — past the crown, and RED still fell!"
         : lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
         : lastRun.over === "wiped" ? "💀 The run ended — the whole box was lost." : "🏳️ Run abandoned.";
+      const retired = lastRun.retired || [];
       host.appendChild(el("div", { class: "safari-card nuz-summary" + (won ? " result win" : " result miss") }, [
         el("div", { class: "safari-result-msg" }, headline),
         el("div", { class: "nuz-summary-line" },
@@ -264,35 +292,50 @@
           lastRun.league.length + " league stage" + (lastRun.league.length === 1 ? "" : "s") + " · " +
           lastRun.catches + " caught · " + lastRun.deaths + " lost · " + alive + " survived"),
         el("div", { class: "nuz-box-grid" }, lastRun.box.map((m) => boxMon(m))),
-      ]));
+        // 🕰 The retrospective: every retired generation's team, in order —
+        // the payoff of the ages walk (tombstones stay honored too).
+        retired.length ? el("div", { class: "nuz-lab-head", style: { marginTop: "10px" } }, "🕰 The teams of the ages") : null,
+      ].concat(retired.map((era) => el("div", {}, [
+        el("div", { class: "hint" }, "— " + era.region + " —"),
+        el("div", { class: "nuz-box-grid" }, (era.box || []).map((m) => boxMon(m))),
+      ])))));
     }
     const R = regionByKey(newRegion) || REGIONS[0] || { name: "Kanto", prof: "Oak", gymN: 8, champ: "BLUE", starters: [1, 4, 7, 25], league: [] };
-    const starterIds = newKind === "master" ? ALL_STARTERS : R.starters;
+    const first = REGIONS[0] || R;
+    const starterIds = newKind === "master" ? ALL_STARTERS : newKind === "ages" ? first.starters : R.starters;
     host.appendChild(el("div", { class: "safari-card nuz-lab" }, [
-      el("div", { class: "nuz-lab-head" }, newKind === "master" ? "🧪 The Professors' Summit" : "🧪 Professor " + (R.prof || "Oak") + "'s Lab"),
+      el("div", { class: "nuz-lab-head" }, newKind === "master" ? "🧪 The Professors' Summit"
+        : "🧪 Professor " + ((newKind === "ages" ? first.prof : R.prof) || "Oak") + "'s Lab"),
       el("p", { class: "hint" }, "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
-      // Three structures: 🎯 a region's exclusive run on the classic curve,
-      // 🎲 the same region with every trainer's team rerolled, or 🌍 the
-      // master gauntlet — all nine regions, all trainers, randomized.
+      // Four structures: 🎯 a region's exclusive run on the classic curve,
+      // 🎲 the same region with every trainer's team rerolled, 🌍 the master
+      // gauntlet (all nine, randomized, one 14→100 curve), or 🕰 the ages
+      // walk (all nine, classic, curve + team resetting each generation).
       el("div", { class: "dex-toggle" }, [
         el("button", { class: "btn sm" + (newKind === "classic" ? " primary" : " subtle"), onClick: () => { newKind = "classic"; Router.render(); } }, "🎯 Region Run"),
         el("button", { class: "btn sm" + (newKind === "random" ? " primary" : " subtle"), onClick: () => { newKind = "random"; Router.render(); } }, "🎲 Region Randomizer"),
         el("button", { class: "btn sm" + (newKind === "master" ? " primary" : " subtle"), onClick: () => { newKind = "master"; Router.render(); } }, "🌍 Master Randomizer"),
+        el("button", { class: "btn sm" + (newKind === "ages" ? " primary" : " subtle"), onClick: () => { newKind = "ages"; Router.render(); } }, "🕰 Through the Ages"),
       ]),
       newKind === "master"
         ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — every gym, every Elite Four, every Champion (RED included): 114 battles on one Lv 14→100 curve, every team randomized, permadeath the whole way. The ultimate run.")
-        : newKind === "random"
-          ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
-          : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
-      newKind !== "master" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
+        : newKind === "ages"
+          ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey.")
+          : newKind === "random"
+            ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
+            : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
+      newKind === "classic" || newKind === "random" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
         el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; Router.render(); } }, r.emoji + " " + r.name))) : null,
       newKind === "master" ? el("p", { class: "hint" }, "A master run begins in Kanto — but the professors have gathered: choose ANY starter from the whole saga.") : null,
+      newKind === "ages" ? el("p", { class: "hint" }, "The journey begins where it all began — Gen 1, Professor Oak's lab.") : null,
       el("div", { class: "nuz-starters" }, starterIds.map((id) =>
         el("button", { class: "nuz-starter", onClick: () => {
           const label = newKind === "master" ? "🌍 MASTER RANDOMIZER (all nine regions!)"
+            : newKind === "ages" ? "🕰 THROUGH THE AGES (nine generations, a fresh team each era!)"
             : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
           if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
-          Store.nuzStart(me, id, newKind === "classic" ? "" : "random", newKind === "master" ? "master" : newRegion);
+          Store.nuzStart(me, id, newKind === "random" || newKind === "master" ? "random" : "",
+            newKind === "master" ? "master" : newKind === "ages" ? "ages" : newRegion);
           wildId = 0; sfx("fanfare"); Router.render();
         } }, [
           Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
@@ -304,7 +347,9 @@
         el("div", {}, "• Any of your Pokémon that faints is dead for the rest of the run."),
         el("div", {}, newKind === "master"
           ? "• Nine regions in canon order: 68 gyms, nine leagues, RED on Mt. Silver — the LAST Champion crowns the MASTER."
-          : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
+          : newKind === "ages"
+            ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. The last Champion crowns the TRAINER OF THE AGES."
+            : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
         el("div", {}, "• Catch as many as you want… but the crown board ranks by FEWEST catches."),
       ]),
     ]));
@@ -312,15 +357,20 @@
 
   // ── Screen 2: the live run ─────────────────────────────────────────────────
   function renderRun(host, run) {
+    const gateR = agesGate(run);
     if (run.region) renderRegionHead(host, run);
     else renderActHead(host, run);
     renderBoxCard(host, run);
-    renderGrass(host, run);
-    if (run.region) renderRegionNext(host, run);
-    else renderActNext(host, run);
-
-    // 🎉 Any evolutions unlocked by the current level cap? Offer them all.
-    setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
+    if (gateR) {
+      // 🕰 A generation border: no grass, no battles — the professor first.
+      renderAgesGate(host, run, gateR);
+    } else {
+      renderGrass(host, run);
+      if (run.region) renderRegionNext(host, run);
+      else renderActNext(host, run);
+      // 🎉 Any evolutions unlocked by the current level cap? Offer them all.
+      setTimeout(() => { const r = Store.nuzRun(me); if (r && !r.over) checkEvolutions(r); }, 450);
+    }
 
     // Bail-out (tombstones the run; a new start replaces it).
     host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
@@ -360,9 +410,10 @@
     ]));
   }
 
-  // Banner + progress strip for REGION and MASTER runs.
+  // Banner + progress strip for REGION, MASTER and AGES runs.
   function renderRegionHead(host, run) {
     const master = run.region === "master";
+    const ages = run.region === "ages";
     const R = curRegion(run);
     const gymsDone = R ? run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length : 0;
     const leagueDone = R ? R.league.filter((k) => run.league.indexOf(k) >= 0).length : 0;
@@ -372,6 +423,13 @@
         el("div", { class: "nuz-lab-head" }, "🌍 MASTER RANDOMIZER — Region " + (REGIONS.indexOf(R) + 1) + "/9: " + (R ? R.emoji + " " + R.name : "")),
         el("p", { class: "hint" }, "Every gym, every Elite Four, every Champion across all nine regions — " +
           doneCount(run) + "/" + seqFor(run).length + " battles down, randomized teams all the way, permadeath from the first step to the last."),
+      ]));
+    } else if (ages) {
+      const teamN = 1 + ((run.retired || []).length);
+      host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
+        el("div", { class: "nuz-lab-head" }, "🕰 THROUGH THE AGES — Gen " + (R ? R.gen : "?") + "/9: " + (R ? R.emoji + " " + R.name : "")),
+        el("p", { class: "hint" }, "The whole saga, one generation at a time — team #" + teamN + " carries the torch, " +
+          doneCount(run) + "/" + seqFor(run).length + " battles down. At every border the box retires and a new era begins at Lv 14. Permadeath never retires."),
       ]));
     } else if (run.crowned && !run.over) {
       // Johto region run, crown banked — RED is optional glory.
@@ -394,10 +452,33 @@
     host.appendChild(el("div", { class: "safari-stats" }, [
       stat("🏅 " + gymsDone + "/" + (R ? R.gymN : 8), (R ? R.name : "") + " badges"),
       stat("👑 " + leagueDone + "/" + (R ? R.league.length : 5), "League stages"),
-      master ? stat("⚔ " + doneCount(run) + "/" + seqFor(run).length, "Gauntlet") : null,
+      master || ages ? stat("⚔ " + doneCount(run) + "/" + seqFor(run).length, master ? "Gauntlet" : "The saga") : null,
       stat((run.mode === "random" ? "🎲 " : "📈 ") + "Lv " + runLevel(run), run.mode === "random" ? "Randomizer" : "Run level"),
       stat(run.catches, "Caught"),
       stat("🪦 " + run.deaths, "Lost forever"),
+    ]));
+  }
+
+  // 🕰 The generation border — the emotional center of the ages walk. The
+  // old team (tombstones and all) retires to the professor who watched it
+  // grow; three new partners wait in the next region's lab. No grass, no
+  // battles, until the choice is made.
+  function renderAgesGate(host, run, R) {
+    const prev = regionByKey(run.curRegion) || REGIONS[0];
+    const alive = run.box.filter((m) => !m.dead).length;
+    host.appendChild(el("div", { class: "safari-card nuz-lab" }, [
+      el("div", { class: "nuz-lab-head" }, "🛳 GEN " + R.gen + " — " + R.emoji + " " + R.name.toUpperCase() + " AWAITS"),
+      el("p", { class: "hint" }, "The " + (prev ? prev.name : "") + " chapter is closed. Your team — " + alive + " standing, every tombstone honored — retires to Professor " + (prev ? prev.prof : "Oak") + "'s ranch, safe forever. Across the water, Professor " + R.prof + " has three new partners waiting… and the level curve starts over at 14."),
+      el("div", { class: "nuz-starters" }, R.starters.map((id) =>
+        el("button", { class: "nuz-starter", onClick: () => {
+          if (!confirm("Leave the whole team with Professor " + (prev ? prev.prof : "Oak") + " and begin " + R.name + " with " + monName(id) + "? The box resets — permadeath stays ON.")) return;
+          Store.nuzNewRegion(me, id, R.key);
+          wildId = 0; sfx("fanfare"); Router.render();
+        } }, [
+          Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
+          el("span", { class: "nuz-starter-n" }, monName(id)),
+        ]))),
+      el("p", { class: "hint" }, "⚠️ A new generation, a new nuzlocke: " + R.gymN + " gyms from Lv 14, the " + R.name + " league — same rules, fresh grass, fewest catches still wears the crown."),
     ]));
   }
 
@@ -534,6 +615,7 @@
       return;
     }
     const st = stageFor(step.key);
+    const ages = run.region === "ages";
     if (step.peak) {
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
       if (st) {
@@ -544,7 +626,9 @@
         ]));
         next.appendChild(el("p", { class: "hint" }, master
           ? "The silent one guards the road out of Johto — the master gauntlet goes THROUGH him."
-          : "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
+          : ages
+            ? "The last page of Gen 2 — the ages walk goes THROUGH him, with the team that grew up here."
+            : "The final battle of the run. Beat RED with permadeath on and you're a NUZLOCKE LEGEND."));
       }
       return;
     }
@@ -556,11 +640,15 @@
       next.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
       ]));
-      const isFinal = master && R === REGIONS[REGIONS.length - 1] && step.key === R.champKey;
+      const isFinal = (master || ages) && R === REGIONS[REGIONS.length - 1] && step.key === R.champKey;
       next.appendChild(el("p", { class: "hint" }, isFinal
-        ? "THE FINAL BATTLE of the master gauntlet — beat " + st.name + " and every trainer in the saga has fallen to one box."
+        ? (master
+          ? "THE FINAL BATTLE of the master gauntlet — beat " + st.name + " and every trainer in the saga has fallen to one box."
+          : "THE FINAL BATTLE of the ages — beat " + st.name + " and nine generations of teams share one unbroken crown.")
         : step.key === R.champKey
-          ? (master ? "Beat the Champion and the next region opens — the gauntlet rolls on." : "Beat the Champion and the crown is yours" + (R.peak ? " — then Mt. Silver calls." : "."))
+          ? (master ? "Beat the Champion and the next region opens — the gauntlet rolls on."
+            : ages ? "Beat the Champion and Gen " + R.gen + " closes — a new generation (and a brand-new team) waits at the border."
+            : "Beat the Champion and the crown is yours" + (R.peak ? " — then Mt. Silver calls." : "."))
           : "The " + R.name + " Elite Four stands between you and the Champion."));
     }
   }
@@ -697,6 +785,13 @@
         boost: Math.min(1.1, 0.72 + done * 0.02),
         support: Math.min(1.1, 0.9 + done * 0.01) };
     }
+    if (run.region === "ages") {
+      // Fresh box each generation → the leader curve resets with it.
+      const R = curRegion(run) || REGIONS[0];
+      const g = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
+      const step = Math.min(7, g * (R.gymN === 4 ? 2 : 1));
+      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.9 };
+    }
     if (run.region) {
       const R = regionByKey(run.region);
       const step = Math.min(7, run.badges.length * (R && R.gymN === 4 ? 2 : 1));
@@ -830,7 +925,7 @@
         el("span", { class: "nuz-hall-name" }, aName(r.att)),
         el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost"
           + (r.mode === "random" ? " · 🎲" : "")
-          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
+          + (r.tier === "master" ? " · 🌍 MASTER" : r.tier === "ages" ? " · 🕰 AGES" : r.tier === "legend" ? " · 🗻 LEGEND" : (r.region ? " · " + r.region : ""))
           + (r.deaths === 0 ? " · 💎 deathless" : "")),
       ]))),
     ]));

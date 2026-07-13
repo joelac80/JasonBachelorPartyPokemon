@@ -1027,7 +1027,9 @@
     // mode: "" = classic (canon leaders), "random" = 🎲 Randomizer — same
     // leaders, caps and team sizes, but seeded-random species every run.
     // region: a NUZ_REGIONS key = that region's exclusive run, "master" =
-    // the all-nine-regions gauntlet, "" = the legacy Kanto→Johto structure.
+    // the all-nine-regions gauntlet, "ages" = 🕰 Through the Ages (all nine
+    // regions with a FRESH team each generation — the box retires at every
+    // border), "" = the legacy Kanto→Johto structure.
     nuzStart(attId, starterId, mode, region) {
       if (!attId || !starterId) return;
       this.update((s) => {
@@ -1036,10 +1038,35 @@
           catches: 1, deaths: 0, over: "", startTs: Date.now(), upd: Date.now(),
           mode: mode === "random" ? "random" : "", region: region || "",
           seed: (Math.floor(Math.random() * 2147483647) || 1) };
+        if (region === "ages") {
+          const first = (window.NUZ_REGIONS || [])[0];
+          s.nuzlocke[attId].curRegion = first ? first.key : "kanto";
+          s.nuzlocke[attId].retired = [];
+        }
         const R = (window.NUZ_REGIONS || []).find((x) => x.key === region);
         const label = region === "master" ? "🌍 MASTER RANDOMIZER "
+          : region === "ages" ? "🕰 THROUGH-THE-AGES "
           : (R ? R.name.toUpperCase() + " " : "") + (mode === "random" ? "🎲 RANDOMIZER " : "");
         Store.chron(s, "🪦", this._nuzName(attId) + " began a " + label + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
+      });
+    },
+    // 🕰 Through the Ages: crossing a generation border. The whole box —
+    // survivors and tombstones alike — is left with the professor (archived
+    // in r.retired for the ending), and a brand-new regional starter becomes
+    // the entire box. Catches/deaths keep counting across the whole saga.
+    nuzNewRegion(attId, starterId, regionKey) {
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over || r.region !== "ages" || !starterId || r.curRegion === regionKey) return;
+        const REG = window.NUZ_REGIONS || [];
+        const R = REG.find((x) => x.key === regionKey);
+        const prev = REG.find((x) => x.key === r.curRegion);
+        r.retired = r.retired || [];
+        r.retired.push({ region: prev ? prev.name : (r.curRegion || ""), box: r.box });
+        r.box = [{ id: starterId }];
+        r.catches += 1;
+        r.curRegion = regionKey;
+        const n = ((window.DEX || {})[starterId] || {}).n || ("#" + starterId);
+        Store.chron(s, "🕰", this._nuzName(attId) + " left their team with Professor " + (prev ? prev.prof : "Oak") + " and sailed for " + (R ? R.name : regionKey) + " — a new generation begins with " + n + "!");
       });
     },
     // Give up the current run (a fresh nuzStart replaces it). Tombstoned, not
@@ -1110,9 +1137,18 @@
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.badges.indexOf(idx) >= 0) return;
         r.badges.push(idx);
-        const R = (window.NUZ_REGIONS || []).find((x) => x.key === r.region);
-        const total = r.region === "master" ? 68 : R ? R.gymN : 8;
-        Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + r.badges.length + "/" + total + " — no losses allowed!");
+        const REG = window.NUZ_REGIONS || [];
+        let n = r.badges.length, total = 8, where = "";
+        if (r.region === "master") { total = 68; }
+        else if (r.region === "ages") {
+          // The ages walk resets per generation — count within THIS region.
+          const R = REG.find((x) => idx >= x.gym0 && idx < x.gym0 + x.gymN);
+          if (R) { n = r.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length; total = R.gymN; where = " (" + R.name + ")"; }
+        } else {
+          const R = REG.find((x) => x.key === r.region);
+          if (R) total = R.gymN;
+        }
+        Store.chron(s, "🪦", this._nuzName(attId) + " took Nuzlocke badge " + n + "/" + total + where + " — no losses allowed!");
       });
     },
     // An Elite Four / Champion stage falls. Champions crown the run (enshrined
@@ -1164,6 +1200,22 @@
           }
           return;
         }
+        if (r.region === "ages") {                             // 🕰 Through the Ages
+          const last = REG[REG.length - 1];
+          const R = REG.find((x) => x.champKey === key || x.peak === key);
+          if (last && key === last.champKey) {
+            const teams = 1 + ((r.retired || []).length);
+            r.over = "ages"; r.doneTs = enshrine("ages", "nuzlocke-ages", last.champ, "Trainer of the Ages", "Nine generations");
+            Store.chron(s, "🕰", "TRAINER OF THE AGES!!! " + nm + " walked the whole saga — nine generations, " + teams + " teams, one unbroken journey with permadeath on. " + tally + " across the ages. The story is complete.");
+          } else if (R && key === R.champKey) {
+            Store.chron(s, "🏆", nm + " closed the book on Gen " + R.gen + " — " + R.name + " conquered in the THROUGH-THE-AGES NUZLOCKE. A new generation calls…");
+          } else if (R && key === R.peak) {
+            Store.chron(s, "🗻", nm + " toppled RED on Mt. Silver — the last page of Gen 2 in the THROUGH-THE-AGES NUZLOCKE.");
+          } else {
+            Store.chron(s, "🪦", nm + " toppled a Nuzlocke league stage on the journey through the ages!");
+          }
+          return;
+        }
         const R = REG.find((x) => x.key === r.region);         // region-exclusive run
         if (R && key === R.peak) {
           r.over = "legend"; r.doneTs = enshrine("legend", "nuzlocke-red", R.peakName || "RED", "Nuzlocke Legend", R.name);
@@ -1180,10 +1232,10 @@
     // Bank the crown and stop — a champion who walks away stays a champion.
     // (Legacy act-II runs, or a Johto region run with RED still waiting.)
     nuzRetire(attId) { this._nuzEdit(attId, (r) => { if (!r.over && (r.act === 2 || r.crowned)) r.over = "champion"; }); },
-    // Completed runs on the crown board: highest tier first (master > legend >
-    // champion), then fewest catches — the classic flex.
+    // Completed runs on the crown board: highest tier first (master and the
+    // ages walk > legend > champion), then fewest catches — the classic flex.
     nuzHall() {
-      const w = { master: 3, legend: 2 };
+      const w = { master: 3, ages: 3, legend: 2 };
       return (this.state.nuzlockeHof || []).slice().sort((a, b) =>
         ((w[b.tier] || 1) - (w[a.tier] || 1)) || (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
@@ -1312,6 +1364,7 @@
       if (nz.length) {
         const best = nz.reduce((a, b) => (b.catches < a.catches ? b : a));
         if (nz.some((r) => r.tier === "master")) out.push({ emoji: "🌍", title: "Master Nuzlocke", sub: "all nine regions, every trainer, permadeath on — the ultimate run" });
+        if (nz.some((r) => r.tier === "ages")) out.push({ emoji: "🕰", title: "Trainer of the Ages", sub: "nine generations, a fresh team each era, one unbroken journey — permadeath on" });
         if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "took the run past the Champion — and RED still fell" });
         out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered " + (best.region || "Kanto") + " with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });
