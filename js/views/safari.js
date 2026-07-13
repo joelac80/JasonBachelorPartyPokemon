@@ -271,6 +271,17 @@
       const r = window.Sync && Sync.roam && Sync.roam();
       return !(r && r.id === roamHunt);
     }
+    // Winning the race is worth more than the mon: the claim closes the storm
+    // for the room, and the win is banked toward the 🌩 Storm Chaser
+    // achievement (and its leaderboard chip).
+    function claimStorm(tid) {
+      if (window.Sync && Sync.claimRoam) Sync.claimRoam(attendeeName(tid));
+      Store.update((s) => {
+        const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+        t.roamWins = (t.roamWins || 0) + 1;
+        Store.chron(s, "🌩", attendeeName(tid) + " WON the storm race — the roaming legendary is theirs alone!");
+      });
+    }
     function showRoamGone(nfo) {
       const id = current;
       sfx("error");
@@ -414,8 +425,10 @@
         } else {
           if (roamGone()) { showRoamGone(nfo); return; }
           const res = recordCatch(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, ctx.helperId, nfo);
-          if (roamHunt && window.Sync && Sync.claimRoam) Sync.claimRoam(attendeeName(tid));
-          showCaughtCard(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, nfo, res, "⚔ Weakened in battle, then caught!");
+          const wonStorm = !!roamHunt;
+          if (roamHunt) claimStorm(tid);
+          showCaughtCard(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, nfo, res,
+            (wonStorm ? "🌩 STORM RACE WON — this one's yours alone! " : "") + "⚔ Weakened in battle, then caught!");
         }
       } else if (outcome === "ko") {
         sfx("error");
@@ -740,10 +753,12 @@
         const isShiny = shiny;
         const helperId = helper && helper !== tid ? helper : "";
         const res = recordCatch(tid, id, isShiny, ballUsed, viaMaster, helperId, nfo);
-        if (roamHunt && window.Sync && Sync.claimRoam) Sync.claimRoam(attendeeName(tid));
+        const wonStorm = !!roamHunt;
+        if (roamHunt) claimStorm(tid);
         // (The old "complete the Gen 1-4 dex to unlock Gen 5-9" room gate is
         // retired — the Gen Ladder unlocks generations through BATTLES now.)
-        showCaughtCard(tid, id, isShiny, ballUsed, viaMaster, nfo, res, "");
+        showCaughtCard(tid, id, isShiny, ballUsed, viaMaster, nfo, res,
+          wonStorm ? "🌩 STORM RACE WON — this one's yours alone!" : "");
       } else {
         sfx("error");
         enc.innerHTML = "";

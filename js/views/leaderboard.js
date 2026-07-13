@@ -27,6 +27,7 @@
       red: wins.indexOf("red") >= 0,
       tower: (Store.towerOf(id) || {}).best || 0,
       crowns: (Store.state.nuzlockeHof || []).filter((r) => r.att === id).length,
+      storms: Store.roamWins ? Store.roamWins(id) : 0,
     };
   }
 
@@ -64,6 +65,8 @@
         ["🗼", "streak " + r.tower],
         ["🪦", r.crowns + " crown" + (r.crowns === 1 ? "" : "s")],
       ];
+      // 🌩 storm-race wins are rare bragging rights — chip only once you have one
+      if (r.storms) chips.push(["🌩", r.storms + " storm" + (r.storms === 1 ? "" : "s") + " claimed"]);
       return el("div", { class: "lb-row" + (r.a.id === me ? " me" : ""), onClick: () => window.Profile && Profile.open(r.a.id) }, [
         el("div", { class: "lb-rank" }, MEDAL[i] || "#" + (i + 1)),
         thumb(r.a),

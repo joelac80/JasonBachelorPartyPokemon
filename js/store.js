@@ -1466,6 +1466,8 @@
     },
     mballUsed(attId) { return (((this.state.pokedex || {}).trainers || {})[attId] || {}).mballUsed || 0; },
     mballLeft(attId) { return Math.max(0, this.mballEarned(attId) - this.mballUsed(attId)); },
+    // 🌩 Roaming-legendary races won (first catch claimed the storm).
+    roamWins(attId) { return (((this.state.pokedex || {}).trainers || {})[attId] || {}).roamWins || 0; },
 
     // 👑 ROOM OWNER — the first person to claim the room sets a PIN (stored
     // as a cheap hash; this is honor-system gatekeeping against accidents
@@ -1618,6 +1620,8 @@
           v: this.legendWins(attId).length + this.secretWins(attId).length, at: [1, 10, 20, legendsTotal] },
         { key: "tdex", emoji: "🎓", title: "Know Every Trainer", unit: "trainers registered",
           v: tdexGot, at: [10, 60, 120, tdexTotal] },
+        { key: "storm", emoji: "🌩", title: "Storm Chaser", unit: "roaming races won",
+          v: this.roamWins(attId), at: [1, 2, 3, 5] },
         { key: "trades", emoji: "🔁", title: "Link Cable", unit: "trades made",
           v: this.tradeCount(attId), at: [1, 5, 15, 40] },
         { key: "evos", emoji: "🎉", title: "Evolution Engine", unit: "evolutions",
@@ -2059,6 +2063,8 @@
         });
         // 🟣 Master Balls spent: monotonic — the higher count wins.
         if (src.mballUsed) dst.mballUsed = Math.max(dst.mballUsed || 0, src.mballUsed);
+        // 🌩 Storm races won: monotonic too.
+        if (src.roamWins) dst.roamWins = Math.max(dst.roamWins || 0, src.roamWins);
       });
       // 📬 trade offers: the inbox lives in the last-write-wins doc, so an offer
       // one phone just sent would be wiped by the next phone's push. Union by id
