@@ -3,6 +3,7 @@
   const V = window.Views || {};
   Router.add("home", V.home)
     .add("victoryroad", V.victoryroad)
+    .add("leaderboard", V.leaderboard)
     .add("draft", V.draft)
     .add("roster", V.roster)
     .add("activities", V.activities)

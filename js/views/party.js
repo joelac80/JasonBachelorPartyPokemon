@@ -7,6 +7,7 @@
 
   const SECTIONS = [
     { head: "🎰 Game Corner", items: [
+      { r: "victoryroad", e: "🏆", t: "Victory Road", d: "Beer Olympics — team events & the party scoreboard" },
       { r: "jeopardy",    e: "❓", t: "Jeopardy",   d: "Bulbasaur trivia + Daily Bulbas" },
       { r: "cards",       e: "🃏", t: "Card Table", d: "President, Euchre, King's Cup…" },
     ] },

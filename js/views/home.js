@@ -196,10 +196,11 @@
     // Quiet doors for everything that isn't catching or battling — the
     // squad, the party corner, the settings. (The old overworld map said
     // the same thing with more pixels.)
-    root.appendChild(el("div", { class: "home-quick six home-doors" }, [
-      { r: "roster",   e: "🎴", t: "Squad",         d: "The trainers" },
-      { r: "party",    e: "🎉", t: "Party Central", d: "Everything else" },
-      { r: "settings", e: "⚙️", t: "Settings",      d: "Room & sync" },
+    root.appendChild(el("div", { class: "home-quick home-doors" }, [
+      { r: "roster",      e: "🎴", t: "Squad",         d: "The trainers" },
+      { r: "leaderboard", e: "🏆", t: "Leaderboard",   d: "The squad, ranked" },
+      { r: "party",       e: "🎉", t: "Party Central", d: "Everything else" },
+      { r: "settings",    e: "⚙️", t: "Settings",      d: "Room & sync" },
     ].map(tile)));
   }
 

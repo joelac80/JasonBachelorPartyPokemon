@@ -2266,3 +2266,23 @@ html, body { overscroll-behavior-y: contain; }
 .settings-party > summary { font-family: var(--pixel, monospace); font-weight: 800; font-size: 13px; letter-spacing: 0.4px; cursor: pointer; padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--paper); }
 .settings-party[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 .settings-party .settings-block { margin-top: 10px; }
+
+/* 🏆 squad leaderboard */
+.lb-board { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid var(--line);
+  border-radius: 14px; background: var(--paper); cursor: pointer; }
+.lb-row.me { border-color: var(--red, #d33); box-shadow: 0 2px 0 var(--line); }
+.lb-rank { font-size: 20px; min-width: 34px; text-align: center; font-family: var(--pixel, monospace); font-weight: 800; }
+.lb-thumb { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--paper-hi, #fff2);
+  border: 2px solid var(--line); image-rendering: pixelated; flex: none; }
+.lb-ball { display: inline-block; }
+.lb-main { flex: 1; min-width: 0; }
+.lb-name { font-weight: 800; font-size: 14px; }
+.lb-row.me .lb-name { color: var(--red, #d33); }
+.lb-bar { height: 8px; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; margin: 5px 0; background: var(--paper-hi, #0001); }
+.lb-fill { height: 100%; background: linear-gradient(90deg, #e6a100, #e6352f); min-width: 2px; }
+.lb-chips { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.lb-chip { font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
+.lb-score { text-align: center; min-width: 44px; }
+.lb-score-n { display: block; font-family: var(--pixel, monospace); font-weight: 800; font-size: 20px; }
+.lb-score-l { display: block; font-size: 10px; color: var(--ink-dim); letter-spacing: 0.6px; text-transform: uppercase; }
