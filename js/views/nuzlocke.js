@@ -306,6 +306,13 @@
   // Gym teams keep the leader's REAL ace (data lists it last).
   const gymAce = (g) => (g && g.team && g.team[g.team.length - 1]) || 0;
 
+  // Foe previews stay VISIBLE in every structure — a nuzlocke is hard enough
+  // with three encounters a road; scouting the next team is fair knowledge.
+  function foeImg(run, id) {
+    const src = Store.sprite(id);
+    return src ? el("img", { class: "nuz-foe-img", src: src, alt: monName(id) }) : null;
+  }
+
   // In-place refresh: a grass roll (or run-away) re-renders the page, which
   // used to flash and snap the scroll back to the top — mid-page buttons
   // deserve a mid-page refresh (the router's live-sync mode does exactly this).
@@ -514,6 +521,8 @@
       else renderActNext(host, run);
       // 🎉 Any evolutions unlocked by the current level cap? Offer them all.
       setTimeout(() => { const r = Store.nuzRun(me, slot); if (r && !r.over) checkEvolutions(r); }, 450);
+      // 📖 …and the story keeps its appointments (guaranteed, era-true).
+      setTimeout(() => maybeAmbush(true), 900);
     }
 
     // Bail-out (tombstones the run; a new start replaces it).
@@ -664,8 +673,7 @@
     if (!b) { next.appendChild(el("div", { class: "nuz-lab-head" }, "🏁 The reel is empty — the marathon is complete!")); return; }
     next.appendChild(el("div", { class: "nuz-lab-head" }, b.icon + " NOW SHOWING — " + b.film));
     next.appendChild(el("p", { class: "hint" }, b.name + " · " + b.title + ". " + b.lead));
-    next.appendChild(el("div", { class: "nuz-foe-row" }, b.team.map((id) =>
-      Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+    next.appendChild(el("div", { class: "nuz-foe-row" }, b.team.map((id) => foeImg(run, id))));
     next.appendChild(el("div", { class: "enc-quote" }, "“" + b.quote + "”"));
     next.appendChild(el("div", { class: "safari-actions" }, [
       el("button", { class: "btn primary", onClick: () => battleMovie(run, b) }, "🎬 PREMIERE — face " + b.name),
@@ -673,6 +681,8 @@
     next.appendChild(el("p", { class: "hint" }, "Full power on both sides of the screen, every faint forever. Win with a fallen seat in the cast, and the film's legend may step off the screen…"));
   }
   function battleMovie(run, b) {
+    if (!battleMovie._skip) { battleMovie._skip = 1; climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie._skip = 0; battleMovie(run, b); }); return; }
+    battleMovie._skip = 0;
     partyThen(run, 6, "🎬 " + b.film + " — vs " + b.name,
       "Full power, no caps — and every faint is permanent.",
       (ids) => {
@@ -801,8 +811,7 @@
       const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (kBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) =>
-          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
@@ -813,8 +822,7 @@
       const st = key && stageFor(key);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "👑 Victory Road — " + run.league.length + "/5"));
       if (st) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) =>
-          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
         ]));
@@ -826,8 +834,7 @@
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Johto Gym " + (jBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
         const hc2 = gymHandicap(run);
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx, gymAce(g)).map((id) =>
-          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
@@ -837,8 +844,7 @@
       const st = stageFor("red");
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
       if (st) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-red").map((id) =>
-          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-red").map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Climb — battle RED"),
         ]));
@@ -864,8 +870,7 @@
         ? "⚡ Battle " + (doneCount(run) + 1) + "/15 — Leader " + (g ? g.leader : "?") + " (" + R.name + ")"
         : "🏟 " + R.name + " Gym " + n + "/" + R.gymN + " — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) =>
-          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
@@ -883,8 +888,7 @@
       const ok = oakStage();
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🔬 PALLET TOWN — where it all began"));
       next.appendChild(el("p", { class: "hint" }, "Nine regions. Nine teams. Every Champion has fallen — and the road ends at a small lab in Pallet Town. The professor who handed over the very first partner has watched the whole journey… and he asks for one last battle."));
-      next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, ok.team, ok.team.length, "stage-oak").map((id) =>
-        Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+      next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, ok.team, ok.team.length, "stage-oak").map((id) => foeImg(run, id))));
       ok.quote ? next.appendChild(el("div", { class: "enc-quote" }, "“" + ok.quote + "”")) : null;
       next.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => battleStage(run, ok) }, "⚔ THE LAST BOSS — battle PROF. OAK"),
@@ -896,8 +900,7 @@
     if (step.peak) {
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
       if (st) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-red").map((id) =>
-          Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-red").map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Climb — battle RED"),
         ]));
@@ -916,8 +919,7 @@
       ? "⚡ Battle " + (doneCount(run) + 1) + "/15 — " + (step.key === R.champKey ? "THE CHAMPION FINALE" : R.name + " Elite Four")
       : "👑 " + R.name + " League — " + li + "/" + R.league.length));
     if (st) {
-      next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) =>
-        Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+      next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) => foeImg(run, id))));
       next.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
       ]));
@@ -1021,6 +1023,42 @@
     if (!r || r.over) return;
     const fresh = r.box.some((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length);
     if (fresh) promptEvolve(r);
+  }
+
+  // ── 🎬 CINEMA — the drama layer ────────────────────────────────────────────
+  // Full-screen title card before a CLIMAX battle: the flair, the face out of
+  // the dark, the canon line, and the choice to step in. Same stagecraft as
+  // the Journey's league and the Movie Legends — now the runs get it too.
+  function climaxIntro(o, onGo) {
+    const src = o.face ? Store.sprite(o.face) : "";
+    const lay = el("div", { class: "league-intro final movie-intro nuz-climax" }, [
+      el("div", { class: "league-intro-inner" }, [
+        src ? el("img", { class: "league-intro-ico movie-boss-ico" + (o.hidden ? " nuz-hidden-face" : ""), src: src, alt: "" })
+            : el("div", { class: "league-intro-mt" }, o.icon || "⚔"),
+        el("div", { class: "league-intro-flair" }, o.flair || ""),
+        el("div", { class: "league-intro-rank" }, (o.rank || "").toUpperCase()),
+        el("div", { class: "league-intro-name" }, o.name || ""),
+        o.quote ? el("div", { class: "league-intro-quote" }, "“" + o.quote + "”") : null,
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, (o.icon || "⚔") + " " + (o.cta || ("FACE " + (o.name || "THEM")))),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    sfx("fanfare");
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
+  // Which stages deserve the curtain: every Champion, RED, the professor —
+  // and the blitz finale keeps its Champion MASKED until the lights go up.
+  function stageClimax(run, st) {
+    if (st.key === "oak") return { flair: "🔬 PALLET TOWN — WHERE IT ALL BEGAN", rank: "Pokémon Professor", name: "PROF. OAK", face: st.team[st.team.length - 1], icon: "🔬", quote: st.quote };
+    if (st.key === "red") return { flair: "🗻 THE SUMMIT OF MT. SILVER", rank: "???", name: "RED", face: 25, icon: "🗻", quote: "…" };
+    const R = REGIONS.find((x) => x.champKey === st.key);
+    if (!R) return null;
+    if (run.region === "blitz") return { flair: "⚡ THE CHAMPION FINALE", rank: st.rank, name: st.name, icon: "👑", face: st.team[st.team.length - 1],
+      quote: st.quote || "Fifteen roads led here — and they all end with me." };
+    return { flair: "🏆 THE " + R.name.toUpperCase() + " CHAMPIONSHIP", rank: st.rank, name: st.name, face: st.team[st.team.length - 1], icon: "👑", quote: st.quote };
   }
 
   // ── Battles — all report to the RUN, never the real ladder ────────────────
@@ -1148,6 +1186,28 @@
   // jumping a Kanto run). PROF. OAK never prowls: in a nuzlocke he's the
   // ages walk's LAST BOSS — the professor doesn't jump people on roads.
   // You can slip away… for a sip and a little shame.
+  // 📖 THE STORY FINDS THE RUN — canon rivals & villains with story slots
+  // ambush at their badge moments, era-true, in EVERY structure (master and
+  // the walks included). They return until beaten (per-run run.story);
+  // slipping away snoozes them until the road changes.
+  const storySnooze = {};                    // name → eraKey it was dodged in
+  function legacyRegionOf(run) {
+    if (run.region) return curRegion(run);
+    return REGIONS[run.act === 2 ? 1 : 0] || null;     // legacy: Kanto then Johto
+  }
+  function storyDue(run) {
+    if (!run || run.over || run.region === "movie" || run.region === "blitz") return null;
+    const R = legacyRegionOf(run);
+    if (!R) return null;
+    const inRegion = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
+    const beaten = {}; (run.story || []).forEach((n) => { beaten[n] = 1; });
+    const era = eraKey(run);
+    const due = (window.CANON_TRAINERS || []).filter((t) =>
+      t.story && t.story.region === R.name && inRegion >= t.story.badge &&
+      !beaten[t.name] && storySnooze[t.name] !== era);
+    due.sort((a, b) => a.story.badge - b.story.badge);
+    return due[0] || null;
+  }
   function ambushPool(run) {
     const all = (window.CANON_TRAINERS || []).filter((t) => t.name !== "PROF. OAK");
     if (!run || !run.region) return all;
@@ -1159,33 +1219,45 @@
       return !g || g <= gen;
     });
   }
-  function maybeAmbush() {
-    if (Math.random() > 0.28) return;
+  function maybeAmbush(forceStoryOnly) {
+    const probe = Store.nuzRun(me, slot);
+    if (!probe || probe.over || probe.region === "movie") return;
+    const story0 = storyDue(probe);
+    if (!story0 && (forceStoryOnly || Math.random() > 0.28)) return;
     let tries = 0;
     (function whenClear() {
       if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
       const run = Store.nuzRun(me, slot);
       if (!run || run.over || !Store.nuzAlive(me, slot).length) return;
-      const pool = ambushPool(run);
-      if (!pool.length) return;
-      const t = pool[(Math.random() * pool.length) | 0];
+      const story = storyDue(run);
+      let t = story;
+      if (!t) {
+        if (forceStoryOnly) return;
+        const pool = ambushPool(run);
+        if (!pool.length) return;
+        t = pool[(Math.random() * pool.length) | 0];
+      }
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
-        el("p", { class: "hint" }, "❗ On the road out of the gym, a villain blocks the path — and in a NUZLOCKE, every faint is FOREVER."),
+        el("p", { class: "hint" }, story
+          ? "📖 THE STORY FINDS YOU. " + (t.story.intro || "A chapter of the saga steps onto your road — and in a NUZLOCKE, every faint is FOREVER.")
+          : "❗ On the road out of the battle, a villain blocks the path — and in a NUZLOCKE, every faint is FOREVER."),
         el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
         el("div", { class: "toolbar" }, [
-          el("button", { class: "btn primary", onClick: () => { ctrl.close(); ambushBattle(run, t); } }, "⚔ Stand and fight"),
+          el("button", { class: "btn primary", onClick: () => { ctrl.close(); ambushBattle(run, t, !!story); } }, "⚔ Stand and fight"),
           el("button", { class: "btn subtle", onClick: () => {
             ctrl.close();
-            Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — a sip for the shame."); });
-          } }, "🏃 Slip away (take a sip)"),
+            if (story) storySnooze[t.name] = eraKey(run);   // they'll be back next road
+            Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — " + (story ? "but the story isn't done with them." : "a sip for the shame.")); });
+          } }, story ? "🏃 Slip away (they'll be back)" : "🏃 Slip away (take a sip)"),
         ]),
       ]);
-      ctrl = Modal.open("❗ " + t.title + " " + t.name + " ambushes the run!", body, null, { noFooter: true });
+      ctrl = Modal.open(story ? "📖 " + t.title + " " + t.name + " — the story finds you!" : "❗ " + t.title + " " + t.name + " ambushes the run!", body, null, { noFooter: true });
+      if (window.SFX && story && SFX.fanfare) SFX.fanfare();
     })();
   }
-  function ambushBattle(run, t) {
+  function ambushBattle(run, t, isStory) {
     const hc = gymHandicap(run);   // villains scale with the run, like the gyms
     partyThen(run, 6, "❗ Ambush — " + t.title + " " + t.name,
       "No badge, no points — just survival. Every faint is permanent.",
@@ -1195,13 +1267,17 @@
           b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
-            Store.update((s) => Store.chron(s, "❗", aName(me) + (winSide === "a" ? " fought off " : " survived ") + t.title + " " + t.name + "'s Nuzlocke ambush" + (winSide === "a" ? "!" : " — barely.")));
+            if (isStory && winSide === "a") Store.nuzStoryWin(me, t.name, slot);
+            Store.update((s) => Store.chron(s, isStory ? "📖" : "❗", aName(me) + (winSide === "a" ? (isStory ? " wrote the next chapter — beat " : " fought off ") : " survived ") + t.title + " " + t.name + (isStory ? " at the story's appointed hour!" : (winSide === "a" ? "'s Nuzlocke ambush!" : "'s Nuzlocke ambush — barely."))));
             Router.render();
           } } });
       });
   }
 
   function battleStage(run, st) {
+    const cx = stageClimax(run, st);
+    if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage._skip = 0; battleStage(run, st); }); return; }
+    battleStage._skip = 0;
     partyThen(run, 6, "⚔ Nuzlocke league — " + st.rank + " " + st.name,
       "The endgame. Every faint is permanent — and a wipe ends the run.",
       (ids) => {
@@ -1216,6 +1292,7 @@
                 const r2 = Store.nuzRun(me, "blitz");
                 if (r2 && !r2.over && !nextStep(r2)) Store.nuzBlitzCrown(me);
               }
+              maybeAmbush();      // villains prowl the league roads too
             }
             Router.render();
           } } });

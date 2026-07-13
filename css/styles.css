@@ -2210,3 +2210,10 @@ html, body { overscroll-behavior-y: contain; }
 .hero-room { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ink-dim); text-decoration: none;
   border: 1.5px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--paper); }
 .hero-room:hover { color: var(--ink); }
+
+/* 🎬 nuzlocke cinema */
+.nuz-foe-img.shadow { filter: brightness(0); opacity: 0.85; }
+.nuz-hidden-face { filter: brightness(0) !important; }
+.beat-rows { display: flex; flex-direction: column; gap: 6px; margin: 10px auto; max-width: 420px; }
+.beat-row { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); border-radius: 10px;
+  padding: 7px 10px; font-size: 13px; color: #fff; text-align: left; }

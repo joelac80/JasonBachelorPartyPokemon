@@ -31,7 +31,10 @@
       quote: "I'll show you how a real trainer battles, whippersnapper!" },
     { key: "lance4", region: "Kanto", name: "LANCE", rank: "Elite Four", type: "dragon", team: [130, 148, 148, 142, 149, 149], pts: 5, boost: 1.12, needs: "agatha",
       quote: "You've come this far? Then face the mythical, terrifying power of DRAGONS!" },
-    { key: "blue", region: "Kanto", name: "BLUE", rank: "Champion", type: "normal", team: [18, 65, 112, 59, 103, 9], pts: 7, boost: 1.15, needs: "lance4",
+    // 🎭 The Gen 1 twist, kept intact: the Kanto Champion is a MYSTERY on the
+    // ladder ("???") until someone walks in — and finds the rival waiting.
+    { key: "blue", region: "Kanto", name: "BLUE", rank: "Champion", type: "normal", team: [18, 65, 112, 59, 103, 9], pts: 7, boost: 1.15, needs: "lance4", mystery: true,
+      intro: "The last door of the Pokémon League… and the silhouette on the throne is one you've known since Pallet Town.",
       quote: "Smell ya later? Not this time. I'm the most powerful trainer in the world — and I'll prove it right here." },
     // ---- JOHTO (Gen 2) — the 16-badge era. Note: `inferStop` marks the era
     // boundary — a Johto win must NOT retro-infer a BLUE win, because the Kanto
@@ -294,7 +297,11 @@
             b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
               boost: st.boost || 1.15,
               outro: st.defeat ? { lose: st.defeat } : undefined }] },
-            onResult: () => Router.render() });
+            onResult: () => {
+              Router.render();
+              // 🌏 a fallen Champion opens the world — films, legends, the road on
+              if (window.StoryBeats) StoryBeats.afterChampion(attId, st);
+            } });
         } });
     });
   }
@@ -424,6 +431,7 @@
       if (g[key] !== "fixed") g[key] = mode;
       Store.chron(s, "⚔", ((Store.attendee(attId) || {}).name || attId) + " conquered the entire " + (label || "League") +
         " Elite Four & Champion in ONE gauntlet run" + (mode === "fixed" ? " — with a single squad!" : "!"));
+      if (champFresh && window.StoryBeats) setTimeout(() => StoryBeats.afterChampion(attId, champStage), 400);
     }); } catch (_) {}
   }
   // Partial gauntlet credit: reaching the Champion PROVES the Elite Four fell

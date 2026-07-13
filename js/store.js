@@ -1378,6 +1378,14 @@
         }
       }, slot);
     },
+    // 📖 A story-slot villain beaten mid-run — remembered on the RUN, so the
+    // ambush never re-fires (real-ladder encounterWins stay untouched).
+    nuzStoryWin(attId, name, slot) {
+      this._nuzEdit(attId, (r, s) => {
+        r.story = r.story || [];
+        if (r.story.indexOf(name) < 0) r.story.push(name);
+      }, slot);
+    },
     // ⚡ The blitz ends when its seeded 15-battle reel is empty — the view
     // calls this after the Champion finale falls.
     nuzBlitzCrown(attId) {
