@@ -1325,6 +1325,77 @@
       });
     },
 
+    // 🎖 TIERED ACHIEVEMENTS — Bronze / Silver / Gold / Platinum across every
+    // system in the app, computed LIVE from the records themselves (nothing
+    // stored, nothing to hand out). Platinum is intentionally BRUTAL —
+    // completion-grade: the whole dex, every gym badge, every league stage,
+    // all three ultimate nuzlockes. Returns [{key, emoji, title, unit, value,
+    // at:[b,s,g,p], steps?, tier:0-4, tierName, next}].
+    ACH_TIERS: ["—", "Bronze", "Silver", "Gold", "Platinum"],
+    achievementsFor(attId) {
+      if (!attId) return [];
+      const LC = window.LegendChallenge || {};
+      const legendsTotal = (((LC.LEGENDS) || []).length + ((LC.SPECIALS) || []).length) || 29;
+      const filmTotal = (window.MOVIE_BOSSES || []).length || 16;
+      const leagueTotal = (window.LEAGUE_STAGES || []).length || 47;
+      const gymTotal = ((window.GymCircuit && GymCircuit.GYMS) || []).length || 68;
+      const canon = window.CANON_TRAINERS || [];
+      const enc = this.encounterWins(attId);
+      const tdexGot = canon.filter((t) => enc.indexOf(t.name) >= 0).length
+        + this.gymBadgeCount(attId) + this.leagueWins(attId).length
+        + this.movieWins(attId).length + this.legendWins(attId).length + this.secretWins(attId).length;
+      const tdexTotal = canon.length + gymTotal + leagueTotal + filmTotal + legendsTotal;
+      // Nuzlocke climbs by TIER, not count: crown → RED → one ultimate →
+      // ALL THREE ultimates (master + ages + movie). The hardest platinum here.
+      const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
+      const nzHas = (t) => nz.some((r) => r.tier === t);
+      const nzUlt = ["master", "ages", "movie"].filter(nzHas).length;
+      const nzTier = nzUlt >= 3 ? 4 : nzUlt >= 1 ? 3 : nzHas("legend") ? 2 : nzHas("champion") ? 1 : 0;
+      const defs = [
+        { key: "collector", emoji: "🔴", title: "The Collector", unit: "species caught",
+          v: this.dexCount(attId), at: [25, 150, 500, 1025] },
+        { key: "shiny", emoji: "✨", title: "Shiny Charm", unit: "shinies caught",
+          v: this.shinyCount(attId), at: [1, 5, 15, 40] },
+        { key: "gyms", emoji: "🏅", title: "Badge Hunter", unit: "gym badges",
+          v: this.gymBadgeCount(attId), at: [8, 24, 48, gymTotal] },
+        { key: "league", emoji: "👑", title: "League Slayer", unit: "league stages beaten",
+          v: this.leagueWins(attId).length, at: [5, 16, 33, leagueTotal] },
+        { key: "duels", emoji: "⚔️", title: "Rival of Rivals", unit: "duel wins vs friends",
+          v: this.duelRecord(attId).w, at: [5, 15, 40, 100] },
+        { key: "kos", emoji: "💥", title: "Knockout Artist", unit: "lifetime KOs",
+          v: this.koLife(attId), at: [50, 200, 500, 1500] },
+        { key: "tower", emoji: "🗼", title: "Tower Monarch", unit: "best tower streak",
+          v: (this.towerOf(attId) || {}).best || 0, at: [7, 14, 28, 50] },
+        { key: "nuzlocke", emoji: "🪦", title: "Permadeath Proof", unit: "",
+          v: nzTier, at: [1, 2, 3, 4],
+          steps: ["win any Nuzlocke crown", "topple RED for the Legend tier",
+            "finish an ULTIMATE run (Master, Ages or Movie)", "finish ALL THREE ultimates"] },
+        { key: "films", emoji: "🎬", title: "Silver Screen", unit: "films beaten",
+          v: this.movieWins(attId).length, at: [1, 8, 12, filmTotal] },
+        { key: "legends", emoji: "🌌", title: "Legend Seeker", unit: "legends & story beats",
+          v: this.legendWins(attId).length + this.secretWins(attId).length, at: [1, 10, 20, legendsTotal] },
+        { key: "tdex", emoji: "🎓", title: "Know Every Trainer", unit: "trainers registered",
+          v: tdexGot, at: [10, 60, 120, tdexTotal] },
+        { key: "trades", emoji: "🔁", title: "Link Cable", unit: "trades made",
+          v: this.tradeCount(attId), at: [1, 5, 15, 40] },
+        { key: "evos", emoji: "🎉", title: "Evolution Engine", unit: "evolutions",
+          v: this.evoCount(attId), at: [1, 10, 40, 120] },
+      ];
+      return defs.map((d) => {
+        let tier = 0;
+        d.at.forEach((th, i) => { if (d.v >= th) tier = i + 1; });
+        return { key: d.key, emoji: d.emoji, title: d.title, unit: d.unit, value: d.v,
+          at: d.at, steps: d.steps || null, tier: tier, tierName: this.ACH_TIERS[tier],
+          next: tier < 4 ? d.at[tier] : 0 };
+      });
+    },
+    // Achievement score for the room board: bronze 1 · silver 2 · gold 3 ·
+    // platinum 5 (the jump rewards the brutal ones).
+    achievementScore(attId) {
+      const pts = [0, 1, 2, 3, 5];
+      return this.achievementsFor(attId).reduce((n, a) => n + pts[a.tier], 0);
+    },
+
     // 🎖 Battle Honors — per-trainer awards for the EXTRA challenge ladders
     // (Movie Legends, the Champions Tournament, canon-villain ambushes, Mt.
     // Silver, and the nine-region Top Champion). Unlike liveTrophies (one holder

@@ -1,8 +1,62 @@
-/* badges.js — Weekend Badges: the 8 hand-awarded party badges (each with a
-   reason to earn + a power), the glossy badge case, and the live trophies.
-   Gym Leader battles live in The Journey (#/regions). */
+/* badges.js — 🎖 the awards floor. Three layers:
+   1. TIERED ACHIEVEMENTS (auto): Bronze → Silver → Gold → Platinum across
+      every system we've built — catching, gyms, leagues, duels, the tower,
+      nuzlockes, films, legends, the Trainer Dex. Computed live, never
+      hand-awarded; platinum is completion-grade on purpose.
+   2. Weekend Badges (hand-awarded): 8 party badges with earn + power.
+   3. Live trophies: one holder each, follows the current leader. */
 (function () {
   const { el, contrast } = U;
+
+  let achMe = "";   // per-phone: whose achievement card wall is open
+
+  const TIER_CLASS = ["none", "bronze", "silver", "gold", "platinum"];
+  function achCard(a) {
+    const t = a.tier;
+    const pct = a.next ? Math.min(100, Math.round((a.value / a.next) * 100)) : 100;
+    return el("div", { class: "ach-card t-" + TIER_CLASS[t] }, [
+      el("div", { class: "ach-top" }, [
+        el("div", { class: "ach-disc " + TIER_CLASS[t] }, a.emoji),
+        el("div", { class: "ach-main" }, [
+          el("div", { class: "ach-title" }, a.title),
+          el("div", { class: "ach-tiername" + (t ? " on" : "") }, t ? a.tierName : "Unranked"),
+        ]),
+        el("div", { class: "ach-dots" }, [1, 2, 3, 4].map((i) =>
+          el("span", { class: "ach-dot " + (i <= t ? TIER_CLASS[i] : "") }))),
+      ]),
+      el("div", { class: "ach-bar" }, [el("div", { class: "ach-fill " + TIER_CLASS[Math.min(4, t + 1)], style: { width: pct + "%" } })]),
+      el("div", { class: "ach-sub" }, a.steps
+        ? (t >= 4 ? "🏆 ALL THREE ultimate runs — nothing harder exists." : "Next: " + a.steps[t])
+        : (t >= 4 ? "🏆 MAXED — " + a.value + " " + a.unit : a.value + " / " + a.next + " " + a.unit + " → " + Store.ACH_TIERS[t + 1])),
+    ]);
+  }
+
+  // 🏆 The room board — everyone ranked by achievement score (🥉1 🥈2 🥇3 💎5).
+  function achievementsSection(root) {
+    const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+    if (!achMe && meId && Store.attendee(meId)) achMe = meId;
+    if (!achMe && Store.state.attendees.length) achMe = Store.state.attendees[0].id;
+
+    root.appendChild(el("h2", { class: "section-title" }, "🎖 Tiered Achievements"));
+    root.appendChild(el("p", { class: "hint" }, "Bronze → Silver → Gold → Platinum, earned automatically by playing — no handing out. Platinum means COMPLETION: the whole dex, every badge, every stage, all three ultimate nuzlockes."));
+
+    const rows = Store.state.attendees
+      .map((a) => ({ a: a, score: Store.achievementScore(a.id), plats: Store.achievementsFor(a.id).filter((x) => x.tier === 4).length }))
+      .sort((x, y) => (y.score - x.score) || (y.plats - x.plats));
+    if (rows.length > 1 || (rows.length === 1 && rows[0].score > 0)) {
+      root.appendChild(el("div", { class: "ach-board" }, rows.map((r, i) =>
+        el("button", { class: "ach-board-row" + (r.a.id === achMe ? " on" : ""), onClick: () => { achMe = r.a.id; Router.render(); } }, [
+          el("span", { class: "ach-board-rank" }, i === 0 && r.score > 0 ? "👑" : "#" + (i + 1)),
+          el("span", { class: "ach-board-name" }, r.a.name),
+          el("span", { class: "ach-board-score" }, r.score + " pts" + (r.plats ? " · 💎" + r.plats : "")),
+        ]))));
+    }
+
+    if (!achMe) { root.appendChild(el("p", { class: "empty" }, "Add trainers first (Squad page).")); return; }
+    const who = Store.attendee(achMe);
+    root.appendChild(el("p", { class: "hint" }, "🎴 " + ((who && who.name) || "") + "'s wall — tap a name above to compare."));
+    root.appendChild(el("div", { class: "ach-grid" }, Store.achievementsFor(achMe).map(achCard)));
+  }
 
   function thumb(a) {
     const s = a && a.favoriteId ? Store.sprite(a.favoriteId) : "";
@@ -128,9 +182,12 @@
 
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
-      el("h1", {}, "🏅 Weekend Badges"),
-      el("p", { class: "page-sub" }, "The 8 hand-awarded party badges — each earned by weekend deeds and carrying a real power — plus the badge case and live trophies." ),
+      el("h1", {}, "🎖 Badges & Achievements"),
+      el("p", { class: "page-sub" }, "Bronze → Silver → Gold → Platinum achievements earned by PLAYING — catching, battling, the tower, the nuzlockes, the films — plus the hand-awarded party badges and the live trophies." ),
     ]));
+
+    // 🎖 The tiered wall — auto-earned, the room board on top.
+    achievementsSection(root);
 
     // Pokémon battling lives in The Journey now.
     root.appendChild(el("div", { class: "duel-belt", onClick: () => { location.hash = "#/regions"; } },
@@ -140,7 +197,7 @@
 
     const list = Store.state.gymBadges || [];
     if (!list.length) {
-      root.appendChild(el("p", { class: "empty" }, "No badges yet — add some in seed.js."));
+      root.appendChild(el("p", { class: "empty" }, "No party badges in this room yet — new rooms start with 8."));
       return;
     }
 

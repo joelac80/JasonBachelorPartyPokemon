@@ -2161,3 +2161,39 @@ html, body { overscroll-behavior-y: contain; }
 .tdex-sub { font-size: 0.72em; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tdex-chip { display: inline-block; margin-top: 4px; font-size: 0.66em; padding: 1px 7px; border-radius: 9px; background: rgba(255, 255, 255, 0.08); opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tdex-chip.lit { background: rgba(255, 215, 90, 0.15); opacity: 1; }
+
+/* ═══ 🎖 Tiered achievements (Bronze → Silver → Gold → Platinum) ═══ */
+.ach-board { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 12px; }
+.ach-board-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 2px solid var(--line);
+  border-radius: 10px; background: var(--paper); cursor: pointer; text-align: left; font: inherit; }
+.ach-board-row.on { border-color: #e6b800; background: linear-gradient(#fff7d6, #fffdf2); }
+.ach-board-rank { font-family: var(--pixel, monospace); font-weight: 800; min-width: 30px; }
+.ach-board-name { flex: 1; font-weight: 700; }
+.ach-board-score { font-family: var(--pixel, monospace); font-size: 12px; color: var(--ink-dim); }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; margin: 6px 0 14px; }
+.ach-card { border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--paper); }
+.ach-card.t-gold { border-color: #d9a800; }
+.ach-card.t-platinum { border-color: #9fb6c9; box-shadow: 0 0 10px rgba(160, 190, 220, 0.5); }
+.ach-top { display: flex; align-items: center; gap: 8px; }
+.ach-disc { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; border: 2px solid var(--line); background: #f2f2f2; filter: grayscale(0.6); flex: none; }
+.ach-disc.bronze   { background: linear-gradient(145deg, #e0a368, #9c5f28); border-color: #8a5423; filter: none; }
+.ach-disc.silver   { background: linear-gradient(145deg, #f2f2f2, #b9bec7); border-color: #98a0ab; filter: none; }
+.ach-disc.gold     { background: linear-gradient(145deg, #ffe27a, #e0a800); border-color: #c29200; filter: none;
+  box-shadow: 0 0 8px rgba(255, 210, 60, 0.55); }
+.ach-disc.platinum { background: linear-gradient(135deg, #e8f4ff 0%, #cdd9e5 30%, #f7f0ff 55%, #bfd4e8 80%, #eef7ff 100%);
+  border-color: #9fb6c9; filter: none; box-shadow: 0 0 12px rgba(150, 200, 255, 0.8); }
+.ach-main { flex: 1; min-width: 0; }
+.ach-title { font-weight: 800; font-size: 14px; }
+.ach-tiername { font-family: var(--pixel, monospace); font-size: 11px; color: var(--ink-dim); }
+.ach-tiername.on { color: var(--ink); font-weight: 800; letter-spacing: 0.5px; }
+.ach-dots { display: flex; gap: 3px; flex: none; }
+.ach-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(0,0,0,.12); border: 1px solid rgba(0,0,0,.18); }
+.ach-dot.bronze { background: #b5722f; } .ach-dot.silver { background: #b9bec7; }
+.ach-dot.gold { background: #ffd24a; } .ach-dot.platinum { background: linear-gradient(135deg, #dfe9ff, #b6cfe6); }
+.ach-bar { height: 7px; border-radius: 999px; background: rgba(0,0,0,.12); overflow: hidden; margin: 7px 0 5px; }
+.ach-fill { height: 100%; border-radius: 999px; background: #8a8f9c; transition: width .4s; }
+.ach-fill.bronze { background: #b5722f; } .ach-fill.silver { background: #a7adb8; }
+.ach-fill.gold { background: linear-gradient(90deg, #ffd24a, #e0a800); }
+.ach-fill.platinum { background: linear-gradient(90deg, #cfe4f7, #9fc3e2); }
+.ach-sub { font-size: 12px; color: var(--ink-dim); line-height: 1.35; }

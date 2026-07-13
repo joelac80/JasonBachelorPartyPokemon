@@ -113,7 +113,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🗳️ Superlatives"),
-      el("p", { class: "page-sub" }, "Vote on the weekend awards. Winners get crowned at the Ceremony."),
+      el("p", { class: "page-sub" }, "The human side of the achievement wall — the tiers (🎖 Badges page) measure what you DID; these votes crown HOW you did it. Winners are crowned at the Ceremony."),
     ]));
 
     root.appendChild(el("div", { class: "toolbar", style: { marginTop: "0", marginBottom: "8px" } }, [
