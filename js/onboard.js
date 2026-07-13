@@ -92,11 +92,8 @@
     const SLIDES = [
       { e: "👋", t: "For the love of Pokémon",
         d: "This app is for friends who grew up with this world — one screen on every phone that turns a room into a region. Catch across all nine generations, battle each other for real, and walk the whole saga side by side. Seven quick slides and you're a trainer (or skip and wing it — the ? button always has your back)." },
-      { e: "🎴", t: "Who are you, trainer?",
-        d: "Tap yourself (or create yourself). Everything you do — every catch, every badge, every duel win, every run — follows YOU: your Pokédex, your profile, your place in the Hall of Fame.",
-        body: () => { paintGrid(); return grid; } },
-      { e: "🔗", t: "Join your friends' room",
-        d: "Type the room code the crew is using and every phone shares ONE living world — catches, battles and gym badges sync in real time. Leave it blank to run solo; you can join any time in ⚙️ Settings. Switching rooms later reloads the app fresh.",
+      { e: "🔗", t: "Join your friends' room FIRST",
+        d: "Type the room code the crew is using and every phone shares ONE living world — catches, battles and gym badges sync in real time. Joining before you create your trainer means you're born INTO the room: the next slide shows the crew already in it. Leave it blank to run solo; rooms live in ⚙️ Settings any time.",
         body: () => {
           const wrap = el("div", {}, [el("div", { class: "field" }, [roomIn])]);
           // 🚪 rooms this phone has used before — different crews, one tap
@@ -108,6 +105,9 @@
           }
           return wrap;
         } },
+      { e: "🎴", t: "Who are you, trainer?",
+        d: "Tap yourself if the crew already made your card — or create yourself. Everything you do — every catch, every badge, every duel win, every run — follows YOU: your Pokédex, your profile, your place in the Hall of Fame.",
+        body: () => { paintGrid(); return grid; } },
       { e: "🔴", t: "Catch 'em — all nine generations",
         d: "The Safari Zone is the engine: find a wild Pokémon, tempt it with 🍓 berries, risk a 🪨 rock, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
       { e: "⚔️", t: "Battle 'em — for real",
@@ -128,21 +128,33 @@
     lay.appendChild(card);
     document.body.appendChild(lay);
     let nextBtn = null;
-    function syncNext() { if (nextBtn) nextBtn.classList.toggle("off", idx === 1 && !sel); }
+    const TRAINER_SLIDE = 2, ROOM_SLIDE = 1;
+    function syncNext() { if (nextBtn) nextBtn.classList.toggle("off", idx === TRAINER_SLIDE && !sel); }
+
+    // Join the typed room NOW (idempotent — advancing the slide again or the
+    // finish() fallback won't double-apply).
+    function applyRoom() {
+      const room = roomIn.value.trim();
+      const cur = (Sync.getConf && Sync.getConf()) || {};
+      if (!room || (room === (cur.room || "") && cur.enabled)) return;
+      Sync.save("", room, cur.name || "");
+      Sync.enable();
+      if (window.AppNotify && AppNotify.supported() && AppNotify.permission() === "default") AppNotify.request(function () {});
+    }
+    // When the room's world arrives mid-tour, the trainer picker fills with
+    // the crew that already lives there.
+    const unsubGrid = Store.subscribe(function () {
+      if (document.body.contains(grid)) paintGrid();
+    });
 
     function finish(apply) {
       markSeen();
+      try { unsubGrid && unsubGrid(); } catch (_) {}
       if (apply) {
         // Apply whatever was actually filled in — a typed room code must
-        // stick even when the tour is skipped before picking a trainer.
-        const a = sel ? Store.attendee(sel) : null;
+        // stick even when the tour is skipped early.
         if (sel) Sync.setMe(sel);
-        const room = roomIn.value.trim();
-        if (room) {
-          Sync.save("", room, (a && a.name) || "");
-          Sync.enable();
-          if (window.AppNotify && AppNotify.supported() && AppNotify.permission() === "default") AppNotify.request(function () {});
-        }
+        applyRoom();
         if (sel && window.SFX && SFX.win) SFX.win();
       }
       lay.remove();
@@ -156,7 +168,11 @@
       nextBtn = el("button", { class: "btn primary", onClick: () => {
         // Inline gate feedback — native alert() can be suppressed in iOS
         // home-screen apps, which made a blocked Next look like a dead button.
-        if (idx === 1 && !sel) { gateMsg = "👆 Tap your trainer above — or ➕ Create yourself — to continue. (Or use “Skip tour” up top.)"; paintGrid(); return; }
+        if (idx === TRAINER_SLIDE && !sel) { gateMsg = "👆 Tap your trainer above — or ➕ Create yourself — to continue. (Or use “Skip tour” up top.)"; paintGrid(); return; }
+        // 🔗 Leaving the room slide APPLIES the room right away (no reload on a
+        // first join — sync.js connects in place), so the trainer slide can
+        // fill with the crew that's already living in it.
+        if (idx === ROOM_SLIDE) applyRoom();
         if (last) { finish(true); return; }
         idx++; paint();
         if (window.SFX && SFX.blip) SFX.blip();

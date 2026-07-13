@@ -2305,3 +2305,5 @@ html, body { overscroll-behavior-y: contain; }
 .onb-create { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; }
 .onb-create .in { flex: 1; min-width: 0; }
 .onb-gate { grid-column: 1 / -1; color: #e6352f; font-weight: 700; margin: 2px 0 0; }
+.room-chip-group { display: inline-flex; gap: 2px; align-items: center; }
+.room-forget { padding: 4px 8px; opacity: 0.7; }

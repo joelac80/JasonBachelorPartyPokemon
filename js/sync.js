@@ -27,9 +27,13 @@
   };
 
   let conf = load();                 // { config, room, name, me, enabled }
-  // 🚪 The room this app BOOTED into — any change away from it triggers a
-  // full reload so every subscription, cache and view starts clean.
+  // 🚪 The room this app BOOTED into (remembered below) — and the room the
+  // app is ACTUALLY CONNECTED to right now. A room change only forces a full
+  // reload when we were genuinely live in another room (stale subscriptions,
+  // battle/duel caches); a fresh phone's FIRST join just connects in place —
+  // which lets the welcome tour join the room BEFORE creating a trainer.
   const bootRoom = (conf.room || "").trim();
+  let liveRoom = "";                 // set once connect() points at a room
   const RKEY = "jasonBachHub.rooms.v1";
   function knownRooms() {
     try { return JSON.parse(localStorage.getItem(RKEY) || "[]"); } catch (_) { return []; }
@@ -53,7 +57,8 @@
   function setStateRoom(r) { try { localStorage.setItem(SROOM, r || ""); } catch (_) {} }
   function reloadIfRoomChanged() {
     if (!conf.enabled) return false;
-    if ((conf.room || "").trim() === bootRoom) return false;
+    if (!liveRoom) return false;                            // never been live — connect in place
+    if ((conf.room || "").trim() === liveRoom) return false;
     setTimeout(() => { try { location.reload(); } catch (_) {} }, 120);
     return true;
   }
@@ -137,6 +142,7 @@
       unsub = ref.onSnapshot(onSnap, (err) => {
         setStatus("error", /permission/i.test(err.message) ? "Permission denied — check Firestore rules." : err.message);
       });
+      liveRoom = room;               // we are pointed at THIS room's channels now
       startPresence(room);
     } catch (e) {
       setStatus("error", (e && e.message) || "Connection failed.");
@@ -417,6 +423,22 @@
     },
     enable() { conf.enabled = true; persist(); rememberRoom(conf.room); if (!reloadIfRoomChanged()) connect(); },
     disable() { conf.enabled = false; persist(); disconnect(); },
+    // 🚪 Leave the current room: back to solo play. The local copy of the
+    // room's world stays on this phone (local-first) — rejoining later picks
+    // it right back up. Reloads when we were live so nothing stale lingers.
+    leaveRoom() {
+      const wasLive = !!liveRoom;
+      conf.enabled = false; conf.room = "";
+      persist();
+      disconnect();
+      if (wasLive) setTimeout(() => { try { location.reload(); } catch (_) {} }, 120);
+      return wasLive;
+    },
+    // Drop a room from this phone's remembered list (does not touch the room).
+    forgetRoom(room) {
+      room = (room || "").trim();
+      try { localStorage.setItem(RKEY, JSON.stringify(knownRooms().filter((r) => r.room !== room))); } catch (_) {}
+    },
     status() { return { state: statusState, msg: statusMsg }; },
     onStatus(fn) { statusSubs.push(fn); fn(statusState, statusMsg); return () => { const i = statusSubs.indexOf(fn); if (i >= 0) statusSubs.splice(i, 1); }; },
 

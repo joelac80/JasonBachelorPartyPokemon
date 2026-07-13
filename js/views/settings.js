@@ -321,13 +321,30 @@
         ]) : null;
         return el("div", {}, [
           shareRow,
-          el("p", { class: "hint" }, "🚪 Your rooms — tap to SWITCH (the app reloads fresh in the new room):"),
+          // 🚪 leave = back to solo play; the room's world stays saved on this
+          // phone (local-first), so rejoining later picks it right back up.
+          cur ? el("div", { class: "toolbar" }, [
+            el("button", { class: "btn subtle sm", onClick: () => {
+              if (!confirm("Leave room " + cur + "? You go back to solo play — nothing is deleted, and you can rejoin any time.")) return;
+              const reloading = Sync.leaveRoom();
+              toast("👋 Left " + cur);
+              if (!reloading) Router.render();
+            } }, "👋 Leave " + cur + " (back to solo)"),
+          ]) : null,
+          el("p", { class: "hint" }, "🚪 Your rooms — tap to SWITCH; ✕ forgets a room from this list:"),
           el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, known.map((r) =>
-            el("button", { class: "btn sm " + (r.room === cur ? "primary" : "subtle"), onClick: () => {
-              if (r.room === cur) { toast("Already in " + r.room); return; }
-              if (!confirm("Switch this phone to room " + r.room + "? The app reloads and syncs with that crew.")) return;
-              Sync.switchRoom(r.room);
-            } }, "🚪 " + r.room + (r.room === cur ? " ✓" : "")))),
+            el("span", { class: "room-chip-group" }, [
+              el("button", { class: "btn sm " + (r.room === cur ? "primary" : "subtle"), onClick: () => {
+                if (r.room === cur) { toast("Already in " + r.room); return; }
+                if (!confirm("Switch this phone to room " + r.room + "? The app syncs with that crew" + (Sync.getConf().enabled ? " (reloads fresh)" : "") + ".")) return;
+                Sync.switchRoom(r.room);
+              } }, "🚪 " + r.room + (r.room === cur ? " ✓" : "")),
+              r.room !== cur ? el("button", { class: "btn subtle sm room-forget", title: "Forget this room (just removes it from this list)", onClick: () => {
+                Sync.forgetRoom(r.room);
+                toast("Forgot " + r.room);
+                Router.render({ keepScroll: true });
+              } }, "✕") : null,
+            ]))),
         ]);
       })(),
       el("div", { class: "toolbar" }, [enableBtn, saveBtn,
