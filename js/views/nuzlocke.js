@@ -339,7 +339,9 @@
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
       Store.state.attendees.map((a) => el("option", { value: a.id, selected: me === a.id ? "true" : null }, a.name))));
     sel.addEventListener("change", () => { me = sel.value; slot = ""; wildId = 0; wildShiny = 0; Router.render(); });
-    root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Running as:"), sel]));
+    const lockedRow = U.lockedTrainerRow("Running as:");
+    if (lockedRow) { if (me !== lockedRow.dataset.me) { me = lockedRow.dataset.me; slot = ""; } root.appendChild(lockedRow); }
+    else root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Running as:"), sel]));
 
     const body = el("div", {});
     root.appendChild(body);

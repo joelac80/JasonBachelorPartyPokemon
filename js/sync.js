@@ -44,6 +44,13 @@
     } catch (_) {}
   }
   rememberRoom(bootRoom);
+  // 🚧 STATE OWNERSHIP — which room this phone's local cache belongs to.
+  // Switching crews must never cross-pollinate: if the cache belongs to a
+  // DIFFERENT room, we adopt the new room wholesale (or fresh-seed an empty
+  // one) instead of merging room A's people into room B.
+  const SROOM = "jasonBachHub.stateRoom.v1";
+  function stateRoom() { try { return localStorage.getItem(SROOM) || ""; } catch (_) { return ""; } }
+  function setStateRoom(r) { try { localStorage.setItem(SROOM, r || ""); } catch (_) {} }
   function reloadIfRoomChanged() {
     if (!conf.enabled) return false;
     if ((conf.room || "").trim() === bootRoom) return false;
@@ -294,17 +301,31 @@
   }
 
   function onSnap(doc) {
-    if (!doc.exists) { push(); return; }          // first in the room: seed it
+    // Does the local cache belong to ANOTHER room? (Empty owner = solo history
+    // — carrying solo progress into your FIRST room is intended.)
+    const owner = stateRoom();
+    const foreign = !!(conf.room && owner && owner !== conf.room);
+    if (!doc.exists) {
+      // First in the room. A foreign cache must NOT become the new room's
+      // seed — room B starts from a fresh slate, not room A's people.
+      if (foreign) { applying = true; try { Store.freshSlate(); } finally { applying = false; } }
+      setStateRoom(conf.room);
+      push(); return;
+    }
     const data = doc.data(); if (!data) return;
-    if (data.writer === clientId) { setStatus("live", "Synced"); return; }  // our own echo
+    if (data.writer === clientId) { setStatus("live", "Synced"); setStateRoom(conf.room); return; }  // our own echo
     if (!data.stateJson) return;
     let obj; try { obj = JSON.parse(data.stateJson); } catch (_) { return; }
     applying = true;
-    try { Store.applyRemote(obj); } finally { applying = false; }
+    try {
+      if (foreign) Store.adoptRemote(obj);   // wholesale — no merge with the old room's cache
+      else Store.applyRemote(obj);
+    } finally { applying = false; }
+    setStateRoom(conf.room);
     // If our local party config (teams/events) is NEWER than what just arrived,
     // the sender was lagging — the merge kept ours; now re-assert it to the room
     // so the organizer's edit propagates instead of being lost to their push.
-    try { if ((Store.state.configRev || 0) > (obj.configRev || 0)) schedulePush(); } catch (_) {}
+    try { if (!foreign && (Store.state.configRev || 0) > (obj.configRev || 0)) schedulePush(); } catch (_) {}
     // The state is now current in the Store. Schedule a (debounced) re-render
     // to reflect it — unless the active view is mid-interaction and asked us
     // to hold off (e.g. mid-catch in the Safari); their next action re-renders

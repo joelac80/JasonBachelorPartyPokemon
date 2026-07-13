@@ -18,7 +18,9 @@
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) =>
       el("option", { value: a.id, selected: a.id === me ? "true" : null }, a.name)));
     sel.addEventListener("change", () => { me = sel.value; renderAll(); });
-    root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Voting as:"), sel]));
+    const lockedRow = U.lockedTrainerRow("Voting as:");
+    if (lockedRow) { me = lockedRow.dataset.me; root.appendChild(lockedRow); }
+    else root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Voting as:"), sel]));
 
     const makeHost = el("div", {}), listHost = el("div", {}), boardHost = el("div", {});
     [makeHost, listHost, boardHost].forEach((h) => root.appendChild(h));

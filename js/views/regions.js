@@ -49,10 +49,12 @@
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
     if (!attId) { root.appendChild(el("p", { class: "hint" }, "Add trainers first (Squad page).")); return; }
+    const lockedRow = U.lockedTrainerRow("Journey of:");
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id }, a.name + "'s journey")));
     sel.value = attId;
     sel.addEventListener("change", () => { attId = sel.value; paintTabs(); rebuild(); });
-    root.appendChild(sel);
+    if (lockedRow) { attId = lockedRow.dataset.me; root.appendChild(lockedRow); }
+    else root.appendChild(sel);
 
     const tabBar = el("div", { class: "rg-tabs" });
     root.appendChild(tabBar);

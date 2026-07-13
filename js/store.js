@@ -1761,6 +1761,16 @@
     // Apply a full state object received from a sync peer. Notifies subscribers
     // (Sync guards its own outgoing push with an "applying" flag, so this
     // doesn't echo back to the room).
+    // Wholesale adoption of a room's state — used the moment a phone whose
+    // cache belongs to a DIFFERENT room joins this one. No cumulative merge:
+    // the old room's people, catches and history stay in the old room.
+    adoptRemote(obj) {
+      if (!obj || typeof obj !== "object") return;
+      this.state = Object.assign(freshState(), obj);
+      this.fixupPartners(this.state);
+      this.persist();
+      this._subs.forEach((fn) => fn(this.state));
+    },
     applyRemote(obj) {
       if (!obj || typeof obj !== "object") return;
       const prev = this.state;                       // local — may hold catches/badges not yet in `obj`

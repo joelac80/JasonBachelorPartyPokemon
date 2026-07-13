@@ -120,5 +120,21 @@
     toastTimer = setTimeout(function () { t.classList.remove("show"); }, actionLabel ? 4000 : 1800);
   }
 
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast };
+  // 🎴 IDENTITY LOCK — when a trainer is signed in on this phone, ACTION
+  // views (catching, runs, journeys, logging) don't offer a "play as anyone"
+  // picker: you are who you logged in as. Returns the locked row (and the
+  // trainer id) when signed in, or null so the view falls back to its picker.
+  function lockedTrainerRow(labelText) {
+    const me = window.Sync && Sync.getMe && Sync.getMe();
+    const a = me && window.Store && Store.attendee(me);
+    if (!a) return null;
+    const row = el("div", { class: "safari-trainer locked" }, [
+      el("span", { class: "safari-trainer-lbl" }, labelText),
+      el("span", { class: "trainer-locked-chip" }, "🎴 " + a.name),
+      el("a", { class: "trainer-locked-switch", href: "#/settings" }, "switch in ⚙️"),
+    ]);
+    row.dataset.me = me;
+    return row;
+  }
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow };
 })();

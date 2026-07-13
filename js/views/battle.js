@@ -139,6 +139,22 @@
         duelSide("b", "🔴 Red Corner", "red"),
       ]));
       duelHost.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+        // 🎲 Stadium-style rentals in PvP: both sides get a random six —
+        // zero prep, pure skill (leads first; non-legendary pool).
+        el("button", { class: "btn subtle", onClick: () => {
+          const all = duel.a.concat(duel.b);
+          if (all.some((u) => !u.attId)) { alert("Pick the trainers first — rentals replace the TEAMS, not the people."); return; }
+          const DX = window.DEX || {};
+          const pool = Object.keys(DX).map(Number).filter((id) => id >= 1 && id <= 1025 && !DX[id].leg);
+          all.forEach((u) => {
+            const six = [];
+            while (six.length < 6) { const id = pool[(Math.random() * pool.length) | 0]; if (six.indexOf(id) < 0) six.push(id); }
+            u.party = six;
+          });
+          if (window.SFX && SFX.fanfare) SFX.fanfare();
+          U.toast("🎲 Rental teams dealt — six random Pokémon each!");
+          renderDuel();
+        } }, "🎲 Deal rental teams"),
         el("button", { class: "btn spin-btn", onClick: () => {
           const ok = (us) => us.every((u) => u.attId && u.party.length);
           if (!ok(duel.a) || !ok(duel.b)) { alert("Every trainer needs to be picked and have at least one Pokémon."); return; }

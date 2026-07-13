@@ -2217,3 +2217,20 @@ html, body { overscroll-behavior-y: contain; }
 .beat-rows { display: flex; flex-direction: column; gap: 6px; margin: 10px auto; max-width: 420px; }
 .beat-row { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); border-radius: 10px;
   padding: 7px 10px; font-size: 13px; color: #fff; text-align: left; }
+
+/* 🔮 whispers + 🎴 identity lock */
+.whispers { border: 2px dashed var(--line); border-radius: 12px; padding: 8px 12px; margin: 4px 0 12px; background: var(--paper); }
+.whispers-head { font-family: var(--pixel, monospace); font-weight: 800; font-size: 12px; letter-spacing: 0.5px; margin-bottom: 4px; }
+.whisper { font-size: 13px; color: var(--ink-dim); padding: 2px 0; }
+.trainer-locked-chip { font-weight: 800; }
+.trainer-locked-switch { font-size: 11px; color: var(--ink-dim); margin-left: 8px; text-decoration: none; }
+
+/* 🏟 stadium cups */
+.cup-match { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px dashed var(--line); }
+.cup-match.played { opacity: 0.75; }
+.cup-side { flex: 1; font-weight: 700; font-size: 13px; }
+.cup-side:last-of-type { text-align: right; }
+.cup-side.won { color: #2e8b3d; }
+.cup-side.won::after { content: " 🏆"; }
+.cup-vs { font-family: var(--pixel, monospace); font-size: 10px; color: var(--ink-dim); }
+.cup-done { font-size: 14px; }

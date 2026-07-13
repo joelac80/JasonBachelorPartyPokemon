@@ -684,11 +684,13 @@
       el("p", { class: "page-sub" }, "Victory Road is only the beginning. Nine regions of Elite chambers and Champions, a silent trainer on the mountain, and — at the summit of it all — the Top Champion who oversees them all." ),
     ]));
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
+    const lockedRow = U.lockedTrainerRow("Journey of:");
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id }, a.name + "'s journey")));
     sel.value = attId;
     const host = el("div", {});
     sel.addEventListener("change", () => { attId = sel.value; paint(); });
-    root.appendChild(sel);
+    if (lockedRow) { attId = lockedRow.dataset.me; root.appendChild(lockedRow); }
+    else root.appendChild(sel);
     root.appendChild(host);
     function paint() {
       host.innerHTML = "";

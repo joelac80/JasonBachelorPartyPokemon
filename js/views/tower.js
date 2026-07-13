@@ -79,7 +79,9 @@
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
       Store.state.attendees.map((a) => el("option", { value: a.id, selected: me === a.id ? "true" : null }, a.name))));
     sel.addEventListener("change", () => { me = sel.value; Router.render(); });
-    root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Climbing as:"), sel]));
+    const lockedRow = U.lockedTrainerRow("Climbing as:");
+    if (lockedRow) { me = lockedRow.dataset.me; root.appendChild(lockedRow); }
+    else root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Climbing as:"), sel]));
 
     const body = el("div", {});
     root.appendChild(body);

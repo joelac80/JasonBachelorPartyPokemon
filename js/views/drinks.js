@@ -20,7 +20,9 @@
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) =>
       el("option", { value: a.id, selected: a.id === active ? "true" : null }, a.name)));
     sel.addEventListener("change", () => { active = sel.value; renderAll(); });
-    root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Logging for:"), sel]));
+    const lockedRow = U.lockedTrainerRow("Logging for:");
+    if (lockedRow) { active = lockedRow.dataset.me; root.appendChild(lockedRow); }
+    else root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Logging for:"), sel]));
 
     const whichIn = el("input", { class: "in", placeholder: "Which one? (optional — e.g. Bud Light, Old Fashioned)" });
     const logRow = el("div", {}), statHost = el("div", {}), favesHost = el("div", {}), boardHost = el("div", {}), awardHost = el("div", {}), recentHost = el("div", {});

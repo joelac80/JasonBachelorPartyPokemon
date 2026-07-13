@@ -495,7 +495,9 @@
       current = null; status = ""; clearBoosts();
       renderAll();
     });
-    root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Now catching:"), sel]));
+    const lockedRow = U.lockedTrainerRow("Now catching:");
+    if (lockedRow) { myCatcher = lockedRow.dataset.me; root.appendChild(lockedRow); }
+    else root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Now catching:"), sel]));
 
     const stats = el("div", { class: "safari-stats" });
     const enc = el("div", { class: "safari-enc" });

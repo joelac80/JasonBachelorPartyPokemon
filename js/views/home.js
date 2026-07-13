@@ -76,6 +76,7 @@
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
       { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions of gyms → Champions" },
       { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
+      { r: "cups",     e: "🏟", t: "Stadium Cups",  d: "Baby · Poké · Prime · Rental" },
       { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Seven permadeath epics" },
     ].map(tile)));
 
@@ -109,6 +110,30 @@
             el("span", { class: "jc-e" }, c.e),
             el("span", {}, [el("span", { class: "jc-t" }, c.t), el("span", { class: "jc-d" }, c.d)]),
           ])))));
+    })();
+
+    // 🔮 WHISPERS — the tease layer: the nearest LOCKED mysteries for the
+    // signed-in trainer, counted but never named. Reasons to keep going.
+    (function whispers() {
+      const me = window.Sync && Sync.getMe && Sync.getMe();
+      if (!me || !Store.attendee(me)) return;
+      const lines = [];
+      const goal = Store.nextGenGoal && Store.nextGenGoal(me);
+      if (goal) lines.push("🔒 A new generation stirs beyond your reach — " + goal.text + ".");
+      const lw = Store.leagueWins(me);
+      const films = (window.MOVIE_BOSSES || []).filter((b) => lw.indexOf(b.needs || "lance") < 0).length;
+      if (films) lines.push("🎬 " + films + " film" + (films > 1 ? "s are" : " is") + " showing in eras you haven't conquered…");
+      const myst = (window.LEAGUE_STAGES || []).filter((st) => st.mystery &&
+        !Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0)).length;
+      if (myst) lines.push("👑 " + myst + " unnamed silhouette" + (myst > 1 ? "s" : "") + " hold" + (myst > 1 ? "" : "s") + " a throne nobody in this room has seen.");
+      const secrets = ((window.LegendChallenge && LegendChallenge.SPECIALS) || []).filter((sp) => Store.secretWins(me).indexOf(sp.key) < 0).length;
+      if (secrets) lines.push("🌌 " + secrets + " sealed story beat" + (secrets > 1 ? "s" : "") + " wait" + (secrets > 1 ? "" : "s") + " past badges you don't have yet…");
+      const slots = (Store.NUZ_SLOTS || []).filter((k) => !Store.nuzRun(me, k)).length;
+      if (slots) lines.push("🪦 " + slots + " permadeath epic" + (slots > 1 ? "s have" : " has") + " never been written on your card.");
+      if (!lines.length) lines.push("🏆 Nothing left is hidden from you. The saga is yours.");
+      root.appendChild(el("div", { class: "whispers" },
+        [el("div", { class: "whispers-head" }, "🔮 Whispers")].concat(
+          lines.slice(0, 3).map((t) => el("div", { class: "whisper" }, t)))));
     })();
 
     // Quiet doors for everything that isn't catching or battling — the
