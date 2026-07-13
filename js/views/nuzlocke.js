@@ -150,6 +150,11 @@
   // Gym teams keep the leader's REAL ace (data lists it last).
   const gymAce = (g) => (g && g.team && g.team[g.team.length - 1]) || 0;
 
+  // In-place refresh: a grass roll (or run-away) re-renders the page, which
+  // used to flash and snap the scroll back to the top — mid-page buttons
+  // deserve a mid-page refresh (the router's live-sync mode does exactly this).
+  function renderKeepScroll() { Router.render({ keepScroll: true }); }
+
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
   let wildId = 0;
@@ -274,7 +279,7 @@
             const id = rollWild(run);
             if (!id) { alert("The grass is quiet — every species on this road has already been met."); return; }
             Store.nuzEncounter(me, id, eraKey(run));
-            wildId = id; sfx("blip"); Router.render();
+            wildId = id; sfx("blip"); renderKeepScroll();
           } }, "👣 Walk in the grass"),
         ]));
         grass.appendChild(el("p", { class: "hint" }, "Recruits are caught by battling — and battles can cost lives. ⚠️ Each walk burns an encounter (running away too), a species met once NEVER returns, and only Pokémon at home under the Lv " + runLevel(run) + " cap roam here."));
@@ -293,7 +298,7 @@
       ]));
       grass.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => battleWild(run) }, "⚔ Battle to catch"),
-        el("button", { class: "btn subtle", onClick: () => { wildId = 0; Router.render(); } }, "Run away"),
+        el("button", { class: "btn subtle", onClick: () => { wildId = 0; renderKeepScroll(); } }, "Run away"),
       ]));
     }
 

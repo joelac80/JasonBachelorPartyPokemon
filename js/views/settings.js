@@ -123,7 +123,7 @@
             onChange: importData }),
         ]),
         el("button", { class: "btn danger", onClick: () => {
-          if (confirm("Reset EVERYTHING back to the defaults in seed.js? This wipes scores, drafts, and edits.")) {
+          if (confirm("Reset EVERYTHING back to the blank default slate? This wipes trainers, scores, drafts, and edits.")) {
             Store.reset();
             Router.render();
           }
@@ -142,7 +142,7 @@
     const blob = new Blob([Store.exportJSON()], { type: "application/json" });
     const a = el("a", {
       href: URL.createObjectURL(blob),
-      download: "bachelor-hub-backup.json",
+      download: "party-hub-backup.json",
     });
     document.body.appendChild(a);
     a.click();

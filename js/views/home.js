@@ -211,8 +211,8 @@
       p.heroImage
         ? el("img", { class: "hero-img", src: p.heroImage, alt: p.title })
         : el("div", { class: "hero-ball" }),
-      el("div", { class: "hero-badge" }, "Bachelor Party HQ"),
-      el("h1", { class: "hero-title" }, p.title || "Bachelor Party"),
+      el("div", { class: "hero-badge" }, "Party HQ"),
+      el("h1", { class: "hero-title" }, p.title || "Pokémon Party"),
       el("p", { class: "hero-sub" }, p.subtitle || ""),
       p.location ? el("p", { class: "cd-loc" }, "📍 " + p.location) : null,
       p.venue ? el("p", { class: "hero-blurb" }, p.venue) : null,

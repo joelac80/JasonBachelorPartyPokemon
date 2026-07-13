@@ -202,7 +202,7 @@
     try {
       const fileObjs = photos.map((p, i) => new File([dataUriToBytes(p.img)], fileName(p, i), { type: "image/jpeg" }));
       if (navigator.canShare && navigator.canShare({ files: fileObjs })) {
-        navigator.share({ files: fileObjs, title: "Bachelor Party photos" }).catch(function () {});
+        navigator.share({ files: fileObjs, title: "Party photos" }).catch(function () {});
         return;
       }
     } catch (_) {}

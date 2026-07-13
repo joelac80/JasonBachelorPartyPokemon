@@ -1,4 +1,4 @@
-/* jeopardy.js — Jason Jeopardy: a Bulbasaur-themed trivia board.
+/* jeopardy.js — Pokémon Jeopardy: a build-your-own trivia board.
    "Daily Bulba" squares are our Daily Double. Scoring runs against the
    Victory Road teams. Clues are editable in-app (tap ✎) so real questions
    from Bob can be dropped in live. Board state lives in Store.state.jeopardy. */
@@ -180,7 +180,7 @@
     const rs = rounds();
 
     root.appendChild(el("div", { class: "page-head" }, [
-      el("h1", {}, "❓ Jason Jeopardy"),
+      el("h1", {}, "❓ Pokémon Jeopardy"),
       el("p", { class: "page-sub" }, "Two full rounds — Single then Double Jeopardy — plus Final. Watch for the Daily Bulba!"),
     ]));
 

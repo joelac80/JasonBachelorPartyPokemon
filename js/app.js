@@ -44,7 +44,7 @@
   // Brand: your Pokémon (sprite + name) when signed in as a trainer, else the
   // party title. Evolving updates it live (currentForm is re-read on change).
   function syncTitle() {
-    const t = (Store.state.party && Store.state.party.title) || "Bachelor Party HQ";
+    const t = (Store.state.party && Store.state.party.title) || "Pokémon Party HQ";
     document.title = t;
     const brand = document.getElementById("brand-title");
     const ball = document.querySelector(".brand-ball");
@@ -588,7 +588,7 @@
         if (window.SFX && SFX.fanfare) SFX.fanfare();
         let rctrl;
         const rbody = el("div", { class: "chal-modal" }, [
-          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the lake house! First trainer to catch it claims the only one in the region."),
+          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the party! First trainer to catch it claims the only one in the region."),
           el("div", { class: "toolbar" }, [
             el("button", { class: "btn primary", onClick: () => { if (rctrl) rctrl.close(); location.hash = "#/safari"; } }, "🎯 Hunt it"),
             el("button", { class: "btn subtle", onClick: () => { if (rctrl) rctrl.close(); } }, "Let it roam"),

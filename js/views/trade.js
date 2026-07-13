@@ -1,6 +1,6 @@
 /* trade.js — the Trading Post. 1-for-1 Pokémon swaps between trainers,
-   link-cable style. Partners are untradeable (Jason keeps Bulbasaur, Joe
-   keeps Totodile) unless a spare wild copy was caught. Kadabra, Machoke,
+   link-cable style. Partner favorites are untradeable (a trainer keeps
+   their partner) unless a spare wild copy was caught. Kadabra, Machoke,
    Graveler and Haunter evolve when traded — just like the games. */
 (function () {
   const { el } = U;

@@ -112,7 +112,7 @@
 
     // ---- masthead ----
     poster.appendChild(el("div", { class: "poster-head" }, [
-      el("div", { class: "poster-title" }, p.title || "Bachelor Party"),
+      el("div", { class: "poster-title" }, p.title || "Pokémon Party"),
       el("div", { class: "poster-sub" }, [p.location, p.subtitle].filter(Boolean).join(" · ")),
     ]));
 

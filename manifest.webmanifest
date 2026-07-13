@@ -1,7 +1,7 @@
 {
-  "name": "Bachelor Party HQ",
+  "name": "Pokémon Party HQ",
   "short_name": "Bach HQ",
-  "description": "Jason's bachelor party companion — gotta party 'em all",
+  "description": "The party companion — gotta party 'em all",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

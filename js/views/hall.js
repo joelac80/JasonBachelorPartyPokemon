@@ -117,7 +117,7 @@
 
     const collection = renderCollection();
     if (collection) {
-      root.appendChild(el("h2", { class: "section-title" }, "🎴 Jason's Bulbasaur Collection"));
+      root.appendChild(el("h2", { class: "section-title" }, "🎴 The Bulbasaur Collection"));
       root.appendChild(el("p", { class: "hint", style: { marginTop: "-6px", marginBottom: "10px" } },
         "Iconic Bulbasaur cards, 1999 → today. Tap any card to enlarge. (Images load online.)"));
       root.appendChild(collection);

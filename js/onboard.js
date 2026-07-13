@@ -66,8 +66,8 @@
     }
 
     const SLIDES = [
-      { e: "👋", t: "Welcome to the world of Pokémon… bachelor parties!",
-        d: "Jason's last stand — July 9–12 at the lake house. This app is the scoreboard, the Pokédex, and the referee, all in one. Seven quick slides and you're ready (or skip and wing it — the ? button always has your back)." },
+      { e: "👋", t: "Welcome to the world of Pokémon… parties!",
+        d: "This app is your party's scoreboard, Pokédex, and referee, all in one. Seven quick slides and you're ready (or skip and wing it — the ? button always has your back)." },
       { e: "🎴", t: "Who are you, trainer?",
         d: "Tap yourself. Everything you log — catches, duel wins, drinks, dares — follows YOU all weekend, on leaderboards, your profile, and the final poster.",
         body: () => { paintGrid(); return grid; } },

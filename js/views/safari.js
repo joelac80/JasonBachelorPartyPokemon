@@ -526,7 +526,7 @@
         const roam = window.Sync && Sync.roam && Sync.roam();
         if (roam && DEX[roam.monId]) {
           enc.appendChild(el("div", { class: "roam-banner" }, [
-            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the lake house — go catch it!"),
+            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the party — go catch it!"),
             el("button", { class: "btn primary sm", onClick: () => {
               // Each hunter rolls their own shiny shot at the roaming legendary
               // (~1/8) — the only realistic way to land a shiny legendary.
