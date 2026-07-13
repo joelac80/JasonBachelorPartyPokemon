@@ -342,6 +342,15 @@
       if (busy || !current || !window.Duel) return;
       const tid = active();
       if (!tid) return;
+      // ⚔ Sending out a fighter is a commotion — 10% the wild one bolts before
+      // the battle even starts. Your berries/rocks CARRY into the battle
+      // (they set the odds floor the weakening builds on), so the aggressive
+      // path needed its own risk, same as the rock.
+      if (Math.random() < 0.10) {
+        wildEscaped(current, nfo, nfo.name + " startled at the challenge and bolted!",
+          "⚔ The commotion scared it off before the battle began!");
+        return;
+      }
       const ctx = { tid: tid, id: current, wasShiny: shiny, glyph: currentGlyph, nfo: nfo,
         helperId: helper && helper !== tid ? helper : "", viaMaster: masterArmed,
         baseChance: chanceFor(nfo) };
@@ -494,7 +503,9 @@
       const nfo = info(current);
       const chance = chanceFor(nfo);
       const ball = ballTier(chance);
-      const owned = !!rec(active()).caught[current];
+      // The encounter table never re-offers a variant you own — so if this
+      // species rings a bell, what you own is the OTHER form. Say so.
+      const hasNorm = ownsNormal(active(), current), hasShiny = ownsShiny(active(), current);
       const firstShow = revealId !== current && !status;
 
       // ---- battle scene ----
@@ -515,7 +526,8 @@
         el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
         shiny ? el("span", { class: "safari-shiny-chip" }, "✨ SHINY — double points!") : null,
         nfo.leg ? el("span", { class: "safari-oneof" }, "🌟 LEGENDARY") : null,
-        owned ? el("span", { class: "safari-owned" }, "✓ already in dex") : null,
+        (shiny && hasNorm) ? el("span", { class: "safari-owned" }, "✓ normal form in dex — this ✨ SHINY is NEW") : null,
+        (!shiny && hasShiny) ? el("span", { class: "safari-owned" }, "✨ shiny form in dex — this normal one is NEW") : null,
       ]);
       // Human-readable breakdown of every active boost.
       let breakdown;
@@ -563,7 +575,7 @@
       const canBattle = window.Duel && Duel.poolFor && Duel.poolFor(active()).length > 0;
       const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
         el("button", { class: "btn primary", onClick: () => throwBall(nfo) }, [ballIcon(ball), " Throw " + ball.name]),
-        canBattle ? el("button", { class: "btn subtle", onClick: () => battleToWeaken(nfo) }, "⚔ Battle to weaken") : null,
+        canBattle ? el("button", { class: "btn subtle", onClick: () => battleToWeaken(nfo) }, "⚔ Battle to weaken (10% it bolts)") : null,
         el("button", { class: "btn subtle", onClick: () => { current = null; status = ""; clearBoosts(); renderEncounter(); } }, "Run"),
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [
