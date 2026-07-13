@@ -113,27 +113,36 @@
     const ctrl = Modal.open(title, grid, null, {});
   }
 
-  // ❗ ~1-in-4 chance a famous canon trainer (Giovanni, Silver, N…) ambushes you
-  // on your way out of a gym. Pure exhibition — glory and sips.
-  function startEncounter(attId, t) {
+  // ❗ Post-gym challengers, two flavors:
+  //   📖 STORY BATTLES — every canon boss & rival has a pinned moment on
+  //   their own region's badge timeline (Silver in the Azalea shadows at
+  //   Johto badge 2, N at the Ferris wheel at Unova badge 3, Cyrus at the
+  //   Spear Pillar at Sinnoh badge 7…). The ambush is GUARANTEED once you
+  //   reach the moment, and they come back after every badge until beaten.
+  //   🎲 SURPRISES — otherwise ~28% of gym wins draw a challenger from THIS
+  //   region's cast (era-true: no Nemona in Kanto), with Prof. Oak as the
+  //   rare roaming wildcard anywhere.
+  function startEncounter(attId, t, isStory) {
     const size = Math.min(6, Duel.poolFor(attId).length);
     if (size < 1) return;
     Duel.pickParty({ attId: attId, min: 1, max: size,
       title: "vs " + t.title + " " + t.name + " — pick up to " + size,
-      hint: "A surprise battle! Bragging rights and sips — no badge, no rating.",
+      hint: isStory ? "📖 A story battle! Glory and sips — and they WILL be back until you win." :
+        "A surprise battle! Bragging rights and sips — no badge, no rating.",
       onDone: (ids) => {
-        Duel.start({ mode: "local", title: "a surprise showdown",
+        Duel.start({ mode: "local", title: isStory ? "a story showdown" : "a surprise showdown",
           encounter: { foe: t.title + " " + t.name, who: t.name },
           a: { units: [{ attId: attId, monIds: ids }] },
           b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: 1.12 }] },
           onResult: () => Router.render() });
       } });
   }
-  function maybeEncounter(attId) {
-    const pool = window.CANON_TRAINERS || [];
-    if (!pool.length || Duel.poolFor(attId).length < 1) return;
-    if (Math.random() > 0.28) return;                       // ~28% of gym battles
-    const t = pool[Math.floor(Math.random() * pool.length)];
+  function regionBadges(attId, region) {
+    let n = 0;
+    GYMS.forEach((g, i) => { if (g.region === region && Store.gymHolders(i).indexOf(attId) >= 0) n++; });
+    return n;
+  }
+  function offerEncounter(attId, t, isStory) {
     let tries = 0;
     // Wait until the gym battle's own end screens (evolution / rematch) clear.
     (function whenClear() {
@@ -142,19 +151,39 @@
       const ico = U.energyIcon(t.type);
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
-        el("p", { class: "hint" }, "❗ On your way out of the gym, a challenger blocks the path!"),
+        el("p", { class: "hint" }, isStory && t.story ? "📖 " + t.story.intro : "❗ On your way out of the gym, a challenger blocks the path!"),
         el("div", { class: "enc-hero" }, [
           ico ? el("img", { class: "enc-ico", src: ico, alt: t.type }) : null,
           el("div", {}, [el("div", { class: "enc-name" }, t.name), el("div", { class: "enc-title" }, t.title)]),
         ]),
         el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
         el("div", { class: "toolbar" }, [
-          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); if (window.SFX) SFX.fanfare && SFX.fanfare(); startEncounter(attId, t); } }, "⚔ Accept"),
-          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Walk away"),
+          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); if (window.SFX) SFX.fanfare && SFX.fanfare(); startEncounter(attId, t, isStory); } }, "⚔ Accept"),
+          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, isStory ? "Not now (they'll be back)" : "Walk away"),
         ]),
       ]);
-      ctrl = Modal.open("A challenger appears!", body, null, { noFooter: true });
+      ctrl = Modal.open(isStory ? "📖 The story finds you!" : "A challenger appears!", body, null, { noFooter: true });
     })();
+  }
+  function maybeEncounter(attId, gymIdx) {
+    const pool = window.CANON_TRAINERS || [];
+    if (!pool.length || Duel.poolFor(attId).length < 1) return;
+    const region = (GYMS[gymIdx] || {}).region || "";
+    const have = regionBadges(attId, region);
+    const beaten = Store.encounterWins ? Store.encounterWins(attId) : [];
+    // 📖 A story moment reached (and its trainer still undefeated) always
+    // fires — earliest moment first if a backlog has built up.
+    const story = pool.filter((t) => t.story && t.story.region === region &&
+      have >= t.story.badge && beaten.indexOf(t.name) < 0)
+      .sort((a, b) => a.story.badge - b.story.badge)[0];
+    if (story) { offerEncounter(attId, story, true); return; }
+    // 🎲 Era-true surprise: this region's cast — or, rarely, the professor.
+    if (Math.random() > 0.28) return;
+    const oak = pool.find((t) => t.name === "PROF. OAK");
+    const local = pool.filter((t) => ((t.story && t.story.region) || t.region) === region && t !== oak);
+    const t = (oak && Math.random() < 0.08) ? oak : local[Math.floor(Math.random() * local.length)];
+    if (!t) return;
+    offerEncounter(attId, t, false);
   }
 
   // 🧭 The Gen Ladder: a region's gyms open only after the PREVIOUS region's
@@ -192,7 +221,7 @@
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym", gym: { idx: idx, leader: gym.leader, badge: gym.badge },
             a: { units: [{ attId: attId, monIds: ids }] },
             b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: gym.team.slice() }] },
-            onResult: () => { Router.render(); maybeEncounter(attId); } });
+            onResult: () => { Router.render(); maybeEncounter(attId, idx); } });
         } });
     };
     const me = window.Sync && Sync.getMe && Sync.getMe();
