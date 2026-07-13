@@ -26,6 +26,7 @@
     { key: "g8", gen: 8, name: "Galar", emoji: "⚽" },
     { key: "g9", gen: 9, name: "Paldea", emoji: "🍊" },
     { key: "hisui", name: "Hisui", emoji: "⏳" },
+    { key: "trainers", name: "Trainers", emoji: "🎓" },
   ];
 
   // Per-trainer catch records (same variant logic as the Safari dex).
@@ -78,10 +79,10 @@
 
     const t = TABS.find((x) => x.key === tab) || TABS[0];
     // 🔡 / ✨ — the full standalone pages ride along inside the tab.
-    if (t.key === "unown" || t.key === "mega") {
+    if (t.key === "unown" || t.key === "mega" || t.key === "trainers") {
       const emb = el("div", { class: "dex-embed" });
       host.appendChild(emb);
-      const v = window.Views && window.Views[t.key === "mega" ? "megadex" : "unown"];
+      const v = window.Views && window.Views[t.key === "mega" ? "megadex" : t.key === "trainers" ? "trainerdex" : "unown"];
       if (v) v(emb);
       return;
     }
