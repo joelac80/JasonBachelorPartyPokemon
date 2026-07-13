@@ -56,6 +56,10 @@
           rank: "Gym Leader", role: "The Squad", favorite: "", favoriteId: 0,
           photo: "", catchphrase: "",
         }));
+        // 🎴 Sign in the moment you create yourself — not just at the tour's
+        // end — so an abandoned tour still leaves the phone ready to catch.
+        // A stale "me" whose trainer no longer exists counts as nobody.
+        if (window.Sync && Sync.setMe && (!Sync.getMe() || !Store.attendee(Sync.getMe()))) Sync.setMe(id);
         sel = id; paintGrid(); syncNext();
         if (window.SFX && SFX.fanfare) SFX.fanfare();
         // 🎯 The signup ritual: pick your favorite right away — the first

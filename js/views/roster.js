@@ -277,6 +277,15 @@
           rank: "Gym Leader", role: "The Squad", favorite: "", favoriteId: 0,
           photo: "", catchphrase: "",
         }));
+        // 🎴 No barriers: a phone with nobody signed in that creates a trainer
+        // just became that trainer — catching works immediately, no Settings
+        // detour. A stale "me" whose trainer no longer exists (fresh slate,
+        // new room) counts as nobody. (A signed-in organizer adding friends
+        // is untouched.)
+        if (window.Sync && Sync.setMe && (!Sync.getMe() || !Store.attendee(Sync.getMe()))) {
+          Sync.setMe(id);
+          U.toast("🎴 This is YOU now — every catch counts for this trainer (switch in ⚙️ Settings)");
+        }
         Router.render();
         setTimeout(() => editCard(id), 30);
       } }, "+ Add trainer"),

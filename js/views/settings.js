@@ -111,6 +111,12 @@
     ]);
   }
 
+  // A wipe can orphan the signed-in "me" — sign the ghost out right away so
+  // the next trainer created on this phone auto-signs in (no Settings detour).
+  function dropGhostMe() {
+    try { if (window.Sync && Sync.getMe() && !Store.attendee(Sync.getMe())) Sync.setMe(""); } catch (_) {}
+  }
+
   function dataSection() {
     return el("section", { class: "settings-block" }, [
       el("h2", { class: "section-title" }, "Backup & data"),
@@ -125,12 +131,14 @@
         el("button", { class: "btn danger", onClick: () => {
           if (confirm("Reset EVERYTHING back to the blank default slate? This wipes trainers, scores, drafts, and edits.")) {
             Store.reset();
+            dropGhostMe();
             Router.render();
           }
         } }, "↺ Reset to defaults"),
         el("button", { class: "btn danger", onClick: () => {
           if (confirm("Start a FRESH SLATE? Wipes ALL progress AND the trainer list — the party builds its own crew from scratch (+ Add trainer on the Squad page, or in the welcome tour). Meant for a NEW room code; syncs to everyone in the room.")) {
             Store.freshSlate();
+            dropGhostMe();
             Router.render();
           }
         } }, "🧹 Fresh slate (blank trainers)"),
