@@ -184,9 +184,18 @@
     const nameIn = el("input", { class: "in", placeholder: "Your name (shown on updates)", value: c.name });
 
     // Sign in as your trainer on this device — powers "who's here" + challenges.
+    // (getConf omitted `me` for ages, so this select ALWAYS showed the
+    // placeholder even while you were signed in — and every live-sync
+    // re-render "reset" it. It reads the live value now, twice over.)
     const meSel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick your trainer —")].concat(
-      Store.state.attendees.map((a) => el("option", { value: a.id, selected: c.me === a.id ? "true" : null }, a.name))));
-    meSel.addEventListener("change", () => { const nm = Sync.setMe(meSel.value); if (nm) nameIn.value = nm; });
+      Store.state.attendees.map((a) => el("option", { value: a.id, selected: (Sync.getMe() || c.me) === a.id ? "true" : null }, a.name))));
+    meSel.value = Sync.getMe() || "";
+    meSel.addEventListener("change", () => {
+      const nm = Sync.setMe(meSel.value);
+      if (nm) nameIn.value = nm;
+      U.toast(meSel.value ? "🎴 Signed in as " + nm : "👋 Signed out on this phone");
+      Router.render({ keepScroll: true });   // locked rows + header reflect immediately
+    });
 
     const statusEl = el("div", { class: "sync-status" });
     Sync.onStatus((state, msg) => {

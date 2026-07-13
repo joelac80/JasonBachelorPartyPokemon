@@ -381,7 +381,7 @@
     // default, so its absence must NOT block the reconnect).
     init() { if (conf.enabled && conf.room) connect(); },
     getConf() {
-      return { config: conf.config, room: conf.room || "", name: conf.name || "", enabled: !!conf.enabled,
+      return { config: conf.config, room: conf.room || "", name: conf.name || "", me: conf.me || "", enabled: !!conf.enabled,
         usingDefault: !conf.config, projectId: (conf.config || DEFAULT_CONFIG).projectId };
     },
     isSupported() { return true; },
