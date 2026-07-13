@@ -1010,13 +1010,16 @@
         r.upd = Date.now();
       });
     },
-    nuzStart(attId, starterId) {
+    // mode: "" = classic (canon leaders), "random" = 🎲 Randomizer — same
+    // leaders, caps and team sizes, but seeded-random species every run.
+    nuzStart(attId, starterId, mode) {
       if (!attId || !starterId) return;
       this.update((s) => {
         s.nuzlocke = s.nuzlocke || {};
         s.nuzlocke[attId] = { starter: starterId, box: [{ id: starterId }], badges: [], league: [],
-          catches: 1, deaths: 0, over: "", startTs: Date.now(), upd: Date.now() };
-        Store.chron(s, "🪦", this._nuzName(attId) + " began a NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
+          catches: 1, deaths: 0, over: "", startTs: Date.now(), upd: Date.now(),
+          mode: mode === "random" ? "random" : "", seed: (Math.floor(Math.random() * 2147483647) || 1) };
+        Store.chron(s, "🪦", this._nuzName(attId) + " began a " + (mode === "random" ? "🎲 RANDOMIZER " : "") + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
       });
     },
     // Give up the current run (a fresh nuzStart replaces it). Tombstoned, not
@@ -1088,14 +1091,14 @@
         if (key === "blue") {
           r.act = 2; r.champTs = Date.now();
           s.nuzlockeHof = s.nuzlockeHof || [];
-          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.champTs, tier: "champion" });
+          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.champTs, tier: "champion", mode: r.mode || "" });
           s.hof = s.hof || [];
           s.hof.push({ attId: attId, ts: r.champTs, party: alive.slice(0, 6), key: "nuzlocke", champ: "BLUE", rank: "Nuzlocke Champion", region: "Kanto" });
           Store.chron(s, "🏆", "NUZLOCKE CHAMPION!! " + this._nuzName(attId) + " beat BLUE with permadeath on — " + r.catches + " caught, " + r.deaths + " lost. And Johto is calling…");
         } else if (key === "red") {
           r.over = "legend"; r.doneTs = Date.now();
           s.nuzlockeHof = s.nuzlockeHof || [];
-          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "legend" });
+          s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "legend", mode: r.mode || "" });
           s.hof = s.hof || [];
           s.hof.push({ attId: attId, ts: r.doneTs, party: alive.slice(0, 6), key: "nuzlocke-red", champ: "RED", rank: "Nuzlocke Legend", region: "Johto" });
           Store.chron(s, "🗻", "NUZLOCKE LEGEND!!! " + this._nuzName(attId) + " climbed Mt. Silver with permadeath on and defeated RED — " + r.catches + " caught, " + r.deaths + " lost across TWO regions. Nothing left to prove.");

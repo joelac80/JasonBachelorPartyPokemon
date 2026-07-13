@@ -75,10 +75,57 @@
     return rows.filter((r) => r.lvl <= cap && DEX[r.to]);
   }
 
+  // ⬇ The reverse walk: what a species DEVOLVES to at a given cap. A Lv14
+  // Brock can't field a Golem — the line walks down until the form is legal
+  // (Golem→Graveler needs 32, Graveler→Geodude needs 25 → Geodude at 14).
+  const PRE = {};
+  Object.keys(window.EVO_LEVELS || {}).forEach((from) => {
+    (window.EVO_LEVELS[from] || []).forEach((e) => { PRE[e.to] = { from: +from, lvl: e.lvl }; });
+  });
+  function formAtLevel(id, cap) {
+    let guard = 0;
+    while (PRE[id] && PRE[id].lvl > cap && DEX[PRE[id].from] && guard++ < 6) id = PRE[id].from;
+    return id;
+  }
+
+  // Tiny deterministic PRNG — the Randomizer must show the SAME team on the
+  // preview card and in the battle, across re-renders, for the whole run.
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function strHash(s) { let h = 9; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 387420489); return h >>> 0; }
+
+  // The team a run-battle opponent fields: classic keeps the canon lineup,
+  // 🎲 Randomizer draws era-pool species seeded by (run, stage) — same caps,
+  // same team sizes, different Pokémon every run. Both devolve to the cap.
+  function foeTeam(run, baseTeam, size, stageKey) {
+    const cap = runLevel(run);
+    let ids;
+    if (run.mode === "random") {
+      const rnd = mulberry32(((run.seed || 1) ^ strHash(stageKey)) >>> 0);
+      const pool = wildsFor(run);
+      ids = [];
+      let guard = 0;
+      while (ids.length < size && guard++ < 400) {
+        const id = pool[(rnd() * pool.length) | 0];
+        if (ids.indexOf(id) < 0) ids.push(id);
+      }
+    } else {
+      ids = baseTeam.slice(0, size);
+    }
+    return ids.map((id) => formAtLevel(id, cap));
+  }
+
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
   let wildId = 0;
   let evoOpen = false;
+  let newMode = "";          // starter-lab pick: "" classic | "random" 🎲
 
   function view(root) {
     const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
@@ -123,10 +170,17 @@
     host.appendChild(el("div", { class: "safari-card nuz-lab" }, [
       el("div", { class: "nuz-lab-head" }, "🧪 Professor Oak's Lab"),
       el("p", { class: "hint" }, "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
+      // 🎲 Classic keeps the canon leaders; Randomizer rerolls every team you
+      // face (same caps, same sizes — different Pokémon every single run).
+      el("div", { class: "dex-toggle" }, [
+        el("button", { class: "btn sm" + (newMode ? " subtle" : " primary"), onClick: () => { newMode = ""; Router.render(); } }, "🎯 Classic"),
+        el("button", { class: "btn sm" + (newMode ? " primary" : " subtle"), onClick: () => { newMode = "random"; Router.render(); } }, "🎲 Randomizer"),
+      ]),
+      newMode ? el("p", { class: "hint" }, "🎲 Every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped) — a fresh gauntlet every run.") : null,
       el("div", { class: "nuz-starters" }, STARTERS.map((id) =>
         el("button", { class: "nuz-starter", onClick: () => {
-          if (!confirm("Start a Nuzlocke run with " + monName(id) + "? " + (lastRun && !lastRun.over ? "" : "Permadeath is ON — no take-backs."))) return;
-          Store.nuzStart(me, id);
+          if (!confirm("Start a " + (newMode ? "🎲 RANDOMIZER " : "") + "Nuzlocke run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
+          Store.nuzStart(me, id, newMode);
           wildId = 0; sfx("fanfare"); Router.render();
         } }, [
           Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
@@ -167,7 +221,7 @@
     host.appendChild(el("div", { class: "safari-stats" }, [
       act === 1 ? stat("🏅 " + kBadges + "/8", "Kanto badges") : stat("🏅 " + jBadges + "/8", "Johto badges"),
       act === 1 ? stat("👑 " + run.league.length + "/5", "League stages") : stat("🗻 " + (run.league.indexOf("red") >= 0 ? "1" : "0") + "/1", "Mt. Silver"),
-      stat("📈 Lv " + runLevel(run), "Run level"),
+      stat((run.mode === "random" ? "🎲 " : "📈 ") + "Lv " + runLevel(run), run.mode === "random" ? "Randomizer" : "Run level"),
       stat(run.catches, "Caught"),
       stat("🪦 " + run.deaths, "Lost forever"),
     ]));
@@ -212,7 +266,7 @@
       const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (kBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, g.team.slice(0, hc.size).map((id) =>
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx).map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
@@ -224,7 +278,7 @@
       const st = key && stageFor(key);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "👑 Victory Road — " + run.league.length + "/5"));
       if (st) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, st.team.map((id) =>
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Battle " + st.rank + " " + st.name),
@@ -236,7 +290,8 @@
       const g = gymAt(idx);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Johto Gym " + (jBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, g.team.map((id) =>
+        const hc2 = gymHandicap(run);
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx).map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
@@ -247,7 +302,7 @@
       const st = stageFor("red");
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
       if (st) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, st.team.map((id) =>
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-red").map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleStage(run, st) }, "⚔ Climb — battle RED"),
@@ -384,7 +439,7 @@
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
-            monIds: g.team.slice(0, Math.min(g.team.length, hc.size)), boost: hc.boost }] },
+            monIds: foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx), boost: hc.boost }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); maybeAmbush(); }
@@ -428,7 +483,7 @@
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(0, Math.min(t.team.length, hc.size)), boost: Math.min(1.1, hc.boost) }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             Store.update((s) => Store.chron(s, "❗", aName(me) + (winSide === "a" ? " fought off " : " survived ") + t.title + " " + t.name + "'s Nuzlocke ambush" + (winSide === "a" ? "!" : " — barely.")));
@@ -443,7 +498,7 @@
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
-          b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: st.team.slice(), boost: st.boost || 1.1 }] },
+          b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: st.boost || 1.1 }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             if (winSide === "a") { Store.nuzStage(me, st.key); sfx("fanfare"); }
@@ -461,7 +516,7 @@
       el("div", {}, hall.map((r, i) => el("div", { class: "nuz-hall-row" + (i === 0 ? " crowned" : "") }, [
         el("span", { class: "nuz-hall-rank" }, i === 0 ? "👑" : "#" + (i + 1)),
         el("span", { class: "nuz-hall-name" }, aName(r.att)),
-        el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost" + (r.tier === "legend" ? " · 🗻 LEGEND" : "") + (r.deaths === 0 ? " · 💎 deathless" : "")),
+        el("span", { class: "nuz-hall-sub" }, r.catches + " caught · " + r.deaths + " lost" + (r.mode === "random" ? " · 🎲" : "") + (r.tier === "legend" ? " · 🗻 LEGEND" : "") + (r.deaths === 0 ? " · 💎 deathless" : "")),
       ]))),
     ]));
   }
