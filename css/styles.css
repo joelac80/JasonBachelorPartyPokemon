@@ -2234,3 +2234,29 @@ html, body { overscroll-behavior-y: contain; }
 .cup-side.won::after { content: " 🏆"; }
 .cup-vs { font-family: var(--pixel, monospace); font-size: 10px; color: var(--ink-dim); }
 .cup-done { font-size: 14px; }
+
+/* ⚔/📖 Journey style switch (Challenge vs True Story) */
+.jstyle { margin: 10px 0 12px; }
+.jstyle-row { display: flex; gap: 8px; }
+.jstyle-chip { flex: 1; display: flex; align-items: center; gap: 8px; text-align: left;
+  border: 2px solid var(--line); border-radius: 12px; background: var(--paper);
+  padding: 8px 10px; cursor: pointer; color: var(--ink); }
+.jstyle-chip.on { border-color: var(--red, #d33); box-shadow: 0 2px 0 var(--line); background: var(--paper-hi, var(--paper)); }
+.jstyle-e { font-size: 20px; }
+.jstyle-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.jstyle-t { font-family: var(--pixel, monospace); font-weight: 800; font-size: 12px; letter-spacing: 0.4px; }
+.jstyle-chip.on .jstyle-t { color: var(--red, #d33); }
+.jstyle-d { font-size: 11px; color: var(--ink-dim); line-height: 1.25; }
+.jstyle-note { margin-top: 6px; }
+
+/* 🧭 home mode directory */
+.mode-index { display: flex; flex-direction: column; gap: 12px; }
+.mode-group { border: 2px solid var(--line); border-radius: 14px; background: var(--paper); padding: 8px 10px; }
+.mode-head { font-family: var(--pixel, monospace); font-weight: 800; font-size: 12px; letter-spacing: 0.5px; padding: 2px 0 4px; }
+.mode-row { display: flex; align-items: flex-start; gap: 9px; padding: 6px 2px; text-decoration: none; color: var(--ink);
+  border-top: 1px dashed var(--line); }
+.mode-row:hover .mode-t { color: var(--red, #d33); }
+.mode-e { font-size: 18px; line-height: 1.2; }
+.mode-txt { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mode-t { font-size: 13px; }
+.mode-d { font-size: 12px; color: var(--ink-dim); line-height: 1.3; }

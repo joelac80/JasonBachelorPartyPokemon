@@ -75,10 +75,28 @@
   // Effective Speed for turn order: base × speed-stage, halved by paralysis.
   function effSpeed(m) { let s = (m.spe || 50) * stageMul(m.stg ? m.stg.spe : 0); if (m.status === "par") s *= 0.5; return s; }
 
+  // 📉 A battle fought at a LEVEL caps what anyone can KNOW: no Earthquake on
+  // a Lv 10 Pokémon. Damaging moves whose power beats the curve (~35 + Lv×1.4:
+  // Lv5 ≈ 42, Lv14 ≈ 55, Lv32 ≈ 80, Lv48 ≈ 102) drop off the set — status
+  // moves always stay — and if the cut leaves a mon toothless, its weakest
+  // damaging moves come back so everyone can still fight. Lv 58+ knows it all.
+  function capMoves(moves, level) {
+    if (!level || level >= 58) return moves;
+    const cap = 35 + level * 1.4;
+    const kept = moves.filter((m) => !m.pow || m.pow <= cap);
+    const dmg = moves.filter((m) => m.pow).sort((a, b) => a.pow - b.pow);
+    for (let i = 0; i < dmg.length && (kept.length < 2 || !kept.some((m) => m.pow)); i++) {
+      if (kept.indexOf(dmg[i]) < 0) kept.push(dmg[i]);
+    }
+    return kept;
+  }
+
   // Lv50 battle stats from the species power stat (x = base experience). Moves
   // come from the species' real Gen-2 learnset (data/learnsets.js) resolved via
-  // the move dictionary; a missing/short set falls back to the type table.
-  function statsFor(monId) {
+  // the move dictionary; a missing/short set falls back to the type table. A
+  // battle-wide `level` (nuzlocke caps, True Story, Stadium cups) trims the
+  // moveset down to what that level would really know.
+  function statsFor(monId, level) {
     const d = DEX[monId] || { n: "???", x: 60 };
     const x = d.x || 60;
     const types = (d.t && d.t.length ? d.t : ["normal"]).slice(0, 2);
@@ -90,7 +108,7 @@
       types.forEach((t) => (MOVES[t] || MOVES.normal).forEach((m) => moves.push(typeMove(t, m))));
       if (types.length === 1 && types[0] !== "normal") moves.push(typeMove("normal", ["Tackle", 40, 100]));
     }
-    moves = moves.slice(0, 4);
+    moves = capMoves(moves, level).slice(0, 4);
     return { id: monId, name: d.n, x: x, types: types,
       spe: (window.DEX_SPEED && DEX_SPEED[monId]) || 50,   // Gen-2 base Speed → turn order
       hpMax: 120 + Math.round(x * 0.5), atk: 0.55 + x / 500,
@@ -312,7 +330,7 @@
       const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
       const party = (u.monIds || []).map((id, i) => {
         if (!id) return null;
-        const m = statsFor(id); m.hp = m.hpMax;
+        const m = statsFor(id, opts.level); m.hp = m.hpMax;
         // ✨ shiny is a trainer's own catch — but an NPC boss can FORCE it via
         // u.shiny (true = all, or an array of ids). Mewtwo uses this to field his
         // cloned army in their eerie shadow palette (shiny Charizard is jet-black).

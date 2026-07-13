@@ -52,9 +52,17 @@
     const lockedRow = U.lockedTrainerRow("Journey of:");
     const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id }, a.name + "'s journey")));
     sel.value = attId;
-    sel.addEventListener("change", () => { attId = sel.value; paintTabs(); rebuild(); });
+    sel.addEventListener("change", () => { attId = sel.value; paintStyle(); paintTabs(); rebuild(); });
     if (lockedRow) { attId = lockedRow.dataset.me; root.appendChild(lockedRow); }
     else root.appendChild(sel);
+
+    // ⚔/📖 The style switch: Challenge's full-power rematch squads, or True
+    // Story's classic level curve. It rides the whole Journey — gyms, League,
+    // gauntlets — and can be flipped between battles at any time.
+    const styleHost = el("div", {});
+    root.appendChild(styleHost);
+    function paintStyle() { styleHost.innerHTML = ""; if (window.JourneyStyle) styleHost.appendChild(JourneyStyle.row(attId)); }
+    paintStyle();
 
     const tabBar = el("div", { class: "rg-tabs" });
     root.appendChild(tabBar);

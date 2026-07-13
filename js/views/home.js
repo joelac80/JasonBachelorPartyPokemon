@@ -74,7 +74,7 @@
     root.appendChild(el("h2", { class: "section-title" }, "⚔️ Battle 'em"));
     root.appendChild(el("div", { class: "home-quick" }, [
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
-      { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions of gyms → Champions" },
+      { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions — ⚔ Challenge or 📖 True Story" },
       { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
       { r: "cups",     e: "🏟", t: "Stadium Cups",  d: "Baby · Poké · Prime · Rental" },
       { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Seven permadeath epics" },
@@ -134,6 +134,42 @@
       root.appendChild(el("div", { class: "whispers" },
         [el("div", { class: "whispers-head" }, "🔮 Whispers")].concat(
           lines.slice(0, 3).map((t) => el("div", { class: "whisper" }, t)))));
+    })();
+
+    // 🧭 EVERY WAY TO PLAY — the complete mode directory: the explainer for a
+    // newcomer, the index for a veteran. Every mode in the app, one line each,
+    // every row a door. (Hidden CONTENT stays hidden — the Whispers above tease
+    // it — but no MODE is a secret.)
+    (function modeIndex() {
+      const row = (r, e, t, d) => el("a", { class: "mode-row", href: "#/" + r }, [
+        el("span", { class: "mode-e" }, e),
+        el("span", { class: "mode-txt" }, [el("strong", { class: "mode-t" }, t), el("span", { class: "mode-d" }, d)]),
+      ]);
+      const groups = [
+        { head: "🔴 Catching", rows: [
+          ["safari", "🔴", "Safari Zone", "Walk the grass across Gen 1-9 — boosted throws, ✨ shinies 1-in-16, berries in the brush"],
+          ["safari", "🥊", "Wild battles", "Weaken 'em first — real battles that end in a throw, with a live catch meter"],
+          ["trade", "🔁", "Trading Post", "Swap catches with friends — some species only ever evolve by trade"],
+          ["dex", "📕", "Pokédex", "Every collection in one book: Gen 1-9, Hisui, Unown, Mega and Trainer dexes"],
+        ] },
+        { head: "⚔️ Battling each other", rows: [
+          ["battle", "⚔️", "Battle Arena", "Live duels phone-to-phone — singles or doubles, the Elo belt on the line"],
+          ["battle", "🎲", "Rental battles", "Deal random rental sixes to everyone in the Arena — nobody needs a single catch"],
+          ["cups", "🏟", "Stadium Cups", "Round robin into finals with the whole room: Baby (Lv 5) · Poké (own catches) · Prime (Lv 100) · Rental"],
+          ["brackets", "🥇", "Brackets", "A seeded knockout for the room — winner takes the bragging rights"],
+        ] },
+        { head: "🗺 Battling the saga", rows: [
+          ["regions", "🗺", "The Journey", "68 gyms, nine Elite Fours, every Champion — fought ⚔ Challenge style (full-power rematch squads) or 📖 True Story (the classic Lv 14 → 58 curve)"],
+          ["tower", "🗼", "Battle Tower", "Streak doubles with your catches or rentals — PALMER at 7, and a Legends floor above"],
+          ["movies", "🎬", "Movie Legends", "The films, each showing in its own era — every poster hides a boss"],
+          ["legends", "🌌", "Legendary Challenge", "Every generation's gods once their Champion falls… and sealed story specials beyond"],
+          ["nuzlocke", "🪦", "Nuzlocke", "Seven permadeath structures, one save each: Classic · Randomizer · Master · Through the Ages · The Long Walk · ⚡ Blitz · Movie Marathon"],
+        ] },
+      ];
+      root.appendChild(el("h2", { class: "section-title" }, "🧭 Every way to play"));
+      root.appendChild(el("div", { class: "mode-index" }, groups.map((g) =>
+        el("div", { class: "mode-group" },
+          [el("div", { class: "mode-head" }, g.head)].concat(g.rows.map((r) => row(r[0], r[1], r[2], r[3])))))));
     })();
 
     // Quiet doors for everything that isn't catching or battling — the

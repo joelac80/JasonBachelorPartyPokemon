@@ -125,15 +125,23 @@
   function startEncounter(attId, t, isStory) {
     const size = Math.min(6, Duel.poolFor(attId).length);
     if (size < 1) return;
+    // 📖 True Story: the challenger scales with the badges you hold in their
+    // region — both teams walk down to era-true forms at that level.
+    const JS = window.JourneyStyle;
+    const region = (t.story && t.story.region) || t.region || "";
+    const lvl = (JS && JS.isStory(attId)) ? JS.encounterLevel(region, regionBadges(attId, region)) : 0;
+    const foes = lvl ? t.team.map((id) => JS.formAt(id, lvl)) : t.team.slice();
     Duel.pickParty({ attId: attId, min: 1, max: size,
       title: "vs " + t.title + " " + t.name + " — pick up to " + size,
-      hint: isStory ? "📖 A story battle! Glory and sips — and they WILL be back until you win." :
-        "A surprise battle! Bragging rights and sips — no badge, no rating.",
+      hint: (isStory ? "📖 A story battle! Glory and sips — and they WILL be back until you win." :
+        "A surprise battle! Bragging rights and sips — no badge, no rating.") +
+        (lvl ? " (True Story: fought at Lv " + lvl + " — both teams step down to era-true forms.)" : ""),
       onDone: (ids) => {
         Duel.start({ mode: "local", title: isStory ? "a story showdown" : "a surprise showdown",
+          level: lvl || undefined,
           encounter: { foe: t.title + " " + t.name, who: t.name },
-          a: { units: [{ attId: attId, monIds: ids }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: 1.12 }] },
+          a: { units: [{ attId: attId, monIds: lvl ? ids.map((id) => JS.formAt(id, lvl)) : ids }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: foes, boost: 1.12 }] },
           onResult: () => Router.render() });
       } });
   }
@@ -214,13 +222,21 @@
         alert("Leader " + gym.leader + " runs " + size + " Pokémon — you need " + size + " of your own to challenge (catch more in the Safari!).");
         return;
       }
+      // 📖 True Story: the gym fights at its badge's story level — BOTH teams
+      // (the leader's rematch squad and your picks) step down to era-true
+      // forms, and the level trims movesets to what it would really know.
+      const JS = window.JourneyStyle;
+      const lvl = (JS && JS.isStory(attId)) ? JS.gymLevel(idx) : 0;
+      const foes = lvl ? gym.team.map((id) => JS.formAt(id, lvl)) : gym.team.slice();
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs Leader " + gym.leader + " — pick EXACTLY " + size,
-        hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball.",
+        hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +
+          (lvl ? " 📖 True Story: fought at Lv " + lvl + " — both teams step down to era-true forms." : ""),
         onDone: (ids) => {
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym", gym: { idx: idx, leader: gym.leader, badge: gym.badge },
-            a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: gym.team.slice() }] },
+            level: lvl || undefined,
+            a: { units: [{ attId: attId, monIds: lvl ? ids.map((id) => JS.formAt(id, lvl)) : ids }] },
+            b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: foes }] },
             onResult: () => { Router.render(); maybeEncounter(attId, idx); } });
         } });
     };
@@ -250,7 +266,11 @@
           }))
         : el("div", { class: "gymc-holders none" }, "No badge holders yet"),
       why ? el("div", { class: "gymc-lock" }, "🔒 " + why)
-          : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, "⚔ Challenge (" + g.team.length + "v" + g.team.length + ")"),
+          : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, "⚔ Challenge (" + g.team.length + "v" + g.team.length +
+              (function () {   // 📖 True Story shows each badge's story level up front
+                const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
+                return (window.JourneyStyle && me && JourneyStyle.isStory(me)) ? " · Lv " + JourneyStyle.gymLevel(idx) : "";
+              })() + ")"),
     ]);
   }
 
@@ -264,6 +284,12 @@
     root.appendChild(el("p", { class: "hint" },
       "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs. Lose = 3 sips." +
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
+
+    // ⚔/📖 The style switch — how the whole circuit (and the League) fights you.
+    (function styleRow() {
+      const me = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
+      if (me && window.JourneyStyle) root.appendChild(JourneyStyle.row(me));
+    })();
 
     // Group the circuit by region so 32 gyms stay readable.
     const REGIONS = [

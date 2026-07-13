@@ -283,18 +283,26 @@
     if (why) { alert(why); return; }
     if (Duel.poolFor(attId).length < size) { alert(st.name + " runs " + size + " Pokémon — you need " + size + " of your own."); return; }
     const foeName = isRed ? "RED" : st.rank + " " + st.name;
+    // 📖 True Story: the chamber fights at its story level (E4 50+, the
+    // Champion 58, GEETA 60, the summit 62) — both teams walk down to
+    // era-true forms, and movesets shrink to what the level would know.
+    const JS = window.JourneyStyle;
+    const lvl = (JS && JS.isStory(attId)) ? JS.stageLevel(idx) : 0;
+    const foes = lvl ? st.team.map((id) => JS.formAt(id, lvl)) : st.team.slice();
     chamberIntro(idx, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs " + foeName + " — pick EXACTLY " + size,
-        hint: isRed ? "The silent trainer. " + size + " vs " + size + "."
+        hint: (isRed ? "The silent trainer. " + size + " vs " + size + "."
           : isFinal ? "The final battle. " + size + " vs " + size + " — the lineup is hidden."
-          : "Even match: " + size + " vs " + size + ". The lineup is hidden.",
+          : "Even match: " + size + " vs " + size + ". The lineup is hidden.") +
+          (lvl ? " 📖 True Story: fought at Lv " + lvl + "." : ""),
         onDone: (ids) => {
           Duel.start({ mode: "local",
             title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
+            level: lvl || undefined,
             league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal },
-            a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
+            a: { units: [{ attId: attId, monIds: lvl ? ids.map((id) => JS.formAt(id, lvl)) : ids }] },
+            b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: foes,
               boost: st.boost || 1.15,
               outro: st.defeat ? { lose: st.defeat } : undefined }] },
             onResult: () => {
@@ -337,10 +345,14 @@
       const o = opponents[i];
       const go = (party) => {
         lastParty = party;
+        // 📖 An opponent can carry a True Story level — both teams step down.
+        const JS = window.JourneyStyle;
+        const fielded = (o.level && JS) ? party.map((id) => JS.formAt(id, o.level)) : party;
+        const foes = (o.level && JS) ? (o.monIds || []).map((id) => JS.formAt(id, o.level)) : (o.monIds || []).slice();
         Duel.start({ mode: "local", title: (opts.title || "Gauntlet") + " (" + (i + 1) + "/" + total + ")",
-          gauntlet: true,
-          a: { units: [{ attId: attId, monIds: party }] },
-          b: { units: [{ npc: o.name, ai: true, monIds: (o.monIds || []).slice(), boost: o.boost || undefined,
+          gauntlet: true, level: o.level || undefined,
+          a: { units: [{ attId: attId, monIds: fielded }] },
+          b: { units: [{ npc: o.name, ai: true, monIds: foes, boost: o.boost || undefined,
             outro: o.outro || undefined }] },
           onResult: (winSide) => {
             if (winSide === "a") { try { if (opts.onAdvance) opts.onAdvance(i + 1); } catch (_) {} runAt(i + 1); }
@@ -452,7 +464,10 @@
   function leagueGauntlet(attId, stageIdxs, label) {
     const runIdxs = leagueStagesForRun(stageIdxs);
     if (!runIdxs.length) return;
-    const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost, outro: st.defeat ? { lose: st.defeat } : undefined }; });
+    const story = window.JourneyStyle && JourneyStyle.isStory(attId);
+    const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost,
+      level: story ? JourneyStyle.stageLevel(i) : undefined,   // 📖 True Story climbs 50 → the throne
+      outro: st.defeat ? { lose: st.defeat } : undefined }; });
     gauntletModePicker(attId,
       "Face the " + (label || "League") + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",
       (mode) => gauntletRun(attId, mode, opponents, {
@@ -576,7 +591,8 @@
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, ((isRed || isFinal) ? "🗻 " : "👑 ") + a.name))) : null,
         (!mineBeat) ? el("button", { class: "btn " + (isNext ? "primary" : "subtle") + " sm", onClick: () => challengeLeague(idx, attId) },
-          (isRed ? "🗻 Face what waits" : isFinal ? "🎹 Face the finale" : "⚔ Challenge " + st.name) + " (" + st.team.length + "v" + st.team.length + ")") :
+          (isRed ? "🗻 Face what waits" : isFinal ? "🎹 Face the finale" : "⚔ Challenge " + st.name) + " (" + st.team.length + "v" + st.team.length +
+          ((window.JourneyStyle && JourneyStyle.isStory(attId)) ? " · Lv " + JourneyStyle.stageLevel(idx) : "") + ")") :
           el("button", { class: "btn subtle sm", onClick: () => challengeLeague(idx, attId) }, "🔁 Rematch (glory only)"),
       ]),
     ]);
@@ -694,6 +710,9 @@
     root.appendChild(host);
     function paint() {
       host.innerHTML = "";
+      // ⚔/📖 The style switch — Challenge's full-power squads vs True Story's
+      // level curve. Same ladder, same crowns; only the fight changes.
+      if (window.JourneyStyle) host.appendChild(JourneyStyle.row(attId));
       const journey = el("div", { class: "league-journey" });
       journey.appendChild(gateCard(attId));
       for (let i = 0; i < LEAGUE.length; i++) {
