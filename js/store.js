@@ -658,6 +658,15 @@
         t.caught = t.caught || {}; t.team = t.team || [];
         if (!t.caught[a.favoriteId]) { t.caught[a.favoriteId] = { count: 1, ball: "partner" }; changed = true; }
         if (t.team.indexOf(a.favoriteId) < 0 && t.team.length < 6) { t.team.unshift(a.favoriteId); changed = true; }
+        // 🎨 A trainer's TYPE follows their favorite (its primary type) —
+        // nobody ever chose the "normal" default on purpose, so a card
+        // showing NORMAL TYPE under a Blastoise heals to WATER. A type picked
+        // by hand in the editor sets typeLock and is never overridden.
+        if ((!a.type || a.type === "normal") && !a.typeLock) {
+          const d = (window.DEX || {})[a.favoriteId];
+          const ty = d && d.t && d.t[0];
+          if (ty && ty !== "normal") { a.type = ty; changed = true; }
+        }
       });
       return changed;
     },

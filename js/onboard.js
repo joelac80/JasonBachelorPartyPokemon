@@ -32,13 +32,37 @@
 
     // trainer picker (slide 2) — picking only repaints the grid (no full
     // slide rebuild, no re-animation), so the tap feels instant.
+    // ⚠ NO window.prompt here: iOS home-screen apps are known to suppress
+    // native dialogs, which silently swallowed the "Create yourself" flow —
+    // a friend tapped it and no trainer was ever created. The name is an
+    // INLINE input now; nothing on the critical path uses a native dialog.
     const grid = el("div", { class: "sl-vote-grid onb-grid" });
+    let creating = false, gateMsg = "";
+    function createTrainer(nm) {
+      nm = (nm || "").trim();
+      if (!nm) return;
+      const id = "t" + Math.random().toString(36).slice(2, 8);
+      Store.update((s) => s.attendees.push({
+        id: id, name: nm, nickname: "", team: "", type: "normal",
+        rank: "Gym Leader", role: "The Squad", favorite: "", favoriteId: 0,
+        photo: "", catchphrase: "",
+      }));
+      // 🎴 Sign in the moment you create yourself — not just at the tour's
+      // end — so an abandoned tour still leaves the phone ready to catch.
+      // A stale "me" whose trainer no longer exists counts as nobody.
+      if (window.Sync && Sync.setMe && (!Sync.getMe() || !Store.attendee(Sync.getMe()))) Sync.setMe(id);
+      sel = id; creating = false; gateMsg = ""; paintGrid(); syncNext();
+      if (window.SFX && SFX.fanfare) SFX.fanfare();
+      // 🎯 The signup ritual: pick your favorite right away — the first
+      // pick rolls the 1-in-16 shiny (the picker lifts above the tour).
+      if (window.FavPick) FavPick.open(id, () => paintGrid());
+    }
     function paintGrid() {
       grid.innerHTML = "";
       Store.state.attendees.forEach((a) => {
         const src = Store.favSprite ? Store.favSprite(a) : "";
         grid.appendChild(el("button", { class: "sl-vote-pick" + (sel === a.id ? " on" : ""), onClick: () => {
-          sel = a.id; paintGrid(); syncNext();
+          sel = a.id; gateMsg = ""; paintGrid(); syncNext();
           if (window.SFX && SFX.select) SFX.select();
         } }, [
           src ? el("img", { class: "sl-thumb", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
@@ -47,28 +71,22 @@
       });
       // ➕ Fresh-slate rooms start with NO trainers — anyone can create
       // themselves right here in the tour (also handy for late arrivals).
-      grid.appendChild(el("button", { class: "sl-vote-pick onb-new-trainer", onClick: () => {
-        const nm = (prompt("Your name, trainer?") || "").trim();
-        if (!nm) return;
-        const id = "t" + Math.random().toString(36).slice(2, 8);
-        Store.update((s) => s.attendees.push({
-          id: id, name: nm, nickname: "", team: "", type: "normal",
-          rank: "Gym Leader", role: "The Squad", favorite: "", favoriteId: 0,
-          photo: "", catchphrase: "",
-        }));
-        // 🎴 Sign in the moment you create yourself — not just at the tour's
-        // end — so an abandoned tour still leaves the phone ready to catch.
-        // A stale "me" whose trainer no longer exists counts as nobody.
-        if (window.Sync && Sync.setMe && (!Sync.getMe() || !Store.attendee(Sync.getMe()))) Sync.setMe(id);
-        sel = id; paintGrid(); syncNext();
-        if (window.SFX && SFX.fanfare) SFX.fanfare();
-        // 🎯 The signup ritual: pick your favorite right away — the first
-        // pick rolls the 1-in-16 shiny (the picker lifts above the tour).
-        if (window.FavPick) FavPick.open(id, () => paintGrid());
-      } }, [
-        el("span", { class: "draft-thumb-ball" }),
-        el("span", { class: "sl-vote-name" }, Store.state.attendees.length ? "➕ New trainer" : "➕ Create yourself"),
-      ]));
+      if (creating) {
+        const nameIn = el("input", { class: "in", placeholder: "Your name, trainer?", autocapitalize: "words" });
+        nameIn.addEventListener("keydown", (e) => { if (e.key === "Enter") createTrainer(nameIn.value); });
+        grid.appendChild(el("div", { class: "onb-create" }, [
+          nameIn,
+          el("button", { class: "btn primary sm", onClick: () => createTrainer(nameIn.value) }, "✓ Create"),
+          el("button", { class: "btn subtle sm", onClick: () => { creating = false; paintGrid(); } }, "✕"),
+        ]));
+        setTimeout(() => { try { nameIn.focus(); } catch (_) {} }, 60);
+      } else {
+        grid.appendChild(el("button", { class: "sl-vote-pick onb-new-trainer", onClick: () => { creating = true; paintGrid(); } }, [
+          el("span", { class: "draft-thumb-ball" }),
+          el("span", { class: "sl-vote-name" }, Store.state.attendees.length ? "➕ New trainer" : "➕ Create yourself"),
+        ]));
+      }
+      if (gateMsg) grid.appendChild(el("p", { class: "hint onb-gate" }, gateMsg));
     }
 
     const SLIDES = [
@@ -136,7 +154,9 @@
       const last = idx === SLIDES.length - 1;
       card.innerHTML = "";
       nextBtn = el("button", { class: "btn primary", onClick: () => {
-        if (idx === 1 && !sel) { alert("Tap your trainer first! (Or use “Skip tour” up top.)"); return; }
+        // Inline gate feedback — native alert() can be suppressed in iOS
+        // home-screen apps, which made a blocked Next look like a dead button.
+        if (idx === 1 && !sel) { gateMsg = "👆 Tap your trainer above — or ➕ Create yourself — to continue. (Or use “Skip tour” up top.)"; paintGrid(); return; }
         if (last) { finish(true); return; }
         idx++; paint();
         if (window.SFX && SFX.blip) SFX.blip();

@@ -2301,3 +2301,7 @@ html, body { overscroll-behavior-y: contain; }
 .here-chip-img { width: 26px; height: 26px; image-rendering: pixelated; }
 .here-chip-dot { width: 10px; height: 10px; border-radius: 50%; background: #2e8b3d; margin: 0 6px; }
 .here-chip-sword { opacity: 0.6; font-size: 11px; }
+/* ➕ inline trainer creation in the welcome tour (no native prompt) */
+.onb-create { grid-column: 1 / -1; display: flex; gap: 6px; align-items: center; }
+.onb-create .in { flex: 1; min-width: 0; }
+.onb-gate { grid-column: 1 / -1; color: #e6352f; font-weight: 700; margin: 2px 0 0; }

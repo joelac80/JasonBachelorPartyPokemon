@@ -226,6 +226,11 @@
             const favIdIn = form.querySelector('[data-key="favoriteId"]');
             if (favIn) favIn.value = ((window.DEX || {})[mid] || {}).n || "";
             if (favIdIn) favIdIn.value = String(mid);
+            // Keep the form's TYPE select in step — otherwise Save writes the
+            // stale value back over what the favorite pick just set.
+            const tIn = form.querySelector('[data-key="type"]');
+            const ty = ((window.DEX || {})[mid] || {}).t;
+            if (tIn && ty && ty[0] && !a.typeLock) tIn.value = ty[0];
           });
         } }, "📕 Pick favorite from the Pokédex" + (a.shinyFav ? " · ✨ SHINY TRAINER" : "")),
       ]),
@@ -236,6 +241,7 @@
       field("Signature move / catchphrase", "catchphrase"),
     ]);
 
+    const typeBefore = a.type;
     Modal.open("Edit Trainer", form, () => {
       Store.update((s) => {
         const rec = s.attendees.find((x) => x.id === id);
@@ -244,6 +250,8 @@
           if (inp.dataset.key === "favoriteId") v = parseInt(v, 10) || 0;
           rec[inp.dataset.key] = v;
         });
+        // Changing the type BY HAND locks it — favorite picks stop overriding.
+        if (rec.type !== typeBefore) rec.typeLock = 1;
       });
       Router.render();
     });
@@ -306,7 +314,13 @@
     function choose(id) {
       Store.update((s) => {
         const rec = s.attendees.find((x) => x.id === attId);
-        if (rec) { rec.favorite = (DEXX[id] || {}).n || ("#" + id); rec.favoriteId = id; }
+        if (rec) {
+          rec.favorite = (DEXX[id] || {}).n || ("#" + id); rec.favoriteId = id;
+          // 🎨 your favorite defines your trainer TYPE (primary type) —
+          // unless you've hand-picked a type in the editor (typeLock).
+          const ty = (DEXX[id] || {}).t && DEXX[id].t[0];
+          if (ty && !rec.typeLock) rec.type = ty;
+        }
       });
       const shiny = Store.rollFavShiny(attId);
       ctrl.close();
