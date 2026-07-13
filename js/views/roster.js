@@ -127,7 +127,7 @@
     const color = typeColor(a.type);
     const c = a.card || (window.SEED && window.SEED.cards && window.SEED.cards[a.id]) || {};
     const cardType = c.type || a.type || "normal";
-    const hp = c.hp || (a.rank === "Champion" ? 100 : 80);
+    const hp = c.hp || (Store.rankOf(a.id) === "Champion" ? 100 : 80);
     const form = Store.currentForm(a);
     const sprite = Store.favSprite(a);
 
@@ -218,7 +218,9 @@
       field("Name", "name"),
       field("Nickname", "nickname"),
       field("Role", "role"),
-      field("Rank", "rank", ["Champion", "Elite Four", "Gym Leader"]),
+      // (Rank is no longer editable — the Squad Leaderboard awards it:
+      // #1 Champion, seats 2-5 Elite Four, the rest Gym Leaders.)
+      el("p", { class: "hint" }, "🏆 Rank is EARNED on the Squad Leaderboard — currently: " + Store.rankOf(id)),
       el("div", { class: "toolbar", style: { marginBottom: "2px" } }, [
         el("button", { class: "btn subtle sm", onClick: () => {
           if (window.FavPick) FavPick.open(id, (mid) => {
@@ -279,7 +281,8 @@
     const list = Store.state.attendees;
     // group by rank in RANK_ORDER, then any others
     const groups = {};
-    list.forEach((a) => { const r = a.rank || "The Squad"; (groups[r] = groups[r] || []).push(a); });
+    // 🏆 groups come from the LEADERBOARD now — rank is earned, never typed.
+    list.forEach((a) => { const r = Store.rankOf(a.id); (groups[r] = groups[r] || []).push(a); });
     const order = RANK_ORDER.filter((r) => groups[r]).concat(
       Object.keys(groups).filter((r) => !RANK_ORDER.includes(r)));
 
@@ -404,6 +407,47 @@
     if (ov) ov.style.zIndex = "400";
   }
   window.FavPick = { open: pickFavorite };
+
+  // 🎴 CARD FIXER — on every reopen, a signed-in trainer with an unfinished
+  // card gets a friendly one-tap fixer: still named "New Trainer" → inline
+  // rename; no favorite picked → straight into the favorite picker (which
+  // also sets their type and rolls the 1-in-16 shiny). Reappears each boot
+  // until the card is whole; never fires over the welcome tour.
+  function fixerCheck() {
+    const me = window.Sync && Sync.getMe && Sync.getMe();
+    const a = me && Store.attendee(me);
+    if (!a) return;
+    if (document.querySelector(".onb, .modal-overlay")) return;   // tour/modal owns the screen
+    const needName = /^new trainer$/i.test((a.name || "").trim());
+    const needFav = !a.favoriteId;
+    if (!needName && !needFav) return;
+    let ctrl;
+    const nameIn = needName ? el("input", { class: "in", placeholder: "Your real name, trainer?", autocapitalize: "words" }) : null;
+    const go = () => {
+      if (nameIn) {
+        const nm = (nameIn.value || "").trim();
+        if (!nm) { try { nameIn.focus(); } catch (_) {} return; }
+        Store.update((s) => { const rec = s.attendees.find((x) => x.id === me); if (rec) rec.name = nm; });
+        try { Sync.setMe(me); } catch (_) {}   // refresh conf.name
+      }
+      if (ctrl) ctrl.close();
+      if (needFav && window.FavPick) FavPick.open(me, () => { U.toast("🎴 Card complete — go catch something!"); Router.render(); });
+      else { U.toast("🎴 Card complete!"); Router.render(); }
+    };
+    if (nameIn) nameIn.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, "Your trainer card is missing " +
+        (needName && needFav ? "your NAME and your favorite Pokémon" : needName ? "your NAME" : "your favorite Pokémon — it's your partner, your sprite, and your type") + "."),
+      nameIn,
+      el("div", { class: "toolbar" }, [
+        el("button", { class: "btn primary", onClick: go }, needFav ? (needName ? "✓ Save name → pick favorite" : "📕 Pick my favorite") : "✓ Save name"),
+        el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Later"),
+      ]),
+    ]);
+    ctrl = Modal.open("🎴 Finish your trainer card", body, null, { noFooter: true });
+    setTimeout(() => { try { nameIn && nameIn.focus(); } catch (_) {} }, 60);
+  }
+  window.CardFixer = { check: fixerCheck };
 
   window.Views = window.Views || {};
   window.Views.roster = view;

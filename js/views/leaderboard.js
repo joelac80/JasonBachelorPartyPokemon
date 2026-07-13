@@ -40,7 +40,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏆 Squad Leaderboard"),
-      el("p", { class: "page-sub" }, "The whole squad's journey, ranked by TRAINER SCORE — the achievement wall's points (bronze 1 · silver 2 · gold 3 · platinum 5). Catches, badges, Champions, streaks and crowns all feed it. Tap a trainer for their full card."),
+      el("p", { class: "page-sub" }, "The whole squad's journey, ranked by TRAINER SCORE — the achievement wall's points (bronze 1 · silver 2 · gold 3 · platinum 5). RANK IS EARNED HERE: #1 is the room's CHAMPION, seats 2-5 the ELITE FOUR, everyone else Gym Leaders (a zero score never wears a crown). Tap a trainer for their full card."),
     ]));
 
     const people = Store.state.attendees || [];
@@ -68,7 +68,7 @@
         el("div", { class: "lb-rank" }, MEDAL[i] || "#" + (i + 1)),
         thumb(r.a),
         el("div", { class: "lb-main" }, [
-          el("div", { class: "lb-name" }, r.a.name + (r.a.id === me ? " · you" : "")),
+          el("div", { class: "lb-name" }, r.a.name + " · " + (Store.rankOf ? Store.rankOf(r.a.id) : "") + (r.a.id === me ? " · you" : "")),
           el("div", { class: "lb-bar" }, [el("div", { class: "lb-fill", style: { width: Math.round(100 * r.score / top) + "%" } })]),
           el("div", { class: "lb-chips" }, chips.map(([e, t]) => el("span", { class: "lb-chip" }, e + " " + t))),
         ]),

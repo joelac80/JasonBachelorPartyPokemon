@@ -36,7 +36,7 @@
         ? el("img", { class: "pf-sprite", src: sprite, alt: form.name, style: { transform: "scale(" + (form.scale || 1) + ")" } })
         : el("span", { class: "draft-thumb-ball" }),
       el("div", { class: "pf-id" }, [
-        el("div", { class: "pf-role" }, ((a.rank || "") + (a.role ? " · " + a.role : "")).trim()),
+        el("div", { class: "pf-role" }, ((Store.rankOf ? Store.rankOf(a.id) : "") + (a.role ? " · " + a.role : "")).trim()),
         team
           ? el("span", { class: "pf-team", style: { background: team.color, color: contrast(team.color) } },
               [teamIcon(team), " " + team.name + (rankRow ? " · #" + rankRow.rank : "")])

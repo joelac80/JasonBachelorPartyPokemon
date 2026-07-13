@@ -259,6 +259,9 @@
     // skippable at any moment. Replayable from the Field Guide.
     try {
       if (window.Onboard) setTimeout(() => Onboard.start(), 500);
+      // 🎴 unfinished card? (still "New Trainer", or no favorite) — offer the
+      // fixer on every reopen until the card is whole.
+      setTimeout(() => { try { if (window.CardFixer) CardFixer.check(); } catch (_) {} }, 1400);
     } catch (_) {}
 
     // Incoming battle challenge → prompt to accept anywhere in the app.

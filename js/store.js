@@ -1478,6 +1478,21 @@
       for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
       return h.toString(36);
     },
+    // 🏆 RANK IS EARNED, not typed: the Squad Leaderboard decides. #1 by
+    // Trainer Score is the room's CHAMPION, seats 2-5 are the ELITE FOUR,
+    // everyone else is a GYM LEADER. A score of zero never wears a crown —
+    // fresh rooms are all Gym Leaders until somebody achieves something.
+    // (Ties break like the leaderboard: catches, then badges, then name.)
+    rankOf(attId) {
+      const rows = (this.state.attendees || []).map((a) => ({
+        id: a.id, s: this.achievementScore(a.id), c: this.dexCount(a.id),
+        b: this.gymBadgeCount(a.id), n: a.name || "",
+      })).sort((x, y) => (y.s - x.s) || (y.c - x.c) || (y.b - x.b) || x.n.localeCompare(y.n));
+      const i = rows.findIndex((r) => r.id === attId);
+      if (i < 0 || rows[i].s <= 0) return "Gym Leader";
+      return i === 0 ? "Champion" : i <= 4 ? "Elite Four" : "Gym Leader";
+    },
+
     roomOwner() { return this.state.roomOwner || null; },
     claimRoom(pin, attId) {
       pin = String(pin || "").trim();
