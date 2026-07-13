@@ -129,18 +129,18 @@
             onChange: importData }),
         ]),
         el("button", { class: "btn danger", onClick: () => {
-          if (confirm("Reset EVERYTHING back to the blank default slate? This wipes trainers, scores, drafts, and edits.")) {
+          U.ownerGate("Resetting EVERYTHING back to the blank default slate (wipes trainers, scores, drafts, edits)", () => {
             Store.reset();
             dropGhostMe();
             Router.render();
-          }
+          });
         } }, "↺ Reset to defaults"),
         el("button", { class: "btn danger", onClick: () => {
-          if (confirm("Start a FRESH SLATE? Wipes ALL progress AND the trainer list — the party builds its own crew from scratch (+ Add trainer on the Squad page, or in the welcome tour). Meant for a NEW room code; syncs to everyone in the room.")) {
+          U.ownerGate("Starting a FRESH SLATE — wipes ALL progress AND the trainer list for the whole room", () => {
             Store.freshSlate();
             dropGhostMe();
             Router.render();
-          }
+          });
         } }, "🧹 Fresh slate (blank trainers)"),
       ]),
     ]);
@@ -356,6 +356,35 @@
           location.reload();
         } }, "👋 Log out trainer"),
       ]),
+      // 👑 ROOM OWNER — claim the room with a PIN; destructive acts
+      // (removing trainers, fresh slate, reset) then require it. First
+      // claim wins across the whole room.
+      (function ownerBlock() {
+        const host = el("div", {});
+        function paint() {
+          host.innerHTML = "";
+          host.appendChild(el("h2", { class: "section-title" }, "👑 Room owner"));
+          const o = Store.roomOwner && Store.roomOwner();
+          if (o) {
+            host.appendChild(el("p", { class: "hint" }, "This room is owned by " + (o.name || "a trainer") +
+              ". Removing trainers and slate wipes ask for the owner's PIN. (Keep the PIN safe — there's no reset without it.)"));
+            return;
+          }
+          const pinIn = el("input", { class: "in", type: "password", inputmode: "numeric", placeholder: "Choose a PIN (4+ digits)", autocomplete: "off", style: { maxWidth: "220px" } });
+          const claim = () => {
+            const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+            if (!meId) { alert("Sign in as your trainer first (“You are” above)."); return; }
+            if (String(pinIn.value || "").trim().length < 4) { toast("PIN needs at least 4 characters"); try { pinIn.focus(); } catch (_) {} return; }
+            if (Store.claimRoom(pinIn.value, meId)) { toast("👑 You own this room — guard that PIN!"); paint(); }
+            else { toast("Someone claimed it first!"); paint(); }
+          };
+          pinIn.addEventListener("keydown", (e) => { if (e.key === "Enter") claim(); });
+          host.appendChild(el("p", { class: "hint" }, "Nobody owns this room yet. The owner's PIN gates trainer removal and the slate wipes below — claim it before the crew piles in."));
+          host.appendChild(el("div", { class: "toolbar" }, [pinIn, el("button", { class: "btn primary sm", onClick: claim }, "👑 Claim room ownership")]));
+        }
+        paint();
+        return host;
+      })(),
       el("h2", { class: "section-title" }, "🔔 Phone alerts"),
       el("p", { class: "hint" }, "Get pinged when you're challenged or a battle starts. iPhone REQUIRES the app on your Home Screen first (Share → Add to Home Screen), opened from that icon."),
       noteStatus,

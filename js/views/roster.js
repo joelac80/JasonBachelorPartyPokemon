@@ -239,6 +239,19 @@
       field("Type", "type", types),
       el("label", { class: "field" }, [el("span", {}, "Team"), teamSelect]),
       field("Signature move / catchphrase", "catchphrase"),
+      // 🗑 removal — free while the room is unclaimed; PIN-gated once a room
+      // owner exists. Tombstoned so no stale phone can resurrect the card.
+      el("div", { class: "toolbar", style: { marginTop: "6px" } }, [
+        el("button", { class: "btn danger sm", onClick: () => {
+          U.ownerGate("Removing trainer " + (a.name || "") + " (their catches, badges and runs go too; Hall of Fame plaques stay)", () => {
+            const meName = (Store.attendee((window.Sync && Sync.getMe && Sync.getMe()) || "") || {}).name || "";
+            Store.removeTrainer(id, meName);
+            U.toast("🗑 " + (a.name || "Trainer") + " removed from the room");
+            document.querySelectorAll(".modal-overlay").forEach((m) => m.remove());
+            Router.render();
+          });
+        } }, "🗑 Remove trainer"),
+      ]),
     ]);
 
     const typeBefore = a.type;

@@ -1466,6 +1466,56 @@
     },
     mballUsed(attId) { return (((this.state.pokedex || {}).trainers || {})[attId] || {}).mballUsed || 0; },
     mballLeft(attId) { return Math.max(0, this.mballEarned(attId) - this.mballUsed(attId)); },
+
+    // 👑 ROOM OWNER — the first person to claim the room sets a PIN (stored
+    // as a cheap hash; this is honor-system gatekeeping against accidents
+    // and mischief, not cryptography — there is no server to enforce more).
+    // Once claimed, destructive acts (removing trainers, fresh slate, reset)
+    // ask for the PIN. First claim wins across the room (older ts survives
+    // every merge).
+    _pinHash(pin) {
+      let h = 5381; const str = "bach:" + String(pin || "");
+      for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+      return h.toString(36);
+    },
+    roomOwner() { return this.state.roomOwner || null; },
+    claimRoom(pin, attId) {
+      pin = String(pin || "").trim();
+      if (pin.length < 4 || this.state.roomOwner) return false;
+      const name = (this.attendee(attId) || {}).name || "";
+      const h = this._pinHash(pin);
+      this.update((s) => {
+        if (s.roomOwner) return;
+        s.roomOwner = { h: h, attId: attId || "", name: name, ts: (Date.now && Date.now()) || 1 };
+        this.chron(s, "👑", (name || "Someone") + " claimed ROOM OWNERSHIP — trainer removal and slate wipes now need the owner's PIN.");
+      });
+      return !!this.state.roomOwner && this.state.roomOwner.h === h;
+    },
+    checkOwnerPin(pin) {
+      const o = this.state.roomOwner;
+      return !!o && o.h === this._pinHash(String(pin || "").trim());
+    },
+    // 🗑 Remove a trainer — with a TOMBSTONE so a stale phone's last-write
+    // push can never resurrect them. Their big progress records go too; Hall
+    // of Fame plaques stay (history happened). A re-created person gets a
+    // fresh id, so the tombstone never haunts them.
+    removeTrainer(attId, byName) {
+      const a = this.attendee(attId);
+      if (!a) return false;
+      this.update((s) => {
+        s.trainerTombs = s.trainerTombs || {};
+        s.trainerTombs[attId] = (Date.now && Date.now()) || 1;
+        s.attendees = (s.attendees || []).filter((x) => x.id !== attId);
+        if (s.pokedex && s.pokedex.trainers) delete s.pokedex.trainers[attId];
+        ["league", "tower", "nuzRuns", "nuzlocke", "gauntlets", "leagueRuns", "legends", "secrets", "movies"].forEach((k) => {
+          if (s[k] && typeof s[k] === "object") delete s[k][attId];
+        });
+        this.chron(s, "🗑", (byName ? byName + " removed" : "Removed") + " trainer " + a.name + " from the room.");
+      });
+      // the removed trainer might be signed in on THIS phone
+      try { if (window.Sync && Sync.getMe && Sync.getMe() === attId) Sync.setMe(""); } catch (_) {}
+      return true;
+    },
     towerWin(attId, foeName, tycoon, partyIds, rental) {
       if (!attId) return;
       this.update((s) => {
@@ -1817,6 +1867,19 @@
     // structures are never deleted from (owning a variant / holding a badge is
     // permanent), so a union can't resurrect a trade or undo anything.
     _mergeCumulative(prev, next) {
+      // 🗑 trainer tombstones: union, then enforce — a phone still carrying a
+      // removed trainer must not resurrect them via last-write-wins.
+      const ptb = (prev && prev.trainerTombs) || {};
+      const ntb = next.trainerTombs = next.trainerTombs || {};
+      Object.keys(ptb).forEach((id) => { if (!ntb[id]) ntb[id] = ptb[id]; });
+      if (Object.keys(ntb).length) {
+        next.attendees = (next.attendees || []).filter((a) => !ntb[a.id]);
+        if (next.pokedex && next.pokedex.trainers) Object.keys(ntb).forEach((id) => { delete next.pokedex.trainers[id]; });
+      }
+      // 👑 room owner: FIRST claim wins — the copy with the older timestamp
+      // survives, so a latecomer can't overwrite the crown.
+      const pown = prev && prev.roomOwner;
+      if (pown && (!next.roomOwner || (pown.ts || 0) < (next.roomOwner.ts || 0))) next.roomOwner = pown;
       // 🌍 Gen 5-9 global unlock — sticky once ANY phone sets it, so a
       // concurrent write can never re-lock the room.
       const pp = (prev && prev.pokedex) || {};

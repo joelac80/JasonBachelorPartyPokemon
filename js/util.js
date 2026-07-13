@@ -136,5 +136,30 @@
     row.dataset.me = me;
     return row;
   }
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow };
+  // 👑 OWNER GATE — runs `onOk` once the room-owner PIN is entered (inline
+  // input; native prompt() is unreliable in iOS home-screen apps). When NO
+  // owner has claimed the room, falls back to a plain confirm().
+  function ownerGate(actionLabel, onOk) {
+    const owner = window.Store && Store.roomOwner && Store.roomOwner();
+    if (!owner) { if (confirm(actionLabel + " — are you sure?")) onOk(); return; }
+    let ctrl;
+    const pinIn = el("input", { class: "in", type: "password", inputmode: "numeric", placeholder: "Owner PIN", autocomplete: "off" });
+    const msg = el("p", { class: "hint owner-gate-msg" }, "");
+    const go = () => {
+      if (Store.checkOwnerPin(pinIn.value)) { if (ctrl) ctrl.close(); onOk(); }
+      else { msg.textContent = "✕ Wrong PIN — this room belongs to " + (owner.name || "the owner") + "."; pinIn.value = ""; try { pinIn.focus(); } catch (_) {} }
+    };
+    pinIn.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, "👑 " + (owner.name || "The room owner") + " locked this room. " + actionLabel + " needs the owner's PIN."),
+      pinIn, msg,
+      el("div", { class: "toolbar" }, [
+        el("button", { class: "btn primary", onClick: go }, "✓ Confirm"),
+        el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); } }, "Cancel"),
+      ]),
+    ]);
+    ctrl = Modal.open("👑 Owner PIN", body, null, { noFooter: true });
+    setTimeout(() => { try { pinIn.focus(); } catch (_) {} }, 60);
+  }
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow, ownerGate };
 })();
