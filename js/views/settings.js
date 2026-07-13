@@ -292,7 +292,18 @@
         const known = (Sync.knownRooms && Sync.knownRooms()) || [];
         if (!known.length) return null;
         const cur = (Sync.getConf().room || "").trim();
+        const shareRow = cur ? el("div", { class: "toolbar" }, [
+          el("button", { class: "btn subtle sm", onClick: () => {
+            const link = location.origin + location.pathname + "#/join/" + encodeURIComponent(cur);
+            const done = () => toast("📨 Invite link copied — send it to the crew!");
+            if (navigator.share) navigator.share({ title: "Join our Pokémon room", text: "Join room " + cur + " — tap the link and you're in.", url: link }).catch(() => {});
+            else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, () => prompt("Copy the invite link:", link));
+            else prompt("Copy the invite link:", link);
+          } }, "📨 Share an invite link to " + cur),
+          el("span", { class: "hint" }, "The link auto-fills the room — friends just tap Join."),
+        ]) : null;
         return el("div", {}, [
+          shareRow,
           el("p", { class: "hint" }, "🚪 Your rooms — tap to SWITCH (the app reloads fresh in the new room):"),
           el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, known.map((r) =>
             el("button", { class: "btn sm " + (r.room === cur ? "primary" : "subtle"), onClick: () => {

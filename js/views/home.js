@@ -76,7 +76,7 @@
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
       { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions of gyms → Champions" },
       { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
-      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Six permadeath epics" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Seven permadeath epics" },
     ].map(tile)));
 
     // 🧭 YOUR JOURNEY — the signed-in trainer's battle career, front and

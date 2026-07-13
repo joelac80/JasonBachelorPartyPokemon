@@ -1039,9 +1039,9 @@
     // Runs live in s.nuzRuns[attId][slot]; s.nuzlocke[attId] stays as an
     // ALIAS of the trainer's ACTIVE run (the one touched last) so legacy
     // clients, old data and slot-less calls keep working unchanged.
-    NUZ_SLOTS: ["region", "random", "master", "ages", "trek", "movie"],
+    NUZ_SLOTS: ["region", "random", "master", "ages", "trek", "blitz", "movie"],
     nuzSlotOf(region, mode) {
-      if (region === "master" || region === "ages" || region === "trek" || region === "movie") return region;
+      if (region === "master" || region === "ages" || region === "trek" || region === "movie" || region === "blitz") return region;
       if (region) return mode === "random" ? "random" : "region";
       return "legacy";
     },
@@ -1116,6 +1116,7 @@
         const label = region === "master" ? "🌍 MASTER RANDOMIZER "
           : region === "ages" ? "🕰 THROUGH-THE-AGES "
           : region === "trek" ? "🎒 LONG-WALK "
+          : region === "blitz" ? "⚡ BLITZ-GAUNTLET "
           : (R ? R.name.toUpperCase() + " " : "") + (mode === "random" ? "🎲 RANDOMIZER " : "");
         Store.chron(s, "🪦", this._nuzName(attId) + " began a " + label + "NUZLOCKE run with " + (((window.DEX || {})[starterId] || {}).n || "#" + starterId) + " — every faint is forever!");
       });
@@ -1252,6 +1253,7 @@
         const REG = window.NUZ_REGIONS || [];
         let n = r.badges.length, total = 8, where = "";
         if (r.region === "master") { total = 68; }
+        else if (r.region === "blitz") { total = 12; }
         else if (r.region === "ages" || r.region === "trek") {
           // Region-reset walks — count within THIS region.
           const R = REG.find((x) => idx >= x.gym0 && idx < x.gym0 + x.gymN);
@@ -1284,6 +1286,10 @@
           return ts;
         };
         const REG = window.NUZ_REGIONS || [];
+        if (r.region === "blitz") {                            // ⚡ the blitz gauntlet
+          Store.chron(s, "⚡", nm + " took a blitz-gauntlet battle — " + (r.badges.length + r.league.length) + "/15 down, the cap climbs again!");
+          return;
+        }
         if (r.region === "movie") {                            // 🎬 the movie marathon
           const REEL = window.MOVIE_BOSSES || [];
           const lastB = REEL[REEL.length - 1];
@@ -1372,6 +1378,20 @@
         }
       }, slot);
     },
+    // ⚡ The blitz ends when its seeded 15-battle reel is empty — the view
+    // calls this after the Champion finale falls.
+    nuzBlitzCrown(attId) {
+      this._nuzEdit(attId, (r, s) => {
+        if (r.over || r.region !== "blitz") return;
+        const alive = r.box.filter((m) => !m.dead).map((m) => m.id);
+        r.over = "blitz"; r.doneTs = Date.now();
+        s.nuzlockeHof = s.nuzlockeHof || [];
+        s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "blitz", mode: r.mode || "", region: "15 battles" });
+        s.hof = s.hof || [];
+        s.hof.push({ attId: attId, ts: r.doneTs, party: alive.slice(0, 6), key: "nuzlocke-blitz", champ: "THE GAUNTLET", rank: "Blitz Gauntlet", region: "15 battles" });
+        Store.chron(s, "⚡", "BLITZ COMPLETE!!! " + this._nuzName(attId) + " ran the 15-battle gauntlet from Lv 14 to Lv 100 — a surprise Champion and all — with permadeath on. " + r.catches + " caught, " + r.deaths + " lost.");
+      }, "blitz");
+    },
     // Bank the crown and stop — a champion who walks away stays a champion.
     // (Legacy act-II runs, or a Johto region run with RED still waiting.)
     nuzRetire(attId, slot) { this._nuzEdit(attId, (r) => { if (!r.over && (r.act === 2 || r.crowned)) r.over = "champion"; }, slot); },
@@ -1395,7 +1415,7 @@
     // Completed runs on the crown board: highest tier first (master and the
     // ages walk > legend > champion), then fewest catches — the classic flex.
     nuzHall() {
-      const w = { master: 3, ages: 3, trek: 2.7, movie: 2.5, legend: 2 };
+      const w = { master: 3, ages: 3, trek: 2.7, movie: 2.5, legend: 2, blitz: 1.5 };
       return (this.state.nuzlockeHof || []).slice().sort((a, b) =>
         ((w[b.tier] || 1) - (w[a.tier] || 1)) || (a.catches - b.catches) || (a.deaths - b.deaths) || (a.ts - b.ts));
     },
@@ -1472,7 +1492,7 @@
       const nzHas = (t) => nz.some((r) => r.tier === t);
       const ULT = ["master", "ages", "trek", "movie"];
       const nzUlt = ULT.filter(nzHas).length;
-      const nzTier = nzUlt >= ULT.length ? 4 : nzUlt >= 1 ? 3 : nzHas("legend") ? 2 : nzHas("champion") ? 1 : 0;
+      const nzTier = nzUlt >= ULT.length ? 4 : nzUlt >= 1 ? 3 : nzHas("legend") ? 2 : (nzHas("champion") || nzHas("blitz")) ? 1 : 0;
       const defs = [
         { key: "collector", emoji: "🔴", title: "The Collector", unit: "species caught",
           v: this.dexCount(attId), at: [25, 150, 500, 1025] },
@@ -1600,6 +1620,7 @@
         if (nz.some((r) => r.tier === "ages")) out.push({ emoji: "🕰", title: "Trainer of the Ages", sub: "nine generations, a fresh team each era, one unbroken journey — permadeath on" });
         if (nz.some((r) => r.tier === "movie")) out.push({ emoji: "🎬", title: "Marathon Premiere", sub: "survived the entire filmography — every movie legend at full power, permadeath on" });
         if (nz.some((r) => r.tier === "trek")) out.push({ emoji: "🎒", title: "The Long Walk", sub: "one team through all nine regions, the curve resetting at every border — permadeath all the way" });
+        if (nz.some((r) => r.tier === "blitz")) out.push({ emoji: "⚡", title: "Blitz Gauntlet", sub: "15 battles, Lv 14 to 100, a surprise Champion — a whole nuzlocke in one sitting" });
         if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "took the run past the Champion — and RED still fell" });
         out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered " + (best.region || "Kanto") + " with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });

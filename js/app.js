@@ -156,6 +156,19 @@
     setReactAlerts(on) { try { localStorage.setItem("jasonBachHub.notifyReacts", on ? "1" : "0"); } catch (_) {} },
   };
 
+  // 📨 Invite links: #/join/CODE drops a phone straight into a room — one
+  // confirm, then the full-reload room switch (same rule as Settings).
+  (function joinLink() {
+    const m = (location.hash || "").match(/^#\/join\/([^\/?#]+)/);
+    if (!m) return;
+    const code = decodeURIComponent(m[1]);
+    try { history.replaceState(null, "", location.pathname + "#/home"); } catch (_) { location.hash = "#/home"; }
+    const c = window.Sync && Sync.getConf ? Sync.getConf() : null;
+    if (!c || (c.enabled && c.room === code)) return;
+    if (!confirm("📨 You've been invited to room " + code + "! Join it? This phone will sync with that crew (the app reloads).")) return;
+    Sync.switchRoom(code);
+  })();
+
   Router.start();
 
   // ---- Pull-to-refresh -----------------------------------------------------
