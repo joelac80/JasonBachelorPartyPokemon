@@ -1439,6 +1439,24 @@
     // streak, bests are forever — and the FIRST time a classic streak hits 7
     // (Palmer's floor), the team is enshrined in the real Hall of Fame.
     towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0, rStreak: 0, rBest: 0 }; },
+
+    // 🟣 Master Balls — a PROGRESSION currency, never bought: 5 for every
+    // Champion beaten in The Journey, +3 per nuzlocke crown (+5 when the
+    // crown is an ULTIMATE: Master, Ages, Long Walk or Movie Marathon).
+    // Earned is DERIVED from wins already on record (fully retroactive);
+    // only the SPENT side is stored — a monotonic counter on the trainer's
+    // pokedex record (merged by max, so a lagging phone can't refund one).
+    mballEarned(attId) {
+      const champs = (window.LEAGUE_STAGES || [])
+        .filter((st) => st.rank === "Champion" || st.rank === "Top Champion").map((st) => st.key);
+      const wins = this.leagueWins(attId);
+      let n = 5 * champs.filter((k) => wins.indexOf(k) >= 0).length;
+      const ULT = { master: 1, ages: 1, trek: 1, movie: 1 };
+      (this.state.nuzlockeHof || []).forEach((r) => { if (r.att === attId) n += ULT[r.tier] ? 5 : 3; });
+      return n;
+    },
+    mballUsed(attId) { return (((this.state.pokedex || {}).trainers || {})[attId] || {}).mballUsed || 0; },
+    mballLeft(attId) { return Math.max(0, this.mballEarned(attId) - this.mballUsed(attId)); },
     towerWin(attId, foeName, tycoon, partyIds, rental) {
       if (!attId) return;
       this.update((s) => {
@@ -1952,6 +1970,8 @@
           dst[k] = dst[k] || {};
           Object.keys(src[k]).forEach((id) => { if (src[k][id]) dst[k][id] = 1; });
         });
+        // 🟣 Master Balls spent: monotonic — the higher count wins.
+        if (src.mballUsed) dst.mballUsed = Math.max(dst.mballUsed || 0, src.mballUsed);
       });
       // 📬 trade offers: the inbox lives in the last-write-wins doc, so an offer
       // one phone just sent would be wiped by the next phone's push. Union by id

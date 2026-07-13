@@ -91,7 +91,7 @@
           return wrap;
         } },
       { e: "🔴", t: "Catch 'em — all nine generations",
-        d: "The Safari Zone is the engine: find a wild Pokémon, earn boosts, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
+        d: "The Safari Zone is the engine: find a wild Pokémon, tempt it with 🍓 berries, risk a 🪨 rock, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
       { e: "⚔️", t: "Battle 'em — for real",
         d: "Real turn-based duels, each trainer on their own phone — moves, types, crits, potions, sips on the line. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion, the Battle Tower, canon rivals ambushing the roads, Movie Legends, and the legends themselves. Big fights broadcast live — the whole room watches and cheers." },
       { e: "🪦", t: "…then dare the Nuzlocke",
