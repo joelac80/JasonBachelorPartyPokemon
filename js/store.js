@@ -184,6 +184,33 @@
 
     // Offline Pokemon sprite (base64 data URI) for a National Dex id, or "".
     sprite(id) { return (window.SPRITES && window.SPRITES[id]) || (window.DEX_SPRITES && window.DEX_SPRITES[id]) || ""; },
+    // ✨ Identity sprite: the trainer's favorite (in its current evo-card
+    // form), drawn in the SHINY palette for the 1-in-16 trainers who rolled
+    // one at signup. Use this anywhere a trainer's face is their favorite.
+    favSprite(a) {
+      if (!a) return "";
+      const f = this.currentForm(a);
+      if (!f.id) return "";
+      return (a.shinyFav && (window.DEX_SPRITES_SHINY || {})[f.id]) || this.sprite(f.id);
+    },
+    // The signup roll — ONCE per trainer, ever (favRolled guards re-roll
+    // fishing): 1-in-16 marks the TRAINER shiny, and the sparkle follows
+    // whatever favorite they ever set. Returns true when it comes up shiny.
+    rollFavShiny(attId) {
+      const a = this.attendee(attId);
+      if (!a || a.favRolled) return !!(a && a.shinyFav);
+      let shiny = false;
+      this.update((s) => {
+        const rec = s.attendees.find((x) => x.id === attId);
+        if (!rec || rec.favRolled) return;
+        rec.favRolled = 1;
+        if (Math.random() < 1 / 16) {
+          rec.shinyFav = 1; shiny = true;
+          Store.chron(s, "✨", rec.name + " is a SHINY TRAINER — their favorite rolled shiny at signup, a true 1-in-16!");
+        }
+      });
+      return shiny;
+    },
 
     // ---- Evolution -------------------------------------------------------
     evoConfig(attId) {

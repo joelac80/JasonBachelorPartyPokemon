@@ -59,7 +59,7 @@
   }
 
   function thumb(a) {
-    const s = a && a.favoriteId ? Store.sprite(a.favoriteId) : "";
+    const s = a ? Store.favSprite(a) : "";
     if (a && a.photo) return el("img", { class: "draft-thumb", src: a.photo, alt: a.name });
     return s
       ? el("img", { class: "draft-thumb", src: s, alt: a.favorite || "" })

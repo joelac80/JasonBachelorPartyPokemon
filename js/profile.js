@@ -27,7 +27,7 @@
 
     const team = Store.team(Store.teamOf(attId));
     const rankRow = team ? Store.standings().find((r) => r.team.id === team.id) : null;
-    const sprite = form.id ? Store.sprite(form.id) : "";
+    const sprite = Store.favSprite(a);
     const trophies = Store.liveTrophies().filter((t) => t.holder === a.name);
     const gyms = (Store.state.gymBadges || []).filter((g) => g.holder === attId);
 

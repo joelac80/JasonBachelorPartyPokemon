@@ -10,7 +10,7 @@
   function portrait(a) {
     if (a.photo) return el("img", { class: "tc-photo", src: a.photo, alt: a.name });
     const form = Store.currentForm(a);
-    const sprite = form.id ? Store.sprite(form.id) : "";
+    const sprite = Store.favSprite(a);
     if (sprite) return el("img", {
       class: "tc-sprite", src: sprite, alt: form.name || a.favorite || "",
       style: form.scale && form.scale !== 1 ? { transform: "scale(" + form.scale + ")" } : null,
@@ -129,7 +129,7 @@
     const cardType = c.type || a.type || "normal";
     const hp = c.hp || (a.rank === "Champion" ? 100 : 80);
     const form = Store.currentForm(a);
-    const sprite = form.id ? Store.sprite(form.id) : "";
+    const sprite = Store.favSprite(a);
 
     const attacks = (c.attacks && c.attacks.length) ? c.attacks : [
       { name: "Tackle", cost: 1, dmg: "30", text: "A dependable hit." },
@@ -219,6 +219,16 @@
       field("Nickname", "nickname"),
       field("Role", "role"),
       field("Rank", "rank", ["Champion", "Elite Four", "Gym Leader"]),
+      el("div", { class: "toolbar", style: { marginBottom: "2px" } }, [
+        el("button", { class: "btn subtle sm", onClick: () => {
+          if (window.FavPick) FavPick.open(id, (mid) => {
+            const favIn = form.querySelector('[data-key="favorite"]');
+            const favIdIn = form.querySelector('[data-key="favoriteId"]');
+            if (favIn) favIn.value = ((window.DEX || {})[mid] || {}).n || "";
+            if (favIdIn) favIdIn.value = String(mid);
+          });
+        } }, "📕 Pick favorite from the Pokédex" + (a.shinyFav ? " · ✨ SHINY TRAINER" : "")),
+      ]),
       field("Favorite Pokémon (name)", "favorite"),
       field("Favorite dex # (for sprite)", "favoriteId"),
       field("Type", "type", types),
@@ -272,6 +282,73 @@
       } }, "+ Add trainer"),
     ]));
   }
+
+  // ---- 📕 the favorite picker — the signup ritual, shared with the tour ---
+  // Full-dex grid with the standard filter bar. The FIRST pick a trainer
+  // ever makes rolls the 1-in-16 shiny signup bonus (Store.rollFavShiny).
+  function pickFavorite(attId, onDone) {
+    const a0 = Store.attendee(attId);
+    if (!a0) return;
+    const DEXX = window.DEX || {};
+    const pool = Object.keys(DEXX).map(Number).filter((id) => id >= 1 && id <= 1025);
+    const filter = { gen: 0, type: "", desc: false };
+    const grid = el("div", { class: "duel-party-grid" });
+    let ctrl;
+    function choose(id) {
+      Store.update((s) => {
+        const rec = s.attendees.find((x) => x.id === attId);
+        if (rec) { rec.favorite = (DEXX[id] || {}).n || ("#" + id); rec.favoriteId = id; }
+      });
+      const shiny = Store.rollFavShiny(attId);
+      ctrl.close();
+      if (shiny) celebrateShiny(attId, id);
+      else if (window.SFX && SFX.select) SFX.select();
+      if (onDone) onDone(id, shiny);
+    }
+    function paint() {
+      grid.innerHTML = "";
+      const shown = window.DexFilter ? DexFilter.apply(pool, filter) : pool.slice();
+      shown.forEach((id) => {
+        const src = Store.sprite(id);
+        grid.appendChild(el("button", { class: "duel-pick", title: (DEXX[id] || {}).n || "", onClick: () => choose(id) },
+          [src ? el("img", { src: src, alt: (DEXX[id] || {}).n || "" }) : el("span", { class: "draft-thumb-ball" })]));
+      });
+    }
+    const bar = (window.DexFilter) ? DexFilter.controls(filter, paint) : null;
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, "Every trainer has ONE. Pick the Pokémon that says who you are — it becomes your card, your icon, your face on every board. ✨ Your first pick ever rolls the 1-in-16 shiny."),
+      bar, grid,
+    ]);
+    paint();
+    ctrl = Modal.open("♥ " + (a0.name || "Trainer") + " — pick your favorite", body, null, {});
+    liftOverTour();
+  }
+  // ✨ The 1-in-16 moment — worth a full stop.
+  function celebrateShiny(attId, id) {
+    const a = Store.attendee(attId);
+    const src = (window.DEX_SPRITES_SHINY || {})[id] || Store.sprite(id);
+    let ctrl;
+    const body = el("div", { class: "modal-form", style: { textAlign: "center" } }, [
+      el("div", { class: "gen59-pop-emoji" }, "✨"),
+      src ? el("img", { src: src, alt: "", style: { width: "96px", height: "96px", imageRendering: "pixelated" } }) : null,
+      el("div", { class: "nuz-lab-head" }, "IT'S SHINY!!"),
+      el("p", { class: "hint" }, (a ? a.name : "This trainer") + " rolled the 1-in-16 — this " + (((window.DEX || {})[id] || {}).n || "favorite") + " wears its SHINY palette everywhere, forever. A shiny trainer walks among us."),
+      el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+        el("button", { class: "btn primary", onClick: () => { ctrl.close(); Router.render(); } }, "✨ Legendary"),
+      ]),
+    ]);
+    ctrl = Modal.open("✨ SHINY!", body, null, { noFooter: true });
+    liftOverTour();
+    if (window.SFX && SFX.fanfare) SFX.fanfare();
+  }
+  // The onboarding tour sits above normal modals (z 300 vs 100) — when the
+  // picker opens INSIDE the tour, lift its overlay over the curtain.
+  function liftOverTour() {
+    if (!document.querySelector(".onb")) return;
+    const ov = [...document.querySelectorAll(".modal-overlay")].pop();
+    if (ov) ov.style.zIndex = "400";
+  }
+  window.FavPick = { open: pickFavorite };
 
   window.Views = window.Views || {};
   window.Views.roster = view;

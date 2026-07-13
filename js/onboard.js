@@ -36,8 +36,7 @@
     function paintGrid() {
       grid.innerHTML = "";
       Store.state.attendees.forEach((a) => {
-        const f = Store.currentForm(a);
-        const src = f.id ? Store.sprite(f.id) : "";
+        const src = Store.favSprite ? Store.favSprite(a) : "";
         grid.appendChild(el("button", { class: "sl-vote-pick" + (sel === a.id ? " on" : ""), onClick: () => {
           sel = a.id; paintGrid(); syncNext();
           if (window.SFX && SFX.select) SFX.select();
@@ -59,6 +58,9 @@
         }));
         sel = id; paintGrid(); syncNext();
         if (window.SFX && SFX.fanfare) SFX.fanfare();
+        // 🎯 The signup ritual: pick your favorite right away — the first
+        // pick rolls the 1-in-16 shiny (the picker lifts above the tour).
+        if (window.FavPick) FavPick.open(id, () => paintGrid());
       } }, [
         el("span", { class: "draft-thumb-ball" }),
         el("span", { class: "sl-vote-name" }, Store.state.attendees.length ? "➕ New trainer" : "➕ Create yourself"),

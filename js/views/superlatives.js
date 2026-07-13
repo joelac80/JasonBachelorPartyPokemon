@@ -43,7 +43,7 @@
   }
 
   function spriteOrBall(a) {
-    const src = a.favoriteId ? Store.sprite(a.favoriteId) : "";
+    const src = Store.favSprite(a);
     return src ? el("img", { class: "sl-thumb", src, alt: "" }) : el("span", { class: "draft-thumb-ball" });
   }
 

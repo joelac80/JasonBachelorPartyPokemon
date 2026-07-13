@@ -50,7 +50,7 @@
     }));
   }
   function memberCard(a) {
-    const f = Store.currentForm(a), spr = f.id ? Store.sprite(f.id) : "";
+    const f = Store.currentForm(a), spr = Store.favSprite(a);
     const w = Store.wrapped(a.id), tro = trophiesFor(a.name);
     return el("div", { class: "outro-member" }, [
       spr ? el("img", { class: "outro-mon", src: spr, alt: "" }) : el("span", { class: "draft-thumb-ball" }),

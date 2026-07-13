@@ -21,7 +21,7 @@
     if (a) {
       if (a.photo) return el("img", { class: "feed-ava", src: a.photo, alt: "" });
       const f = Store.currentForm(a);
-      const src = f.id ? Store.sprite(f.id) : "";
+      const src = Store.favSprite(a);
       if (src) return el("img", { class: "feed-ava", src: src, alt: "" });
     }
     return el("span", { class: "feed-ava ball" }, "◓");

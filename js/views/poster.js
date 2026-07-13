@@ -39,7 +39,7 @@
 
   function trainerCard(a) {
     const form = Store.currentForm(a);
-    const src = form.id ? Store.sprite(form.id) : "";
+    const src = Store.favSprite(a);
     const team = a.team ? Store.team(a.team) : null;
     const gyms = (Store.state.gymBadges || []).filter((g) => g.holder === a.id);
     const trophies = allAwards().filter((t) => t.holder === a.name);
