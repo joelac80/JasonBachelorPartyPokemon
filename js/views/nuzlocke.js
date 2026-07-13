@@ -102,24 +102,32 @@
 
   // The team a run-battle opponent fields: classic keeps the canon lineup,
   // 🎲 Randomizer draws era-pool species seeded by (run, stage) — same caps,
-  // same team sizes, different Pokémon every run. Both devolve to the cap.
-  function foeTeam(run, baseTeam, size, stageKey) {
+  // same team sizes, different Pokémon every run. Both devolve to the cap —
+  // EXCEPT the leader's ACE: pass it and it always closes the team in its
+  // real form, caps be damned (Brock may open with a Geodude, but the run
+  // still ends against his Steelix — randomizer included).
+  function foeTeam(run, baseTeam, size, stageKey, ace) {
     const cap = runLevel(run);
+    const want = ace ? Math.max(0, size - 1) : size;
     let ids;
     if (run.mode === "random") {
       const rnd = mulberry32(((run.seed || 1) ^ strHash(stageKey)) >>> 0);
       const pool = wildsFor(run);
       ids = [];
       let guard = 0;
-      while (ids.length < size && guard++ < 400) {
+      while (ids.length < want && guard++ < 400) {
         const id = pool[(rnd() * pool.length) | 0];
-        if (ids.indexOf(id) < 0) ids.push(id);
+        if (ids.indexOf(id) < 0 && id !== ace) ids.push(id);
       }
     } else {
-      ids = baseTeam.slice(0, size);
+      ids = (ace ? baseTeam.filter((id) => id !== ace) : baseTeam).slice(0, want);
     }
-    return ids.map((id) => formAtLevel(id, cap));
+    ids = ids.map((id) => formAtLevel(id, cap));
+    if (ace) ids.push(ace);
+    return ids;
   }
+  // Gym teams keep the leader's REAL ace (data lists it last).
+  const gymAce = (g) => (g && g.team && g.team[g.team.length - 1]) || 0;
 
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
@@ -266,7 +274,7 @@
       const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (kBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx).map((id) =>
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
@@ -291,7 +299,7 @@
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Johto Gym " + (jBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
         const hc2 = gymHandicap(run);
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx).map((id) =>
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx, gymAce(g)).map((id) =>
           Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
@@ -457,7 +465,7 @@
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
-            monIds: foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx), boost: hc.boost }] },
+            monIds: foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)), boost: hc.boost }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
             if (winSide === "a") { Store.nuzBadge(me, idx); sfx("fanfare"); maybeAmbush(); }
