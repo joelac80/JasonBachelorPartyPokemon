@@ -2,90 +2,11 @@
    CATCHING and BATTLING. The hero tells the story (friends brought
    together by a shared love of the Pokémon world), the pillars below it
    are the doors — Safari/Pokédex/Trading Post and Arena/Journey/Tower/
-   Nuzlocke — plus the signed-in trainer's live career strip and the
-   overworld map. Everything else lives behind 🎉 Party Central. */
+   Nuzlocke — plus the signed-in trainer's live career strip and quiet
+   doors to the Squad, Party Central and Settings. */
 (function () {
   const { el } = U;
   let liveUnsub = null;   // so re-rendering Home doesn't stack live-battle subscribers
-
-  // ---- Overworld region map (replaces the tile grid) ----------------------
-  // Nine landmarks in a 100 x 64 viewBox. Single-destination landmarks link
-  // straight through (r); multi-building "towns" (sub) open a town menu.
-  const MAP = [
-    { id: "settings", r: "settings",    e: "⚙️", t: "Settings",        x: 8,  y: 10 },
-    { id: "lodge",    r: "roster",      e: "🎴", t: "The Lodge",       x: 13, y: 50 },
-    { id: "safari", e: "🔴", t: "Safari Zone", x: 46, y: 12, sub: [
-      { r: "safari",  e: "🔴", t: "Pokédex Safari", d: "Find, boost, throw — the catching game" },
-      { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "All teams + the Type Masters" },
-      { r: "trade",   e: "🔁", t: "Trading Post", d: "Swap caught Pokémon — some evolve when traded!" },
-    ] },
-    // ⚔️ Everything battle — the plateau where the ladders live.
-    { id: "plateau", e: "🏟", t: "Indigo Plateau", x: 44, y: 46, sub: [
-      { r: "regions",  e: "🗺", t: "The Journey",   d: "Every region — gyms → Elite Four → Champion, the Champions Cup & Movie Legends" },
-      { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real turn-based duels — singles or doubles, sips on the line" },
-      { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks vs random trainers — PALMER every 7th, LEGENDS every 14th, rental mode" },
-      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Permadeath Kanto → Johto → RED — fewest catches wears the crown" },
-      { r: "dex",      e: "📕", t: "Pokédex",       d: "Every collection on one page — Gen 1-9, Hisui, Unown & Mega" },
-    ] },
-    // 🎉 Everything that isn't catching or battling lives in Party Central
-    // (Victory Road's team scoreboard included — see the nav).
-    { id: "party", r: "party", e: "🎉", t: "Party Central", x: 80, y: 34 },
-  ];
-  const MAP_PATHS = [
-    ["settings", "lodge"], ["lodge", "plateau"], ["safari", "plateau"],
-    ["safari", "party"], ["plateau", "party"],
-  ];
-
-  // A town's menu of buildings.
-  function openTown(id) {
-    const n = MAP.find((m) => m.id === id);
-    if (!n || !n.sub) return;
-    if (window.SFX && SFX.blip) SFX.blip();
-    const body = el("div", { class: "town-menu" }, n.sub.map((sb) =>
-      el("a", { class: "town-item", href: "#/" + sb.r, onClick: () => ctrl.close() }, [
-        el("span", { class: "town-e" }, sb.e),
-        el("div", {}, [el("div", { class: "town-t" }, sb.t), el("div", { class: "town-d" }, sb.d)]),
-      ])));
-    const ctrl = Modal.open(n.e + " " + n.t, body, null, {});
-  }
-
-  function overworld() {
-    const idx = {}; MAP.forEach((n) => (idx[n.id] = n));
-    let s = '<svg viewBox="0 0 100 64" class="ow-svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Region map">';
-    s += '<rect x="0" y="0" width="100" height="64" fill="#a6d88f"/>';
-    s += '<ellipse cx="31" cy="18" rx="17" ry="8.5" fill="#8fd0e6" stroke="#6fb8d0" stroke-width="0.5"/>';
-    [[5,40],[22,58],[45,60],[92,58],[78,20],[40,8],[97,30]].forEach((t) =>
-      { s += '<circle cx="' + t[0] + '" cy="' + t[1] + '" r="2.1" fill="#5aa85a"/>'; });
-    MAP_PATHS.forEach((pr) => {
-      const p = idx[pr[0]], q = idx[pr[1]];
-      if (!p || !q) return;
-      s += '<line x1="' + p.x + '" y1="' + p.y + '" x2="' + q.x + '" y2="' + q.y +
-        '" stroke="#efe1ac" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="0.1 3.2"/>';
-    });
-    MAP.forEach((n) => {
-      const town = !!n.sub;
-      s += town
-        ? '<g class="ow-node" data-town="' + n.id + '" style="cursor:pointer">'
-        : '<a href="#/' + n.r + '" class="ow-node">';
-      const r = town ? 5.6 : 4.7;
-      s += '<circle cx="' + n.x + '" cy="' + n.y + '" r="' + r + '" fill="#ffffff" stroke="#1f2330" stroke-width="0.8"/>';
-      s += '<text x="' + n.x + '" y="' + (n.y + 0.3) + '" text-anchor="middle" dominant-baseline="central" font-size="' + (town ? 5.2 : 4.6) + '">' + n.e + '</text>';
-      if (town) {
-        s += '<circle cx="' + (n.x + 4.4) + '" cy="' + (n.y - 4.4) + '" r="2.3" fill="#e6352f" stroke="#fff" stroke-width="0.5"/>';
-        s += '<text x="' + (n.x + 4.4) + '" y="' + (n.y - 4.1) + '" text-anchor="middle" dominant-baseline="central" font-size="2.8" fill="#fff" font-weight="bold">' + n.sub.length + '</text>';
-      }
-      s += '<text x="' + n.x + '" y="' + (n.y + r + 3.4) + '" text-anchor="middle" font-size="3" class="ow-label">' + n.t + '</text>';
-      s += town ? '</g>' : '</a>';
-    });
-    s += '</svg>';
-    const wrap = el("div", { class: "overworld" });
-    wrap.innerHTML = s;
-    wrap.addEventListener("click", (e) => {
-      const g = e.target.closest && e.target.closest("[data-town]");
-      if (g) openTown(g.getAttribute("data-town"));
-    });
-    return wrap;
-  }
 
   function view(root) {
     const p = Store.state.party;
@@ -149,7 +70,7 @@
       { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
       { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions of gyms → Champions" },
       { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
-      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Five permadeath epics" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Six permadeath epics" },
     ].map(tile)));
 
     // 🧭 YOUR JOURNEY — the signed-in trainer's battle career, front and
@@ -184,10 +105,14 @@
           ])))));
     })();
 
-    // The map keeps the world explorable — Party Central is the one door to
-    // everything that isn't catching or battling (photos, games, honors).
-    root.appendChild(el("h2", { class: "section-title" }, "Explore the Region"));
-    root.appendChild(overworld());
+    // Quiet doors for everything that isn't catching or battling — the
+    // squad, the party corner, the settings. (The old overworld map said
+    // the same thing with more pixels.)
+    root.appendChild(el("div", { class: "home-quick six home-doors" }, [
+      { r: "roster",   e: "🎴", t: "Squad",         d: "The trainers" },
+      { r: "party",    e: "🎉", t: "Party Central", d: "Everything else" },
+      { r: "settings", e: "⚙️", t: "Settings",      d: "Room & sync" },
+    ].map(tile)));
   }
 
   window.Views = window.Views || {};

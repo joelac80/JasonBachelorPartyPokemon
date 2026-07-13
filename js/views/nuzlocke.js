@@ -138,10 +138,13 @@
   // strikes every species already met this run.
   function rollWild(run) {
     const cap = runLevel(run);
-    const seen = {}; (run.seen || []).forEach((id) => { seen[id] = 1; });
-    const owned = {}; run.box.forEach((m) => { owned[m.id] = 1; });
+    // The no-dupes clause takes whole FAMILIES: anything owned or already
+    // met locks out its entire evolutionary line, both directions.
+    const taken = {};
+    (run.seen || []).forEach((id) => { taken[FAM_ROOT[id] || id] = 1; });
+    run.box.forEach((m) => { taken[FAM_ROOT[m.id] || m.id] = 1; });
     const WILDS = wildsFor(run).filter((id) =>
-      !owned[id] && !seen[id] && !(PRE[id] && PRE[id].lvl > cap));
+      !taken[FAM_ROOT[id] || id] && !(PRE[id] && PRE[id].lvl > cap));
     const pool = WILDS;
     if (!pool.length) return 0;
     let total = 0; const cum = [];
@@ -222,6 +225,15 @@
     while (PRE[id] && PRE[id].lvl > cap && DEX[PRE[id].from] && guard++ < 6) id = PRE[id].from;
     return id;
   }
+  // 🧬 Evolutionary FAMILY roots (Slowpoke for Slowbro AND Slowking) — the
+  // no-dupes clause strikes whole families, so owning a Sandshrew means no
+  // Sandslash ever ambles out of the grass.
+  const FAM_ROOT = {};
+  Object.keys(DEX).forEach((k) => {
+    let id = +k, g = 0;
+    while (PRE[id] && DEX[PRE[id].from] && g++ < 6) id = PRE[id].from;
+    FAM_ROOT[+k] = id;
+  });
 
   // Tiny deterministic PRNG — the Randomizer must show the SAME team on the
   // preview card and in the battle, across re-renders, for the whole run.
@@ -272,6 +284,7 @@
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
   let wildId = 0;
+  let wildShiny = 0;        // ✨ this encounter rolled shiny (1-in-16)
   let evoOpen = false;
   let newKind = "classic";   // starter-lab pick: "classic" | "random" | "master"
   let newRegion = "kanto";   // starter-lab region (classic/random structures)
@@ -576,7 +589,7 @@
       "Full power, no caps — and every faint is permanent.",
       (ids) => {
         Duel.start({ mode: "local",
-          a: { units: [{ attId: me, monIds: ids }] },
+          a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
@@ -658,7 +671,9 @@
             const id = rollWild(run);
             if (!id) { alert("The grass is quiet — every species on this road has already been met."); return; }
             Store.nuzEncounter(me, id, eraKey(run));
-            wildId = id; sfx("blip"); renderKeepScroll();
+            // ✨ the run rolls its OWN shinies — same 1-in-16 as the Safari.
+            wildShiny = Math.random() < 1 / 16 ? 1 : 0;
+            wildId = id; sfx(wildShiny ? "fanfare" : "blip"); renderKeepScroll();
           } }, "👣 Walk in the grass"),
         ]));
         grass.appendChild(el("p", { class: "hint" }, "Recruits are caught by battling — and battles can cost lives. ⚠️ Each walk burns an encounter (running away too), a species met once NEVER returns, and only Pokémon at home under the Lv " + runLevel(run) + " cap roam here."));
@@ -666,17 +681,21 @@
         grass.appendChild(el("p", { class: "hint" }, "🚧 No wild Pokémon left on the road to the next badge — win it to reach fresh grass (" + ENC_PER_ERA + " new encounters)."));
       }
     } else {
-      grass.appendChild(el("div", { class: "nuz-lab-head" }, "🌿 A wild " + monName(wildId) + " appeared!"));
+      const wSrc = (wildShiny && (window.DEX_SPRITES_SHINY || {})[wildId]) || Store.sprite(wildId);
+      grass.appendChild(el("div", { class: "nuz-lab-head" }, wildShiny
+        ? "✨ A SHINY wild " + monName(wildId) + " appeared!!"
+        : "🌿 A wild " + monName(wildId) + " appeared!"));
       grass.appendChild(el("div", { class: "nuz-wild-row" }, [
-        Store.sprite(wildId) ? el("img", { class: "nuz-wild-img", src: Store.sprite(wildId), alt: monName(wildId) }) : null,
+        wSrc ? el("img", { class: "nuz-wild-img" + (wildShiny ? " is-shiny" : ""), src: wSrc, alt: monName(wildId) }) : null,
         el("div", { class: "nuz-wild-meta" }, [
           el("div", {}, "Base catch " + Math.round(catchBase(wildId) * 100) + "% — weakening it adds up to +65%."),
+          wildShiny ? el("div", { class: "hint" }, "✨ ONE in SIXTEEN — and in a nuzlocke it can still faint, or walk away forever. No pressure.") : null,
           el("div", { class: "hint" }, "⚠️ Bring up to 3. Anyone who faints in there is gone for good."),
         ]),
       ]));
       grass.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => battleWild(run) }, "⚔ Battle to catch"),
-        el("button", { class: "btn subtle", onClick: () => { wildId = 0; renderKeepScroll(); } }, "Run away"),
+        el("button", { class: "btn subtle", onClick: () => { wildId = 0; wildShiny = 0; renderKeepScroll(); } }, "Run away"),
       ]));
     }
   }
@@ -830,8 +849,10 @@
     // A living mon past its evolution level wears a ⬆ button (for the ones
     // who said "not now" — or missed the prompt).
     const canEvo = run && !run.over && evoTargetsFor(m, run).length > 0;
-    return el("div", { class: "nuz-mon" + (m.dead ? " dead" : ""), title: monName(m.id) + (m.dead ? " — RIP" : "") }, [
-      Store.sprite(m.id) ? el("img", { src: Store.sprite(m.id), alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
+    const src = (m.shiny && (window.DEX_SPRITES_SHINY || {})[m.id]) || Store.sprite(m.id);
+    return el("div", { class: "nuz-mon" + (m.dead ? " dead" : ""), title: monName(m.id) + (m.shiny ? " ✨ SHINY" : "") + (m.dead ? " — RIP" : "") }, [
+      src ? el("img", { src: src, alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
+      m.shiny ? el("span", { class: "nuz-shiny-tag" }, "✨") : null,
       m.dead ? el("span", { class: "nuz-rip" }, "🪦") : null,
       canEvo ? el("button", { class: "nuz-evo-btn", title: "Ready to evolve!", onClick: () => promptEvolve(run) }, "⬆") : null,
       el("span", { class: "nuz-mon-n" }, monName(m.id)),
@@ -909,6 +930,11 @@
   }
 
   // ── Battles — all report to the RUN, never the real ladder ────────────────
+  // ✨ Only the RUN's own shiny catches sparkle in run battles (shinyExact
+  // stops the Safari collection from leaking its palettes in here).
+  function ownShiny(run, ids) {
+    return run.box.filter((m) => !m.dead && m.shiny && ids.indexOf(m.id) >= 0).map((m) => m.id);
+  }
   function partyThen(run, maxSize, title, hint, go) {
     const alive = Store.nuzAlive(me);
     if (!alive.length) return;
@@ -923,16 +949,17 @@
     partyThen(run, 3, "⚔ vs wild " + monName(id) + " — up to 3",
       "Weaken it, then 🔴 Throw Ball mid-battle. KO = catch lost. Faints are FOREVER.",
       (ids) => {
+        const shiny = wildShiny;
         Duel.start({ mode: "local", broadcast: false, level: runLevel(run),
-          a: { units: [{ attId: me, monIds: ids }] },
-          b: { units: [{ npc: "Wild " + monName(id), ai: true, monIds: [id] }] },
+          a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
+          b: { units: [{ npc: (shiny ? "✨ Shiny wild " : "Wild ") + monName(id), ai: true, monIds: [id], shiny: shiny ? [id] : false }] },
           wild: {
             chanceFn: (frac) => Math.min(1, base + (1 - frac) * 0.65),
             onOutcome: (outcome, fainted) => {
               Store.nuzDeaths(me, fainted || []);
-              if (outcome === "caught") { Store.nuzCatch(me, id); sfx("fanfare"); }
+              if (outcome === "caught") { Store.nuzCatch(me, id, shiny); sfx("fanfare"); }
               else sfx("error");
-              wildId = 0; Router.render();
+              wildId = 0; wildShiny = 0; Router.render();
             },
           } });
       });
@@ -1004,7 +1031,7 @@
       "Bring up to 6 of the living. Every faint in there is permanent.",
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
-          a: { units: [{ attId: me, monIds: ids }] },
+          a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
             monIds: team, boost: gymBoosts(team, hc) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
@@ -1064,7 +1091,7 @@
       "No badge, no points — just survival. Every faint is permanent.",
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
-          a: { units: [{ attId: me, monIds: ids }] },
+          a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);
@@ -1079,7 +1106,7 @@
       "The endgame. Every faint is permanent — and a wipe ends the run.",
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
-          a: { units: [{ attId: me, monIds: ids }] },
+          a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: stageBoost(run, st) }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || []);

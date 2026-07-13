@@ -2197,3 +2197,8 @@ html, body { overscroll-behavior-y: contain; }
 .ach-fill.gold { background: linear-gradient(90deg, #ffd24a, #e0a800); }
 .ach-fill.platinum { background: linear-gradient(90deg, #cfe4f7, #9fc3e2); }
 .ach-sub { font-size: 12px; color: var(--ink-dim); line-height: 1.35; }
+
+/* ✨ nuzlocke shinies */
+.nuz-shiny-tag { position: absolute; top: -4px; left: -2px; font-size: 12px; text-shadow: 0 0 4px #fff; }
+.nuz-wild-img.is-shiny { filter: drop-shadow(0 0 6px rgba(255, 224, 96, 0.9)); }
+.home-doors .hq-tile { opacity: 0.92; }

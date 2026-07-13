@@ -81,7 +81,7 @@
       { e: "⚔️", t: "Battle 'em — for real",
         d: "Real turn-based duels, each trainer on their own phone — moves, types, crits, potions, sips on the line. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion, the Battle Tower, canon rivals ambushing the roads, Movie Legends, and the legends themselves. Big fights broadcast live — the whole room watches and cheers." },
       { e: "🪦", t: "…then dare the Nuzlocke",
-        d: "The ultimate test, five ways: one region on the classic curve, a 🎲 randomizer, the 🌍 114-battle master gauntlet, 🕰 Through the Ages (nine generations, a fresh team each era — Professor Oak waits at the very end), or the 🎬 Movie Marathon against every film legend. Any Pokémon that faints is gone FOREVER — fewest catches wears the crown." },
+        d: "The ultimate test, six ways: one region on the classic curve, a 🎲 randomizer, the 🌍 114-battle master gauntlet, 🕰 Through the Ages (nine generations, a fresh team each era — Professor Oak waits at the very end), 🎒 the Long Walk (one team through every region), or the 🎬 Movie Marathon against every film legend. Any Pokémon that faints is gone FOREVER — fewest catches wears the crown." },
       { e: "🔔", t: "One last thing — alerts, then go",
         d: "Get pinged when you're challenged, when a battle goes live, and when it's YOUR move (iPhone: best from the Home Screen app — Share → Add to Home Screen). Games, photos and everything else live in 🎉 Party Central; the ? up top opens the Field Guide. Now go — your friends are waiting.",
         body: () => { paintNote(); return noteHost; } },

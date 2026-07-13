@@ -317,7 +317,9 @@
         // u.shiny (true = all, or an array of ids). Mewtwo uses this to field his
         // cloned army in their eerie shadow palette (shiny Charizard is jet-black).
         const forced = u.shiny === true || (Array.isArray(u.shiny) && u.shiny.indexOf(id) >= 0);
-        m.shiny = forced || isShinyFor(u.attId, id);          // carried into battle
+        // u.shinyExact pins shininess to the list alone — nuzlocke runs roll
+        // their OWN shinies and must not borrow the Safari collection's.
+        m.shiny = forced || (!u.shinyExact && isShinyFor(u.attId, id));   // carried into battle
         // battle EXP: KOs banked before this battle (this mon must land the
         // blow itself to earn more). Veterans hit harder: +2% attack per
         // banked KO, capped at +20%.

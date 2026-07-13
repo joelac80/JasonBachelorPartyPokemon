@@ -1105,6 +1105,15 @@
         Store.chron(s, "🌟", "THE CO-STAR RULE — " + n + " stepped off the screen" + (filmName ? " of " + filmName : "") + " and joined " + this._nuzName(attId) + "'s cast!");
       });
     },
+    // ⬇ Reverse-evolution map for the Long Walk's border resets (lazy).
+    _nuzPre() {
+      if (this.__nuzPre) return this.__nuzPre;
+      const pre = {};
+      Object.keys(window.EVO_LEVELS || {}).forEach((from) => {
+        (window.EVO_LEVELS[from] || []).forEach((e) => { pre[e.to] = { from: +from, lvl: e.lvl }; });
+      });
+      return (this.__nuzPre = pre);
+    },
     // 🕰 Through the Ages: crossing a generation border. The whole box —
     // survivors and tombstones alike — is left with the professor (archived
     // in r.retired for the ending), and a brand-new regional starter becomes
@@ -1128,12 +1137,15 @@
     // deleted, so a lagging phone's copy can't resurrect it on merge.
     nuzAbandon(attId) { this._nuzEdit(attId, (r) => { if (!r.over) r.over = "abandoned"; }); },
     // A wild catch joins the box (one of each species per run — dupes ignored).
-    nuzCatch(attId, monId) {
+    nuzCatch(attId, monId, shiny) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.box.some((m) => m.id === monId)) return;
-        r.box.push({ id: monId });
+        const rec = { id: monId };
+        if (shiny) rec.shiny = 1;
+        r.box.push(rec);
         r.catches += 1;
-        Store.chron(s, "🪦", this._nuzName(attId) + " caught " + (((window.DEX || {})[monId] || {}).n || "#" + monId) + " for the Nuzlocke box (" + r.catches + " caught).");
+        const n = ((window.DEX || {})[monId] || {}).n || ("#" + monId);
+        Store.chron(s, shiny ? "✨" : "🪦", this._nuzName(attId) + " caught " + (shiny ? "a ✨ SHINY " + n + " for the Nuzlocke box — 1-in-16, under permadeath!" : n + " for the Nuzlocke box (" + r.catches + " caught)."));
       });
     },
     // Permadeath: every own mon that fainted in a nuzlocke battle dies for the
@@ -1275,8 +1287,10 @@
           } else if (R && key === R.champKey) {
             const crowns = REG.filter((x) => r.league.indexOf(x.champKey) >= 0).length;
             Store.chron(s, "🏆", nm + " conquered " + R.name + " on the LONG WALK (" + crowns + "/9 regions) — same team, next border, the curve resets again…");
+            if (!R.peak) Store._nuzBorderDevolve(r, s, nm);
           } else if (R && key === R.peak) {
             Store.chron(s, "🗻", nm + " toppled RED on Mt. Silver — the long walk goes on, one team heavier with the memory.");
+            Store._nuzBorderDevolve(r, s, nm);
           } else {
             Store.chron(s, "🪦", nm + " toppled a Nuzlocke league stage on the long walk!");
           }
@@ -1316,6 +1330,23 @@
     // Bank the crown and stop — a champion who walks away stays a champion.
     // (Legacy act-II runs, or a Johto region run with RED still waiting.)
     nuzRetire(attId) { this._nuzEdit(attId, (r) => { if (!r.over && (r.act === 2 || r.crowned)) r.over = "champion"; }); },
+    // 🎒 The border reset: the Lv 14 curve pulls every LIVING box mon back
+    // down its line (Venusaur walks into Johto as Bulbasaur — it will earn
+    // its evolutions all over again as the caps climb). Tombstones keep the
+    // form they fell in; noEvo flags clear so the evolution checks re-offer.
+    _nuzBorderDevolve(r, s, nm) {
+      const pre = this._nuzPre();
+      const DEXX = window.DEX || {};
+      const dev = (id) => { let g = 0; while (pre[id] && pre[id].lvl > 14 && DEXX[pre[id].from] && g++ < 6) id = pre[id].from; return id; };
+      const n = (id) => (DEXX[id] || {}).n || ("#" + id);
+      const changed = [];
+      r.box.forEach((m) => {
+        if (m.dead) return;
+        const to = dev(m.id);
+        if (to !== m.id) { changed.push(n(m.id) + "→" + n(to)); m.id = to; delete m.noEvo; }
+      });
+      if (changed.length) Store.chron(s, "🎒", nm + "'s team crossed the border and the Lv 14 curve pulled them back down: " + changed.join(", ") + ". They'll grow it all back.");
+    },
     // Completed runs on the crown board: highest tier first (master and the
     // ages walk > legend > champion), then fewest catches — the classic flex.
     nuzHall() {
