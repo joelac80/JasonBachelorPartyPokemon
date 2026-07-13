@@ -1241,6 +1241,15 @@
         volo: { emoji: "⚱️", title: "Ginkgo's Reckoning", sub: "saw through VOLO's smile — all eight, Giratina and Giratina again" },
         nobles: { emoji: "🏔", title: "Warden of Old", sub: "quelled all five Frenzied Nobles of ancient Hisui" },
         almighty: { emoji: "⏳", title: "Chosen of Arceus", sub: "outlasted Origin Dialga, Origin Palkia — and the Almighty itself" },
+        delta: { emoji: "☄️", title: "Sky-High Hero", sub: "cleared the Delta Episode — Zinnia bowed, Deoxys fell at the edge of space" },
+        flare: { emoji: "🔥", title: "Weapon Breaker", sub: "shut down Team Flare's ultimate weapon — Lysandre, Xerneas and Yveltal" },
+        az: { emoji: "🌸", title: "The Freeing Hand", sub: "ended AZ's three thousand years — the Eternal Floette came home" },
+        rogues: { emoji: "🏙", title: "Calmer of Lumiose", sub: "soothed every rogue Mega Evolution in the rebuilt city (Legends Z-A)" },
+        ncastle: { emoji: "🏰", title: "The Missing Variable", sub: "took N's Castle — the king's dragon fell, and Ghetsis raged into ruin" },
+        aether: { emoji: "🧬", title: "Family Breaker", sub: "broke Aether Paradise's spell — freed Lusamine from the Motherbeast" },
+        darkest: { emoji: "🌑", title: "Dawnbringer", sub: "ended the Darkest Day — Eternamax Eternatus fell over Hammerlocke" },
+        titans: { emoji: "🥪", title: "Titan Tamer", sub: "walked the Path of Legends — all five Titans, for Mabosstiff" },
+        paradox: { emoji: "⏰", title: "Unstuck in Time", sub: "survived the Paradox Gauntlet — both professors and Terapagos Stellar" },
       };
       const sw = this.secretWins(attId);
       Object.keys(SPECIAL_HONORS).forEach((k) => { if (sw.indexOf(k) >= 0) out.push(SPECIAL_HONORS[k]); });

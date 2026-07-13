@@ -70,14 +70,80 @@
   // Champion (raw league win) — except the Clash of Ages, the capstone that
   // demands ALL NINE Legendary Challenges. Wins record to s.secrets[att].
   const SPECIALS = [
+    // ---- HOENN: the Delta Episode (ORAS) — Zinnia, then the meteor's rider.
+    { key: "delta", tab: "Hoenn", name: "THE DELTA EPISODE", flair: "HOENN SPECIAL · Sky High, ORAS",
+      sub: "Hoenn Special · Zinnia the Lorekeeper — then soar to the meteor, where something alien waits · 2 battles",
+      icon: "☄️", face: 386, boost: 1.45, pts: 30, needs: "steven", champ: "STEVEN",
+      chain: [
+        { name: "ZINNIA", flair: "🐉 THE LOREKEEPER", icon: "🐉", face: 373, boost: 1.36,
+          team: [715, 334, 697, 706, 373],
+          quote: "You want to stop the meteor with a machine? How boring. The old ways say a dragon must rise. Show me your bond is worth more than draconid lore — or step aside!",
+          outro: { lose: "…Aster. Did you see it? I lost — and somehow it made me smile. Go, hero. The sky is yours to save.",
+            win: "Lorekeeper's verdict: not yet. The sky would swallow you whole." } },
+      ],
+      finale: { npc: "DEOXYS", name: "DEOXYS", flair: "🌌 THE METEOR'S RIDER", icon: "🌌", face: 386,
+        quote: "You soar past the clouds on a dragon's back. The meteor cracks open — and the thing inside unfolds, watching you with a single crystal eye." },
+      team: [386, 10001, 10003], reserve: 2,
+      speak: { 1: ["The DNA Pokémon twists and re-knits itself — ATTACK FORME!"],
+               2: ["It will not fall — the visitor reshapes once more. SPEED FORME!"] },
+      outro: { lose: "The visitor folds itself small, hangs in orbit a moment… and drifts back into the dark, satisfied.",
+               win: "The crystal eye dims you out of the sky. Hoenn's fate rides on the next attempt." },
+      quote: "A meteor is coming for Hoenn, and the Draconids say a machine won't save you. Beat the Lorekeeper for the right to ride the sky — and face what rides the meteor down.",
+      winChron: "cleared THE DELTA EPISODE — Zinnia bowed, and DEOXYS fell at the edge of space!",
+      loseChron: "the meteor kept its rider",
+      lead: "☄️ Zinnia and her Salamence guard the old ways. Beyond her: the stratosphere, and DEOXYS — which refuses to stay one shape." },
+    // ---- KALOS runs a little timeline of its own: XY's villain arc, the
+    // order trio, AZ's peace — and then LEGENDS Z-A, Lumiose rebuilt.
+    { key: "flare", tab: "Kalos", name: "THE ULTIMATE WEAPON", flair: "KALOS SPECIAL · Team Flare's Dawn",
+      sub: "Kalos Special · Lysandre in the lab, then the weapon's core — life and death, unchained · 2 battles",
+      icon: "🔥", face: 716, boost: 1.5, pts: 30, needs: "diantha", champ: "DIANTHA",
+      chain: [
+        { name: "LYSANDRE", flair: "🔥 THE FLARE BOSS", icon: "🔥", face: 10041, boost: 1.4,
+          team: [620, 430, 668, 10041],   // Mienshao, Honchkrow, Pyroar, MEGA Gyarados
+          quote: "I wanted a beautiful world. Humanity keeps soiling it — so the ultimate weapon will prune the garden. You would stop me? Then you carry the ugliness too.",
+          outro: { lose: "…So my beauty was a delusion after all. Do what you will with this filthy, wonderful world.",
+            win: "The weapon blooms at dawn, little gardener. Farewell." } },
+      ],
+      finale: { npc: "THE WEAPON'S CORE", name: "XERNEAS & YVELTAL", flair: "⚗️ THE WEAPON'S CORE", icon: "⚗️", face: 716,
+        quote: "At the machine's heart, the life Pokémon glows like a captive sunrise. And coiled beneath it, feeding on the same wire… something with black wings." },
+      team: [716, 717], reserve: 1,
+      speak: { 1: ["Beneath the light of life, DEATH stirs — YVELTAL unfurls its wings!"] },
+      outro: { lose: "The weapon powers down. Light and death drift apart, free — and Kalos never sees the dawn Lysandre promised.",
+               win: "The core flares. You wake outside the lab with your ears ringing and the countdown still running." },
+      quote: "Team Flare's key turns tonight. Cut through Lysandre's lab, then face what the ultimate weapon runs on: XERNEAS — and the death coiled beneath it.",
+      winChron: "shut down THE ULTIMATE WEAPON — Lysandre fell, and Xerneas AND Yveltal were set loose!",
+      loseChron: "the ultimate weapon kept its countdown",
+      lead: "🔥 Lysandre and his MEGA Gyarados hold the lab. In the core: Xerneas, radiant — and one hidden ball that is not a ball." },
     { key: "zygarde", tab: "Kalos", name: "THE ORDER OF KALOS", flair: "KALOS SPECIAL · Forms of Zygarde",
       sub: "Kalos Special · Zygarde's forms + Xerneas & Yveltal · 5v5",
-      icon: "🐍", face: 10120, boost: 1.52, pts: 30, needs: "diantha", champ: "DIANTHA",
+      icon: "🐍", face: 10120, boost: 1.52, pts: 30, needs: "diantha", champ: "DIANTHA", after: "flare",
       team: [716, 717, 10118, 718, 10120],
       quote: "Life blooms. Destruction circles. And beneath Kalos the cells stir — ten percent, fifty… until the ecosystem's guardian stands COMPLETE. Disturb the balance, and answer to ORDER itself.",
       winChron: "restored the ORDER OF KALOS — Xerneas, Yveltal and every form of ZYGARDE, felled in one stand!",
       loseChron: "ZYGARDE COMPLETE judged the balance undisturbed",
       lead: "🐍 Xerneas and Yveltal — then Zygarde rises: 10%, 50%, and the COMPLETE form." },
+    { key: "az", tab: "Kalos", name: "AZ", flair: "KALOS SPECIAL · The 3000-Year Man",
+      sub: "Kalos Special · The giant who fired the weapon, and the flower he lost · 3v3…?",
+      icon: "🌸", face: 10061, boost: 1.44, pts: 26, needs: "diantha", champ: "DIANTHA", after: "zygarde",
+      team: [324, 561, 623, 10061], playerSize: 3, reserve: 1,
+      speak: { 3: ["The giant goes still. Something small and bright drifts down to his shoulder…",
+                   "…she came back. After three thousand years — the ETERNAL FLOWER FLOETTE fights for him one last time."] },
+      quote: "Three thousand years I have wandered. I am the man who fired the ultimate weapon — who burned a war away, and my own heart with it. Battle me. I have long forgotten how to feel anything at all.",
+      outro: { lose: "…Ah. So this is what it feels like… to be free. Thank you, trainer. Truly.",
+               win: "Even eternity wins sometimes. Not the peace I wanted — but a battle worth three thousand years." },
+      winChron: "freed AZ — three thousand years ended, and the Eternal Floette came home!",
+      loseChron: "AZ walked on, still waiting",
+      lead: "🌸 Torkoal, Sigilyph, Golurk — machines of an ancient war. And one more presence the giant does not know is coming." },
+    // ---- LEGENDS Z-A (the Kalos epilogue, like Hisui after Sinnoh):
+    // Lumiose rebuilt — and Mega Evolution running wild in the streets.
+    { key: "rogues", tab: "Kalos", name: "THE ROGUE MEGAS", flair: "LUMIOSE SPECIAL · Legends Z-A",
+      sub: "Legends Z-A · Lumiose rebuilt — and rogue Mega Evolutions rampaging through the boulevards · 6v6",
+      icon: "🏙", face: 10058, boost: 1.54, pts: 34, needs: "diantha", champ: "DIANTHA", after: "az",
+      team: [10039, 10046, 10057, 10059, 10089, 10058],   // M-Kangaskhan → M-Garchomp
+      quote: "Lumiose is being reborn — tower by tower, quarter by quarter. But something in the new city drives Mega Evolution feral: rogue Megas rampage down the boulevards, glowing wrong. Someone has to stand in the street and calm them all.",
+      winChron: "calmed the ROGUE MEGAS of Lumiose — six feral Mega Evolutions, soothed one by one!",
+      loseChron: "the rogue Megas still own Lumiose's night",
+      lead: "🏙 Mega Kangaskhan, Scizor, Absol, Lucario, Salamence — and a feral MEGA GARCHOMP tearing up Centrico Plaza." },
     { key: "vigil", tab: "Sinnoh", name: "THE SINNOH VIGIL", flair: "SINNOH SPECIAL · Spirits of Lake & Moon",
       sub: "Sinnoh Special · The lake spirits, moonlight, the sea's prince & the Colossus · 6v6",
       icon: "🌙", face: 486, boost: 1.48, pts: 28, needs: "cynthia", champ: "CYNTHIA",
@@ -132,6 +198,28 @@
       winChron: "conquered THE ALMIGHTY SINNOH — Origin Dialga, Origin Palkia… and ARCEUS itself answered!",
       loseChron: "time and space closed over another challenger",
       lead: "⏳ Origin Dialga bends the hours, Origin Palkia folds the miles. And the third ball on their belt… is not a ball." },
+    // ---- UNOVA: N's Castle — the series' most famous story battle.
+    { key: "ncastle", tab: "Unova", name: "N'S CASTLE", flair: "UNOVA SPECIAL · Two Heroes, One Truth",
+      sub: "Unova Special · The castle rises over the League — N and his dragon, then Ghetsis, enraged · 2 battles",
+      icon: "🏰", face: 635, boost: 1.46, pts: 32, needs: "alder", champ: "ALDER",
+      chain: [
+        { name: "N", flair: "🐲 THE KING OF TEAM PLASMA", icon: "🐲", face: 644, boost: 1.42,
+          team: [571, 555, 567, 565, 601, 644], reserve: 1,
+          speak: { 5: ["The world speaks to me in formulas — and every formula ends the same way.",
+                       "ZEKROM! Deep Black Pokémon — hero of IDEALS — answer the truth in my heart!"] },
+          quote: "I am N, king of Team Plasma. My castle has swallowed your Pokémon League. Formulas cannot express the bond you claim to share with Pokémon — so show me the variable I am missing.",
+          outro: { lose: "…The truth I sought was standing in front of me all along. There is no formula for what you two just did.",
+            win: "The equation holds. Your ideals were lighter than mine. Go home, trainer." } },
+      ],
+      finale: { npc: "GHETSIS", name: "GHETSIS", flair: "👁 THE SAGE UNMASKED", icon: "👁", face: 635,
+        quote: "Before you can breathe, a green-robed figure shoves past the king. \"You RUINED it! I created Team Plasma with these hands — I made that boy — and I will NOT be denied by a child with a Pokédex!\"" },
+      team: [563, 626, 537, 625, 604, 635],
+      outro: { lose: "My plans… my flawless, perfect plans! I am absolute! I AM PERFECTION! …I am… nothing.",
+               win: "Weep, little hero. Your ideals end in my castle — and my world begins at dawn." },
+      quote: "You beat the Champion — and the ground shook. N's castle has risen around the Pokémon League itself. Somewhere inside, a king waits with a black dragon… and behind him, the man who built the king.",
+      winChron: "took N'S CASTLE — the king's ZEKROM fell, and GHETSIS raged into ruin!",
+      loseChron: "the castle still stands over the League",
+      lead: "🏰 N fields his wild-caught court — and one hidden ball crackling with ideals. Beat him, and his father does NOT take it well." },
     { key: "myths", tab: "Unova", name: "THE MYTHS OF UNOVA", flair: "UNOVA SPECIAL · Songs & Storms",
       sub: "Unova Special · The storm genies, the colt, the song — and the landlord · 5v5",
       icon: "🎵", face: 645, boost: 1.50, pts: 28, needs: "alder", champ: "ALDER",
@@ -140,6 +228,19 @@
       winChron: "quieted the MYTHS OF UNOVA — genies grounded, the song stilled, LANDORUS bowed!",
       loseChron: "Unova's storms howled another challenger away",
       lead: "🎵 Tornadus and Thundurus tearing the sky, Keldeo and Meloetta holding the line — and LANDORUS to end it." },
+    // ---- ALOLA: Aether Paradise — Lusamine and the Motherbeast.
+    { key: "aether", tab: "Alola", name: "AETHER PARADISE", flair: "ALOLA SPECIAL · The Mother's Love",
+      sub: "Alola Special · Lusamine in Ultra Space — where love means never letting go · 6v6…?",
+      icon: "🧬", face: 793, boost: 1.44, pts: 30, needs: "kukui", champ: "PROF. KUKUI",
+      team: [36, 350, 429, 549, 760, 793], playerSize: 5, reserve: 1,
+      speak: { 5: ["You would take my family from me? After everything I gave them?!",
+                   "N-nngh… the light… so beautiful… NIHILEGO — MAKE US BEAUTIFUL! (Lusamine fuses with the Motherbeast!)"] },
+      quote: "Welcome to Aether Paradise, little wanderer — where every Pokémon is loved forever and ever and ever. You've come to break up my family? How cruel. How ugly. Stay a while… stay FOREVER.",
+      outro: { lose: "…the light let go of me. Gladion… Lillie… what did I almost become?",
+               win: "Stay, little one. Everyone stays. Forever and ever and ever…" },
+      winChron: "broke the spell of AETHER PARADISE — Lusamine's court fell, and the MOTHERBEAST let her go!",
+      loseChron: "the Motherbeast kept its favorite",
+      lead: "🧬 Clefable, Milotic, Mismagius, Lilligant, Bewear — a family that never says goodbye. And in Ultra Space, mother and NIHILEGO stop being two creatures." },
     { key: "tapus", tab: "Alola", name: "THE ISLAND GUARDIANS", flair: "ALOLA SPECIAL · Rites of the Tapu",
       sub: "Alola Special · All four island Tapus, the chimera & the thunderclap · 6v6",
       icon: "🗿", face: 807, boost: 1.54, pts: 32, needs: "kukui", champ: "PROF. KUKUI",
@@ -150,12 +251,34 @@
       lead: "🗿 Tapu Koko, Lele, Bulu and Fini — with Silvally, the type-shifting chimera, and ZERAORA, the thunderclap." },
     { key: "ultra", tab: "Alola", name: "THE ULTRA RIFT", flair: "ALOLA SPECIAL · Beasts from Beyond",
       sub: "Alola Special · Ultra Beasts pour through the wormhole — and the light-eater ascends · 6v6",
-      icon: "☄️", face: 10157, boost: 1.56, pts: 34, needs: "kukui", champ: "PROF. KUKUI",
+      icon: "☄️", face: 10157, boost: 1.56, pts: 34, needs: "kukui", champ: "PROF. KUKUI", after: "aether",
       team: [793, 794, 796, 797, 799, 10157],
       quote: "The sky tears open and the beasts of Ultra Space pour through — parasite, swollen fist, living wire, rocket hull, glutton. And behind them all, drowned in stolen light… ULTRA NECROZMA.",
       winChron: "sealed the ULTRA RIFT — five Ultra Beasts down, and ULTRA NECROZMA's light returned!",
       loseChron: "the Rift swallowed another world's champion",
       lead: "☄️ Nihilego, Buzzwole, Xurkitree, Celesteela and Guzzlord — then ULTRA NECROZMA, blinding and absolute." },
+    // ---- GALAR: the Darkest Day — Rose, then ETERNAMAX Eternatus.
+    { key: "darkest", tab: "Galar", name: "THE DARKEST DAY", flair: "GALAR SPECIAL · Rose's Tomorrow",
+      sub: "Galar Special · Chairman Rose wakes the storm — then the sky itself descends · 2 battles",
+      icon: "🌑", face: 890, boost: 1.6, pts: 36, needs: "leon", champ: "LEON",
+      chain: [
+        { name: "CHAIRMAN ROSE", flair: "🏢 MACRO COSMOS TOWER", icon: "🏢", face: 879, boost: 1.44,
+          team: [601, 863, 589, 598, 879],
+          quote: "Galar's energy runs out in a thousand years. A THOUSAND! How can Leon sleep at night?! The Darkest Day is not a disaster, child — it is a battery. I am simply turning the key early.",
+          outro: { lose: "…Leon believed in you too. Very well. Let tomorrow judge which of us loved Galar more.",
+            win: "You see? Sacrifices must be made — and tonight, you were one of them." } },
+      ],
+      finale: { npc: "ETERNATUS", name: "ETERNATUS", flair: "🌌 THE DARKEST DAY", icon: "🌌", face: 890,
+        quote: "The sky over Hammerlocke splits open, raining red light. Something vast and skeletal uncoils from the clouds — the storm that felled Galar 3,000 years ago, awake and hungry." },
+      team: [890, 10190], reserve: 1,
+      speak: { 1: ["The sky tears — ETERNATUS surges into its ETERNAMAX form, a storm with a heartbeat!",
+                   "Two howls answer from the hills… Zacian and Zamazenta stand with you. NOW — BRING IT DOWN!"] },
+      outro: { lose: "The storm collapses into a single sleeping core. Zacian and Zamazenta bow once — and vanish into the hills.",
+               win: "The Darkest Day swallows Hammerlocke whole. Somewhere below, Rose is smiling." },
+      quote: "Chairman Rose couldn't wait for tomorrow. Fight through Macro Cosmos, then stand in the stadium as the sky comes down — the Darkest Day itself, in a form no ball can hold.",
+      winChron: "ended THE DARKEST DAY — Rose fell, and ETERNAMAX ETERNATUS was brought down over Hammerlocke!",
+      loseChron: "the Darkest Day kept rising",
+      lead: "🌑 Rose fields Macro Cosmos steel. Then ETERNATUS — and what it becomes when the sky finishes opening is the biggest battle in Galar's history." },
     { key: "monarchs", tab: "Galar", name: "MYTHS & MONARCHS", flair: "GALAR SPECIAL · The Uncrowned",
       sub: "Galar Special · The unseen myths and riderless monarchs of the Crown · 6v6",
       icon: "👊", face: 809, boost: 1.56, pts: 34, needs: "leon", champ: "LEON",
@@ -164,6 +287,19 @@
       winChron: "felled Galar's MYTHS & MONARCHS — Zarude, both steeds, Enamorus, Urshifu and MELMETAL!",
       loseChron: "the uncrowned monarchs kept their myths",
       lead: "👊 Zarude, Glastrier and Spectrier, Enamorus and Urshifu — and MELMETAL, the hex-nut titan." },
+    // ---- PALDEA: the Path of Legends — Arven's five Titans.
+    { key: "titans", tab: "Paldea", name: "THE PATH OF LEGENDS", flair: "PALDEA SPECIAL · Arven & the Herba Mystica",
+      sub: "Paldea Special · The five Titan Pokémon guarding the Herba Mystica — for Mabosstiff · 6v6…?",
+      icon: "🥪", face: 977, boost: 1.5, pts: 30, needs: "geeta", champ: "GEETA",
+      team: [950, 962, 968, 984, 978, 977], playerSize: 5, reserve: 1,
+      speak: { 5: ["The little Tatsugiri dives into the lake… and the whole lake stands up.",
+                   "THE FALSE DRAGON'S TRUE BODY — DONDOZO, the last Titan, surfaces!"] },
+      quote: "Arven needs the Herba Mystica — every last one — for Mabosstiff. Five colossal Titans guard them: the stone crab, the roaming bird, the iron worm, the quaking earth… and a 'dragon' the old books drew wrong on purpose. Sandwiches after. Let's go.",
+      outro: { lose: "Mabosstiff barrels into you at full speed, healed and howling. Arven pretends something's in his eye. Best sandwich you've ever earned.",
+               win: "The Titan sinks back below the surface. Arven shoulders his pack — 'we go again tomorrow.'" },
+      winChron: "walked the PATH OF LEGENDS — all five Titans fell, and Mabosstiff ate like a king!",
+      loseChron: "the Titans kept their herbs",
+      lead: "🥪 Klawf on the cliffs, Bombirdier overhead, Orthworm in the sands, Great Tusk in the crater — and a tiny Tatsugiri whose bodyguard is the size of the lake." },
     { key: "dlc", tab: "Paldea", name: "THE TEAL MASK & INDIGO DISK", flair: "PALDEA SPECIAL · Kitakami & Blueberry",
       sub: "Paldea Special · The Loyal Three, the ogre, the poison behind it all — and Terapagos · 6v6",
       icon: "🎭", face: 1024, boost: 1.58, pts: 36, needs: "geeta", champ: "GEETA",
@@ -175,10 +311,28 @@
     { key: "paradox", tab: "Paldea", name: "THE PARADOX GAUNTLET", flair: "PALDEA SPECIAL · Area Zero, Unstuck in Time",
       sub: "Paldea Special · Three trials: the deep past, the far future — then the crystal heart of Area Zero · one squad",
       icon: "⏰", face: 1024, boost: 1.5, pts: 38, needs: "geeta", champ: "GEETA", after: "dlc",
-      gauntlet: true,   // three back-to-back battles — challengeParadox runs it
-      // Trial 3's script: Terapagos looks like one little turtle… then
-      // TERASTALLIZES (10276), then goes STELLAR (10277) — the final test.
-      team: [1024, 10276, 10277],
+      // Battles 1-2 ride `chain`; the finale is the special itself:
+      // Terapagos looks like one little turtle… then TERASTALLIZES (10276),
+      // then goes STELLAR (10277) — the final test.
+      chain: [
+        { name: "PROFESSOR SADA", flair: "🦕 TRIAL 1 · THE DEEP PAST", icon: "🦕", face: 1005, boost: 1.46,
+          team: [984, 985, 986, 987, 989, 1005],   // Great Tusk → Roaring Moon
+          quote: "Welcome to the world before history. I am — I was — Professor Sada. My beasts have never known a trainer… only prey.",
+          outro: { lose: "Magnificent… the ancient world bows to you. But I am only an echo of the past. The future is far less kind.",
+            win: "The past devours the unprepared. Crawl back to your own era." } },
+        { name: "PROFESSOR TURO", flair: "🤖 TRIAL 2 · THE FAR FUTURE", icon: "🤖", face: 1006, boost: 1.5,
+          team: [990, 991, 992, 993, 994, 1006],   // Iron Treads → Iron Valiant
+          quote: "Query: why do you persist? I am the paradigm of Professor Turo. My machines are what Pokémon become when time finishes with them.",
+          outro: { lose: "Calculation complete… defeat acknowledged. What waits beneath the crater is beyond either of us. Go.",
+            win: "The future has no room for you. Deleted." } },
+      ],
+      finale: { npc: "TERAPAGOS", name: "TERAPAGOS", flair: "💎 TRIAL 3 · THE CRYSTAL HEART", icon: "💎", face: 1024,
+        quote: "The cavern glows. Something small crawls out of the light… and the light follows it. This is the final test." },
+      team: [1024, 10276, 10277], reserve: 2,
+      speak: { 1: ["The crystal turtle glows white-hot — TERAPAGOS TERASTALLIZES!"],
+               2: ["Stellar light floods the cavern… ITS FINAL FORM. The true test begins."] },
+      outro: { lose: "The light dims. Terapagos blinks up at you — small again — and bows its head. Area Zero is yours.",
+               win: "Stellar light swallows the chamber. When it fades, you stand at the rim of the crater, empty-handed." },
       quote: "The time machine hums at the bottom of Area Zero. Step in, and it tears you loose — a jungle that predates history, a chrome world that hasn't happened yet, and in both… someone wearing the professor's face. Survive them, and the crystal heart of the crater itself will test you.",
       winChron: "survived THE PARADOX GAUNTLET — both professors' paradoxes fell, and TERAPAGOS terastallized in vain!",
       loseChron: "the timeline snapped shut on another traveler",
@@ -207,6 +361,10 @@
     if (sp.after === "nobles") return "Quell THE FRENZIED NOBLES first — the merchant only shows his hand to Hisui's savior.";
     if (sp.after === "volo") return "Unmask VOLO first — the temple only answers the one who saw through the smile.";
     if (sp.after === "dlc") return "Crack THE TEAL MASK & INDIGO DISK first — the time machine only answers the disk's keeper.";
+    if (sp.after === "flare") return "Shut down THE ULTIMATE WEAPON first — order can't be restored while the countdown runs.";
+    if (sp.after === "zygarde") return "Restore THE ORDER OF KALOS first — AZ only battles when the balance is whole.";
+    if (sp.after === "az") return "Meet AZ first — Lumiose's rebirth begins where his three thousand years end.";
+    if (sp.after === "aether") return "Break the spell of AETHER PARADISE first — the rift only opens for the one who freed Lusamine.";
     if (sp.after) return "Another trial stands before this one.";
     return "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
   }
@@ -252,31 +410,23 @@
     });
   }
 
-  // ⏰ THE PARADOX GAUNTLET — three battles back-to-back with ONE squad
-  // (healed between): the deep past, the far future, then the crystal heart.
-  // Only the finale records the secret; falling anywhere ends the run.
-  const PARADOX_TRIALS = [
-    { name: "PROFESSOR SADA", flair: "🦕 TRIAL 1 · THE DEEP PAST", face: 1005, boost: 1.46,
-      team: [984, 985, 986, 987, 989, 1005],   // Great Tusk → Roaring Moon
-      quote: "Welcome to the world before history. I am — I was — Professor Sada. My beasts have never known a trainer… only prey.",
-      outro: { lose: "Magnificent… the ancient world bows to you. But I am only an echo of the past. The future is far less kind.",
-        win: "The past devours the unprepared. Crawl back to your own era." } },
-    { name: "PROFESSOR TURO", flair: "🤖 TRIAL 2 · THE FAR FUTURE", face: 1006, boost: 1.5,
-      team: [990, 991, 992, 993, 994, 1006],   // Iron Treads → Iron Valiant
-      quote: "Query: why do you persist? I am the paradigm of Professor Turo. My machines are what Pokémon become when time finishes with them.",
-      outro: { lose: "Calculation complete… defeat acknowledged. What waits beneath the crater is beyond either of us. Go.",
-        win: "The future has no room for you. Deleted." } },
-  ];
+  // ⚔ STORY CHAINS — the mainline games' big set-piece arcs, run as
+  // back-to-back battles with ONE squad of six (fully healed between, no
+  // swaps). A special declares `chain: [trial, …]` for everything BEFORE
+  // the finale; the finale is the special itself (sp.team/boost/reserve/
+  // speak/outro — the only battle that records the secret + points).
+  // Falling anywhere ends the run. The Paradox Gauntlet, N's Castle, the
+  // Darkest Day, the Ultimate Weapon and the Delta Episode all ride this.
   function eraIntro(t, onGo) {
     const src = t.face ? (SP[t.face] || Store.sprite(t.face)) : null;
     const lay = el("div", { class: "league-intro final legend-intro" }, [
       el("div", { class: "league-intro-inner" }, [
-        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, "⏰"),
+        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, "⚔"),
         el("div", { class: "league-intro-flair" }, t.flair),
         el("div", { class: "league-intro-rank" }, t.name),
         el("div", { class: "league-intro-quote" }, "“" + t.quote + "”"),
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, "⏰ STEP THROUGH"),
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, (t.icon || "⚔") + " STEP THROUGH"),
           el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
         ]),
       ]),
@@ -285,48 +435,46 @@
     sfx("fanfare");
     requestAnimationFrame(() => lay.classList.add("go"));
   }
-  function challengeParadox(sp, attId) {
-    if (Duel.poolFor(attId).length < 6) { alert("The Paradox Gauntlet runs one squad of 6 through three trials — catch 6 of your own first (Safari Zone)."); return; }
+  function challengeChain(sp, attId) {
+    const total = (sp.chain || []).length + 1;
+    if (Duel.poolFor(attId).length < 6) { alert(sp.name + " runs one squad of 6 through " + total + " battles — catch 6 of your own first (Safari Zone)."); return; }
     specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: 6, max: 6,
-        title: "THE PARADOX GAUNTLET — pick your ONE squad of 6",
-        hint: "⏰ The same six carry you through the past, the future and the crystal heart — fully healed between trials, but no swaps.",
-        onDone: (ids) => runParadoxTrial(sp, attId, ids, 0) });
+        title: sp.name + " — pick your ONE squad of 6",
+        hint: sp.icon + " The same six carry the whole story (" + total + " battles) — fully healed between, but no swaps.",
+        onDone: (ids) => runChainBattle(sp, attId, ids, 0) });
     });
   }
-  function runParadoxTrial(sp, attId, ids, i) {
+  function runChainBattle(sp, attId, ids, i) {
+    const total = (sp.chain || []).length + 1;
     const fell = () => {
-      try { Store.update((s) => Store.chron(s, "⏰", ((Store.attendee(attId) || {}).name || attId) + " — " + sp.loseChron + " (trial " + (i + 1) + "/3).")); } catch (_) {}
+      try { Store.update((s) => Store.chron(s, sp.icon, ((Store.attendee(attId) || {}).name || attId) + " — " + sp.loseChron + " (battle " + (i + 1) + "/" + total + ").")); } catch (_) {}
       Router.render();
     };
-    if (i < 2) {
-      const t = PARADOX_TRIALS[i];
+    if (i < (sp.chain || []).length) {
+      const t = sp.chain[i];
       eraIntro(t, () => {
-        const go = (leadIds) => Duel.start({ mode: "local", title: "the Paradox Gauntlet (" + (i + 1) + "/3)",
+        const go = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase() + " (" + (i + 1) + "/" + total + ")",
           a: { units: [{ attId: attId, monIds: leadIds }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: t.boost, vsFace: t.face, outro: t.outro }] },
-          onResult: (w) => { if (w === "a") runParadoxTrial(sp, attId, ids, i + 1); else fell(); } });
+          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: t.boost, vsFace: t.face,
+            reserve: t.reserve || 0, speak: t.speak || null, outro: t.outro || null }] },
+          onResult: (w) => { if (w === "a") runChainBattle(sp, attId, ids, i + 1); else fell(); } });
         if (i === 0) { go(ids); return; }
-        Duel.pickLead({ attId: attId, ids: ids, title: "Trial " + (i + 1) + "/3 — " + t.name,
-          hint: "⏰ Healed and ready. Choose who leads into " + (i === 1 ? "the future" : "the trial") + ".", onDone: go });
+        Duel.pickLead({ attId: attId, ids: ids, title: "Battle " + (i + 1) + "/" + total + " — " + t.name,
+          hint: (t.icon || sp.icon) + " Healed and ready. Choose your lead.", onDone: go });
       });
     } else {
-      // 💎 The finale: Terapagos looks like one small turtle — then the
-      // reserve reveals do their work: TERASTAL, then STELLAR.
-      eraIntro({ name: "TERAPAGOS", flair: "💎 TRIAL 3 · THE CRYSTAL HEART", face: 1024,
-        quote: "The cavern glows. Something small crawls out of the light… and the light follows it. This is the final test." }, () => {
-        Duel.pickLead({ attId: attId, ids: ids, title: "The final test — TERAPAGOS",
-          hint: "💎 It looks so small. Choose your lead anyway.", onDone: (leadIds) => {
-            Duel.start({ mode: "local", title: "the final test",
-              secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
-              a: { units: [{ attId: attId, monIds: leadIds }] },
-              b: { units: [{ npc: "TERAPAGOS", ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: 1024, reserve: 2,
-                speak: { 1: ["The crystal turtle glows white-hot — TERAPAGOS TERASTALLIZES!"],
-                         2: ["Stellar light floods the cavern… ITS FINAL FORM. The true test begins."] },
-                outro: { lose: "The light dims. Terapagos blinks up at you — small again — and bows its head. Area Zero is yours.",
-                         win: "Stellar light swallows the chamber. When it fades, you stand at the rim of the crater, empty-handed." } }] },
-              onResult: () => Router.render() });
-          } });
+      const fin = sp.finale || { npc: sp.name, name: sp.name, flair: sp.flair, face: sp.face, quote: sp.quote, icon: sp.icon };
+      eraIntro(fin, () => {
+        const start = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase(),
+          secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
+          a: { units: [{ attId: attId, monIds: leadIds }] },
+          b: { units: [{ npc: fin.npc || sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: fin.face || sp.face,
+            reserve: sp.reserve || 0, speak: sp.speak || null, outro: sp.outro || null }] },
+          onResult: () => Router.render() });
+        if (!(sp.chain || []).length) { start(ids); return; }
+        Duel.pickLead({ attId: attId, ids: ids, title: "The finale — " + (fin.npc || sp.name),
+          hint: (fin.icon || sp.icon) + " The last battle. Choose your lead.", onDone: start });
       });
     }
   }
@@ -353,8 +501,8 @@
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, sp.icon + " " + a.name))) : null,
         open
           ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm",
-              onClick: () => (sp.gauntlet ? challengeParadox(sp, attId) : challengeSpecial(sp, attId)) },
-              (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + (sp.gauntlet ? " (3 trials)" : " (" + n + "v" + n + ")"))
+              onClick: () => (sp.chain ? challengeChain(sp, attId) : challengeSpecial(sp, attId)) },
+              (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + (sp.chain ? " (" + (sp.chain.length + 1) + " battles)" : " (" + n + "v" + n + ")"))
           : el("div", { class: "legend-lock" }, "🔒 " + specialLockText(sp)),
       ]),
     ]);
