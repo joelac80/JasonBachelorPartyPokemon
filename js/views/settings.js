@@ -351,12 +351,19 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "⚙️ Settings"),
-      el("p", { class: "page-sub" }, "Tune the party, teams, and events. Manage your data."),
+      el("p", { class: "page-sub" }, "Your room, trainer and alerts up top; backups below — and the party-admin corner tucked under 🎉 Party Settings."),
     ]));
     root.appendChild(syncSection());
-    root.appendChild(partySection());
-    root.appendChild(teamsSection());
-    root.appendChild(eventsSection());
+    // 🎉 PARTY SETTINGS — everything about the PARTY rather than the app:
+    // the title on the home hero, drinking-game teams, Victory Road events.
+    // Collapsed by default: one organizer touches these, everyone else never.
+    root.appendChild(el("details", { class: "sync-help settings-party" }, [
+      el("summary", {}, "🎉 Party Settings — title, teams & party events"),
+      el("p", { class: "hint" }, "The organizer's corner. These name the party on the home page and drive the party-night games (teams, Victory Road points). App things — room, sync, alerts, backups — live outside this box."),
+      partySection(),
+      teamsSection(),
+      eventsSection(),
+    ]));
     root.appendChild(dataSection());
 
     // While you're actively editing a field here, hold off any live-sync
