@@ -8,9 +8,40 @@
   const { el } = U;
   let liveUnsub = null;   // so re-rendering Home doesn't stack live-battle subscribers
   let roomUnsub = null;   // ditto for the hero's live sync-status line
+  let hereUnsub = null;   // ditto for the 🟢 here-now ticker
 
   function view(root) {
     const p = Store.state.party;
+
+    // 🟢 HERE NOW — a ticker across the top of Home: everyone signed in on
+    // their phone right now. Tap a face to fire a challenge at them without
+    // leaving the page (same single/pair/double picker as the Arena).
+    if (window.Sync && Sync.onPresence) {
+      const hereHost = el("div", {});
+      root.appendChild(hereHost);
+      if (hereUnsub) { try { hereUnsub(); } catch (_) {} hereUnsub = null; }
+      const paintHere = (list) => {
+        hereHost.innerHTML = "";
+        if (!Sync.isLive || !Sync.isLive()) return;
+        const meC = Sync.myClientId();
+        const others = (list || []).filter((q) => q.clientId !== meC && q.attId);
+        if (!others.length) return;                        // quiet when you're alone
+        hereHost.appendChild(el("div", { class: "here-ticker" },
+          [el("span", { class: "here-ticker-lab" }, "🟢 Here now")].concat(others.map((q) => {
+            const a = Store.attendee(q.attId);
+            const nm = (q.name || (a && a.name) || "Trainer").split(" ")[0];
+            const src = a && Store.favSprite ? Store.favSprite(a) : "";
+            return el("button", { class: "here-chip", title: "Challenge " + nm + " to a duel", onClick: () => {
+              if (window.QuickChallenge) QuickChallenge(q, { onSent: (full) => U.toast("🎮 Challenge sent to " + full + " — waiting on their phone!") });
+            } }, [
+              src ? el("img", { class: "here-chip-img", src: src, alt: "" }) : el("span", { class: "here-chip-dot" }),
+              el("span", { class: "here-chip-nm" }, nm),
+              el("span", { class: "here-chip-sword" }, "⚔"),
+            ]);
+          }))));
+      };
+      hereUnsub = Sync.onPresence(paintHere);
+    }
 
     // Live-battle strip — lists EVERY room battle currently on, so anyone who
     // dismissed the alert can pick which one to jump into and watch.

@@ -2286,3 +2286,18 @@ html, body { overscroll-behavior-y: contain; }
 .lb-score { text-align: center; min-width: 44px; }
 .lb-score-n { display: block; font-family: var(--pixel, monospace); font-weight: 800; font-size: 20px; }
 .lb-score-l { display: block; font-size: 10px; color: var(--ink-dim); letter-spacing: 0.6px; text-transform: uppercase; }
+
+/* 🟢 here-now ticker on Home — a scrollable strip of tappable trainers */
+.here-ticker { display: flex; align-items: center; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: 8px 10px; margin: 8px 0 10px; border: 2px solid var(--line); border-radius: 999px; background: var(--paper);
+  scrollbar-width: none; }
+.here-ticker::-webkit-scrollbar { display: none; }
+.here-ticker-lab { font-family: var(--pixel, monospace); font-weight: 800; font-size: 11px; letter-spacing: 0.5px;
+  color: #2e8b3d; white-space: nowrap; flex: none; }
+.here-chip { display: flex; align-items: center; gap: 6px; flex: none; border: 1.5px solid var(--line);
+  border-radius: 999px; background: var(--paper-hi, var(--paper)); padding: 3px 10px 3px 4px; cursor: pointer;
+  color: var(--ink); font-weight: 700; font-size: 12px; }
+.here-chip:active { transform: scale(0.96); }
+.here-chip-img { width: 26px; height: 26px; image-rendering: pixelated; }
+.here-chip-dot { width: 10px; height: 10px; border-radius: 50%; background: #2e8b3d; margin: 0 6px; }
+.here-chip-sword { opacity: 0.6; font-size: 11px; }

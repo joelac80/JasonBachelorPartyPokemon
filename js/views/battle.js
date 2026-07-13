@@ -45,6 +45,47 @@
     ]);
   }
 
+  // 🎮 Shared challenge launcher — the Arena's "here now" grid and the Home
+  // ticker both fire it. Opens the format picker (single / pair / double)
+  // and sends the remote challenge to that trainer's phone.
+  function challengePresence(p, opts) {
+    opts = opts || {};
+    const a = Store.attendee(p.attId);
+    const nm = p.name || (a && a.name) || "Trainer";
+    const me = window.Sync && Sync.getMe();
+    if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+    const sent = (extra) => {
+      Sync.sendChallenge(p.clientId, p.attId, nm, (opts.event || "").trim(), extra);
+      if (opts.onSent) { try { opts.onSent(nm); } catch (_) {} }
+    };
+    let fmt;
+    const body = el("div", { class: "chal-modal" }, [
+      el("div", { class: "chal-line" }, "Challenge " + nm + " to…"),
+      el("div", { class: "toolbar" }, [
+        el("button", { class: "btn primary", onClick: () => { fmt.close();
+          Duel.pickParty({ attId: me, title: "Your party vs " + nm, onDone: (ids) => sent({ kind: "duel", party: ids }) });
+        } }, "⚔ Single — party up to 6"),
+        el("button", { class: "btn primary", onClick: () => { fmt.close();
+          Duel.pickParty({ attId: me, min: 3, max: 3, title: "Your 3 Pokémon (pair battle)", hint: "You and your partner each bring 3 — one each on the field, 2v2, switch to your bench.", onDone: (mine) => {
+            Duel.pickTrainer({ exclude: [me], title: "Pick your partner", hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.", onDone: (ally) => {
+              const allyName = (Store.attendee(ally) || {}).name || "Partner";
+              Duel.pickParty({ attId: ally, min: 3, max: 3, title: allyName + "'s 3 Pokémon", onDone: (theirs) => {
+                sent({ kind: "duel", party: mine, pairAtt: ally, pairParty: theirs });
+              } });
+            } });
+          } });
+        } }, "🤝 Pair — bring a partner (3 each)"),
+        el("button", { class: "btn primary", onClick: () => { fmt.close();
+          Duel.pickParty({ attId: me, min: 4, max: 4, title: "Pick FOUR Pokémon (double battle)", hint: "Your first two lead the field (2v2); the other two ride the bench. Tap in order.", onDone: (ids) => {
+            sent({ kind: "duel", party: ids, solo2: true });
+          } });
+        } }, "🐾 Double — solo (4 Pokémon)"),
+      ]),
+    ]);
+    fmt = Modal.open("🎮 Pokémon Duel", body, null, {});
+  }
+  window.QuickChallenge = challengePresence;
+
   function view(root) {
     const sideA = [], sideB = [];
     let eventLabel = "";
@@ -207,40 +248,13 @@
           // their turns on their own phone. Double battles bring a partner:
           // if the partner is here on their own phone, THEY play their turns.
           const duelBtn = el("button", { class: "btn primary sm" }, "🎮 Duel");
-          const sent = (extra) => {
-            Sync.sendChallenge(p.clientId, p.attId, nm, (eventLabel || "").trim(), extra);
-            duelBtn.disabled = true; duelBtn.textContent = "Waiting…";
-            setTimeout(() => { if (duelBtn.isConnected) { duelBtn.disabled = false; duelBtn.textContent = "🎮 Duel"; } }, 15000);
-          };
-          duelBtn.addEventListener("click", () => {
-            const me = Sync.getMe();
-            if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
-            let fmt;
-            const body = el("div", { class: "chal-modal" }, [
-              el("div", { class: "chal-line" }, "Challenge " + nm + " to…"),
-              el("div", { class: "toolbar" }, [
-                el("button", { class: "btn primary", onClick: () => { fmt.close();
-                  Duel.pickParty({ attId: me, title: "Your party vs " + nm, onDone: (ids) => sent({ kind: "duel", party: ids }) });
-                } }, "⚔ Single — party up to 6"),
-                el("button", { class: "btn primary", onClick: () => { fmt.close();
-                  Duel.pickParty({ attId: me, min: 3, max: 3, title: "Your 3 Pokémon (pair battle)", hint: "You and your partner each bring 3 — one each on the field, 2v2, switch to your bench.", onDone: (mine) => {
-                    Duel.pickTrainer({ exclude: [me], title: "Pick your partner", hint: "They fight beside you. If they're in the room on their own phone, they'll play their own turns.", onDone: (ally) => {
-                      const allyName = (Store.attendee(ally) || {}).name || "Partner";
-                      Duel.pickParty({ attId: ally, min: 3, max: 3, title: allyName + "'s 3 Pokémon", onDone: (theirs) => {
-                        sent({ kind: "duel", party: mine, pairAtt: ally, pairParty: theirs });
-                      } });
-                    } });
-                  } });
-                } }, "🤝 Pair — bring a partner (3 each)"),
-                el("button", { class: "btn primary", onClick: () => { fmt.close();
-                  Duel.pickParty({ attId: me, min: 4, max: 4, title: "Pick FOUR Pokémon (double battle)", hint: "Your first two lead the field (2v2); the other two ride the bench. Tap in order.", onDone: (ids) => {
-                    sent({ kind: "duel", party: ids, solo2: true });
-                  } });
-                } }, "🐾 Double — solo (4 Pokémon)"),
-              ]),
-            ]);
-            fmt = Modal.open("🎮 Pokémon Duel", body, null, {});
-          });
+          duelBtn.addEventListener("click", () => challengePresence(p, {
+            event: (eventLabel || "").trim(),
+            onSent: () => {
+              duelBtn.disabled = true; duelBtn.textContent = "Waiting…";
+              setTimeout(() => { if (duelBtn.isConnected) { duelBtn.disabled = false; duelBtn.textContent = "🎮 Duel"; } }, 15000);
+            },
+          }));
           // (The old remote "quick call" button is gone — real duels cover
           // phone-to-phone; the referee matchup below still logs live events.)
           return el("div", { class: "here-card" }, [
