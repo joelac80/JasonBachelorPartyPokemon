@@ -47,7 +47,19 @@
       R.league.forEach((k) => seq.push({ t: "stage", key: k, R: R }));
       if (R.peak) seq.push({ t: "stage", key: R.peak, R: R, peak: 1 });
     });
+    // 🕰 The ages walk ends where it began: after the last Champion, the road
+    // leads home to Pallet Town — PROFESSOR OAK is the true final boss. (His
+    // step keeps the last region's R so the border gate never re-triggers.)
+    if (run.region === "ages" && regions.length) {
+      seq.push({ t: "stage", key: "oak", R: regions[regions.length - 1], oak: 1 });
+    }
     return seq;
+  }
+  // The professor's Stadium squad, straight from the canon-trainer registry.
+  function oakStage() {
+    const t = (window.CANON_TRAINERS || []).find((x) => x.name === "PROF. OAK");
+    return { key: "oak", rank: "PROFESSOR", name: "OAK", boost: 1.3,
+      team: (t && t.team) || [128, 103, 59, 130, 34, 149], quote: t && t.quote };
   }
   function nextStep(run) {
     const seq = seqFor(run);
@@ -320,7 +332,7 @@
       newKind === "master"
         ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — every gym, every Elite Four, every Champion (RED included): 114 battles on one Lv 14→100 curve, every team randomized, permadeath the whole way. The ultimate run.")
         : newKind === "ages"
-          ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey.")
+          ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey — and at the very end, the road leads home: PROFESSOR OAK waits in Pallet Town as the LAST BOSS.")
           : newKind === "random"
             ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
             : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
@@ -348,7 +360,7 @@
         el("div", {}, newKind === "master"
           ? "• Nine regions in canon order: 68 gyms, nine leagues, RED on Mt. Silver — the LAST Champion crowns the MASTER."
           : newKind === "ages"
-            ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. The last Champion crowns the TRAINER OF THE AGES."
+            ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. After the last Champion, one road remains: PROFESSOR OAK in Pallet Town — beat the LAST BOSS to be crowned TRAINER OF THE AGES."
             : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
         el("div", {}, "• Catch as many as you want… but the crown board ranks by FEWEST catches."),
       ]),
@@ -614,8 +626,22 @@
       }
       return;
     }
-    const st = stageFor(step.key);
     const ages = run.region === "ages";
+    // 🔬 THE LAST BOSS — Pallet Town. Only the ages walk comes back here.
+    if (step.oak) {
+      const ok = oakStage();
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "🔬 PALLET TOWN — where it all began"));
+      next.appendChild(el("p", { class: "hint" }, "Nine regions. Nine teams. Every Champion has fallen — and the road ends at a small lab in Pallet Town. The professor who handed over the very first partner has watched the whole journey… and he asks for one last battle."));
+      next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, ok.team, ok.team.length, "stage-oak").map((id) =>
+        Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: monName(id) }) : null)));
+      ok.quote ? next.appendChild(el("div", { class: "enc-quote" }, "“" + ok.quote + "”")) : null;
+      next.appendChild(el("div", { class: "safari-actions" }, [
+        el("button", { class: "btn primary", onClick: () => battleStage(run, ok) }, "⚔ THE LAST BOSS — battle PROF. OAK"),
+      ]));
+      next.appendChild(el("p", { class: "hint" }, "Beat him and the TRAINER OF THE AGES crown is yours — permadeath to the very last turn."));
+      return;
+    }
+    const st = stageFor(step.key);
     if (step.peak) {
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🗻 MT. SILVER — the silent one"));
       if (st) {
@@ -644,7 +670,7 @@
       next.appendChild(el("p", { class: "hint" }, isFinal
         ? (master
           ? "THE FINAL BATTLE of the master gauntlet — beat " + st.name + " and every trainer in the saga has fallen to one box."
-          : "THE FINAL BATTLE of the ages — beat " + st.name + " and nine generations of teams share one unbroken crown.")
+          : "Beat " + st.name + " and every league in the saga has fallen — then one last road: home to Pallet Town, where PROFESSOR OAK waits.")
         : step.key === R.champKey
           ? (master ? "Beat the Champion and the next region opens — the gauntlet rolls on."
             : ages ? "Beat the Champion and Gen " + R.gen + " closes — a new generation (and a brand-new team) waits at the border."

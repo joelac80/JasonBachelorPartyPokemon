@@ -1203,10 +1203,12 @@
         if (r.region === "ages") {                             // 🕰 Through the Ages
           const last = REG[REG.length - 1];
           const R = REG.find((x) => x.champKey === key || x.peak === key);
-          if (last && key === last.champKey) {
+          if (key === "oak") {                                 // 🔬 THE LAST BOSS — Pallet Town
             const teams = 1 + ((r.retired || []).length);
-            r.over = "ages"; r.doneTs = enshrine("ages", "nuzlocke-ages", last.champ, "Trainer of the Ages", "Nine generations");
-            Store.chron(s, "🕰", "TRAINER OF THE AGES!!! " + nm + " walked the whole saga — nine generations, " + teams + " teams, one unbroken journey with permadeath on. " + tally + " across the ages. The story is complete.");
+            r.over = "ages"; r.doneTs = enshrine("ages", "nuzlocke-ages", "PROF. OAK", "Trainer of the Ages", "Nine generations");
+            Store.chron(s, "🕰", "TRAINER OF THE AGES!!! " + nm + " walked the whole saga — nine generations, " + teams + " teams — and back home in Pallet Town, PROFESSOR OAK himself fell to the trainer he started. " + tally + " across the ages, permadeath to the last turn. The story is complete.");
+          } else if (last && key === last.champKey) {
+            Store.chron(s, "🏆", nm + " conquered " + (R ? R.name : "the last region") + " — every league in the saga has fallen. One road remains: home to Pallet Town, where Professor Oak is waiting…");
           } else if (R && key === R.champKey) {
             Store.chron(s, "🏆", nm + " closed the book on Gen " + R.gen + " — " + R.name + " conquered in the THROUGH-THE-AGES NUZLOCKE. A new generation calls…");
           } else if (R && key === R.peak) {
