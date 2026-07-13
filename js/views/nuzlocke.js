@@ -331,51 +331,69 @@
     return el("div", { class: "nuz-mon" + (m.dead ? " dead" : ""), title: monName(m.id) + (m.dead ? " — RIP" : "") }, [
       Store.sprite(m.id) ? el("img", { src: Store.sprite(m.id), alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
       m.dead ? el("span", { class: "nuz-rip" }, "🪦") : null,
-      canEvo ? el("button", { class: "nuz-evo-btn", title: "Ready to evolve!", onClick: () => promptEvolve(run, m) }, "⬆") : null,
+      canEvo ? el("button", { class: "nuz-evo-btn", title: "Ready to evolve!", onClick: () => promptEvolve(run) }, "⬆") : null,
       el("span", { class: "nuz-mon-n" }, monName(m.id)),
     ]);
   }
 
-  // 🎉 "What? Squirtle is evolving!" — the run's level cap crossed a real
-  // evolution level. Choice-capable (Eevee), declinable (an Everstone moment:
-  // no more nagging, but the box card keeps its ⬆).
-  function promptEvolve(run, m) {
-    const targets = evoTargetsFor(m, run);
-    if (!targets.length || evoOpen) return;
+  // 🎉 THE EVOLUTION CHECK — one modal for the WHOLE box. Every living mon
+  // past its evolution level gets a row: tap to evolve (instant, with the
+  // fanfare — no full cinematic; there can be a lot of these at once), or
+  // leave it be. Closing the modal Everstones whatever's left (no more
+  // nagging, but each box card keeps its ⬆ to change your mind later).
+  function promptEvolve(run) {
+    if (evoOpen || !run || run.over) return;
+    const eligible = run.box.filter((x) => !x.dead && evoTargetsFor(x, run).length);
+    if (!eligible.length) return;
     evoOpen = true;
     let ctrl;
-    const done = () => { evoOpen = false; Router.render(); };
-    const evolveTo = (to) => {
-      ctrl.close();
-      const before = m.id;
-      Store.nuzEvolve(me, before, to);
-      const type = ((DEX[to] || {}).t || [])[0] || "";
-      if (window.EvoFX && EvoFX.play) {
-        EvoFX.play({ beforeSrc: Store.sprite(before), afterSrc: Store.sprite(to),
-          beforeName: monName(before), afterName: monName(to), type: type, onComplete: done });
-        // Safety valve: if the cinematic is interrupted (navigation, etc.)
-        // its onComplete never fires — don't let that wedge future prompts.
-        setTimeout(() => { if (evoOpen) done(); }, 9000);
-      } else done();
+    const acted = {};                        // box slots already evolved here
+    const settle = () => {
+      // Whatever wasn't touched holds its Everstone — the auto-check stays quiet.
+      eligible.forEach((m, i) => { if (!acted[i] && !m.dead) { try { Store.nuzNoEvo(me, m.id); } catch (_) {} } });
+      evoOpen = false; Router.render();
     };
+    const rows = eligible.map((m, i) => {
+      const targets = evoTargetsFor(m, run);
+      const row = el("div", { class: "nuz-evocheck-row" });
+      const evolveTo = (to) => {
+        if (acted[i]) return;
+        acted[i] = 1;
+        const before = m.id;
+        Store.nuzEvolve(me, before, to);
+        sfx("fanfare");
+        row.innerHTML = "";
+        row.classList.add("done");
+        row.appendChild(el("img", { class: "evo-opt-img", src: Store.sprite(before) || "", alt: "" }));
+        row.appendChild(el("span", { class: "nuz-evocheck-arrow" }, "➜"));
+        row.appendChild(el("img", { class: "evo-prompt-img", src: Store.sprite(to) || "", alt: "" }));
+        row.appendChild(el("span", { class: "nuz-evocheck-note" }, "✨ " + monName(before) + " evolved into " + monName(to) + "!"));
+      };
+      row.appendChild(Store.sprite(m.id) ? el("img", { class: "evo-prompt-img", src: Store.sprite(m.id), alt: "" }) : el("span", {}, "◓"));
+      row.appendChild(el("div", { class: "nuz-evocheck-body" }, [
+        el("div", { class: "nuz-evocheck-name" }, monName(m.id)),
+        el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, targets.map((t) =>
+          el("button", { class: "btn primary sm", onClick: () => evolveTo(t.to) }, [
+            Store.sprite(t.to) ? el("img", { class: "evo-opt-img", src: Store.sprite(t.to), alt: "" }) : null,
+            " " + monName(t.to) + " (Lv " + t.lvl + ")",
+          ]))),
+      ]));
+      return row;
+    });
     const body = el("div", { class: "modal-form" }, [
-      el("div", { class: "evo-prompt-head" }, [
-        Store.sprite(m.id) ? el("img", { class: "evo-prompt-img", src: Store.sprite(m.id), alt: "" }) : null,
-        el("p", { class: "hint" }, "🎉 The run has reached Lv " + runLevel(run) + " — " + monName(m.id) + " is past its evolution level!"),
+      el("p", { class: "hint" }, "🎉 The run has reached Lv " + runLevel(run) + " — " +
+        (eligible.length > 1 ? eligible.length + " Pokémon in the box are" : monName(eligible[0].id) + " is") +
+        " past an evolution level! Evolve them now, or close to hold Everstones (the ⬆ on each box card stays)."),
+      el("div", { class: "nuz-evocheck-list" }, rows),
+      el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+        el("button", { class: "btn primary", onClick: () => ctrl.close() }, "Done"),
       ]),
-      el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, targets.map((t) =>
-        el("button", { class: "btn primary", onClick: () => evolveTo(t.to) }, [
-          Store.sprite(t.to) ? el("img", { class: "evo-opt-img", src: Store.sprite(t.to), alt: "" }) : null,
-          " Evolve into " + monName(t.to) + " (Lv " + t.lvl + ")",
-        ])).concat([
-        el("button", { class: "btn subtle", onClick: () => { ctrl.close(); Store.nuzNoEvo(me, m.id); evoOpen = false; Router.render(); } }, "Not now (hold an Everstone)"),
-      ])),
     ]);
-    ctrl = Modal.open("🎉 " + monName(m.id) + " is evolving!", body, null, { noFooter: true });
+    ctrl = Modal.open("🎉 Evolution check!", body, null, { noFooter: true, onClose: settle });
   }
-  // Auto-offer the first eligible evolution — never over a battle or modal;
-  // if one's up (the gym win is still playing out), keep checking until the
-  // screen clears, then pop the moment.
+  // Auto-run the evolution check — never over a battle or modal; if one's up
+  // (the gym win is still playing out), keep checking until the screen
+  // clears, then pop the moment. Only mons that haven't declined count.
   function checkEvolutions(run, tries) {
     if (evoOpen || !/^#\/nuzlocke/.test(location.hash)) return;
     if (document.querySelector(".battle, .modal-overlay, .evo-stage")) {
@@ -384,8 +402,8 @@
     }
     const r = Store.nuzRun(me);
     if (!r || r.over) return;
-    const m = r.box.find((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length);
-    if (m) promptEvolve(r, m);
+    const fresh = r.box.some((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length);
+    if (fresh) promptEvolve(r);
   }
 
   // ── Battles — all report to the RUN, never the real ladder ────────────────

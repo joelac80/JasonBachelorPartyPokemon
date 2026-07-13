@@ -86,9 +86,19 @@
       winChron: "kept the SINNOH VIGIL — the lake spirits, Cresselia, Manaphy and REGIGIGAS all fell!",
       loseChron: "the Vigil of Sinnoh stood unbroken",
       lead: "🌙 Uxie, Mesprit and Azelf — then Cresselia and Manaphy, and REGIGIGAS, the sleeping Colossus." },
+    { key: "nobles", tab: "Sinnoh", name: "THE FRENZIED NOBLES", flair: "HISUI SPECIAL · Lords & Ladies of Old",
+      sub: "Hisui Special · Through the rift — the five frenzied Nobles of ancient Sinnoh · 5v5",
+      icon: "🏔", face: 900, boost: 1.46, pts: 30, needs: "cynthia", champ: "CYNTHIA",
+      team: [900, 10237, 10230, 10232, 10243],
+      quote: "Lightning splits the old sky and the wardens cry out — the Nobles are FRENZIED, golden and blind with it. Kleavor rages in the fieldlands. Calm them the only way this era knows how.",
+      outro: { lose: "The golden light fades… the Nobles kneel, calm at last. The wardens will sing of this.",
+        win: "The frenzy takes the fieldlands. Run, trainer — and come back braver." },
+      winChron: "quelled all five FRENZIED NOBLES of Hisui — Kleavor's rage broke first, Avalugg's last!",
+      loseChron: "the frenzied Nobles of Hisui raged on",
+      lead: "🏔 Lord Kleavor, Lady Lilligant, Lord Arcanine, Lord Electrode and Lord Avalugg — all five, golden-eyed and frenzied." },
     { key: "volo", tab: "Sinnoh", name: "VOLO", flair: "SINNOH SPECIAL · The Ginkgo Guild Merchant",
       sub: "Sinnoh Special · The friendly antique dealer finally shows his hand · 6v6…?",
-      icon: "⚱️", face: 445, boost: 1.42, pts: 34, needs: "cynthia", champ: "CYNTHIA",
+      icon: "⚱️", face: 445, boost: 1.42, pts: 34, needs: "cynthia", champ: "CYNTHIA", after: "nobles",
       // What the card admits to: six. What he's hiding behind his back: the
       // Renegade — twice. Party order IS the script: Garchomp 6th ("that's his
       // ace, it's over"), then Giratina Altered, then… Origin.
@@ -105,19 +115,9 @@
         win: "Ah — don't look so crushed. Every relic I own was taken from someone who thought they'd win." },
       loseChron: "VOLO tucked his relics away, smiling — 'another time, perhaps'",
       lead: "⚱️ Spiritomb, Roserade, Togekiss, Hisuian Arcanine, Lucario… and a Garchomp to rival Cynthia's. Surely that's everything. Surely." },
-    { key: "nobles", tab: "Sinnoh", name: "THE FRENZIED NOBLES", flair: "HISUI SPECIAL · Lords & Ladies of Old",
-      sub: "Hisui Special · Through the rift — the five frenzied Nobles of ancient Sinnoh · 5v5",
-      icon: "🏔", face: 900, boost: 1.46, pts: 30, needs: "cynthia", champ: "CYNTHIA",
-      team: [900, 10237, 10230, 10232, 10243],
-      quote: "Lightning splits the old sky and the wardens cry out — the Nobles are FRENZIED, golden and blind with it. Kleavor rages in the fieldlands. Calm them the only way this era knows how.",
-      outro: { lose: "The golden light fades… the Nobles kneel, calm at last. The wardens will sing of this.",
-        win: "The frenzy takes the fieldlands. Run, trainer — and come back braver." },
-      winChron: "quelled all five FRENZIED NOBLES of Hisui — Kleavor's rage broke first, Avalugg's last!",
-      loseChron: "the frenzied Nobles of Hisui raged on",
-      lead: "🏔 Lord Kleavor, Lady Lilligant, Lord Arcanine, Lord Electrode and Lord Avalugg — all five, golden-eyed and frenzied." },
     { key: "almighty", tab: "Sinnoh", name: "THE ALMIGHTY SINNOH", flair: "HISUI SPECIAL · Origins of Time & Space",
       sub: "Hisui Special · The true forms of the creation dragons — and whatever spoke through the rift · 3v3…?",
-      icon: "⏳", face: 10245, boost: 1.55, pts: 38, needs: "cynthia", champ: "CYNTHIA", after: "nobles",
+      icon: "⏳", face: 10245, boost: 1.55, pts: 38, needs: "cynthia", champ: "CYNTHIA", after: "volo",
       // The card admits to the two dragons + one more slot. The one more slot
       // is the voice from the rift itself.
       team: [10245, 10246, 493],
@@ -193,7 +193,8 @@
   }
   function specialLockText(sp) {
     if (sp.gate === "legends9") return "Conquer all NINE Legendary Challenges to tear open the rings.";
-    if (sp.after === "nobles") return "Quell THE FRENZIED NOBLES first — the temple only answers their keeper.";
+    if (sp.after === "nobles") return "Quell THE FRENZIED NOBLES first — the merchant only shows his hand to Hisui's savior.";
+    if (sp.after === "volo") return "Unmask VOLO first — the temple only answers the one who saw through the smile.";
     if (sp.after) return "Another trial stands before this one.";
     return "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
   }

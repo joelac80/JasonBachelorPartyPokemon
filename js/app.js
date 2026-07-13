@@ -439,6 +439,31 @@
         if (h.receiveRx) h.receiveRx(data.rx || []);
       }
     });
+    // 🧟 Zombie battle sweep — a phone closed mid-battle never reports a
+    // winner, so its broadcast stays "live" forever. On boot (and whenever
+    // the app comes back to the foreground), any live battle THIS device is
+    // a player in — while no battle is actually on screen — gets auto-
+    // forfeited, and a toast says so. Other phones' ghosts age out of the
+    // lists via liveActive()'s 3-hour filter.
+    function sweepZombieBattles() {
+      try {
+        if (!Sync.sweepMyLiveBattles) return;
+        if (document.querySelector(".battle")) return;   // a battle IS running — nothing stale
+        const closed = Sync.sweepMyLiveBattles();
+        if (!closed.length) return;
+        const d = closed[0];
+        U.toast("🧹 Cleared " + (closed.length > 1 ? closed.length + " stale battles" : "a stale battle") +
+          " (" + d.aName + " vs " + d.bName + (closed.length > 1 ? ", …" : "") + ") — auto-forfeited.");
+        if (window.Router) Router.render();
+      } catch (_) {}
+    }
+    // The battle list streams in asynchronously — give the first snapshot a
+    // moment to land, then sweep; re-sweep whenever the app is re-opened.
+    setTimeout(sweepZombieBattles, 4000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") setTimeout(sweepZombieBattles, 2500);
+    });
+
     // 📬 Trade inbox pings: when a synced update brings a new open offer
     // addressed to me, ping once per offer — no need to be watching.
     const OSEEN_KEY = "jasonBachHub.offersSeen";

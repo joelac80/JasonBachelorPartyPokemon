@@ -417,9 +417,26 @@
       return () => { const i = liveSubs.indexOf(fn); if (i >= 0) liveSubs.splice(i, 1); };
     },
     // Every battle currently live, oldest first — for the Home "watch" list.
+    // A phone that dies mid-battle never writes state:"done", so anything
+    // "live" for 3+ hours is a ghost — filtered out of every list.
     liveActive() {
+      const now = nowMs();
       return Object.keys(battleMap).map((k) => battleMap[k])
-        .filter((d) => d && d.state === "live").sort((a, b) => (a.t || 0) - (b.t || 0));
+        .filter((d) => d && d.state === "live" && !(d.t && now - d.t > 10800000))
+        .sort((a, b) => (a.t || 0) - (b.t || 0));
+    },
+    // Zombie sweep for MY OWN battles: any broadcast THIS device is a player
+    // in that's still "live" when no battle is on screen means the app was
+    // closed mid-fight — auto-forfeit them. Returns the docs it closed so
+    // the caller can toast. (Other phones' ghosts age out via liveActive.)
+    sweepMyLiveBattles() {
+      const mine = Object.keys(battleMap).map((k) => battleMap[k])
+        .filter((d) => d && d.state === "live" && (d.aClient === clientId || d.bClient === clientId));
+      mine.forEach((d) => {
+        battleMap[d.id] = Object.assign({}, d, { state: "done", winner: "" });
+        if (liveRef) liveRef.doc(d.id).set({ state: "done", winner: "", t: nowMs() }, { merge: true }).catch(function () {});
+      });
+      return mine;
     },
 
     // ---- remote duels (turn-by-turn across phones) ----

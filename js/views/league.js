@@ -43,7 +43,7 @@
     { key: "bruno", region: "Johto", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 208, 214, 68], pts: 6, boost: 1.15, needs: "koga",
       quote: "We will grind you down with our superior power. Hoo hah!" },
     { key: "karen", region: "Johto", name: "KAREN", rank: "Elite Four", type: "dark",     team: [461, 45, 94, 248, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
-      quote: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Show me YOUR favorites." },
+      quote: "I love Dark-type Pokémon. I find their wild, tough image so appealing. Show me what YOU find beautiful." },
     { key: "lance", region: "Johto", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },
     { key: "red", region: "Johto",   name: "RED",   rank: "???",        type: "fire",     team: [25, 196, 143, 3, 6, 9], pts: 10, boost: 1.35, needs: "lance", reveal: "lance", mystery: true,
@@ -127,6 +127,59 @@
     { key: "geeta", region: "Paldea", name: "GEETA", rank: "Top Champion", type: "fairy",        team: [956, 713, 673, 976, 983, 970], pts: 24, boost: 1.55, needs: "hassel", reveal: "leon", mystery: true,
       quote: "As Top Champion, I oversee every league. Show me why you climbed all nine regions to reach me." },
   ];
+  // 🗣 What each leader ACTUALLY says when they fall — canon post-battle
+  // quotes from the games (lightly trimmed to fit a speech bubble). Passed to
+  // the duel engine as unit.outro.lose, so beating a League boss earns you
+  // their real line instead of generic banter.
+  const DEFEAT = {
+    lorelei: "How dare you! …No — well fought. Your Pokémon were the stronger ones today.",
+    brunok: "Why? How could I lose?",
+    agatha: "You win! I see what that old duff Oak sees in you now. Run along now, child!",
+    lance4: "That's it! I hate to admit it, but you are a Pokémon master!",
+    blue: "NO! That can't be! You beat my best! After all that work to become League Champ?",
+    will: "Even though I was defeated, I won't change my course. I will continue battling until I stand above all Trainers!",
+    koga: "Ah! You have proven your worth!",
+    bruno: "Having lost, I have no right to say anything… Go face your next challenge!",
+    karen: "Strong Pokémon. Weak Pokémon. That is only the selfish perception of people. Truly skilled Trainers should try to win with their favorites.",
+    lance: "…It's over. But it's an odd feeling — I'm not angry that I lost. I'm happy. Happy that I witnessed the rise of a great new Champion!",
+    red: "…… (RED says nothing. He nods once — and is gone.)",
+    sidney: "Well, listen to what this loser has to say. You've got what it takes to go far. Now go on — enjoy your next battle!",
+    phoebe: "Oh, darn. I've gone and lost… There's a definite bond between you and your Pokémon.",
+    glacia: "You and your Pokémon… How hot your spirits burn! The all-consuming heat overwhelms.",
+    drake: "Superb, it should be said. You deserve every credit for coming this far as a Trainer of Pokémon.",
+    steven: "I, the Champion, fall in defeat… Kudos to you! You are a truly noble Pokémon Trainer!",
+    aaron: "We lost… It only means I must become stronger, together with my beloved Bug Pokémon.",
+    bertha: "You're quite something, youngster. I like how you and your Pokémon earned the win by working as one.",
+    flint: "…Well, that's that. Your Pokémon were blazing with passion even hotter than mine!",
+    lucian: "Congratulations — you have beaten the Elite Four. However, that doesn't mean you're done with the Pokémon League.",
+    cynthia: "That was excellent. Truly, an outstanding battle. You gave the support your Pokémon needed to maximize their power — and you guided them with certainty.",
+    shauntal: "My Pokémon and the challenger's Pokémon… Everyone battled even though they were hurt. Thank you.",
+    grimsley: "Whether or not you get to fight at full strength, whether or not luck smiles on you — none of that matters. Only results matter.",
+    caitlin: "You and your Pokémon are both excellent and elegant. To have battled such a splendid team… my Pokémon and I learned a lot!",
+    marshal: "Whew! You and your Pokémon gave it everything. Battling you was a pleasure — go on ahead.",
+    alder: "Ha-ha-ha! Splendid! You and your Pokémon are spectacular!",
+    malva: "I hate to admit it… but you and your Pokémon burn brighter. I acknowledge your strength.",
+    wikstrom: "Glorious! The trust that you share with your honorable Pokémon surpasses even mine!",
+    drasna: "Oh, dear me. That sure was a quick battle… I do hope you'll come back to play again sometime!",
+    siebold: "Magnifique… The strength of your convictions far exceeded mine. Your victory was a feast!",
+    diantha: "Witnessing the noble spirits of you and your Pokémon in battle has really touched my heart…",
+    molayne: "Now that's a stellar Trainer for you! You shine brighter than any star chart of mine.",
+    acerola: "I'm speechless! You've done me in!",
+    kahili: "It's frustrating to me as a member of the Elite Four, but it seems your strength is the real deal.",
+    mina: "Whoa… Your battling is a picture-perfect work of art all its own.",
+    kukui: "Hoo-ee! I couldn't get enough of that great battle — it gave me chicken skin, yeah!",
+    marnie: "I did my best, but it wasn't enough… Guess I've still got a long way to go. Now go win the whole thing, got it?",
+    bede: "I'm gutted… but I suppose there's nothing to be done about it. You were the better Trainer today.",
+    oleana: "Ah… Frustration is bringing back my old way of speaking… You have disrupted everything.",
+    hop: "Ahhh… I lost… but somehow it feels great, too! That was ace, mate!",
+    leon: "My time as Champion is over… but what a champion time it's been! Thank you for the greatest battle I've ever had!",
+    rika: "Mm-hm. Good stuff, kid. You pass.",
+    poppy: "Wha…?! You're really, suuuper strong! Boo… I lost…",
+    larryf: "…That's a wrap. No excuses — it was a fair loss. Time to hit my usual spot for dinner.",
+    hassel: "I-I-I felt your passion loud and clear! *sniffle* What a magnificent battle…",
+    geeta: "Now THAT was a stupendous battle. I concede — every league is proud to call you its finest.",
+  };
+  LEAGUE.forEach((st) => { if (DEFEAT[st.key]) st.defeat = DEFEAT[st.key]; });
   window.LEAGUE_STAGES = LEAGUE;
   const idxOf = (key) => LEAGUE.findIndex((s) => s.key === key);
   const stageByKey = (key) => LEAGUE[idxOf(key)];
@@ -239,7 +292,8 @@
             league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal },
             a: { units: [{ attId: attId, monIds: ids }] },
             b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: st.team.slice(),
-              boost: st.boost || 1.15 }] },
+              boost: st.boost || 1.15,
+              outro: st.defeat ? { lose: st.defeat } : undefined }] },
             onResult: () => Router.render() });
         } });
     });
@@ -279,8 +333,12 @@
         Duel.start({ mode: "local", title: (opts.title || "Gauntlet") + " (" + (i + 1) + "/" + total + ")",
           gauntlet: true,
           a: { units: [{ attId: attId, monIds: party }] },
-          b: { units: [{ npc: o.name, ai: true, monIds: (o.monIds || []).slice(), boost: o.boost || undefined }] },
-          onResult: (winSide) => { if (winSide === "a") runAt(i + 1); else finishRun(i, false); } });
+          b: { units: [{ npc: o.name, ai: true, monIds: (o.monIds || []).slice(), boost: o.boost || undefined,
+            outro: o.outro || undefined }] },
+          onResult: (winSide) => {
+            if (winSide === "a") { try { if (opts.onAdvance) opts.onAdvance(i + 1); } catch (_) {} runAt(i + 1); }
+            else finishRun(i, false);
+          } });
       };
       if (mode === "fixed") {
         // Between battles: same six, fully healed — but let them re-pick who
@@ -368,15 +426,32 @@
         " Elite Four & Champion in ONE gauntlet run" + (mode === "fixed" ? " — with a single squad!" : "!"));
     }); } catch (_) {}
   }
+  // Partial gauntlet credit: reaching the Champion PROVES the Elite Four fell
+  // this run — record those wins on the regular ladder even if the Champion
+  // then holds. (No HOF enshrine — that's still the Champion's to give.)
+  function creditLeagueStages(attId, idxs) {
+    try { Store.update((s) => {
+      s.league = s.league || {};
+      const w = s.league[attId] = s.league[attId] || [];
+      const teamId = (Store.attendee(attId) || {}).team || "";
+      let fresh = 0;
+      idxs.forEach((i) => { const st = LEAGUE[i];
+        if (st && w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); fresh++; } });
+      if (fresh) Store.chron(s, "⚔", ((Store.attendee(attId) || {}).name || attId) +
+        " swept the Elite Four in a gauntlet run — " + fresh + " ladder win" + (fresh > 1 ? "s" : "") + " recorded. Only the Champion remains…");
+    }); } catch (_) {}
+  }
   function leagueGauntlet(attId, stageIdxs, label) {
     const runIdxs = leagueStagesForRun(stageIdxs);
     if (!runIdxs.length) return;
-    const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost }; });
+    const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost, outro: st.defeat ? { lose: st.defeat } : undefined }; });
     gauntletModePicker(attId,
       "Face the " + (label || "League") + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",
       (mode) => gauntletRun(attId, mode, opponents, {
         title: (label || "League") + " Gauntlet", modalTitle: "⚔ " + (label || "League") + " Gauntlet",
         wonTitle: "LEAGUE CONQUERED!", wonMsg: "You ran the whole " + (label || "League") + " — all " + opponents.length + " — in one go!",
+        // Reaching the final stage = the whole Elite Four fell → ladder credit.
+        onAdvance: (cleared) => { if (cleared === runIdxs.length - 1) creditLeagueStages(attId, runIdxs.slice(0, -1)); },
         onWinAll: (m, lastParty) => recordLeagueRun(attId, runIdxs, m, label, lastParty),
       }));
   }

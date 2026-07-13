@@ -300,6 +300,12 @@
     const myClient = opts.myClient || "";
     let net = opts.net || null;
     const title = (opts.title || "Duel").trim() || "Duel";
+    // 🎭 Chatter gate — GENERIC boss banter (taunts, gloats, stock ace/outro
+    // lines) is seasoning for FEATURED battles only: League chambers, movie
+    // bosses, legendary and secret fights. Everyday gyms, nuzlocke trainers
+    // and the tower stay quiet — unless a unit brings its own scripted lines
+    // (speak/ace/outro), which always play. Repetition is the enemy of cool.
+    const chatty = !!(opts.league || opts.movie || opts.legend || opts.secret);
 
     function makeUnit(u) {
       // NPC units (gym leaders) have no attendee — just a name and an AI flag.
@@ -1024,7 +1030,8 @@
         // the screen flashes, and the ace digs deep (+8% attack).
         const aceMon = mon(u);
         const isAce = u.ai && !opts.wild && u.party.length >= 3 && u.party.filter((x) => x.hp > 0).length === 1;
-        if (isAce && !talk) { const aln = (u.ace && u.ace.line) || bossLine(ACE_LINES, aceMon.id); talkBeats.push(["🗣 " + u.name + ": “" + aln + "”", 2200, () => { sfx("select"); sayBubble(u, aln); }]); }
+        // Custom ace lines always play; the GENERIC pool is featured-only.
+        if (isAce && !talk && ((u.ace && u.ace.line) || chatty)) { const aln = (u.ace && u.ace.line) || bossLine(ACE_LINES, aceMon.id); talkBeats.push(["🗣 " + u.name + ": “" + aln + "”", 2200, () => { sfx("select"); sayBubble(u, aln); }]); }
         beats(talkBeats, () => {
           renderSprites(act.side); renderHp(act.side);
           const sendBeats = [[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]];
@@ -1221,11 +1228,11 @@
       beats(steps, () => {
         const koSteps = [];
         if (tm && tm.hp <= 0) koSteps.push([tm.name + " fainted!", 1100, () => { tu._monEl.classList.add("fainted"); sfx("error"); }]);
-        // 🎭 boss chatter — an AI trainer grits their teeth the first time
-        // their active drops into the red half, and gloats over a KO.
-        if (tm && !opts.wild) {
-          if (tm.hp > 0 && tu.ai && !tm._tauntedHalf && tm.hp <= tm.hpMax / 2) {
-            tm._tauntedHalf = true;
+        // 🎭 boss chatter — FEATURED battles only (see `chatty`), and each
+        // beat lands at most ONCE per battle so it stays a moment, not a tic.
+        if (tm && !opts.wild && chatty) {
+          if (tm.hp > 0 && tu.ai && !tu._tauntedOnce && tm.hp <= tm.hpMax / 2) {
+            tu._tauntedOnce = true;
             const tln = bossLine(TAUNT_HALF, tm.id + tm.hpMax);
             koSteps.push(["🗣 " + tu.name + ": “" + tln + "”", 1600, () => { sfx("select"); sayBubble(tu, tln); }]);
           }
@@ -1237,7 +1244,8 @@
             tu._comebackDone = true;
             koSteps.push(["🗣 " + tu.name + ": “We are NOT done. ONE more stand!”", 1800, () => { sfx("select"); sayBubble(tu, "We are NOT done. ONE more stand!"); }]);
           }
-          if (tm.hp <= 0 && u.ai && !tu.ai) {
+          if (tm.hp <= 0 && u.ai && !tu.ai && !u._gloatedOnce) {
+            u._gloatedOnce = true;
             const gln = bossLine(GLOAT_KO, tm.id + m.id);
             koSteps.push(["🗣 " + u.name + ": “" + gln + "”", 1600, () => { sfx("select"); sayBubble(u, gln); }]);
           }
@@ -1345,14 +1353,15 @@
       const wMons = sides[winSide].units.map((x) => mon(x).name).join(" & ");
       const lMons = sides[other(winSide)].units.map((x) => mon(x).name).join(" & ");
       const record = mode === "local" || (mode === "remote" && act.by === myClient);
-      // 🎭 THE OUTRO — an AI boss gets the last word: a closing quote (custom
-      // unit.outro.{win,lose}, else a generic line) before the result beats.
-      // Wild mons don't monologue.
+      // 🎭 THE OUTRO — an AI boss gets the last word: a CUSTOM closing quote
+      // (unit.outro.{win,lose} — real canon lines where we have them) always
+      // plays; the generic pool only seasons featured battles. Wild mons
+      // don't monologue.
       let outro = null;
       if (!opts.wild) {
         const wU = sides[winSide].units[0], lU = sides[other(winSide)].units[0];
-        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || bossLine(OUTRO_LOSE, lU.party[0].id); outro = ["🗣 " + lU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(lU, oln); }]; }
-        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || bossLine(OUTRO_WIN, wU.party[0].id); outro = ["🗣 " + wU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(wU, oln); }]; }
+        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || (chatty ? bossLine(OUTRO_LOSE, lU.party[0].id) : null); if (oln) outro = ["🗣 " + lU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(lU, oln); }]; }
+        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || (chatty ? bossLine(OUTRO_WIN, wU.party[0].id) : null); if (oln) outro = ["🗣 " + wU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(wU, oln); }]; }
       }
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
