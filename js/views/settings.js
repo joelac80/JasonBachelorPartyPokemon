@@ -128,6 +128,12 @@
             Router.render();
           }
         } }, "↺ Reset to defaults"),
+        el("button", { class: "btn danger", onClick: () => {
+          if (confirm("Start a FRESH SLATE? Wipes ALL progress AND the trainer list — the party builds its own crew from scratch (+ Add trainer on the Squad page, or in the welcome tour). Meant for a NEW room code; syncs to everyone in the room.")) {
+            Store.freshSlate();
+            Router.render();
+          }
+        } }, "🧹 Fresh slate (blank trainers)"),
       ]),
     ]);
   }

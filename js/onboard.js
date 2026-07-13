@@ -46,6 +46,23 @@
           el("span", { class: "sl-vote-name" }, a.name),
         ]));
       });
+      // ➕ Fresh-slate rooms start with NO trainers — anyone can create
+      // themselves right here in the tour (also handy for late arrivals).
+      grid.appendChild(el("button", { class: "sl-vote-pick onb-new-trainer", onClick: () => {
+        const nm = (prompt("Your name, trainer?") || "").trim();
+        if (!nm) return;
+        const id = "t" + Math.random().toString(36).slice(2, 8);
+        Store.update((s) => s.attendees.push({
+          id: id, name: nm, nickname: "", team: "", type: "normal",
+          rank: "Gym Leader", role: "The Squad", favorite: "", favoriteId: 0,
+          photo: "", catchphrase: "",
+        }));
+        sel = id; paintGrid(); syncNext();
+        if (window.SFX && SFX.fanfare) SFX.fanfare();
+      } }, [
+        el("span", { class: "draft-thumb-ball" }),
+        el("span", { class: "sl-vote-name" }, Store.state.attendees.length ? "➕ New trainer" : "➕ Create yourself"),
+      ]));
     }
 
     const SLIDES = [
@@ -63,7 +80,7 @@
       { e: "🔴", t: "Catch Pokémon in the Safari",
         d: "The Safari Zone is the engine: do dares to earn boosts, then throw. ✨ 1-in-16 encounters are SHINY. Swap at the Trading Post (some Pokémon ONLY evolve by trade), and your caught team fights for you everywhere else." },
       { e: "⚔️", t: "Battle on your own phones",
-        d: "Real turn-based Lv50 duels — each trainer plays on their own phone. Every KO = 2 sips, losers toast 4. 🧪 Potion = 3 sips to heal; 🍺 finish half your drink for a can't-miss crit. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion (plus Mt. Silver, the Movie Legends, and the Champions Cup). Big fights broadcast live — the whole room watches and cheers." },
+        d: "Real turn-based Lv50 duels — each trainer plays on their own phone. Every KO = 2 sips, losers toast 4. 🧪 Potion = 3 sips to heal 120; 🍺 finish half your drink for a can't-miss crit. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion (plus Mt. Silver, the Movie Legends, and the Champions Cup). Big fights broadcast live — the whole room watches and cheers." },
       { e: "🏆", t: "Everything scores",
         d: "Jeopardy, the Oracle, the Card Table, drinks, dares — every win feeds your team's total on Victory Road, and Sunday's Ceremony crowns the champion. Lost later? Tap the ? up top for the Field Guide. Now go." },
     ];

@@ -172,6 +172,17 @@
       winChron: "unmasked Kitakami and cracked the Indigo Disk — the Loyal Three, Pecharunt, Ogerpon and TERAPAGOS!",
       loseChron: "the mask stayed on and the disk stayed sealed",
       lead: "🎭 Okidogi, Munkidori and Fezandipiti — Pecharunt's puppets — then OGERPON unmasked, and TERAPAGOS, the Terastal heart." },
+    { key: "paradox", tab: "Paldea", name: "THE PARADOX GAUNTLET", flair: "PALDEA SPECIAL · Area Zero, Unstuck in Time",
+      sub: "Paldea Special · Three trials: the deep past, the far future — then the crystal heart of Area Zero · one squad",
+      icon: "⏰", face: 1024, boost: 1.5, pts: 38, needs: "geeta", champ: "GEETA", after: "dlc",
+      gauntlet: true,   // three back-to-back battles — challengeParadox runs it
+      // Trial 3's script: Terapagos looks like one little turtle… then
+      // TERASTALLIZES (10276), then goes STELLAR (10277) — the final test.
+      team: [1024, 10276, 10277],
+      quote: "The time machine hums at the bottom of Area Zero. Step in, and it tears you loose — a jungle that predates history, a chrome world that hasn't happened yet, and in both… someone wearing the professor's face. Survive them, and the crystal heart of the crater itself will test you.",
+      winChron: "survived THE PARADOX GAUNTLET — both professors' paradoxes fell, and TERAPAGOS terastallized in vain!",
+      loseChron: "the timeline snapped shut on another traveler",
+      lead: "⏰ Professor SADA commands the ancient beasts. Professor TURO fields the iron future. And beneath it all waits TERAPAGOS — small, patient, and hiding two more forms." },
     { key: "hoopa", tab: "Paldea", name: "THE CLASH OF AGES", flair: "CAPSTONE · Hoopa & the Clash of Ages",
       sub: "Capstone · Hoopa Unbound tears open its rings and summons the ages · 6v6",
       icon: "🌀", face: 10086, boost: 1.60, pts: 40, gate: "legends9",
@@ -195,6 +206,7 @@
     if (sp.gate === "legends9") return "Conquer all NINE Legendary Challenges to tear open the rings.";
     if (sp.after === "nobles") return "Quell THE FRENZIED NOBLES first — the merchant only shows his hand to Hisui's savior.";
     if (sp.after === "volo") return "Unmask VOLO first — the temple only answers the one who saw through the smile.";
+    if (sp.after === "dlc") return "Crack THE TEAL MASK & INDIGO DISK first — the time machine only answers the disk's keeper.";
     if (sp.after) return "Another trial stands before this one.";
     return "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
   }
@@ -240,6 +252,85 @@
     });
   }
 
+  // ⏰ THE PARADOX GAUNTLET — three battles back-to-back with ONE squad
+  // (healed between): the deep past, the far future, then the crystal heart.
+  // Only the finale records the secret; falling anywhere ends the run.
+  const PARADOX_TRIALS = [
+    { name: "PROFESSOR SADA", flair: "🦕 TRIAL 1 · THE DEEP PAST", face: 1005, boost: 1.46,
+      team: [984, 985, 986, 987, 989, 1005],   // Great Tusk → Roaring Moon
+      quote: "Welcome to the world before history. I am — I was — Professor Sada. My beasts have never known a trainer… only prey.",
+      outro: { lose: "Magnificent… the ancient world bows to you. But I am only an echo of the past. The future is far less kind.",
+        win: "The past devours the unprepared. Crawl back to your own era." } },
+    { name: "PROFESSOR TURO", flair: "🤖 TRIAL 2 · THE FAR FUTURE", face: 1006, boost: 1.5,
+      team: [990, 991, 992, 993, 994, 1006],   // Iron Treads → Iron Valiant
+      quote: "Query: why do you persist? I am the paradigm of Professor Turo. My machines are what Pokémon become when time finishes with them.",
+      outro: { lose: "Calculation complete… defeat acknowledged. What waits beneath the crater is beyond either of us. Go.",
+        win: "The future has no room for you. Deleted." } },
+  ];
+  function eraIntro(t, onGo) {
+    const src = t.face ? (SP[t.face] || Store.sprite(t.face)) : null;
+    const lay = el("div", { class: "league-intro final legend-intro" }, [
+      el("div", { class: "league-intro-inner" }, [
+        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, "⏰"),
+        el("div", { class: "league-intro-flair" }, t.flair),
+        el("div", { class: "league-intro-rank" }, t.name),
+        el("div", { class: "league-intro-quote" }, "“" + t.quote + "”"),
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, "⏰ STEP THROUGH"),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    sfx("fanfare");
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
+  function challengeParadox(sp, attId) {
+    if (Duel.poolFor(attId).length < 6) { alert("The Paradox Gauntlet runs one squad of 6 through three trials — catch 6 of your own first (Safari Zone)."); return; }
+    specialIntro(sp, () => {
+      Duel.pickParty({ attId: attId, min: 6, max: 6,
+        title: "THE PARADOX GAUNTLET — pick your ONE squad of 6",
+        hint: "⏰ The same six carry you through the past, the future and the crystal heart — fully healed between trials, but no swaps.",
+        onDone: (ids) => runParadoxTrial(sp, attId, ids, 0) });
+    });
+  }
+  function runParadoxTrial(sp, attId, ids, i) {
+    const fell = () => {
+      try { Store.update((s) => Store.chron(s, "⏰", ((Store.attendee(attId) || {}).name || attId) + " — " + sp.loseChron + " (trial " + (i + 1) + "/3).")); } catch (_) {}
+      Router.render();
+    };
+    if (i < 2) {
+      const t = PARADOX_TRIALS[i];
+      eraIntro(t, () => {
+        const go = (leadIds) => Duel.start({ mode: "local", title: "the Paradox Gauntlet (" + (i + 1) + "/3)",
+          a: { units: [{ attId: attId, monIds: leadIds }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: t.boost, vsFace: t.face, outro: t.outro }] },
+          onResult: (w) => { if (w === "a") runParadoxTrial(sp, attId, ids, i + 1); else fell(); } });
+        if (i === 0) { go(ids); return; }
+        Duel.pickLead({ attId: attId, ids: ids, title: "Trial " + (i + 1) + "/3 — " + t.name,
+          hint: "⏰ Healed and ready. Choose who leads into " + (i === 1 ? "the future" : "the trial") + ".", onDone: go });
+      });
+    } else {
+      // 💎 The finale: Terapagos looks like one small turtle — then the
+      // reserve reveals do their work: TERASTAL, then STELLAR.
+      eraIntro({ name: "TERAPAGOS", flair: "💎 TRIAL 3 · THE CRYSTAL HEART", face: 1024,
+        quote: "The cavern glows. Something small crawls out of the light… and the light follows it. This is the final test." }, () => {
+        Duel.pickLead({ attId: attId, ids: ids, title: "The final test — TERAPAGOS",
+          hint: "💎 It looks so small. Choose your lead anyway.", onDone: (leadIds) => {
+            Duel.start({ mode: "local", title: "the final test",
+              secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
+              a: { units: [{ attId: attId, monIds: leadIds }] },
+              b: { units: [{ npc: "TERAPAGOS", ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: 1024, reserve: 2,
+                speak: { 1: ["The crystal turtle glows white-hot — TERAPAGOS TERASTALLIZES!"],
+                         2: ["Stellar light floods the cavern… ITS FINAL FORM. The true test begins."] },
+                outro: { lose: "The light dims. Terapagos blinks up at you — small again — and bows its head. Area Zero is yours.",
+                         win: "Stellar light swallows the chamber. When it fades, you stand at the rim of the crater, empty-handed." } }] },
+              onResult: () => Router.render() });
+          } });
+      });
+    }
+  }
+
   function specialCard(sp, attId) {
     const open = specialOpen(sp, attId);
     const beaten = !!(Store.secretWins && Store.secretWins(attId).indexOf(sp.key) >= 0);
@@ -261,8 +352,9 @@
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, sp.icon + " " + a.name))) : null,
         open
-          ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm", onClick: () => challengeSpecial(sp, attId) },
-              (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + " (" + n + "v" + n + ")")
+          ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm",
+              onClick: () => (sp.gauntlet ? challengeParadox(sp, attId) : challengeSpecial(sp, attId)) },
+              (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + (sp.gauntlet ? " (3 trials)" : " (" + n + "v" + n + ")"))
           : el("div", { class: "legend-lock" }, "🔒 " + specialLockText(sp)),
       ]),
     ]);

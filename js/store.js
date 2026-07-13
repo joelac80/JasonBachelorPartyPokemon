@@ -163,6 +163,20 @@
       this.persist();
       this._subs.forEach((fn) => fn(this.state));
     },
+    // 🧹 FRESH SLATE — a brand-new party: everything resets like reset(),
+    // but the trainer list starts BLANK (no seeded Jason/Joe/Matt) so a new
+    // room builds its own crew with "+ Add trainer" (Squad page) or right in
+    // the onboarding tour. Team captains are cleared too (they pointed at
+    // seeded trainers). Syncs to the whole room like any other state write.
+    freshSlate() {
+      const s = freshState();
+      s.attendees = [];
+      (s.teams || []).forEach((t) => { t.captain = ""; });
+      s.slate = 1;                     // marks a custom-crew slate
+      this.state = s;
+      this.persist();
+      this._subs.forEach((fn) => fn(this.state));
+    },
 
     // ---- Convenience selectors -------------------------------------------
     team(id) { return this.state.teams.find((t) => t.id === id) || null; },
@@ -1071,6 +1085,19 @@
       this._nuzEdit(attId, (r) => {
         const m = r.box.find((x) => x.id === monId && !x.dead);
         if (m) m.noEvo = 1;
+      });
+    },
+    // 👣 A wild encounter was rolled: the species goes on the run's SEEN list
+    // (no-dupes clause — once met, never again) and burns one of the era's
+    // limited encounter slots. `eraKey` names the current stretch of road
+    // (act:badges:league) — a new badge/stage resets the counter.
+    nuzEncounter(attId, wildId, eraKey) {
+      this._nuzEdit(attId, (r) => {
+        if (r.over) return;
+        r.seen = r.seen || [];
+        if (wildId && r.seen.indexOf(wildId) < 0) r.seen.push(wildId);
+        if (r.encKey !== eraKey) { r.encKey = eraKey; r.encN = 0; }
+        r.encN = (r.encN || 0) + 1;
       });
     },
     nuzBadge(attId, idx) {

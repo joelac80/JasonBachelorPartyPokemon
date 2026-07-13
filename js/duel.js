@@ -7,7 +7,7 @@
        units can be two trainers, or the same trainer running both slots).
    Everything fights at Lv50: HP/attack come from the species power stat,
    moves from its types. Drink actions (per trainer, each takes the turn):
-     🧪 Drink Potion   — take 3 sips → heal 60 HP (2 per battle)
+     🧪 Drink Potion   — take 3 sips → heal 120 HP (2 per battle)
      🍺 Liquid Courage — finish half your drink → next attack can't miss
                          and lands a guaranteed CRITICAL HIT (once)
    modes: "local" (hot-seat, pass the phone), "remote" (each trainer picks
@@ -798,8 +798,8 @@
     }
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
-      const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 60); paintHp(u); menu.innerHTML = "";
-      beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+60 HP)", 1200, () => sfx("coin")]], resolveNext);
+      const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 120); paintHp(u); menu.innerHTML = "";
+      beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+120 HP)", 1200, () => sfx("coin")]], resolveNext);
     }
     // Status is checked HERE, at resolution — so a status just inflicted by a
     // faster foe already stops this mon THIS turn (not just next turn). The
@@ -1909,7 +1909,7 @@
       }
       row.push(
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
-          confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 60 HP. (Takes this turn.)",
+          confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 120 HP. (Takes this turn.)",
             "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "potion" } }));
         } }, "🧪 Potion ×" + u.potions),
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {

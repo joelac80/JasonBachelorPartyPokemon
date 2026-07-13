@@ -36,12 +36,28 @@
     const d = DEX[id] || { x: 60 };
     return d.x >= 200 ? 0.15 : d.x >= 140 ? 0.25 : d.x >= 90 ? 0.40 : 0.55;
   }
-  // Near-flat encounter odds, like the Safari grass.
+  // 👣 The roads between badges hold only so many wild encounters — no
+  // re-rolling the dice. Each roll burns a slot (running away included).
+  const ENC_PER_ERA = 3;
+  function eraKey(run) {
+    return (run.act === 2 ? 2 : 1) + ":" + run.badges.length + ":" + run.league.length;
+  }
+  function encLeft(run) {
+    const used = run.encKey === eraKey(run) ? (run.encN || 0) : 0;
+    return Math.max(0, ENC_PER_ERA - used);
+  }
+  // Near-flat encounter odds, like the Safari grass — but the grass only
+  // grows what the CURRENT level cap allows (no Dragonite ambushing a
+  // 2-badge run; its line shows up as Dratini), and the no-dupes clause
+  // strikes every species already met this run.
   function rollWild(run) {
-    const WILDS = wildsFor(run);
+    const cap = runLevel(run);
+    const seen = {}; (run.seen || []).forEach((id) => { seen[id] = 1; });
     const owned = {}; run.box.forEach((m) => { owned[m.id] = 1; });
-    const pool = WILDS.filter((id) => !owned[id]);
-    if (!pool.length) return WILDS[(Math.random() * WILDS.length) | 0];
+    const WILDS = wildsFor(run).filter((id) =>
+      !owned[id] && !seen[id] && !(PRE[id] && PRE[id].lvl > cap));
+    const pool = WILDS;
+    if (!pool.length) return 0;
     let total = 0; const cum = [];
     pool.forEach((id) => { total += 1 / Math.pow(DEX[id].x || 60, 0.30); cum.push([total, id]); });
     const r = Math.random() * total;
@@ -238,17 +254,28 @@
       el("div", { class: "nuz-box-grid" }, run.box.map((m) => boxMon(m, run))),
     ]));
 
-    // The grass — wild catches (battle-only).
+    // The grass — wild catches (battle-only). Every stretch of road holds
+    // only ENC_PER_ERA encounters, each roll burns one (no re-rolls), and a
+    // species met once never appears again.
     const grass = el("div", { class: "safari-card nuz-grass" });
     host.appendChild(grass);
+    const left = encLeft(run);
     if (!wildId) {
-      grass.appendChild(el("div", { class: "nuz-lab-head" }, "🌿 Tall grass"));
-      grass.appendChild(el("div", { class: "safari-actions" }, [
-        el("button", { class: "btn spin-btn", onClick: () => {
-          wildId = rollWild(run); sfx("blip"); Router.render();
-        } }, "👣 Walk in the grass"),
-      ]));
-      grass.appendChild(el("p", { class: "hint" }, "Recruits are caught by battling — and battles can cost lives. How small can you keep the box?"));
+      grass.appendChild(el("div", { class: "nuz-lab-head" }, "🌿 Tall grass — " +
+        (left ? "👣 " + left + "/" + ENC_PER_ERA + " encounters left on this road" : "trampled flat")));
+      if (left > 0) {
+        grass.appendChild(el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn spin-btn", onClick: () => {
+            const id = rollWild(run);
+            if (!id) { alert("The grass is quiet — every species on this road has already been met."); return; }
+            Store.nuzEncounter(me, id, eraKey(run));
+            wildId = id; sfx("blip"); Router.render();
+          } }, "👣 Walk in the grass"),
+        ]));
+        grass.appendChild(el("p", { class: "hint" }, "Recruits are caught by battling — and battles can cost lives. ⚠️ Each walk burns an encounter (running away too), a species met once NEVER returns, and only Pokémon at home under the Lv " + runLevel(run) + " cap roam here."));
+      } else {
+        grass.appendChild(el("p", { class: "hint" }, "🚧 No wild Pokémon left on the road to the next badge — win it to reach fresh grass (" + ENC_PER_ERA + " new encounters)."));
+      }
     } else {
       const wnfo = DEX[wildId] || {};
       grass.appendChild(el("div", { class: "nuz-lab-head" }, "🌿 A wild " + monName(wildId) + " appeared!"));
