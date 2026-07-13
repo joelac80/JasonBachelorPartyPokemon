@@ -111,7 +111,7 @@
       { e: "🔴", t: "Catch 'em — all nine generations",
         d: "The Safari Zone is the engine: find a wild Pokémon, tempt it with 🍓 berries, risk a 🪨 rock, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
       { e: "⚔️", t: "Battle 'em — for real",
-        d: "Real turn-based duels, each trainer on their own phone — moves, types, crits, potions, sips on the line. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion, the Battle Tower, canon rivals ambushing the roads, Movie Legends, and the legends themselves. Big fights broadcast live — the whole room watches and cheers." },
+        d: "Real turn-based duels, each trainer on their own phone — moves, types, crits, potions, pride on the line. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion, the Battle Tower, canon rivals ambushing the roads, Movie Legends, and the legends themselves. Big fights broadcast live — the whole room watches and cheers." },
       { e: "🪦", t: "…then dare the Nuzlocke",
         d: "The ultimate test, seven ways: one region on the classic curve, a 🎲 randomizer, the 🌍 114-battle master gauntlet, 🕰 Through the Ages (nine generations, a fresh team each era — Professor Oak waits at the very end), 🎒 the Long Walk (one team through every region), ⚡ a 15-battle Blitz that scales 14→100 in one sitting, or the 🎬 Movie Marathon against every film legend. Any Pokémon that faints is gone FOREVER — fewest catches wears the crown." },
       { e: "🔔", t: "One last thing — alerts, then go",

@@ -133,8 +133,8 @@
     const foes = lvl ? t.team.map((id) => JS.formAt(id, lvl)) : t.team.slice();
     Duel.pickParty({ attId: attId, min: 1, max: size,
       title: "vs " + t.title + " " + t.name + " — pick up to " + size,
-      hint: (isStory ? "📖 A story battle! Glory and sips — and they WILL be back until you win." :
-        "A surprise battle! Bragging rights and sips — no badge, no rating.") +
+      hint: (isStory ? "📖 A story battle! Pure glory — and they WILL be back until you win." :
+        "A surprise battle! Bragging rights only — no badge, no rating.") +
         (lvl ? " (True Story: fought at Lv " + lvl + " — both teams step down to era-true forms.)" : ""),
       onDone: (ids) => {
         Duel.start({ mode: "local", title: isStory ? "a story showdown" : "a surprise showdown",
@@ -282,7 +282,7 @@
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
     root.appendChild(el("p", { class: "hint" },
-      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs. Lose = 3 sips." +
+      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs." +
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
 
     // ⚔/📖 The style switch — how the whole circuit (and the League) fights you.

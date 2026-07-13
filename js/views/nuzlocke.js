@@ -1187,7 +1187,7 @@
   // forever. Region-aware runs only meet era-true villains (no Nemona
   // jumping a Kanto run). PROF. OAK never prowls: in a nuzlocke he's the
   // ages walk's LAST BOSS — the professor doesn't jump people on roads.
-  // You can slip away… for a sip and a little shame.
+  // You can slip away… with a little shame.
   // 📖 THE STORY FINDS THE RUN — canon rivals & villains with story slots
   // ambush at their badge moments, era-true, in EVERY structure (master and
   // the walks included). They return until beaten (per-run run.story);
@@ -1251,8 +1251,8 @@
           el("button", { class: "btn subtle", onClick: () => {
             ctrl.close();
             if (story) storySnooze[t.name] = eraKey(run);   // they'll be back next road
-            Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — " + (story ? "but the story isn't done with them." : "a sip for the shame.")); });
-          } }, story ? "🏃 Slip away (they'll be back)" : "🏃 Slip away (take a sip)"),
+            Store.update((s) => { Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — " + (story ? "but the story isn't done with them." : "the grass remembers.")); });
+          } }, story ? "🏃 Slip away (they'll be back)" : "🏃 Slip away"),
         ]),
       ]);
       ctrl = Modal.open(story ? "📖 " + t.title + " " + t.name + " — the story finds you!" : "❗ " + t.title + " " + t.name + " ambushes the run!", body, null, { noFooter: true });

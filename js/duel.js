@@ -6,9 +6,9 @@
        each unit fields one active mon and switches to its own bench; the two
        units can be two trainers, or the same trainer running both slots).
    Everything fights at Lv50: HP/attack come from the species power stat,
-   moves from its types. Drink actions (per trainer, each takes the turn):
-     🧪 Drink Potion   — take 3 sips → heal 120 HP (2 per battle)
-     🍺 Liquid Courage — finish half your drink → next attack can't miss
+   moves from its types. Trainer items (per trainer, each takes the turn):
+     🧪 Potion   — heal 120 HP (2 per battle)
+     🎯 Dire Hit — unleash a can't-miss guaranteed CRIT this same turn (1 per battle)
                          and lands a guaranteed CRITICAL HIT (once)
    modes: "local" (hot-seat, pass the phone), "remote" (each trainer picks
    their turns on their own phone — actions travel as small serialized
@@ -565,7 +565,7 @@
     // there was no way to leave at all.
     if (mode === "watch") {
       overlay.appendChild(el("div", { class: "duel-watch-bar" }, [
-        opts.rx ? el("div", { class: "duel-rx-bar" }, ["🔥", "👏", "😱", "💀", "🍺"].map((e) =>
+        opts.rx ? el("div", { class: "duel-rx-bar" }, ["🔥", "👏", "😱", "💀", "👊"].map((e) =>
           el("button", { class: "duel-rx-btn", onClick: () => { try { opts.rx(e); } catch (_) {} } }, e))) : null,
         el("button", { class: "btn subtle sm", onClick: () => close() }, "✕ Stop watching"),
       ]));
@@ -822,7 +822,7 @@
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
       const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 120); paintHp(u); menu.innerHTML = "";
-      beats([["🧪 " + u.name + " takes 3 sips… " + m.name + " regained health! (+120 HP)", 1200, () => sfx("coin")]], resolveNext);
+      beats([["🧪 " + u.name + " uses a Potion — " + m.name + " regained health! (+120 HP)", 1200, () => sfx("coin")]], resolveNext);
     }
     // Status is checked HERE, at resolution — so a status just inflicted by a
     // faster foe already stops this mon THIS turn (not just next turn). The
@@ -1119,8 +1119,8 @@
       // ignores the foe's typing — it can't be "immune"/"missed" by type.
       const allSelfStats = fx && fx.stats && fx.stats.every((sc) => sc.who === "self");
       const selfMove = isStatus && !!(fx && (fx.heal || fx.rest || (fx.stat && fx.stat.who === "self") || allSelfStats));
-      if (act.courage) u.courage = false;               // half a drink, spent on this very hit
-      const chug = act.courage ? [["🍺 " + u.name + " chugs — LIQUID COURAGE!", 950, () => sfx("correct")]] : [];
+      if (act.courage) u.courage = false;               // the Dire Hit, spent on this very hit
+      const chug = act.courage ? [["🎯 " + u.name + " uses a DIRE HIT!", 950, () => sfx("correct")]] : [];
 
       const eatBerry = (unit) => {
         unit.berryUsed = true;
@@ -1226,7 +1226,7 @@
           spawnHit(tu._monEl, TYPE_COLOR[act.mvType] || "#fff", act.crit);
           paintHp(tu); sfx("coin");
         }]);
-        if (act.crit) steps.push([act.armed ? "🍺💥 LIQUID COURAGE — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
+        if (act.crit) steps.push([act.armed ? "🎯💥 DIRE HIT — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
         if (act.eff >= 4) steps.push(["💥💥 It's SUPER effective!! (double weakness)", 950]);
         else if (act.eff > 1) steps.push(["It's super effective!", 900]);
         else if (act.eff <= 0.25) steps.push(["It barely has any effect…", 900]);
@@ -1449,15 +1449,15 @@
               else if (lg.rank === "Champion") { enshrine(); Store.chron(s, "👑", player.name + " defeated Champion " + lg.name + " — welcome to the HALL OF FAME!" + (lg.key === "lance" && fresh ? " …the summit of Mt. Silver just rumbled." : "")); }
               else Store.chron(s, "⭐", player.name + " toppled " + lg.rank + " " + lg.name + "!");
             } else {
-              if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " drinks 3 and descends the mountain.");
-              else if (lg.final) Store.chron(s, "🎹", "CYNTHIA remains undefeated — the piano plays on. " + player.name + " drinks 3.");
-              else Store.chron(s, "🤖", lg.rank + " " + lg.name + " stands undefeated — " + player.name + " drinks 3.");
+              if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " descends the mountain to train.");
+              else if (lg.final) Store.chron(s, "🎹", "CYNTHIA remains undefeated — the piano plays on for " + player.name + ".");
+              else Store.chron(s, "🤖", lg.rank + " " + lg.name + " stands undefeated — " + player.name + " will be back.");
             }
           });
         } catch (_) {}
         return;
       }
-      // 🏟 Gym challenges: badge on a win, sips on a loss — they never touch
+      // 🏟 Gym challenges: badge on a win, a rematch on a loss — they never touch
       // the duel leaderboard, Elo, or the Champion's Belt.
       if (opts.gym) {
         try {
@@ -1493,14 +1493,14 @@
                 }
               }
             } else {
-              Store.chron(s, "🤖", "Leader " + opts.gym.leader + " defended the gym — " + player.name + " drinks 3 and trains harder.");
+              Store.chron(s, "🤖", "Leader " + opts.gym.leader + " defended the gym — " + player.name + " trains harder.");
             }
           });
         } catch (_) {}
         return;
       }
       // 🏛 Battle of Fame: a Hall of Fame team steps down from its plaque.
-      // Pure exhibition — no leaderboard, no Elo, no belt. Glory and sips.
+      // Pure exhibition — no leaderboard, no Elo, no belt. Glory only.
       if (opts.hof) {
         try {
           const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
@@ -1515,8 +1515,8 @@
                 : player.name + " took down " + ghost.name + "'s Hall of Fame team! The plaque still shines… but so does " + player.name + ".");
             } else {
               Store.chron(s, "🏛", ownGhost
-                ? player.name + " lost to their own past self. 3 sips of humility."
-                : ghost.name + "'s Hall of Fame team stands eternal — " + player.name + " toasts the champion with 3 sips.");
+                ? player.name + " lost to their own past self. Humbling."
+                : ghost.name + "'s Hall of Fame team stands eternal — " + player.name + " salutes the champion.");
             }
           });
         } catch (_) {}
@@ -1534,7 +1534,7 @@
               Store.grantPoints(s, "battle", player.teamId, 4);
               Store.chron(s, "🏆", player.name + " defeated " + foe + " in the Champions Tournament!");
             } else {
-              Store.chron(s, "🏆", foe + " knocked " + player.name + " out of the Champions Tournament. 3 sips.");
+              Store.chron(s, "🏆", foe + " knocked " + player.name + " out of the Champions Tournament.");
             }
           });
         } catch (_) {}
@@ -1542,7 +1542,7 @@
       }
       // 🎬 Movie Legends: MEWTWO (Strikes Back) & the COLLECTOR (Pokémon 2000).
       // Special cinematic boss battles — win is recorded per trainer (append-only,
-      // sync-unioned) for a ✅ on the wall; no Elo, no belt, glory + sips.
+      // sync-unioned) for a ✅ on the wall; no Elo, no belt, glory only.
       if (opts.movie) {
         try {
           const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
@@ -1556,7 +1556,7 @@
               Store.grantPoints(s, "battle", player.teamId, mvb.pts || 10);
               Store.chron(s, mvb.icon || "🎬", player.name + " " + (mvb.winChron || ("defeated " + mvb.name + "!")));
             } else {
-              Store.chron(s, mvb.icon || "🎬", (mvb.loseChron || (mvb.name + " proved too powerful")) + " — " + player.name + " drinks 3.");
+              Store.chron(s, mvb.icon || "🎬", (mvb.loseChron || (mvb.name + " proved too powerful")) + " — " + player.name + " retreats to train.");
             }
           });
         } catch (_) {}
@@ -1578,7 +1578,7 @@
               Store.grantPoints(s, "battle", player.teamId, lg.pts || 20);
               Store.chron(s, lg.icon || "🌌", player.name + " " + (lg.winChron || ("conquered the " + lg.name + "!")));
             } else {
-              Store.chron(s, lg.icon || "🌌", (lg.loseChron || (lg.name + " proved untamable")) + " — " + player.name + " drinks 3.");
+              Store.chron(s, lg.icon || "🌌", (lg.loseChron || (lg.name + " proved untamable")) + " — " + player.name + " retreats to train.");
             }
           });
         } catch (_) {}
@@ -1599,7 +1599,7 @@
               Store.grantPoints(s, "battle", player.teamId, sc.pts || 30);
               Store.chron(s, sc.icon || "🌀", player.name + " " + (sc.winChron || ("defeated " + sc.name + "!")));
             } else {
-              Store.chron(s, sc.icon || "🌀", (sc.loseChron || (sc.name + " proved beyond reach")) + " — " + player.name + " drinks 3.");
+              Store.chron(s, sc.icon || "🌀", (sc.loseChron || (sc.name + " proved beyond reach")) + " — " + player.name + " retreats to train.");
             }
           });
         } catch (_) {}
@@ -1610,7 +1610,7 @@
       // per-battle logging, Elo, belt, or chron here.
       if (opts.gauntlet) { return; }
       // ❗ Surprise post-gym challenger (Giovanni, Silver…). Pure exhibition —
-      // no Elo, no belt, no badge. Bragging rights and sips.
+      // no Elo, no belt, no badge. Bragging rights.
       if (opts.encounter) {
         try {
           const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
@@ -1627,7 +1627,7 @@
               }
               Store.chron(s, "❗", player.name + " sent " + foe + " packing in a surprise showdown!");
             } else {
-              Store.chron(s, "❗", foe + " ambushed " + player.name + " and won. 3 sips of humility.");
+              Store.chron(s, "❗", foe + " ambushed " + player.name + " and won. Humbling.");
             }
           });
         } catch (_) {}
@@ -1760,7 +1760,7 @@
 
     function doMove(u, ptr, mIdx, tIdx, z) {
       const m = mon(u), mv = mIdx === 99 ? STRUGGLE : m.moves[mIdx];
-      const armed = !!z;                               // Liquid Courage: unleashed on THIS hit
+      const armed = !!z;                               // Dire Hit: unleashed on THIS hit
       S.zmove = false;
       const isStatus = mv.cat === "status";
       // Roll accuracy, crit, damage spread and any effect proc NOW (baked into
@@ -1771,8 +1771,8 @@
       const highCrit = !!(mv.fx && mv.fx.crit === "high");
       // Crit odds run canon-flavored: 5% base, 12.5% for high-crit moves
       // (Slash, Razor Leaf…), and crits hit ×1.5 — not ×2 — so a lucky
-      // streak stings instead of deleting the run. Liquid Courage still
-      // guarantees the crit (that one's earned in sips).
+      // streak stings instead of deleting the run. The Dire Hit still
+      // guarantees the crit.
       const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.125 : 0.05));
       const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
       // Secondary effect: does it proc? (self-buff status moves always do.)
@@ -1795,7 +1795,7 @@
     }
 
     // ---- gym-leader AI: picks the hardest-hitting move vs the best target,
-    // sends the next mon on a faint. No drinks — leaders battle sober.
+    // sends the next mon on a faint. No items — leaders play it straight.
     function aiAct(u, ptr) {
       if (S.done) return;
       if (S.pending) {
@@ -1903,11 +1903,11 @@
         return;
       }
       const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types) === 0));
-      // Liquid Courage armed: Z-move style — the chug happened, now unleash
+      // Dire Hit armed: Z-move style — it's active, now unleash
       // a move on THIS same turn (can't miss, guaranteed crit).
       if (S.zmove) {
         menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
-          "🍺💥 LIQUID COURAGE — " + u.name + ", unleash a move!"));
+          "🎯💥 DIRE HIT — " + u.name + ", unleash a move!"));
         const zEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i, true)));
         if (walled) zEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99, true)));
         menu.appendChild(el("div", { class: "duel-moves zmove" }, zEls));
@@ -1940,13 +1940,13 @@
       }
       row.push(
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
-          confirmPanel("🧪 Drink Potion — " + u.name + " takes 3 sips, and " + m.name + " heals 120 HP. (Takes this turn.)",
-            "✅ Sips taken — heal!", () => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "potion" } }));
+          confirmPanel("🧪 Potion — " + m.name + " heals 120 HP. (Takes this turn; " + u.potions + " left this battle.)",
+            "✅ Use Potion — heal!", () => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "potion" } }));
         } }, "🧪 Potion ×" + u.potions),
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
-          confirmPanel("🍺 Liquid Courage — " + u.name + " finishes half their drink, then UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT.",
-            "🍺 Chugged — power up!", () => { S.zmove = true; sfx("correct"); renderMenu(); });
-        } }, "🍺 Liquid Courage"));
+          confirmPanel("🎯 Dire Hit — " + u.name + " UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT. (Once per battle.)",
+            "🎯 Dire Hit — power up!", () => { S.zmove = true; sfx("correct"); renderMenu(); });
+        } }, "🎯 Dire Hit"));
       if (bench(u).length) row.push(el("button", { class: "btn subtle sm", onClick: () => partyPanel(u, ptr, "switch", true) }, "🔄 Switch"));
       row.push(el("button", { class: "btn subtle sm", onClick: () => {
         if (!S.moved) {                           // nothing happened yet — just walk away (hot-seat only)

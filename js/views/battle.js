@@ -105,7 +105,7 @@
     const duelHost = el("div", { class: "duel-setup" });
     root.appendChild(el("h2", { class: "section-title" }, "🎮 Pokémon Duel"));
     root.appendChild(el("p", { class: "hint" },
-      "Turn-based, every Pokémon at Lv50. 🧪 Potion = 3 sips to heal 120 · 🍺 Liquid Courage = finish half your drink, unleash a guaranteed crit that same turn. Every KO = 2 sips, losing side toasts 4. Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
+      "Turn-based, every Pokémon at Lv50. 🧪 Potion = heal 120 (2 per battle) · 🎯 Dire Hit = unleash a can't-miss guaranteed crit that same turn (once per battle). Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
     // Champion's Belt — win a singles duel to claim it, beat the holder to take it.
     const belt = (Store.state.battles && Store.state.battles.belt) || null;
     root.appendChild(el("div", { class: "duel-belt" + (belt ? "" : " open"), onClick: () => { if (belt && window.Profile) Profile.open(belt.attId); } }, belt
