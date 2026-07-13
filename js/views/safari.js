@@ -1,25 +1,23 @@
-/* safari.js — Pokédex Safari drinking game (per-trainer competition).
+/* safari.js — the Pokédex Safari (per-trainer catching competition).
    Encounter odds are near-flat (legendaries show up!), but catch rates are
    drastically tiered: Common 55% → Legendary 4% base, and legendaries take
    boosts at half strength — so landing one is a genuine celebration. Everyone
-   can catch their OWN of every Pokémon (legendaries included) — no one-of-one
-   contention; each trainer builds their own dex.
-   Raise the odds the CLASSIC Safari way — toss a 🍓 berry (+10%, but 5%
-   it takes the snack and runs) or a 🪨 rock (+30%, but 15% it spooks), or
-   arm a 🟣 Master Ball (a progression currency: Champions and nuzlocke
-   crowns earn them) for a guaranteed catch. The wild one may
-   spook and bolt (up to 50% for legendaries):
-     • Dares      up to 3 × +20%
-     • Berry      +15%   (also halves flee chance)
-     • Squad rally +10%
+   builds their OWN dex of every Pokémon... with one exception: a 🌩 ROAMING
+   legendary is one-of-one for the room — first trainer to land the catch
+   claims it (Sync.claimRoam) and the storm passes for everyone else.
+   Raise the odds the CLASSIC Safari way:
+     • 🍓 Berry   +10% each (5% it takes the snack and runs; also halves
+                  the per-throw flee chance)
+     • 🪨 Rock    +30% each (15% it spooks and bolts)
      • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
                         points — half, or the full haul on a legendary)
-     • Master Ball dare — one EPIC challenge = a guaranteed catch outright
+     • 🟣 Master Ball — a progression currency (Champions and nuzlocke crowns
+                  earn them); arm one for a guaranteed catch
+     • ⚔ Or battle it to weaken it — lower HP = better odds, but a KO (or a
+                  team wipe) loses the catch, and the commotion may scare it off
    Then throw. Catches go into that trainer's own Pokédex and score points for
-   their team on Victory Road (rarer = more; a shiny doubles). No drinks are
-   handed out for a catch — just the small self-inflicted sip if you chicken
-   out of a boost or the wild one bolts. Leaderboard + Ash Ketchum cap for the
-   top catcher. State in Store.pokedex. */
+   their team on Victory Road (rarer = more; a shiny doubles). Leaderboard +
+   Ash Ketchum cap for the top catcher. State in Store.pokedex. */
 (function () {
   const { el } = U;
   const DEX = window.DEX || {};
@@ -178,7 +176,7 @@
     // 🍓 ~30% of catches drop a Sitrus Berry into the trainer's bag —
     // auto-eaten in duels when a mon drops below 30% HP.
     const berryDrop = Math.random() < 0.3;
-    // ✨ A shiny scores DOUBLE points. (No drinks are handed out for a catch.)
+    // ✨ A shiny scores DOUBLE points.
     const pts = isShiny ? nfo.pts * 2 : nfo.pts;
     const helperName = helperId ? attendeeName(helperId) : "";
     // Helper shares the reward: half the points on a normal catch, the full
@@ -249,6 +247,7 @@
   // which made three phones fight over one encounter (Suicune kept resetting).
   let myCatcher = "";
   let current = null, busy = false, status = "", level = 0, helper = "", shiny = false, revealId = null, currentGlyph = null;
+  let roamHunt = "";                                    // roam event id when this encounter IS the roamer
   let berries = 0, rocks = 0, masterArmed = false;     // this encounter's throws
   let throwMsg = "";                                    // last berry/rock feedback
   let dexMode = "normal";                               // dex grid: normal | shiny
@@ -262,7 +261,27 @@
 
     // Wipe all this-encounter boost state (called on new find / trainer swap / run).
     function clearBoosts() {
-      level = 0; berries = 0; rocks = 0; masterArmed = false; helper = ""; throwMsg = "";
+      level = 0; berries = 0; rocks = 0; masterArmed = false; helper = ""; throwMsg = ""; roamHunt = "";
+    }
+
+    // 🏁 The roaming mon is ONE-OF-ONE: gone means another trainer claimed it
+    // (or it wandered off) while you were still lining up your throw.
+    function roamGone() {
+      if (!roamHunt) return false;
+      const r = window.Sync && Sync.roam && Sync.roam();
+      return !(r && r.id === roamHunt);
+    }
+    function showRoamGone(nfo) {
+      const id = current;
+      sfx("error");
+      enc.innerHTML = "";
+      enc.appendChild(el("div", { class: "safari-card result miss" }, [
+        SP[id] ? el("img", { class: "safari-wild fled", src: SP[id], alt: nfo ? nfo.name : "" }) : null,
+        el("div", { class: "safari-result-msg" }, "Too late — " + (nfo ? nfo.name : "it") + " is GONE!"),
+        el("div", { class: "safari-payout miss" }, "🌩 The storm passes — another trainer claimed it, or it wandered off."),
+        el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+      ]));
+      current = null; busy = false; status = ""; shiny = false; currentGlyph = null; clearBoosts();
     }
 
     // Effective catch chance = base + all active boosts (capped at 100%).
@@ -340,6 +359,7 @@
     // boosts still count — they set the odds floor the weakening builds on.
     function battleToWeaken(nfo) {
       if (busy || !current || !window.Duel) return;
+      if (roamGone()) { showRoamGone(nfo); return; }
       const tid = active();
       if (!tid) return;
       // ⚔ Sending out a fighter is a commotion — 10% the wild one bolts before
@@ -392,7 +412,9 @@
             el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
           ]));
         } else {
+          if (roamGone()) { showRoamGone(nfo); return; }
           const res = recordCatch(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, ctx.helperId, nfo);
+          if (roamHunt && window.Sync && Sync.claimRoam) Sync.claimRoam(attendeeName(tid));
           showCaughtCard(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, nfo, res, "⚔ Weakened in battle, then caught!");
         }
       } else if (outcome === "ko") {
@@ -405,13 +427,12 @@
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
       } else {
-        Store.update((s) => { s.pokedex.taken = (s.pokedex.taken || 0) + 1; });   // a wipe costs a sip
         sfx("error");
         enc.innerHTML = "";
         enc.appendChild(el("div", { class: "safari-card result miss" }, [
           el("img", { class: "safari-wild fled", src: SP[ctx.id], alt: nfo.name }),
           el("div", { class: "safari-result-msg" }, "Your team was wiped out!"),
-          el("div", { class: "safari-payout miss" }, "😵 The wild " + nfo.name + " wandered off. Take a sip."),
+          el("div", { class: "safari-payout miss" }, "😵 The wild " + nfo.name + " wandered off. Ouch."),
           el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
         ]));
       }
@@ -476,15 +497,16 @@
       enc.innerHTML = "";
       if (!active()) { enc.appendChild(el("div", { class: "safari-idle" }, el("p", { class: "empty" }, "👆 Pick a trainer to start catching."))); return; }
       if (!current) {
-        // 🌩 roaming legendary: a room-wide event — everyone can go grab one
+        // 🌩 roaming legendary: a room-wide RACE — one mon, first catch claims it
         const roam = window.Sync && Sync.roam && Sync.roam();
         if (roam && DEX[roam.monId]) {
           enc.appendChild(el("div", { class: "roam-banner" }, [
-            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the party — go catch it!"),
+            el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the party — first catch claims it!"),
             el("button", { class: "btn primary sm", onClick: () => {
               // Each hunter rolls their own shiny shot at the roaming legendary
               // (~1/8) — the only realistic way to land a shiny legendary.
               current = roam.monId; shiny = Math.random() < SHINY_RATE; revealId = null; status = ""; clearBoosts();
+              roamHunt = roam.id;
               const tid = active();
               if (tid) Store.update((s) => {
                 const t = s.pokedex.trainers[tid] = s.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
@@ -618,7 +640,7 @@
         if (wild.length) {
           const pickId = wild[(Math.random() * wild.length) | 0];
           Sync.startRoam(pickId);
-          Store.logEvent("🌩", "The sky darkens over the lake — a wild " + DEX[pickId].n + " is ROAMING! Everyone go catch one!");
+          Store.logEvent("🌩", "The sky darkens over the lake — a wild " + DEX[pickId].n + " is ROAMING! First catch claims it!");
         }
       }
       // Draw from the 502-slot table (un-owned normals + un-owned shinies).
@@ -645,6 +667,7 @@
 
     function throwBall(nfo) {
       if (busy || !current) return;
+      if (roamGone()) { showRoamGone(nfo); return; }
       busy = true;
       const chance = chanceFor(nfo);
       const ballUsed = ballTier(chance).key;              // record what we threw
@@ -711,13 +734,15 @@
           busy = false; renderEncounter();
           return;
         }
+        // 🏁 The roaming race is decided HERE, at the click: if someone else
+        // claimed it during your wobble, the ball opens on nothing.
+        if (roamGone()) { showRoamGone(nfo); return; }
         const isShiny = shiny;
         const helperId = helper && helper !== tid ? helper : "";
         const res = recordCatch(tid, id, isShiny, ballUsed, viaMaster, helperId, nfo);
+        if (roamHunt && window.Sync && Sync.claimRoam) Sync.claimRoam(attendeeName(tid));
         // (The old "complete the Gen 1-4 dex to unlock Gen 5-9" room gate is
         // retired — the Gen Ladder unlocks generations through BATTLES now.)
-        // A roaming legendary stays out for the whole room (everyone can grab
-        // their own) — it just wanders off on its own timer, no exclusive claim.
         showCaughtCard(tid, id, isShiny, ballUsed, viaMaster, nfo, res, "");
       } else {
         sfx("error");

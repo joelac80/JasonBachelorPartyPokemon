@@ -562,10 +562,14 @@
     },
     // The latest known data for one duel doc (setup + acts + rx), for late watchers.
     duelData(id) { return (id && duelMap[id]) || null; },
-    // ---- roaming legendary (room-wide event — everyone catches their own) ----
+    // ---- roaming legendary (room-wide RACE — first catch claims it) ----
     startRoam(monId) {
       if (!roamRef || !monId) return;
       roamRef.set({ id: newId("rm"), monId: monId, state: "live", by: conf.name || "", t: nowMs() }).catch(function () {});
+    },
+    claimRoam(byName) {
+      if (!roamRef) return;
+      roamRef.set({ state: "done", claimedBy: byName || "", t: nowMs() }, { merge: true }).catch(function () {});
     },
     roam() {
       if (!roamLast || roamLast.state !== "live") return null;

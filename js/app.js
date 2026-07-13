@@ -601,26 +601,33 @@
     window.addEventListener("hashchange", updateInboxBadge);
     updateInboxBadge();
 
-    // 🌩 roaming legendary — alert every phone; everyone can catch their own
-    // before it wanders off (20 min, see Sync.roam).
+    // 🌩 roaming legendary — alert every phone. It's a RACE: the first
+    // trainer to land the catch claims the only one, and the storm passes
+    // for everyone else (or it wanders off after 20 min uncaught).
     const handledRoam = {};
+    let roamCtrl = null;   // the open "Hunt it" popup, so a claim can dismiss it
     Sync.onRoam((data) => {
       if (!data || !data.id) return;
       if (data.state === "live" && !handledRoam[data.id]) {
         handledRoam[data.id] = 1;
         if (data.t && Date.now() - data.t > 1200000) return;   // stale event
         const nm = (window.DEX && DEX[data.monId] && DEX[data.monId].n) || "legendary";
-        notify("🌩 Roaming legendary!", "A wild " + nm + " is loose — go catch yours before it wanders off!");
+        notify("🌩 Roaming legendary!", "A wild " + nm + " is loose — first catch claims it!");
         if (window.SFX && SFX.fanfare) SFX.fanfare();
         let rctrl;
         const rbody = el("div", { class: "chal-modal" }, [
-          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the party! Every trainer can catch their own — but it wanders off in about 20 minutes."),
+          el("div", { class: "chal-line" }, "🌩 A wild " + nm.toUpperCase() + " is ROAMING the party! There's only ONE — the first trainer to catch it claims it."),
           el("div", { class: "toolbar" }, [
             el("button", { class: "btn primary", onClick: () => { if (rctrl) rctrl.close(); location.hash = "#/safari"; } }, "🎯 Hunt it"),
             el("button", { class: "btn subtle", onClick: () => { if (rctrl) rctrl.close(); } }, "Let it roam"),
           ]),
         ]);
-        rctrl = Modal.open("Roaming legendary!", rbody, null, { noFooter: true });
+        rctrl = roamCtrl = Modal.open("Roaming legendary!", rbody, null, { noFooter: true });
+      }
+      if (data.state === "done" && data.claimedBy && !handledRoam[data.id + "d"]) {
+        handledRoam[data.id + "d"] = 1;
+        if (roamCtrl) { try { roamCtrl.close(); } catch (_) {} roamCtrl = null; }
+        notify("🌩 Claimed!", data.claimedBy + " caught the roaming legendary — the storm passes.");
       }
     });
 
