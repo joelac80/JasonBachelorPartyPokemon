@@ -287,6 +287,21 @@
         el("label", { class: "field" }, [el("span", {}, "You are (your trainer)"), meSel]),
         el("label", { class: "field" }, [el("span", {}, "Your name"), nameIn]),
       ]),
+      // 🚪 Known rooms — every crew this phone has played with, one-tap switch.
+      (function knownRoomsRow() {
+        const known = (Sync.knownRooms && Sync.knownRooms()) || [];
+        if (!known.length) return null;
+        const cur = (Sync.getConf().room || "").trim();
+        return el("div", {}, [
+          el("p", { class: "hint" }, "🚪 Your rooms — tap to SWITCH (the app reloads fresh in the new room):"),
+          el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, known.map((r) =>
+            el("button", { class: "btn sm " + (r.room === cur ? "primary" : "subtle"), onClick: () => {
+              if (r.room === cur) { toast("Already in " + r.room); return; }
+              if (!confirm("Switch this phone to room " + r.room + "? The app reloads and syncs with that crew.")) return;
+              Sync.switchRoom(r.room);
+            } }, "🚪 " + r.room + (r.room === cur ? " ✓" : "")))),
+        ]);
+      })(),
       el("div", { class: "toolbar" }, [enableBtn, saveBtn,
         el("button", { class: "btn subtle", onClick: () => {
           if (!confirm("👋 Log out of this trainer? The phone goes back to a fresh start (welcome tour included) — the room code stays filled in, and no scores are touched.")) return;

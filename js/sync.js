@@ -27,6 +27,29 @@
   };
 
   let conf = load();                 // { config, room, name, me, enabled }
+  // 🚪 The room this app BOOTED into — any change away from it triggers a
+  // full reload so every subscription, cache and view starts clean.
+  const bootRoom = (conf.room || "").trim();
+  const RKEY = "jasonBachHub.rooms.v1";
+  function knownRooms() {
+    try { return JSON.parse(localStorage.getItem(RKEY) || "[]"); } catch (_) { return []; }
+  }
+  function rememberRoom(room) {
+    room = (room || "").trim();
+    if (!room) return;
+    try {
+      const list = knownRooms().filter((r) => r.room !== room);
+      list.unshift({ room: room, ts: Date.now() });
+      localStorage.setItem(RKEY, JSON.stringify(list.slice(0, 8)));
+    } catch (_) {}
+  }
+  rememberRoom(bootRoom);
+  function reloadIfRoomChanged() {
+    if (!conf.enabled) return false;
+    if ((conf.room || "").trim() === bootRoom) return false;
+    setTimeout(() => { try { location.reload(); } catch (_) {} }, 120);
+    return true;
+  }
   let app = null, db = null, ref = null, unsub = null;
   let applying = false;              // suppress echo while applying a remote doc
   let pushTimer = null, rev = 0;
@@ -332,9 +355,23 @@
       }
       conf.room = (room || "").trim(); conf.name = (name || "").trim();
       persist();
-      return { ok: true };
+      rememberRoom(conf.room);
+      // Already live in another room? A room change means a FULL refresh.
+      const reloading = reloadIfRoomChanged();
+      return { ok: true, reloading: reloading };
     },
-    enable() { conf.enabled = true; persist(); connect(); },
+    // Rooms this phone has joined before (newest first) — for the tour and
+    // Settings, so hopping between crews is one tap.
+    knownRooms() { return knownRooms(); },
+    // One-tap switch: save the room, enable sync, and reload clean.
+    switchRoom(room) {
+      conf.room = (room || "").trim();
+      conf.enabled = !!conf.room;
+      persist();
+      rememberRoom(conf.room);
+      if (!reloadIfRoomChanged()) { if (conf.enabled) connect(); }
+    },
+    enable() { conf.enabled = true; persist(); rememberRoom(conf.room); if (!reloadIfRoomChanged()) connect(); },
     disable() { conf.enabled = false; persist(); disconnect(); },
     status() { return { state: statusState, msg: statusMsg }; },
     onStatus(fn) { statusSubs.push(fn); fn(statusState, statusMsg); return () => { const i = statusSubs.indexOf(fn); if (i >= 0) statusSubs.splice(i, 1); }; },

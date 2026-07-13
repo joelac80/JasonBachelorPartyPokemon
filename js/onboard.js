@@ -74,8 +74,18 @@
         d: "Tap yourself (or create yourself). Everything you do — every catch, every badge, every duel win, every run — follows YOU: your Pokédex, your profile, your place in the Hall of Fame.",
         body: () => { paintGrid(); return grid; } },
       { e: "🔗", t: "Join your friends' room",
-        d: "Type the room code the crew is using and every phone shares ONE living world — catches, battles and gym badges sync in real time. Leave it blank to run solo; you can join any time in ⚙️ Settings.",
-        body: () => el("div", { class: "field" }, [roomIn]) },
+        d: "Type the room code the crew is using and every phone shares ONE living world — catches, battles and gym badges sync in real time. Leave it blank to run solo; you can join any time in ⚙️ Settings. Switching rooms later reloads the app fresh.",
+        body: () => {
+          const wrap = el("div", {}, [el("div", { class: "field" }, [roomIn])]);
+          // 🚪 rooms this phone has used before — different crews, one tap
+          const known = (window.Sync && Sync.knownRooms && Sync.knownRooms()) || [];
+          if (known.length) {
+            wrap.appendChild(el("p", { class: "hint" }, "Rooms you've played in before:"));
+            wrap.appendChild(el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, known.map((r) =>
+              el("button", { class: "btn subtle sm", onClick: () => { roomIn.value = r.room; if (window.SFX && SFX.blip) SFX.blip(); } }, "🚪 " + r.room))));
+          }
+          return wrap;
+        } },
       { e: "🔴", t: "Catch 'em — all nine generations",
         d: "The Safari Zone is the engine: find a wild Pokémon, earn boosts, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
       { e: "⚔️", t: "Battle 'em — for real",

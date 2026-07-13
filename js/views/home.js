@@ -49,6 +49,12 @@
       p.location ? el("p", { class: "cd-loc" }, "📍 " + p.location) : null,
       el("p", { class: "hero-blurb" }, "This is a place for friends who grew up loving the world of Pokémon — one app on every phone that turns a room into a region. Catch across all nine generations, battle each other for real, and walk the whole saga side by side: every gym, every Champion, every legend, every film."),
       el("p", { class: "hero-blurb hero-motto" }, "Catch 'em. Battle 'em. Never travel alone."),
+      (function roomLine() {
+        const c = (window.Sync && Sync.getConf && Sync.getConf()) || {};
+        const room = (c.room || "").trim();
+        return el("a", { class: "hero-room", href: "#/settings" },
+          c.enabled && room ? "🔗 Room " + room + " · live with the crew" : "🔗 Playing solo — join a room in Settings");
+      })(),
       p.blurb ? el("p", { class: "hero-blurb" }, p.blurb) : null,
     ]);
     root.appendChild(hero);

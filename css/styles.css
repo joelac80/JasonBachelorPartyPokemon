@@ -2207,3 +2207,6 @@ html, body { overscroll-behavior-y: contain; }
 .nuz-slots .btn { display: flex; flex-direction: column; gap: 1px; line-height: 1.2; min-width: 30%; }
 .nuz-slot-st { font-size: 10px; opacity: 0.7; font-family: var(--pixel, monospace); }
 .nuz-slot-st.live { color: #2e8b3d; opacity: 1; font-weight: 800; }
+.hero-room { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ink-dim); text-decoration: none;
+  border: 1.5px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--paper); }
+.hero-room:hover { color: var(--ink); }
