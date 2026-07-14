@@ -48,7 +48,7 @@
 
   // 🛗 THE 1→100 GAUNTLET: every floor IS a level. Floor 1 is a Lv1 scrap
   // between base forms; floor 100 is a Lv100 war. The battle-wide level
-  // feeds the engine's moveset curve (35 + Lv×1.4 — full arsenals from
+  // feeds the engine's moveset curve (40 + Lv×1.2 — full arsenals from
   // Lv58), and EVERY Pokémon walks in obeying the evolution rules: your
   // Charizard is a Charmander until floor 16 and doesn't get his wings
   // back until floor 36 (JourneyStyle.formAt, the True Story walk).

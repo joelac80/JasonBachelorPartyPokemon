@@ -76,17 +76,23 @@
   function effSpeed(m) { let s = (m.spe || 50) * stageMul(m.stg ? m.stg.spe : 0); if (m.status === "par") s *= 0.5; return s; }
 
   // 📉 A battle fought at a LEVEL caps what anyone can KNOW: no Earthquake on
-  // a Lv 10 Pokémon. Damaging moves whose power beats the curve (~35 + Lv×1.4:
-  // Lv5 ≈ 42, Lv14 ≈ 55, Lv32 ≈ 80, Lv48 ≈ 102) drop off the set — status
-  // moves always stay — and if the cut leaves a mon toothless, its weakest
-  // damaging moves come back so everyone can still fight. Lv 58+ knows it all.
+  // a Lv 10 Pokémon. The curve is 40 + Lv×1.2 (Lv5 ≈ 46, Lv14 ≈ 57, Lv32 ≈ 78,
+  // Lv48 ≈ 98); Lv 58+ knows it all. Status moves always stay. TWO guarantees
+  // keep low-level fights fair without leaking full-power moves:
+  //  • every mon keeps at least TWO damaging moves (coverage — a bad type
+  //    matchup is a tough spot, not a dead end), refilled weakest-first…
+  //  • …but a refilled move is CLAMPED to the curve (Slash at Lv5 hits like
+  //    a Lv5 move, shown as "Slash 46") — no learnset lottery.
   function capMoves(moves, level) {
     if (!level || level >= 58) return moves;
-    const cap = 35 + level * 1.4;
+    const cap = 40 + level * 1.2;
     const kept = moves.filter((m) => !m.pow || m.pow <= cap);
     const dmg = moves.filter((m) => m.pow).sort((a, b) => a.pow - b.pow);
-    for (let i = 0; i < dmg.length && (kept.length < 2 || !kept.some((m) => m.pow)); i++) {
-      if (kept.indexOf(dmg[i]) < 0) kept.push(dmg[i]);
+    const nDmg = () => kept.filter((m) => m.pow).length;
+    for (let i = 0; i < dmg.length && (kept.length < 2 || nDmg() < 2); i++) {
+      if (kept.indexOf(dmg[i]) >= 0) continue;
+      // clone before clamping — move objects are shared across mons
+      kept.push(dmg[i].pow > cap ? Object.assign({}, dmg[i], { pow: Math.round(cap) }) : dmg[i]);
     }
     return kept;
   }
@@ -109,9 +115,14 @@
       if (types.length === 1 && types[0] !== "normal") moves.push(typeMove("normal", ["Tackle", 40, 100]));
     }
     moves = capMoves(moves, level).slice(0, 4);
+    // 🩹 HP grows with the battle level, damage in lockstep via the move
+    // curve — so every level band lands in the classic 3-4-hit rhythm.
+    // Lv5 = 55% pool, Lv14 = 64%, Lv36 = 86%, Lv50+ = full (standard
+    // battles, the Lv100 ladder, and remote duels are untouched).
+    const hpMul = level ? Math.min(1, 0.5 + level / 100) : 1;
     return { id: monId, name: d.n, x: x, types: types,
       spe: (window.DEX_SPEED && DEX_SPEED[monId]) || 50,   // Gen-2 base Speed → turn order
-      hpMax: 120 + Math.round(x * 0.5), atk: 0.55 + x / 500,
+      hpMax: Math.round((120 + Math.round(x * 0.5)) * hpMul), atk: 0.55 + x / 500,
       // ---- live battle state (reset on switch-in where noted) ----
       status: null,        // major status: par | brn | psn | slp | frz
       slp: 0,              // remaining sleep turns
