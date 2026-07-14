@@ -2322,3 +2322,14 @@ html, body { overscroll-behavior-y: contain; }
   font-weight: 800; letter-spacing: .06em; padding: 1px 5px; border-radius: 4px; margin-left: 4px;
   vertical-align: 2px; animation: bossPulse 1.6s ease-in-out infinite; }
 @keyframes bossPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 72, 60, .55); } 50% { box-shadow: 0 0 0 4px rgba(224, 72, 60, 0); } }
+
+/* 📬 The Alerts inbox: one row per event — emoji, text, time-ago, optional
+   jump button. Unread rows carry the accent stripe until the page marks
+   them read. */
+.inbox-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+  border-bottom: 1px dashed rgba(0,0,0,.12); }
+.inbox-row:last-child { border-bottom: 0; }
+.inbox-row.unread { border-left: 4px solid var(--red, #d84028); background: rgba(216,64,40,.06); border-radius: 6px; }
+.inbox-emoji { font-size: 1.25rem; flex: 0 0 auto; }
+.inbox-main { flex: 1; min-width: 0; font-size: .92rem; }
+.inbox-when { font-size: .72rem; opacity: .6; margin-top: 2px; }

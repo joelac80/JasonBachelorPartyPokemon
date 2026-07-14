@@ -73,8 +73,8 @@
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
   let presenceList = [], roamLast = null;
   const battleMap = {}, duelMap = {};   // id → latest doc data (all live battles / duels)
-  const presenceSubs = [], chIncSubs = [], chAccSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [], photoReactSubs = [];
-  const handledInc = {}, handledAcc = {};   // challenge ids we've already surfaced
+  const presenceSubs = [], chIncSubs = [], chAccSubs = [], chDecSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [], photoReactSubs = [];
+  const handledInc = {}, handledAcc = {}, handledDec = {};   // challenge ids we've already surfaced
   let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
   let photoReactKeys = null;                  // photoId -> { "reactorClient|emoji": 1 } already seen (new ones ping)
   let renderTimer = null;                     // pending coalesced re-render (debounces remote-update flicker)
@@ -288,6 +288,13 @@
         // the challenger tidies up the doc a few seconds later
         if (c.fromClient === clientId && chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
       }
+      // 🚫 a DECLINE finally reaches the challenger (it used to vanish
+      // silently — you'd just wait forever). Same tidy-up as accepts.
+      if (c.state === "declined" && c.fromClient === clientId && !handledDec[c.id]) {
+        handledDec[c.id] = 1;
+        chDecSubs.forEach((f) => { try { f(c); } catch (_) {} });
+        if (chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
+      }
     });
   }
 
@@ -495,6 +502,8 @@
     },
     onChallengeIncoming(fn) { chIncSubs.push(fn); return () => { const i = chIncSubs.indexOf(fn); if (i >= 0) chIncSubs.splice(i, 1); }; },
     onChallengeAccepted(fn) { chAccSubs.push(fn); return () => { const i = chAccSubs.indexOf(fn); if (i >= 0) chAccSubs.splice(i, 1); }; },
+    onChallengeDeclined(fn) { chDecSubs.push(fn); return () => { const i = chDecSubs.indexOf(fn); if (i >= 0) chDecSubs.splice(i, 1); }; },
+    _fireDeclined(c) { chDecSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
 
     // ---- live battles (broadcast so the whole room can watch — many at once) ----
     // Returns the battle's id; callers keep it to finish that exact battle.

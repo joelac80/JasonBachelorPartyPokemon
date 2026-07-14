@@ -22,6 +22,7 @@
     .add("unown", V.unown)
     .add("megadex", V.megadex)
     .add("trade", V.trade)
+    .add("inbox", V.inbox)
     .add("gyms", V.gyms)
     .add("league", V.league)
     .add("tournament", V.tournament)
@@ -274,6 +275,7 @@
       if (ch.kind === "trade" && window.TradeFX) {
         const give = (ch.party || [])[0], want = (ch.pairParty || [])[0];
         notify("🔁 Trade offer!", (ch.fromName || "Someone") + " offers " + TradeFX.nameOf(give) + " for your " + TradeFX.nameOf(want));
+        if (window.Inbox) Inbox.log("🔁", (ch.fromName || "Someone") + " offered " + TradeFX.nameOf(give) + " for your " + TradeFX.nameOf(want) + ".", "#/trade");
         if (window.SFX && SFX.select) SFX.select();
         let tctrl;
         const tbody = el("div", { class: "chal-modal" }, [
@@ -396,12 +398,15 @@
           el("button", { class: "btn subtle", onClick: () => { Sync.respondChallenge(ch, false); if (ctrl) ctrl.close(); } }, "Decline"),
         ]),
       ]);
+      if (window.Inbox) Inbox.log(isDuel ? "🎮" : "⚔", (ch.fromName || "Someone") + " challenged you" + (ch.event ? " (" + ch.event + ")" : "") + ".");
       ctrl = Modal.open(isDuel ? "Duel challenge!" : "Battle challenge!", body, null, {});
     });
 
     // On accept, the challenger broadcasts a live battle for the whole room.
     // (Duel challenges skip this — the accepter announces via the duel doc.)
     Sync.onChallengeAccepted((ch) => {
+      if (window.Inbox && ch.fromClient === Sync.myClientId())
+        Inbox.log("✅", (ch.toName || "They") + " accepted your " + (ch.kind === "trade" ? "trade offer" : "challenge") + ".");
       if (ch.kind === "duel") return;
       // Trade accepted → the offerer's phone celebrates too (state syncs in).
       if (ch.kind === "trade") {
@@ -418,6 +423,17 @@
       if (ch.fromClient === Sync.myClientId()) {
         Sync.startLiveBattle({ aName: ch.fromName, bName: ch.toName, event: ch.event, aClient: ch.fromClient, bClient: ch.toClient });
       }
+    });
+
+    // 🚫 Your challenge or live trade offer was DECLINED — say so instead of
+    // leaving you hanging (toast in-app, OS ping when backgrounded, inbox).
+    Sync.onChallengeDeclined((ch) => {
+      const what = ch.kind === "trade" ? "trade offer" : "challenge";
+      const who = ch.toName || "They";
+      notify("🚫 Declined", who + " passed on your " + what + ".");
+      if (window.U && U.toast) U.toast("🚫 " + who + " declined your " + what + ".");
+      if (window.SFX && SFX.blip) SFX.blip();
+      if (window.Inbox) Inbox.log("🚫", who + " declined your " + what + ".");
     });
 
     // Remote duel doc → participants' screens open automatically; every
@@ -590,12 +606,56 @@
         const btn = document.getElementById("inbox-btn"), num = document.getElementById("inbox-count");
         if (!btn || !num) return;
         const me = Sync.getMe && Sync.getMe();
-        const n = (me && Store.tradeOffers) ? Store.tradeOffers().filter((o) => o.to === me).length : 0;
-        btn.classList.toggle("hidden", n === 0);
-        num.textContent = n > 9 ? "9+" : String(n || "");
+        const offers = (me && Store.tradeOffers) ? Store.tradeOffers().filter((o) => o.to === me).length : 0;
+        // Unread alerts and offers awaiting action share the badge (max, not
+        // sum — an arriving offer is also an unread alert).
+        const n = Math.max(offers, (window.Inbox && Inbox.unread()) || 0);
+        btn.classList.remove("hidden");   // 📬 always visible — it's the Alerts page
+        num.textContent = n > 9 ? "9+" : (n ? String(n) : "");
+        num.classList.toggle("hidden", n === 0);
       } catch (_) {}
     }
     window.updateInboxBadge = updateInboxBadge;
+    // 📪 Persistent trade offers: watch the synced offers list for things that
+    // happened to ME — a new offer arriving, or an offer I SENT going terminal
+    // (accepted/declined) — even if it happened while this phone was asleep.
+    // Last-seen statuses live per phone so nothing is announced twice.
+    const OFFER_SEEN_KEY = "jasonBachHub.offerSeen.v1";
+    function watchOffers() {
+      try {
+        const me = Sync.getMe && Sync.getMe();
+        if (!me || !window.Inbox) return;
+        let seen = {};
+        try { seen = JSON.parse(localStorage.getItem(OFFER_SEEN_KEY) || "{}") || {}; } catch (_) {}
+        const offers = ((Store.state.pokedex || {}).offers || []);
+        const nameOf = (id) => (Store.attendee(id) || {}).name || "Someone";
+        const monN = (id) => ((window.DEX || {})[id] || {}).n || "?";
+        let changed = false;
+        offers.forEach((o) => {
+          if (!o || !o.id) return;
+          const prev = seen[o.id];
+          if (prev === o.status) return;
+          if (o.to === me && !prev && o.status === "open") {
+            Inbox.log("📬", nameOf(o.from) + " sent you a trade offer: " + monN(o.give) + " for your " + monN(o.want) + ".", "#/trade");
+            notify("📬 Trade offer!", nameOf(o.from) + " offers " + monN(o.give) + " for your " + monN(o.want));
+          }
+          if (o.from === me && prev === "open" && (o.status === "accepted" || o.status === "declined")) {
+            const good = o.status === "accepted";
+            Inbox.log(good ? "✅" : "🚫", nameOf(o.to) + " " + o.status + " your trade offer (" + monN(o.give) + " ⇄ " + monN(o.want) + ").", good ? "" : "#/trade");
+            notify(good ? "✅ Trade accepted!" : "🚫 Trade declined", nameOf(o.to) + " " + o.status + " your " + monN(o.give) + " ⇄ " + monN(o.want) + " offer.");
+            if (window.U && U.toast) U.toast((good ? "✅ " : "🚫 ") + nameOf(o.to) + " " + o.status + " your trade offer.");
+          }
+          seen[o.id] = o.status; changed = true;
+        });
+        // prune ids that left the offers list so the map stays small
+        const live = {}; offers.forEach((o) => { if (o && o.id) live[o.id] = 1; });
+        Object.keys(seen).forEach((id) => { if (!live[id]) { delete seen[id]; changed = true; } });
+        if (changed) try { localStorage.setItem(OFFER_SEEN_KEY, JSON.stringify(seen)); } catch (_) {}
+      } catch (_) {}
+    }
+    Store.subscribe(watchOffers);
+    if (Sync.onStateApplied) Sync.onStateApplied(watchOffers);
+    watchOffers();
     Store.subscribe(updateInboxBadge);
     if (Sync.onStateApplied) Sync.onStateApplied(updateInboxBadge);
     window.addEventListener("hashchange", updateInboxBadge);
