@@ -8,8 +8,12 @@
 (function () {
   // tier ~ Champions-Tournament seeding weight (higher = wins more often).
   window.CANON_TRAINERS = [
+    // 🏢 The SILPH CO. takeover (badge 5, mid-Kanto) — deliberately well
+    // before his Earth Badge gym at Viridian, so the Rocket Boss showdown
+    // and the gym-leader rematch land as two separate story beats, not
+    // back-to-back battles (his gym squad is different too: Rhydon's crew).
     { name: "GIOVANNI", title: "Rocket Boss", type: "ground", tier: 3, team: [464, 34, 31, 51, 53, 248],
-      story: { region: "Kanto", badge: 7, intro: "The Viridian shadows part. Team Rocket's boss has watched your whole climb — and the last empty gym in Kanto is HIS." },
+      story: { region: "Kanto", badge: 5, intro: "The elevator doors slide open on Silph Co.'s top floor — Team Rocket's boss sits at the president's desk like he owns it. He looks up, unsurprised." },
       quote: "So — you've grown strong. But Team Rocket bows to no one. Face me." },
     { name: "SILVER", title: "Rival", type: "dark", tier: 3, team: [461, 160, 94, 462, 169, 230],
       story: { region: "Johto", badge: 2, intro: "A red-haired trainer shoves past you out of the Azalea shadows — the kid who stole a starter. He wants yours next." },
