@@ -250,12 +250,44 @@
     return ids;
   }
 
+  // 📖 A LEVEL-CAPPED roster shows only who can really step onto the field:
+  // every owned mon walks down to its cap-legal form, duplicates that land on
+  // the same form collapse to ONE card (Tangrowth at cap 24 IS Tangela — no
+  // point showing both), and within a line only the LATEST owned form stays
+  // (own Tangela + Tangrowth at cap 40 → just Tangrowth). Split branches are
+  // their own lines — Politoed and Poliwrath, Slowbro and Slowking, both stay.
+  function capPool(pool, level, min) {
+    const JS = window.JourneyStyle;
+    if (!level || !JS || !JS.formAt) return pool;
+    const seen = {}; const reps = [];
+    pool.forEach((id) => {
+      const r = JS.formAt(id, level);
+      if (!seen[r]) { seen[r] = 1; reps.push(r); }
+    });
+    // drop any form that's an ANCESTOR of another shown form (same line,
+    // earlier stage) — walking the pre-evolution map keeps branches apart
+    const PRE = {};
+    const EV = window.EVO_LEVELS || {};
+    Object.keys(EV).forEach((f) => (EV[f] || []).forEach((e) => { PRE[e.to] = +f; }));
+    const drop = {};
+    reps.forEach((r) => { let p = PRE[r]; while (p) { if (seen[p]) drop[p] = 1; p = PRE[p]; } });
+    const trimmed = reps.filter((r) => !drop[r]);
+    // never trim a roster below the battle's minimum — relax stage by stage
+    // (duplicate lines come back first, then the raw roster) so a thin box
+    // can still field a full team
+    if (trimmed.length >= (min || 1)) return trimmed;
+    if (reps.length >= (min || 1)) return reps;
+    return pool;
+  }
+
   // Ordered party picker (modal) — used to challenge someone to a remote
   // duel and to accept one. onDone receives the picked mon ids, lead first.
   function pickParty(opts) {
     // opts.pool restricts the choices (e.g. a locked tournament squad of 6);
-    // otherwise the trainer's whole roster is fair game.
-    const pool = (opts.pool && opts.pool.length) ? opts.pool.slice() : poolFor(opts.attId);
+    // otherwise the trainer's whole roster is fair game. opts.level trims the
+    // roster to the battle's cap (one card per line, latest legal form).
+    let pool = (opts.pool && opts.pool.length) ? opts.pool.slice() : poolFor(opts.attId);
+    if (opts.level) pool = capPool(pool, opts.level, opts.min || 1);
     const max = opts.max || 6;
     const min = opts.min || 1;
     let picked = [];

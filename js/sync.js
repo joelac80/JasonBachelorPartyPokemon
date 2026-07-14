@@ -512,6 +512,7 @@
     _fireDeclined(c) { chDecSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
     _fireAccepted(c) { chAccSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
     _handleChal(list) { handleChallenges({ forEach: (f) => list.forEach((c) => f({ data: () => c })) }); },   // test seam
+    _fireLive(d) { if (d && d.id) battleMap[d.id] = d; liveSubs.forEach((f) => { try { f(d); } catch (_) {} }); },   // test seam
 
     // ---- live battles (broadcast so the whole room can watch — many at once) ----
     // Returns the battle's id; callers keep it to finish that exact battle.

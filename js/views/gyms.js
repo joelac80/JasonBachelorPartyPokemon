@@ -134,7 +134,7 @@
     // trainer's signature and always fights in its TRUE form (Misty's
     // STARMIE at Lv24, exactly like the games).
     const foes = lvl ? t.team.map((id, i) => i === t.team.length - 1 ? id : JS.formAt(id, lvl)) : t.team.slice();
-    Duel.pickParty({ attId: attId, min: 1, max: size,
+    Duel.pickParty({ attId: attId, min: 1, max: size, level: lvl || undefined,
       title: "vs " + t.title + " " + t.name + " — pick up to " + size,
       hint: (isStory ? "📖 A story battle! Pure glory — and they WILL be back until you win." :
         "A surprise battle! Bragging rights only — no badge, no rating.") +
@@ -232,7 +232,7 @@
       const lvl = (JS && JS.isStory(attId)) ? JS.gymLevel(idx) : 0;
       // 📖 devolve the squad, but the leader's ACE (last slot) stays TRUE
       const foes = lvl ? gym.team.map((id, i) => i === gym.team.length - 1 ? id : JS.formAt(id, lvl)) : gym.team.slice();
-      Duel.pickParty({ attId: attId, min: size, max: size,
+      Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
         title: "vs Leader " + gym.leader + " — pick EXACTLY " + size,
         hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +
           (lvl ? " 📖 True Story: fought at Lv " + lvl + " — both teams step down to era-true forms." : ""),

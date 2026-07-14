@@ -786,7 +786,22 @@
     // A live battle → the challenger referees (interactive), the opponent
     // auto-watches, and everyone else gets a "Watch" alert. Spectator screens
     // resolve when the referee reports the winner.
+    // Announced battle ids are PERSISTED: a ghost broadcast (a phone that
+    // died mid-battle and never wrote "done") must not re-announce itself on
+    // every app open. And only FRESH battles announce at all — anything that
+    // started 20+ minutes ago just sits quietly on the Home strip.
+    const LIVE_SEEN_KEY = "jasonBachHub.liveSeen.v1";
+    let liveSeenList = [];
+    try { liveSeenList = JSON.parse(localStorage.getItem(LIVE_SEEN_KEY) || "[]") || []; } catch (_) {}
     const handledLive = {};
+    liveSeenList.forEach((id) => { handledLive[id] = 1; });
+    function markLiveSeen(id) {
+      if (!id || liveSeenList.indexOf(id) >= 0) return;
+      liveSeenList.push(id);
+      if (liveSeenList.length > 80) liveSeenList = liveSeenList.slice(-80);
+      try { localStorage.setItem(LIVE_SEEN_KEY, JSON.stringify(liveSeenList)); } catch (_) {}
+    }
+    const liveFresh = (d) => !d.t || (Date.now() - d.t) < 1200000;
     // You watch one battle at a time; specId marks WHICH, so another battle
     // ending elsewhere can't resolve the screen you're actually watching.
     let specHandle = null, specId = "";
@@ -817,6 +832,10 @@
       const me = Sync.myClientId();
       if (data.state === "live" && !handledLive[data.id]) {
         handledLive[data.id] = 1;
+        markLiveSeen(data.id);
+        // 👻 stale broadcast (old battle, likely a dead phone) — no popup, no
+        // ping; the Home strip still lists it while it's under 3 hours old.
+        if (!liveFresh(data)) return;
         if (me === data.aClient) {                    // referee — plays + reports
           // duel modes: the real Duel screen opens via its own channel
           if (data.mode === "duel" || data.mode === "duel-remote") return;
@@ -855,10 +874,12 @@
         if (specHandle && specId === data.id) { specHandle.finish(data.winner || data.aName); specHandle = null; specId = ""; }
       }
       // Stakes battles (badges, League chambers, Mt. Silver) ping the room
-      // with the result — even the phones that didn't watch.
+      // with the result — even the phones that didn't watch. Persisted +
+      // freshness-gated like the offers, so old results can't re-ping.
       if (data.state === "done" && data.stakes && data.winner && !handledLive[data.id + ":res"]) {
         handledLive[data.id + ":res"] = 1;
-        if (Sync.myClientId() !== data.aClient) notify("🏁 " + data.stakes, data.winner + " wins!");
+        markLiveSeen(data.id + ":res");
+        if (liveFresh(data) && Sync.myClientId() !== data.aClient) notify("🏁 " + data.stakes, data.winner + " wins!");
       }
     });
   }

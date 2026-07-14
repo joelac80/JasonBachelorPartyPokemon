@@ -291,7 +291,7 @@
     // 📖 story devolve — except the ACE (last slot), which fights TRUE
     const foes = lvl ? st.team.map((id, i) => i === st.team.length - 1 ? id : JS.formAt(id, lvl)) : st.team.slice();
     chamberIntro(idx, () => {
-      Duel.pickParty({ attId: attId, min: size, max: size,
+      Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
         title: "vs " + foeName + " — pick EXACTLY " + size,
         hint: (isRed ? "The silent trainer. " + size + " vs " + size + "."
           : isFinal ? "The final battle. " + size + " vs " + size + " — the lineup is hidden."
