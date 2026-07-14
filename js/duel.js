@@ -194,8 +194,12 @@
     // Sort/filter the pool by dex number, generation and type.
     const filter = { gen: 0, type: "", desc: false };
     const grid = el("div", { class: "duel-party-grid" });
+    // ⚡ Last party used (per phone, per trainer) — powers "Use last team".
+    const LAST_KEY = "jasonBachHub.lastParty.v1";
+    function lastParties() { try { return JSON.parse(localStorage.getItem(LAST_KEY) || "{}") || {}; } catch (_) { return {}; } }
     const cta = el("button", { class: "btn primary", onClick: () => {
       if (picked.length < min) return;
+      try { const lp = lastParties(); lp[opts.attId] = picked.slice(); localStorage.setItem(LAST_KEY, JSON.stringify(lp)); } catch (_) {}
       ref.close(); opts.onDone(picked.slice());
     } }, "Ready");
     function paint() {
@@ -222,14 +226,15 @@
         : "⚔ Ready — " + (picked.length === 1 ? picked.length + " Pokémon" : "party of " + picked.length);
       cta.disabled = picked.length < min;
     }
-    // One tap loads the trainer's saved Team of 6 (capped to this picker's max).
-    const teamBtn = el("button", { class: "btn subtle sm", onClick: () => {
-      const t = ((Store.state.pokedex || {}).trainers || {})[opts.attId] || {};
-      const team = (t.team || []).filter((id) => pool.indexOf(id) >= 0).slice(0, max);
-      if (!team.length) { alert("No team set — build one on the Safari page."); return; }
-      picked = team;
+    // ⚡ One tap re-picks the party this trainer took into their LAST battle
+    // (self-explanatory, no setup) — filtered to this picker's pool and capped
+    // to its size, so a saved six adapts to a 4v4. The button only exists
+    // when there's usable history; a fresh trainer never sees it.
+    const lastUsable = ((lastParties()[opts.attId] || []).filter((id) => pool.indexOf(id) >= 0)).slice(0, max);
+    const teamBtn = lastUsable.length ? el("button", { class: "btn subtle sm", onClick: () => {
+      picked = lastUsable.slice();
       paint();
-    } }, "⚡ Use my team");
+    } }, "⚡ Use last team (" + lastUsable.length + ")") : null;
     // Filter bar only when there's enough to sift through (a locked squad of a
     // few doesn't need it).
     const filterBar = (pool.length > 8 && window.DexFilter) ? DexFilter.controls(filter, paint) : null;
