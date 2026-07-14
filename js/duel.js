@@ -732,9 +732,14 @@
     // menu (cleared during every animation, i.e. most of the battle) and
     // there was no way to leave at all.
     if (mode === "watch") {
+      // one cheer per beat — a mashed button won't flood every phone's screen
+      let rxLast = 0;
       overlay.appendChild(el("div", { class: "duel-watch-bar" }, [
         opts.rx ? el("div", { class: "duel-rx-bar" }, ["🔥", "👏", "😱", "💀", "👊"].map((e) =>
-          el("button", { class: "duel-rx-btn", onClick: () => { try { opts.rx(e); } catch (_) {} } }, e))) : null,
+          el("button", { class: "duel-rx-btn", onClick: () => {
+            const t = now(); if (t - rxLast < 600) return; rxLast = t;
+            try { opts.rx(e); } catch (_) {}
+          } }, e))) : null,
         el("button", { class: "btn subtle sm", onClick: () => close() }, "✕ Stop watching"),
       ]));
     }
@@ -767,6 +772,9 @@
     // Spectator reactions — everyone's taps float up on every screen.
     let rxSeen = -1;
     function spawnRx(item) {
+      // a mash of cheers stays a cheer, not a blizzard — cap the floats
+      const up = arena.querySelectorAll(".duel-rx");
+      if (up.length >= 10) up[0].remove();
       const n = el("div", { class: "duel-rx" }, [
         el("span", { class: "duel-rx-e" }, item.e || "🔥"),
         item.by ? el("span", { class: "duel-rx-by" }, item.by) : null,
@@ -1147,7 +1155,10 @@
           steps.push(["🌱 " + m.name + "'s health is sapped by Leech Seed! (−" + d + " HP)", 1000, () => {
             m.hp = Math.max(0, m.hp - d);
             const foe = (livingEnemies(u._side)[0] || {}).u;
-            if (foe) { const fm = mon(foe); fm.hp = Math.min(fm.hpMax, fm.hp + d); paintHp(foe); }
+            // the seed can only feed a mon still STANDING — a seeder that
+            // fainted this turn (awaiting its replacement) must never be
+            // revived by its own seed (nuzlocke deaths are forever)
+            if (foe) { const fm = mon(foe); if (fm.hp > 0) { fm.hp = Math.min(fm.hpMax, fm.hp + d); paintHp(foe); } }
             paintHp(u); if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted"); sfx("coin");
           }]);
         }
