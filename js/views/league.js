@@ -45,7 +45,7 @@
       quote: "A ninja's poison lingers long after the strike. Can you endure it?" },
     { key: "bruno", region: "Johto", name: "BRUNO", rank: "Elite Four", type: "fighting", team: [237, 106, 107, 208, 214, 68], pts: 6, boost: 1.15, needs: "koga",
       quote: "We will grind you down with our superior power. Hoo hah!" },
-    { key: "karen", region: "Johto", name: "KAREN", rank: "Elite Four", type: "dark",     team: [461, 45, 94, 248, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
+    { key: "karen", region: "Johto", name: "KAREN", rank: "Elite Four", type: "dark",     team: [461, 45, 94, 430, 197, 229], pts: 6, boost: 1.15, needs: "bruno",
       quote: "I love Dark-type Pokémon. I find their wild, tough image so appealing. Show me what YOU find beautiful." },
     { key: "lance", region: "Johto", name: "LANCE", rank: "Champion",   type: "dragon",   team: [130, 149, 149, 149, 142, 6], pts: 8, boost: 1.2, needs: "karen",
       quote: "I've been waiting for you. I knew you, of all trainers, would make it this far." },

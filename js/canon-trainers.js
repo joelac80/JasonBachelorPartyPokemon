@@ -12,10 +12,15 @@
     // before his Earth Badge gym at Viridian, so the Rocket Boss showdown
     // and the gym-leader rematch land as two separate story beats, not
     // back-to-back battles (his gym squad is different too: Rhydon's crew).
-    { name: "GIOVANNI", title: "Rocket Boss", type: "ground", tier: 3, team: [464, 34, 31, 51, 53, 248],
+    // Canon squad: his pet Persian plus the Silph Co. Kangaskhan and his
+    // Ground corps — Rhyperior (the Rhydon line, his true signature) aces.
+    // No Tyranitar: that one belongs to SILVER (Stadium 2 rival's ace).
+    { name: "GIOVANNI", title: "Rocket Boss", type: "ground", tier: 3, team: [53, 115, 51, 31, 34, 464],
       story: { region: "Kanto", badge: 5, intro: "The elevator doors slide open on Silph Co.'s top floor — Team Rocket's boss sits at the president's desk like he owns it. He looks up, unsurprised." },
       quote: "So — you've grown strong. But Team Rocket bows to no one. Face me." },
-    { name: "SILVER", title: "Rival", type: "dark", tier: 3, team: [461, 160, 94, 462, 169, 230],
+    // Sneasel/Golbat/Magneton/Haunter crew grown up, his stolen starter —
+    // and TYRANITAR as the ace, the Stadium 2 rival's famous closer.
+    { name: "SILVER", title: "Rival", type: "dark", tier: 3, team: [461, 94, 462, 169, 160, 248],
       story: { region: "Johto", badge: 2, intro: "A red-haired trainer shoves past you out of the Azalea shadows — the kid who stole a starter. He wants yours next." },
       quote: "…Don't get cocky. I'll show you what real strength looks like." },
     { name: "ARCHIE", title: "Aqua Leader", type: "water", tier: 3, team: [130, 321, 350, 260, 279, 340],
@@ -24,7 +29,8 @@
     { name: "MAXIE", title: "Magma Leader", type: "fire", tier: 3, team: [323, 262, 257, 76, 169, 289],
       story: { region: "Hoenn", badge: 3, intro: "Smoke rolls off Mt. Chimney. Team Magma's leader stands at the crater's edge, a meteorite in hand." },
       quote: "The land must expand. Step aside — or be burned away." },
-    { name: "CYRUS", title: "Galactic Boss", type: "dark", tier: 3, team: [430, 169, 229, 130, 461, 248],
+    // Platinum's Spear Pillar five, Weavile acing — Cyrus never ran a Tyranitar.
+    { name: "CYRUS", title: "Galactic Boss", type: "dark", tier: 3, team: [229, 430, 130, 169, 461],
       story: { region: "Sinnoh", badge: 7, intro: "The sky over Mt. Coronet goes wrong. At the Spear Pillar, Team Galactic's boss speaks without turning around." },
       quote: "Emotion is weakness. I will build a world without it — starting with your defeat." },
     { name: "GHETSIS", title: "Plasma Sage", type: "dark", tier: 4, team: [563, 626, 537, 983, 604, 635],
@@ -36,10 +42,13 @@
     { name: "LYSANDRE", title: "Flare Boss", type: "dark", tier: 3, team: [668, 620, 430, 130, 448, 715],
       story: { region: "Kalos", badge: 7, intro: "Your Holo Caster crackles — 'This is Lysandre…' — and the doors of Lysandre Labs slide open on their own." },
       quote: "Only the chosen deserve a beautiful world. Prove you belong in it." },
-    { name: "GUZMA", title: "Skull Boss", type: "bug", tier: 3, team: [768, 738, 127, 168, 284, 248],
+    // His USUM bug crew — Scizor in, Tyranitar out — and GOLISOPOD aces,
+    // because it's ya boy's signature.
+    { name: "GUZMA", title: "Skull Boss", type: "bug", tier: 3, team: [738, 127, 168, 284, 212, 768],
       story: { region: "Alola", badge: 2, intro: "Po Town's gates swing wide and Team Skull's boss cracks his neck twice. 'It's ya boy. GUZMA! What is it? WHO is it? IT'S ME!'" },
       quote: "Ya boy Guzma's here to knock ya down! Big bad Guzma, comin' through!" },
-    { name: "GLADION", title: "Rival", type: "dark", tier: 3, team: [773, 745, 461, 571, 169, 248],
+    // Lucario replaces the stray Tyranitar; SILVALLY closes — Null grew up.
+    { name: "GLADION", title: "Rival", type: "dark", tier: 3, team: [745, 461, 571, 169, 448, 773],
       story: { region: "Alola", badge: 3, intro: "A pale kid with a stitched-together Pokémon blocks the pier. 'You're not weak. Prove it — Null and I need the practice.'" },
       quote: "I don't have time for the weak. Come at me with everything." },
     { name: "COLRESS", title: "Plasma Scientist", type: "steel", tier: 3, team: [601, 462, 604, 649, 596, 637],
