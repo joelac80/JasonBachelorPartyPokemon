@@ -72,24 +72,28 @@
   window.addEventListener("sync-me", syncTitle);
   syncTitle();
 
-  // Sound on/off toggle (retro SFX).
+  // 🔊 ONE audio button masters BOTH the retro SFX and the chiptune music
+  // (the two separate header toggles crowded small screens). Muting kills
+  // everything; unmuting restores the music only if it was playing before.
   const sfxBtn = document.getElementById("sfx-toggle");
   if (sfxBtn && window.SFX) {
-    const syncSfx = () => { sfxBtn.textContent = SFX.isMuted() ? "🔇" : "🔊"; };
-    syncSfx();
-    sfxBtn.addEventListener("click", () => { SFX.toggle(); syncSfx(); });
+    const MUSIC_WAS = "jasonBachHub.musicWasOn";
+    const syncAudio = () => { sfxBtn.textContent = SFX.isMuted() ? "🔇" : "🔊"; sfxBtn.classList.toggle("off", SFX.isMuted()); };
+    syncAudio();
+    sfxBtn.addEventListener("click", () => {
+      if (!SFX.isMuted()) {
+        try { localStorage.setItem(MUSIC_WAS, SFX.isMusicOn && SFX.isMusicOn() ? "1" : "0"); } catch (_) {}
+        if (SFX.isMusicOn && SFX.isMusicOn() && SFX.toggleMusic) SFX.toggleMusic();
+        SFX.toggle();   // → muted
+      } else {
+        SFX.toggle();   // → live
+        let was = "0"; try { was = localStorage.getItem(MUSIC_WAS) || "0"; } catch (_) {}
+        if (was === "1" && SFX.toggleMusic && SFX.isMusicOn && !SFX.isMusicOn()) SFX.toggleMusic();
+      }
+      syncAudio();
+    });
   } else if (sfxBtn) {
     sfxBtn.style.display = "none";
-  }
-
-  // Music on/off toggle (background chiptune).
-  const musicBtn = document.getElementById("music-toggle");
-  if (musicBtn && window.SFX && SFX.toggleMusic) {
-    const syncMusic = () => { musicBtn.classList.toggle("off", !SFX.isMusicOn()); };
-    syncMusic();
-    musicBtn.addEventListener("click", () => { SFX.toggleMusic(); syncMusic(); });
-  } else if (musicBtn) {
-    musicBtn.style.display = "none";
   }
 
   // Mobile nav toggle.
