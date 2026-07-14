@@ -390,19 +390,28 @@
       const wid = ctx.glyph ? 201 : ctx.id;
       const size = Math.min(3, Duel.poolFor(tid).length);
       if (size < 1) return;
+      // 🩸 A LEGENDARY fights as a RAID BOSS: an extended HP pool (~2.6× a
+      // normal wild) behind a segmented boss bar — but every chunk you carve
+      // pays out harder (catch odds climb up to +80% at the brink, vs the
+      // old +45% legendary resistance). Long fight, earned catch.
+      const isBoss = !!nfo.leg && !ctx.glyph;
       Duel.pickParty({ attId: tid, min: 1, max: size,
-        title: "⚔ vs wild " + nfo.name + " — pick up to " + size,
-        hint: "Weaken it, then hit 🔴 Throw Ball mid-battle — lower HP = better odds. KO it and the catch is LOST; if your side wipes, it bolts.",
+        title: (isBoss ? "🩸 BOSS — wild " : "⚔ vs wild ") + nfo.name + " — pick up to " + size,
+        hint: isBoss
+          ? "🩸 A LEGENDARY guards a huge BOSS health bar. Carve it down — the deeper it drops, the higher your 🔴 Throw Ball odds climb (to ~85% at the brink). KO it and the catch is LOST; if your side wipes, it bolts."
+          : "Weaken it, then hit 🔴 Throw Ball mid-battle — lower HP = better odds. KO it and the catch is LOST; if your side wipes, it bolts.",
         onDone: (ids) => {
           busy = true;
           Duel.start({ mode: "local", broadcast: false,
             a: { units: [{ attId: tid, monIds: ids }] },
-            b: { units: [{ npc: "Wild " + nfo.name, ai: true, monIds: [wid],
+            b: { units: [{ npc: (isBoss ? "BOSS " : "Wild ") + nfo.name, ai: true, monIds: [wid],
+              boss: isBoss, hpBoost: isBoss ? 2.2 : 1, boost: isBoss ? 1.2 : 1,
               shiny: ctx.wasShiny ? [wid] : null, glyphs: ctx.glyph ? [ctx.glyph] : null }] },
             wild: {
               // Full HP = your boosted throw odds; every chunk of damage adds
-              // up to +65% (legendaries resist here too: +45%).
-              chanceFn: (frac) => Math.min(1, ctx.baseChance + (1 - frac) * (nfo.leg ? 0.45 : 0.65)),
+              // up to +65% — and a legendary BOSS pays +80% for surviving the
+              // long fight to the brink.
+              chanceFn: (frac) => Math.min(1, ctx.baseChance + (1 - frac) * (isBoss ? 0.80 : nfo.leg ? 0.45 : 0.65)),
               onOutcome: (outcome) => finishWildBattle(outcome, ctx),
             } });
         } });
@@ -611,7 +620,8 @@
       const canBattle = window.Duel && Duel.poolFor && Duel.poolFor(active()).length > 0;
       const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
         el("button", { class: "btn primary", onClick: () => throwBall(nfo) }, [ballIcon(ball), " Throw " + ball.name]),
-        canBattle ? el("button", { class: "btn subtle", onClick: () => battleToWeaken(nfo) }, "⚔ Battle to weaken (10% it bolts)") : null,
+        canBattle ? el("button", { class: "btn subtle", onClick: () => battleToWeaken(nfo) },
+          nfo.leg && !isUnownEnc(current) ? "🩸 BOSS BATTLE — carve the bar, earn the catch (10% it bolts)" : "⚔ Battle to weaken (10% it bolts)") : null,
         el("button", { class: "btn subtle", onClick: () => { current = null; status = ""; clearBoosts(); renderEncounter(); } }, "Run"),
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [

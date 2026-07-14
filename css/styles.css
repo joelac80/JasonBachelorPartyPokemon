@@ -2307,3 +2307,18 @@ html, body { overscroll-behavior-y: contain; }
 .onb-gate { grid-column: 1 / -1; color: #e6352f; font-weight: 700; margin: 2px 0 0; }
 .room-chip-group { display: inline-flex; gap: 2px; align-items: center; }
 .room-forget { padding: 4px 8px; opacity: 0.7; }
+
+/* 🩸 Legendary BOSS battles (Safari): a raid-style extended health bar —
+   taller, segmented into quarters, gold-to-crimson fill — plus the BOSS
+   tag beside the name. The segment ticks ride an overlay so they stay
+   visible above the draining fill. */
+.battle-hp-track.boss { height: 16px; background: #2a0d0d; border-color: #7a1f1f; position: relative; }
+.battle-hp-track.boss .battle-hp-fill { background: linear-gradient(#ffd34d, #e08a00); }
+.battle-hp-track.boss .battle-hp-fill.low { background: linear-gradient(#ff9d4d, #d85f10); }
+.battle-hp-track.boss .battle-hp-fill.crit { background: linear-gradient(#ff6a5a, #b02318); }
+.battle-hp-track.boss::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(90deg, transparent 0 calc(25% - 2px), rgba(20,6,6,.75) calc(25% - 2px) 25%); }
+.duel-boss-tag { display: inline-block; background: #7a1f1f; color: #ffd34d; font-size: .58rem;
+  font-weight: 800; letter-spacing: .06em; padding: 1px 5px; border-radius: 4px; margin-left: 4px;
+  vertical-align: 2px; animation: bossPulse 1.6s ease-in-out infinite; }
+@keyframes bossPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(224, 72, 60, .55); } 50% { box-shadow: 0 0 0 4px rgba(224, 72, 60, 0); } }

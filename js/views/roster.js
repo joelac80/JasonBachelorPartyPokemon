@@ -123,17 +123,58 @@
     return row;
   }
 
+  // The favorite's REAL type chart fills the card footer: its biggest
+  // weakness and best resist across all 18 attacking types.
+  const ALL_TYPES = ["normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison",
+    "ground", "flying", "psychic", "bug", "rock", "ghost", "dragon", "dark", "steel", "fairy"];
+  function typeChart(defTypes) {
+    const eff = window.Battle && Battle.effectiveness;
+    if (!eff || !defTypes || !defTypes.length) return { weak: "", res: "" };
+    let weak = "", wv = 1, res = "", rv = 1;
+    ALL_TYPES.forEach((t) => {
+      const m = defTypes.reduce((x, d) => x * eff(t, d), 1);
+      if (m > wv) { wv = m; weak = t; }
+      if (m < rv) { rv = m; res = t; }
+    });
+    return { weak: weak ? weak + " ×" + wv : "", res: res ? res + " ×" + rv : "" };
+  }
+
   function tcgCard(a) {
     const color = typeColor(a.type);
     const c = a.card || (window.SEED && window.SEED.cards && window.SEED.cards[a.id]) || {};
     const cardType = c.type || a.type || "normal";
-    const hp = c.hp || (Store.rankOf(a.id) === "Champion" ? 100 : 80);
     const form = Store.currentForm(a);
     const sprite = Store.favSprite(a);
 
-    const attacks = (c.attacks && c.attacks.length) ? c.attacks : [
-      { name: "Tackle", cost: 1, dmg: "30", text: "A dependable hit." },
+    // 📊 The card IS the stat sheet: attacks are the trainer's real journey
+    // numbers, HP rides the Trainer Score, the footer reads the favorite's
+    // actual type chart.
+    const score = Store.achievementScore(a.id);
+    const hp = c.hp || Math.min(300, 60 + score * 10);
+    const dexN = Store.dexCount(a.id), sh = Store.shinyCount ? Store.shinyCount(a.id) : 0;
+    const badges = Store.gymBadgeCount(a.id);
+    const wins = Store.leagueWins(a.id);
+    const champKeys = (window.LEAGUE_STAGES || [])
+      .filter((st) => st.rank === "Champion" || st.rank === "Top Champion").map((st) => st.key);
+    const champs = champKeys.filter((k) => wins.indexOf(k) >= 0).length;
+    const dw = Store.duelRecord(a.id);
+    const twr = Store.towerOf(a.id) || {};
+    const towerBest = Math.max(twr.best || 0, twr.mBest || 0);
+    const crowns = (Store.state.nuzlockeHof || []).filter((r) => r.att === a.id).length;
+    const storms = Store.roamWins ? Store.roamWins(a.id) : 0;
+    const genCap = Store.genCapFor ? Store.genCapFor(a.id) : 1;
+    const attacks = [
+      { name: "🔴 Catch 'Em All", cost: 1, dmg: String(dexN),
+        text: dexN ? (sh + " ✨ shiny · Gen " + genCap + "/9 unlocked") : "No catches yet — hit the Safari!" },
+      { name: "🏅 Badge Rush", cost: 2, dmg: String(badges),
+        text: champs + "/" + (champKeys.length || 9) + " Champions beaten" + (wins.indexOf("red") >= 0 ? " · 🗻 RED" : "") },
+      { name: "⚔ Rival Smash", cost: 3, dmg: String(dw.w || 0),
+        text: "duel wins vs the squad" + (towerBest ? " · 🗼 tower best " + towerBest : "")
+          + (crowns ? " · 🪦 " + crowns + " crown" + (crowns > 1 ? "s" : "") : "")
+          + (storms ? " · 🌩 " + storms + " storm" + (storms > 1 ? "s" : "") : "") },
     ];
+    const favTypes = ((window.DEX || {})[a.favoriteId] || {}).t || (a.type ? [a.type] : []);
+    const chart = typeChart(favTypes);
 
     const frameKids = [];
     if (c.dex) frameKids.push(el("span", { class: "tcg-dex" }, c.dex));
@@ -160,7 +201,11 @@
       ]),
       el("div", { class: "tcg-frame" }, frameKids),
       el("div", { class: "tcg-flavor" },
-        c.flavor || (a.favorite ? ("The " + (a.role || "Trainer") + ". Favorite: " + a.favorite + ".") : (a.role || "The Squad"))),
+        c.flavor || (function () {
+          const role = a.role || Store.rankOf(a.id) || "Trainer";
+          const lead = /^the /i.test(role) ? role : "The " + role;
+          return a.favorite ? (lead + ". Favorite: " + a.favorite + ".") : lead + ".";
+        })()),
       el("div", { class: "tcg-moves" }, attacks.map((m) =>
         el("div", { class: "tcg-move" }, [
           energy(m.cost, cardType),
@@ -171,14 +216,18 @@
           el("div", { class: "tcg-move-dmg" }, m.dmg || ""),
         ])
       )),
-      c.power ? el("div", { class: "tcg-power" }, [
+      el("div", { class: "tcg-power" }, c.power ? [
         el("b", {}, "POWER"), " ",
         el("span", { style: { fontWeight: 800 } }, c.power.name), " — ", c.power.text,
-      ]) : null,
+      ] : [
+        el("b", {}, "RANK"), " ",
+        el("span", { style: { fontWeight: 800 } }, Store.rankOf(a.id)),
+        " — Trainer Score " + score + " on the Squad Leaderboard.",
+      ]),
       el("div", { class: "tcg-foot" }, [
-        el("span", {}, "weakness: " + (c.weakness || "—")),
-        el("span", {}, "resist: " + (c.resistance || "—")),
-        el("span", {}, "retreat: " + (c.retreat != null ? c.retreat : "—")),
+        el("span", {}, "weakness: " + (c.weakness || chart.weak || "—")),
+        el("span", {}, "resist: " + (c.resistance || chart.res || "—")),
+        el("span", {}, "retreat: " + (c.retreat != null ? c.retreat : ((dw.l || 0) + " losses"))),
       ]),
       el("div", { class: "tcg-meta" }, [
         el("span", {}, c.number || ""),

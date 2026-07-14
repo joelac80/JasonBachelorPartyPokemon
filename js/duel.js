@@ -352,6 +352,9 @@
         // nuzlocke split-boost: devolved fodder near-full, real ace eased).
         const bst = Array.isArray(u.boost) ? (u.boost[i] || 1) : u.boost;
         if (bst && bst !== 1) { m.atk *= bst; m.hpMax = Math.round(m.hpMax * bst); m.hp = m.hpMax; }
+        // 🩸 BOSS: a raid-style extended HP pool (Safari legendary bosses) —
+        // HP only, so the fight is long rather than one-shot lethal.
+        if (u.hpBoost && u.hpBoost !== 1) { m.hpMax = Math.round(m.hpMax * u.hpBoost); m.hp = m.hpMax; }
         m.species = m.name;
         // 🔡 A boss can field lettered Unown (u.glyphs, aligned to monIds) so a
         // swarm can spell a word — the sprite + name follow the glyph.
@@ -364,7 +367,7 @@
       // (snapshotted at setup so every phone agrees).
       const bag = ((Store.state.pokedex || {}).trainers || {})[u.attId];
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
-        ai: !!u.ai, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
+        ai: !!u.ai, boss: !!u.boss, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
         vsFace: u.vsFace || null,                      // 🎬 boss portrait for the VS intro
         // 🎭 A boss can hide its last N party mons (u.reserve) — off the ball
         // row and VS intro until they're actually sent out ("one more!"), and
@@ -551,10 +554,11 @@
           u._faceEl,
           // opts.level: a battle-wide display level (the Nuzlocke's run cap) \u2014
           // purely cosmetic, so a fresh run reads Lv14 instead of Lv50.
-          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv" + (opts.level || 50)), u._statusEl]),
+          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv" + (opts.level || 50)),
+            u.boss ? el("span", { class: "duel-boss-tag" }, "\ud83e\ude78 BOSS") : null, u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
-            el("div", { class: "battle-hp-track" }, [u._fill]),
+            el("div", { class: "battle-hp-track" + (u.boss ? " boss" : "") }, [u._fill]),
           ]),
           el("div", { class: "duel-hp-sub" }, [u._num, el("span", { class: "duel-owner" }, u.name)]),
         ]));
