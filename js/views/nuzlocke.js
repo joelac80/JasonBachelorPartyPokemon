@@ -1326,7 +1326,9 @@
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
-            monIds: team, boost: gymBoosts(team, hc) }] },
+            monIds: team, boost: gymBoosts(team, hc),
+            // 🗣 the badge-handover line — leaders concede in character here too
+            outro: g.defeat ? { lose: g.defeat } : undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
             if (winSide === "a") { Store.nuzBadge(me, idx, slot); sfx("fanfare"); maybeAmbush(); }
