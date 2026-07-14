@@ -1331,7 +1331,11 @@
             outro: g.defeat ? { lose: g.defeat } : undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
-            if (winSide === "a") { Store.nuzBadge(me, idx, slot); sfx("fanfare"); maybeAmbush(); }
+            if (winSide === "a") {
+              Store.nuzBadge(me, idx, slot); sfx("fanfare");
+              if (window.GymCircuit && GymCircuit.badgePop) GymCircuit.badgePop(idx, me);
+              maybeAmbush();
+            }
             renderKeepScroll();
           } } });
       });

@@ -161,6 +161,52 @@
     GYMS.forEach((g, i) => { if (g.region === region && Store.gymHolders(i).indexOf(attId) >= 0) n++; });
     return n;
   }
+
+  // 🏅 THE BADGE MOMENT — a full-screen award the instant a gym falls.
+  // Art resolves in three steps: your own drop-in file at
+  // assets/badges/<key>.png (key = badge name, lowercased, e.g. boulder.png,
+  // zephyr.png, ulaula.png) → the built-in vector icon (data/badge-icons.js)
+  // → the gym's type energy. Drop real art in and every surface upgrades.
+  function badgeKey(g) { return (g.badge || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+  function badgeArt(g, cls) {
+    const key = badgeKey(g);
+    // badge NAMES repeat across regions (Kalos + Paldea both mint a Psychic
+    // Badge; Galar + Paldea share Grass/Water/Fire…), so the region-qualified
+    // file wins, the bare name serves the unique ones, then the vector icon.
+    const chain = [
+      "assets/badges/" + (g.region || "").toLowerCase() + "-" + key + ".png",
+      "assets/badges/" + key + ".png",
+      (window.BADGE_ICONS && BADGE_ICONS[key]) || "",
+      U.energyIcon(g.type) || "",
+    ].filter(Boolean);
+    let at = 0;
+    const img = el("img", { class: cls || "", src: chain[0], alt: g.badge + " Badge" });
+    img.addEventListener("error", () => { if (++at < chain.length) img.src = chain[at]; });
+    return img;
+  }
+  function badgePop(idx, attId) {
+    const g = GYMS[idx]; if (!g) return;
+    let tries = 0;
+    (function when() {   // wait for the battle screen's own outro to clear
+      if (++tries > 20) return;
+      if (document.querySelector(".battle")) { setTimeout(when, 500); return; }
+      const nm = (Store.attendee(attId) || {}).name || "The challenger";
+      let lay;
+      const closePop = () => { try { lay.remove(); } catch (_) {} };
+      lay = el("div", { class: "league-intro badge-pop", onClick: closePop }, [
+        el("div", { class: "league-intro-inner" }, [
+          el("div", { class: "badge-pop-ta" }, "TA-DA!"),
+          el("div", { class: "badge-pop-ring" }, [badgeArt(g, "badge-pop-img")]),
+          el("div", { class: "league-intro-name" }, "The " + g.badge + " Badge"),
+          el("div", { class: "league-intro-quote" }, nm + " defeated Leader " + g.leader + " — " + g.region + "'s " + g.badge + " Badge is theirs, forever."),
+          el("div", { class: "hint", style: { opacity: 0.7 } }, "tap to continue"),
+        ]),
+      ]);
+      document.body.appendChild(lay);
+      if (window.SFX && SFX.fanfare) SFX.fanfare();
+      setTimeout(closePop, 4600);
+    })();
+  }
   function offerEncounter(attId, t, isStory) {
     let tries = 0;
     // Wait until the gym battle's own end screens (evolution / rematch) clear.
@@ -263,7 +309,7 @@
             b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: foes,
               // 🗣 the badge-handover line — every leader concedes in character
               outro: gym.defeat ? { lose: gym.defeat } : undefined }] },
-            onResult: () => { Router.render(); maybeEncounter(attId, idx); } });
+            onResult: (winSide) => { Router.render(); if (winSide === "a") badgePop(idx, attId); maybeEncounter(attId, idx); } });
         } });
     };
     const me = window.Sync && Sync.getMe && Sync.getMe();
@@ -351,6 +397,7 @@
     GYMS: GYMS,
     card: circuitCard,
     idxsForRegion: function (name) { return GYMS.map(function (g, i) { return i; }).filter(function (i) { return GYMS[i].region === name; }); },
+    badgePop: badgePop,                // 🏅 shared award moment (nuzlocke runs use it too)
     _maybeEncounter: maybeEncounter,   // test seam
   };
 })();

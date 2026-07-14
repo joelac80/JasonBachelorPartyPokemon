@@ -1993,6 +1993,20 @@ html, body { overscroll-behavior-y: contain; }
 .nuz-starter img { width: 64px; height: 64px; image-rendering: pixelated; }
 .nuz-starter-n { font-weight: 800; font-size: 12px; }
 .nuz-rules { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted, #8a97a8); margin-top: 8px; }
+/* 🏅 the badge moment — full-screen award when a gym falls */
+.badge-pop { cursor: pointer; }
+.badge-pop-ta { font-family: var(--pixel, monospace); font-size: 26px; font-weight: 900; color: #ffcb05;
+  text-shadow: 0 2px 0 rgba(0,0,0,.45); letter-spacing: 2px; animation: badgeTa .5s ease-out; }
+.badge-pop-ring { width: 132px; height: 132px; margin: 14px auto; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle, rgba(255,203,5,.35), rgba(255,203,5,0) 70%);
+  animation: badgeSpin .9s cubic-bezier(.2,.9,.3,1.2); }
+.badge-pop-img { width: 96px; height: 96px; image-rendering: pixelated;
+  filter: drop-shadow(0 0 14px rgba(255,203,5,.8)); }
+@keyframes badgeSpin { 0% { transform: scale(.1) rotate(-540deg); opacity: 0; }
+  70% { transform: scale(1.15) rotate(12deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
+@keyframes badgeTa { 0% { transform: translateY(-18px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
 /* ⚠ borrowed power — a capped picker card whose form was never caught */
 .duel-pick.is-defiant { border-color: #d9822b; }
 .duel-pick-defy { position: absolute; top: 2px; left: 2px; font-size: 12px;
