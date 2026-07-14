@@ -212,7 +212,8 @@
       if (d.attId) {
         const att = Store.attendee(d.attId);
         const pool = Duel.poolFor(d.attId);
-        if (!pool.filter((id) => Store.canTrade(d.attId, id)).length)
+        const anyTradeable = pool.some((id) => Store.canTrade(d.attId, id));
+        if (!anyTradeable)
           kids.push(el("p", { class: "hint" }, "Nothing tradeable yet — the partner stays, catch more in the Safari!"));
         // One entry per HELD variant — a normal and a shiny of the same species
         // both appear so a trainer can send exactly the one they mean.
@@ -222,7 +223,7 @@
           if (vs.length) vs.forEach((sh) => entries.push({ id: id, shiny: sh }));
           else entries.push({ id: id, shiny: shinyOf(d.attId, id) });   // partner / not-yet-caught → shows locked
         });
-        kids.push(el("div", { class: "duel-pick-row trade-pick-grid" }, entries.map((e) => {
+        kids.push(el("div", { class: "duel-pick-row trade-pick-grid" + (d.mon ? " has-pick" : "") }, entries.map((e) => {
           const id = e.id, shiny = e.shiny;
           const ok = Store.canTrade(d.attId, id);
           const locked = att && att.favoriteId === id && !ok;
@@ -231,10 +232,16 @@
           const src = spriteOf(id, shiny);
           const btn = el("button", { class: "duel-pick" + (on ? " on" : "") + (ok ? "" : " locked") + (shiny ? " is-shiny" : ""),
             title: nameOf(id) + (shiny ? " ✨ SHINY" : "") + (locked ? " — partner, untradeable ❤" : ""),
-            onClick: () => { if (!ok) { sfx("error"); return; } d.mon = id; d.shiny = shiny; render(); } }, [
+            onClick: () => {
+              if (!ok) { sfx("error"); return; }
+              // Tapping the already-selected mon unpicks it.
+              if (on) { d.mon = 0; d.shiny = false; } else { d.mon = id; d.shiny = shiny; }
+              render();
+            } }, [
             src ? el("img", { src: src, alt: nameOf(id) }) : el("span", { class: "draft-thumb-ball" }),
             shiny ? el("span", { class: "duel-pick-shiny" }, "✨") : null,
             locked ? el("span", { class: "duel-pick-n lock" }, "🔒") : null,
+            on ? el("span", { class: "duel-pick-n sel" }, "✓") : null,
           ]);
           // Label disambiguates when both forms are shown; still flags a lone shiny.
           const lab = bothVariants ? (shiny ? "✨ Shiny" : "Normal") : (shiny ? "✨ Shiny" : "");
@@ -243,10 +250,21 @@
             lab ? el("div", { class: "trade-pick-lab" + (shiny ? " shiny" : "") }, lab) : null,
           ]);
         })));
+        // Loud selection banner — sprite + name in a green card so there's
+        // never any doubt about which mon is on the table for this side.
         if (d.mon) {
           const evo = Store.TRADE_EVOS[d.mon];
-          kids.push(el("div", { class: "duel-pick-meta" }, "Offering: " + nameOf(d.mon) + (d.shiny ? " ✨ shiny" : "") +
-            (evo ? " — ⚡ evolves into " + nameOf(evo) + " when traded!" : "")));
+          kids.push(el("div", { class: "trade-sel" }, [
+            el("img", { src: spriteOf(d.mon, d.shiny), alt: "" }),
+            el("div", {}, [
+              el("div", { class: "trade-sel-name" }, "✅ " + nameOf(d.mon) + (d.shiny ? " ✨ SHINY" : "")),
+              el("div", { class: "trade-sel-sub" }, evo
+                ? "⚡ Evolves into " + nameOf(evo) + " when traded!"
+                : "Tap it again to unpick, or tap another to swap."),
+            ]),
+          ]));
+        } else {
+          kids.push(el("div", { class: "duel-pick-meta" }, "👆 Tap a Pokémon to select it."));
         }
       }
       return el("div", { class: "arena-side " + cls }, kids);
