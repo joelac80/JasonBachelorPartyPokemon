@@ -1865,8 +1865,12 @@
       try {
         Store.update((s) => {
           s.battles = s.battles || { log: [] }; s.battles.log = s.battles.log || [];
+          // wIds/lIds: attendee ids stamped alongside the display labels, so
+          // the W-L record survives renames and doubles ("A & B") labels.
           s.battles.log.unshift({ title: title, winner: wLabel, loser: lLabel, ts: now(),
-            duel: true, wMon: wMons, lMon: lMons });
+            duel: true, wMon: wMons, lMon: lMons,
+            wIds: sides[winSide].units.map((x) => x.attId).filter(Boolean),
+            lIds: sides[other(winSide)].units.map((x) => x.attId).filter(Boolean) });
           if (s.battles.log.length > 60) s.battles.log.length = 60;
           const teams = [];
           sides[winSide].units.forEach((x) => { if (x.teamId && teams.indexOf(x.teamId) < 0) teams.push(x.teamId); });

@@ -445,7 +445,12 @@
       const a = this.attendee(attId), nm = a ? a.name : attId;
       const tr = (this.state.pokedex && this.state.pokedex.trainers || {})[attId] || {};
       const log = (this.state.battles && this.state.battles.log) || [];
-      let w = 0, l = 0; log.forEach((b) => { if (b.winner === nm) w++; if (b.loser === nm) l++; });
+      // id-first matching — the old exact-equality check missed every doubles
+      // win ("A & B" never === "A") and broke on renames.
+      let w = 0, l = 0; log.forEach((b) => {
+        if (this._duelHit(b, "w", attId, nm)) w++;
+        else if (this._duelHit(b, "l", attId, nm)) l++;
+      });
       const myDrinks = (this.state.drinks || []).filter((d) => d.trainer === attId);
       const labelCounts = {}; myDrinks.forEach((d) => { if (d.label) labelCounts[d.label] = (labelCounts[d.label] || 0) + 1; });
       const topDrink = Object.keys(labelCounts).sort((x, y) => labelCounts[y] - labelCounts[x])[0] || "";
@@ -913,13 +918,22 @@
     // ---- battle & collecting analytics --------------------------------------
     // Duel win/loss from the battle log (name-matched; doubles count for
     // both partners on a side).
+    // W-L from the battle log. Entries stamped with attendee ids (wIds/lIds)
+    // match by id — rename-proof; older entries fall back to splitting the
+    // display label (handles doubles "A & B" too).
+    _duelHit(b, side, attId, name) {
+      const ids = side === "w" ? b.wIds : b.lIds;
+      if (ids && ids.length) return ids.indexOf(attId) >= 0;
+      const label = side === "w" ? b.winner : b.loser;
+      return (label || "").split(" & ").indexOf(name) >= 0;
+    },
     duelRecord(attId) {
       const a = this.attendee(attId); if (!a) return { w: 0, l: 0 };
-      const hit = (label) => (label || "").split(" & ").indexOf(a.name) >= 0;
       let w = 0, l = 0;
       ((this.state.battles && this.state.battles.log) || []).forEach((b) => {
         if (!b.duel) return;
-        if (hit(b.winner)) w++; else if (hit(b.loser)) l++;
+        if (this._duelHit(b, "w", attId, a.name)) w++;
+        else if (this._duelHit(b, "l", attId, a.name)) l++;
       });
       return { w: w, l: l };
     },
@@ -1935,6 +1949,27 @@
         next.pokedex.gen59Unlocked = true;
         next.pokedex.gen59By = next.pokedex.gen59By || pp.gen59By;
         next.pokedex.gen59At = next.pokedex.gen59At || pp.gen59At;
+      }
+      // ⚔️ battle log: exactly ONE phone records each duel result, but the
+      // state doc is last-write-wins — any concurrent push from another phone
+      // (a catch, a KO credit) could clobber a freshly recorded win before it
+      // spread. Union by (ts + winner + loser), newest first, same 60 cap.
+      const pb = (prev && prev.battles) || {};
+      const nb = next.battles = next.battles || { log: [] };
+      nb.log = nb.log || [];
+      if (pb.log && pb.log.length) {
+        const key = (b) => (b.ts || 0) + "|" + (b.winner || "") + "|" + (b.loser || "");
+        const seen = {}; nb.log.forEach((b) => { seen[key(b)] = 1; });
+        pb.log.forEach((b) => { if (!seen[key(b)]) { seen[key(b)] = 1; nb.log.push(b); } });
+        nb.log.sort((x, y) => (y.ts || 0) - (x.ts || 0));
+        if (nb.log.length > 60) nb.log.length = 60;
+      }
+      // 🥇 belt: the NEWER claim survives; reign history unions like the log.
+      if (pb.belt && (!nb.belt || (pb.belt.ts || 0) > (nb.belt.ts || 0))) nb.belt = pb.belt;
+      if (pb.beltLog && pb.beltLog.length) {
+        const bl = nb.beltLog = nb.beltLog || [];
+        const bseen = {}; bl.forEach((r) => { bseen[(r.ts || 0) + "|" + r.attId] = 1; });
+        pb.beltLog.forEach((r) => { const k = (r.ts || 0) + "|" + r.attId; if (!bseen[k]) { bseen[k] = 1; bl.push(r); } });
       }
       // 🏅 gym badges: union the holder list per gym.
       const pc = (prev && prev.gymCircuit) || {};
