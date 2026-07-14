@@ -32,24 +32,31 @@
         return;
       }
       const meC = (Sync.myClientId && Sync.myClientId()) || "";
-      const here = ((Sync.presence && Sync.presence()) || [])
-        .filter((p) => p.clientId && p.clientId !== meC && p.attId);
-      if (!here.length) {
-        U.toast("😴 No one else is here right now — challenges land on phones that are IN the room.");
-        return;
-      }
+      // Everyone's fair game: 🟢 trainers here now get the knock instantly on
+      // their phone; 💤 away trainers get a PATIENT request that greets them
+      // the next time they open the app (it waits up to a day).
+      const hereBy = {};
+      (((Sync.presence && Sync.presence()) || [])).forEach((p) => {
+        if (p.clientId && p.clientId !== meC && p.attId) hereBy[p.attId] = p;
+      });
+      const foes = Store.state.attendees.filter((a) => a.id !== me);
+      if (!foes.length) { U.toast("😴 You're the only trainer registered — no one to challenge yet."); return; }
+      foes.sort((a, b) => (hereBy[b.id] ? 1 : 0) - (hereBy[a.id] ? 1 : 0));
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
-        el("p", { class: "hint" }, "Who gets it? Trainers in the room right now:"),
-        el("div", { class: "sl-vote-grid" }, here.map((p) => {
-          const a = Store.attendee(p.attId);
-          const src = a && Store.favSprite ? Store.favSprite(a) : "";
+        el("p", { class: "hint" }, "🟢 here now — it pops up on their phone. 💤 away — it waits for them (up to a day)."),
+        el("div", { class: "sl-vote-grid" }, foes.map((a) => {
+          const pres = hereBy[a.id];
+          const src = Store.favSprite ? Store.favSprite(a) : "";
           return el("button", { class: "sl-vote-pick", onClick: () => {
             ctrl.close();
-            if (window.QuickChallenge) QuickChallenge(p, { onSent: (nm) => U.toast("🎮 Challenge sent to " + nm + " — waiting on their phone!") });
+            const target = pres || { clientId: "", attId: a.id, name: a.name };
+            if (window.QuickChallenge) QuickChallenge(target, { onSent: (nm) => U.toast(pres
+              ? "🎮 Challenge sent to " + nm + " — waiting on their phone!"
+              : "📮 Challenge posted to " + nm + " — it greets them next time they open the app.") });
           } }, [
             src ? el("img", { class: "sl-thumb", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
-            el("span", { class: "sl-vote-name" }, p.name || (a && a.name) || "Trainer"),
+            el("span", { class: "sl-vote-name" }, (pres ? "🟢 " : "💤 ") + a.name),
           ]);
         })),
       ]);
@@ -61,7 +68,7 @@
         el("button", { class: "btn primary", onClick: () => { location.hash = "#/trade"; } }, "🔁 Send trade offer"),
         el("button", { class: "btn primary", onClick: pickFoe }, "⚔ Send battle request"),
       ]),
-      el("p", { class: "hint" }, "Trade offers compose at the Trading Post and wait in their inbox; battle requests pop up on a phone that's here now."),
+      el("p", { class: "hint" }, "Trade offers compose at the Trading Post and wait in their inbox — even for trainers who are away. Battle requests pop up instantly on phones here now, and wait (up to a day) for anyone who isn't."),
     ]));
 
     // ---- open trade offers waiting on you (live, actionable) ----

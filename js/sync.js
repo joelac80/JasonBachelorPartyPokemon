@@ -277,8 +277,14 @@
     const now = nowMs();
     snap.forEach((d) => {
       const c = d.data(); if (!c || !c.id) return;
-      if (c.t && now - c.t > 120000) return;   // ignore stale (2 min)
-      if (c.state === "pending" && c.toClient === clientId && !handledInc[c.id]) {
+      // Phone-addressed knocks go stale fast (2 min) — the sender is standing
+      // right there. Trainer-addressed ones (no toClient) are PATIENT: they
+      // wait up to a DAY for that trainer's next phone to connect, so you can
+      // challenge someone who isn't in the room and it greets them on return.
+      const ttl = c.toClient ? 120000 : 86400000;
+      if (c.t && now - c.t > ttl) return;
+      const forMe = c.toClient ? c.toClient === clientId : !!(c.toAtt && conf.me && c.toAtt === conf.me);
+      if (c.state === "pending" && forMe && !handledInc[c.id]) {
         handledInc[c.id] = 1;
         chIncSubs.forEach((f) => { try { f(c); } catch (_) {} });
       }
@@ -505,6 +511,7 @@
     onChallengeDeclined(fn) { chDecSubs.push(fn); return () => { const i = chDecSubs.indexOf(fn); if (i >= 0) chDecSubs.splice(i, 1); }; },
     _fireDeclined(c) { chDecSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
     _fireAccepted(c) { chAccSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
+    _handleChal(list) { handleChallenges({ forEach: (f) => list.forEach((c) => f({ data: () => c })) }); },   // test seam
 
     // ---- live battles (broadcast so the whole room can watch — many at once) ----
     // Returns the battle's id; callers keep it to finish that exact battle.
