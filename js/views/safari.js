@@ -23,11 +23,10 @@
   const DEX = window.DEX || {};
   const SP = window.DEX_SPRITES || {};
   const SPS = window.DEX_SPRITES_SHINY || {};
-  // ✨ Shiny odds — bumped from the Gen-2 ~1/16 to a party-friendly ~1/8 so a
-  // shiny actually shows up over a weekend (still special, ~11% fresh and
-  // climbing as your normal dex fills). A shiny catch scores DOUBLE points and
-  // is marked forever in the dex.
-  const SHINY_RATE = 1 / 8;
+  // ✨ Shiny odds — a true 1-in-20: rarer than the old party rate, so a
+  // sparkle is a real event. A shiny catch scores DOUBLE points and is
+  // marked forever in the dex.
+  const SHINY_RATE = 1 / 20;
   // The wild pool is real catchable species only — the National dex (1–1025).
   // Mega/Primal forms live in DEX too (ids 10000+) but are battle-only, never
   // wild catches, so they're excluded here.
@@ -144,7 +143,7 @@
   // The encounter table is 502 slots — a normal AND a shiny of every species —
   // minus the (species, variant) pairs THIS trainer already owns. So once you
   // catch a normal Totodile you stop meeting regular Totodile, but a shiny one
-  // is still out there. Shinies keep their ~1/16 rarity via the weight factor.
+  // is still out there. Shinies keep their 1-in-20 rarity via the weight factor.
   function randomEncounter(tid) {
     let total = 0; const cum = [];
     const pool = poolIds(tid);
@@ -517,7 +516,7 @@
             el("span", {}, "🌩 A wild " + DEX[roam.monId].n.toUpperCase() + " is ROAMING the party — first catch claims it!"),
             el("button", { class: "btn primary sm", onClick: () => {
               // Each hunter rolls their own shiny shot at the roaming legendary
-              // (~1/8) — the only realistic way to land a shiny legendary.
+              // (1-in-20) — the only realistic way to land a shiny legendary.
               current = roam.monId; shiny = Math.random() < SHINY_RATE; revealId = null; status = ""; clearBoosts();
               roamHunt = roam.id;
               const tid = active();

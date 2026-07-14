@@ -321,7 +321,7 @@
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
   let wildId = 0;
-  let wildShiny = 0;        // ✨ this encounter rolled shiny (1-in-16)
+  let wildShiny = 0;        // ✨ this encounter rolled shiny (1-in-20)
   let evoOpen = false;
   let slot = "";             // 💾 which of the six save slots is open on this phone
   let newRegion = "kanto";   // starter-lab region (classic/random structures)
@@ -771,8 +771,8 @@
             const id = rollWild(run);
             if (!id) { alert("The grass is quiet — every species on this road has already been met."); return; }
             Store.nuzEncounter(me, id, eraKey(run), slot);
-            // ✨ the run rolls its OWN shinies — same 1-in-16 as the Safari.
-            wildShiny = Math.random() < 1 / 16 ? 1 : 0;
+            // ✨ the run rolls its OWN shinies — same 1-in-20 as the Safari.
+            wildShiny = Math.random() < 1 / 20 ? 1 : 0;
             wildId = id; sfx(wildShiny ? "fanfare" : "blip"); renderKeepScroll();
           } }, "👣 Walk in the grass"),
         ]));

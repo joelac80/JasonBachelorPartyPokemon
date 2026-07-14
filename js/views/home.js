@@ -119,7 +119,7 @@
     ]);
     root.appendChild(el("h2", { class: "section-title" }, "🔴 Catch 'em"));
     root.appendChild(el("div", { class: "home-quick six" }, [
-      { r: "safari",  e: "🔴", t: "Safari Zone",    d: "Berries, rocks, throw — Gen 1-9, shinies 1-in-16" },
+      { r: "safari",  e: "🔴", t: "Safari Zone",    d: "Berries, rocks, throw — Gen 1-9, shinies 1-in-20" },
       { r: "dex",     e: "📕", t: "Pokédex",        d: "Every collection — Hisui, Unown, Mega, Trainers" },
       { r: "trade",   e: "🔁", t: "Trading Post",   d: "Swap with friends — some only evolve by trade" },
     ].map(tile)));
@@ -199,7 +199,7 @@
       ]);
       const groups = [
         { head: "🔴 Catching", rows: [
-          ["safari", "🔴", "Safari Zone", "Walk the grass across Gen 1-9 — 🍓 berry & 🪨 rock throws, ✨ shinies 1-in-16, 🟣 Master Balls earned by Champions & crowns"],
+          ["safari", "🔴", "Safari Zone", "Walk the grass across Gen 1-9 — 🍓 berry & 🪨 rock throws, ✨ shinies 1-in-20, 🟣 Master Balls earned by Champions & crowns"],
           ["safari", "🥊", "Wild battles", "Weaken 'em first — real battles that end in a throw, with a live catch meter"],
           ["trade", "🔁", "Trading Post", "Swap catches with friends — some species only ever evolve by trade"],
           ["dex", "📕", "Pokédex", "Every collection in one book: Gen 1-9, Hisui, Unown, Mega and Trainer dexes"],

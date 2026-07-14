@@ -185,7 +185,7 @@
     // Offline Pokemon sprite (base64 data URI) for a National Dex id, or "".
     sprite(id) { return (window.SPRITES && window.SPRITES[id]) || (window.DEX_SPRITES && window.DEX_SPRITES[id]) || ""; },
     // ✨ Identity sprite: the trainer's favorite (in its current evo-card
-    // form), drawn in the SHINY palette for the 1-in-16 trainers who rolled
+    // form), drawn in the SHINY palette for the 1-in-20 trainers who rolled
     // one at signup. Use this anywhere a trainer's face is their favorite.
     favSprite(a) {
       if (!a) return "";
@@ -194,7 +194,7 @@
       return (a.shinyFav && (window.DEX_SPRITES_SHINY || {})[f.id]) || this.sprite(f.id);
     },
     // The signup roll — ONCE per trainer, ever (favRolled guards re-roll
-    // fishing): 1-in-16 marks the TRAINER shiny, and the sparkle follows
+    // fishing): 1-in-20 marks the TRAINER shiny, and the sparkle follows
     // whatever favorite they ever set. Returns true when it comes up shiny.
     rollFavShiny(attId) {
       const a = this.attendee(attId);
@@ -204,9 +204,9 @@
         const rec = s.attendees.find((x) => x.id === attId);
         if (!rec || rec.favRolled) return;
         rec.favRolled = 1;
-        if (Math.random() < 1 / 16) {
+        if (Math.random() < 1 / 20) {
           rec.shinyFav = 1; shiny = true;
-          Store.chron(s, "✨", rec.name + " is a SHINY TRAINER — their favorite rolled shiny at signup, a true 1-in-16!");
+          Store.chron(s, "✨", rec.name + " is a SHINY TRAINER — their favorite rolled shiny at signup, a true 1-in-20!");
         }
       });
       return shiny;
@@ -1200,7 +1200,7 @@
         r.box.push(rec);
         r.catches += 1;
         const n = ((window.DEX || {})[monId] || {}).n || ("#" + monId);
-        Store.chron(s, shiny ? "✨" : "🪦", this._nuzName(attId) + " caught " + (shiny ? "a ✨ SHINY " + n + " for the Nuzlocke box — 1-in-16, under permadeath!" : n + " for the Nuzlocke box (" + r.catches + " caught)."));
+        Store.chron(s, shiny ? "✨" : "🪦", this._nuzName(attId) + " caught " + (shiny ? "a ✨ SHINY " + n + " for the Nuzlocke box — 1-in-20, under permadeath!" : n + " for the Nuzlocke box (" + r.catches + " caught)."));
       }, slot);
     },
     // Permadeath: every own mon that fainted in a nuzlocke battle dies for the

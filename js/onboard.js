@@ -54,7 +54,7 @@
       sel = id; creating = false; gateMsg = ""; paintGrid(); syncNext();
       if (window.SFX && SFX.fanfare) SFX.fanfare();
       // 🎯 The signup ritual: pick your favorite right away — the first
-      // pick rolls the 1-in-16 shiny (the picker lifts above the tour).
+      // pick rolls the 1-in-20 shiny (the picker lifts above the tour).
       if (window.FavPick) FavPick.open(id, () => paintGrid());
     }
     function paintGrid() {
@@ -109,7 +109,7 @@
         d: "Tap yourself if the crew already made your card — or create yourself. Everything you do — every catch, every badge, every duel win, every run — follows YOU: your Pokédex, your profile, your place in the Hall of Fame.",
         body: () => { paintGrid(); return grid; } },
       { e: "🔴", t: "Catch 'em — all nine generations",
-        d: "The Safari Zone is the engine: find a wild Pokémon, tempt it with 🍓 berries, risk a 🪨 rock, throw. ✨ 1-in-16 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
+        d: "The Safari Zone is the engine: find a wild Pokémon, tempt it with 🍓 berries, risk a 🪨 rock, throw. ✨ 1-in-20 encounters are SHINY. Fill the Pokédex from Kanto to Paldea (Hisui, Unown and Megas too), swap at the Trading Post — some Pokémon ONLY evolve by trade — and everything you catch fights for you everywhere else." },
       { e: "⚔️", t: "Battle 'em — for real",
         d: "Real turn-based duels, each trainer on their own phone — moves, types, crits, potions, pride on the line. Then take on 🗺 The Journey: nine regions of gyms → Elite Four → Champion, the Battle Tower, canon rivals ambushing the roads, Movie Legends, and the legends themselves. Big fights broadcast live — the whole room watches and cheers." },
       { e: "🪦", t: "…then dare the Nuzlocke",

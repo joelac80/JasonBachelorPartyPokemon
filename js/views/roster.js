@@ -337,7 +337,7 @@
 
   // ---- 📕 the favorite picker — the signup ritual, shared with the tour ---
   // Full-dex grid with the standard filter bar. The FIRST pick a trainer
-  // ever makes rolls the 1-in-16 shiny signup bonus (Store.rollFavShiny).
+  // ever makes rolls the 1-in-20 shiny signup bonus (Store.rollFavShiny).
   function pickFavorite(attId, onDone) {
     const a0 = Store.attendee(attId);
     if (!a0) return;
@@ -374,14 +374,14 @@
     }
     const bar = (window.DexFilter) ? DexFilter.controls(filter, paint) : null;
     const body = el("div", { class: "modal-form" }, [
-      el("p", { class: "hint" }, "Every trainer has ONE. Pick the Pokémon that says who you are — it becomes your card, your icon, your face on every board. ✨ Your first pick ever rolls the 1-in-16 shiny."),
+      el("p", { class: "hint" }, "Every trainer has ONE. Pick the Pokémon that says who you are — it becomes your card, your icon, your face on every board. ✨ Your first pick ever rolls the 1-in-20 shiny."),
       bar, grid,
     ]);
     paint();
     ctrl = Modal.open("♥ " + (a0.name || "Trainer") + " — pick your favorite", body, null, {});
     liftOverTour();
   }
-  // ✨ The 1-in-16 moment — worth a full stop.
+  // ✨ The 1-in-20 moment — worth a full stop.
   function celebrateShiny(attId, id) {
     const a = Store.attendee(attId);
     const src = (window.DEX_SPRITES_SHINY || {})[id] || Store.sprite(id);
@@ -390,7 +390,7 @@
       el("div", { class: "gen59-pop-emoji" }, "✨"),
       src ? el("img", { src: src, alt: "", style: { width: "96px", height: "96px", imageRendering: "pixelated" } }) : null,
       el("div", { class: "nuz-lab-head" }, "IT'S SHINY!!"),
-      el("p", { class: "hint" }, (a ? a.name : "This trainer") + " rolled the 1-in-16 — this " + (((window.DEX || {})[id] || {}).n || "favorite") + " wears its SHINY palette everywhere, forever. A shiny trainer walks among us."),
+      el("p", { class: "hint" }, (a ? a.name : "This trainer") + " rolled the 1-in-20 — this " + (((window.DEX || {})[id] || {}).n || "favorite") + " wears its SHINY palette everywhere, forever. A shiny trainer walks among us."),
       el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
         el("button", { class: "btn primary", onClick: () => { ctrl.close(); Router.render(); } }, "✨ Legendary"),
       ]),
@@ -411,7 +411,7 @@
   // 🎴 CARD FIXER — on every reopen, a signed-in trainer with an unfinished
   // card gets a friendly one-tap fixer: still named "New Trainer" → inline
   // rename; no favorite picked → straight into the favorite picker (which
-  // also sets their type and rolls the 1-in-16 shiny). Reappears each boot
+  // also sets their type and rolls the 1-in-20 shiny). Reappears each boot
   // until the card is whole; never fires over the welcome tour.
   function fixerCheck() {
     const me = window.Sync && Sync.getMe && Sync.getMe();
