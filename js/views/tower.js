@@ -30,19 +30,20 @@
 
   // 4 distinct random picks from this trainer's unlocked gens. legMode:
   // "none" (never), "some" (20% per slot), "all" (legendaries ONLY).
-  function randomTeam(attId, legMode) {
+  function randomTeam(attId, legMode, lv) {
     const cap = (Store.genMaxIdFor && Store.genMaxIdFor(attId)) || 493;
     const pool = IDS.filter((id) => id <= cap && (legMode !== "all" || DEX[id].leg));
     const team = [];
+    const clash = (id) => team.some((t) => formAtLv(t, lv) === formAtLv(id, lv));
     let guard = 0;
     while (team.length < 4 && guard++ < 400) {
       const id = pool[(Math.random() * pool.length) | 0];
-      if (id == null || team.indexOf(id) >= 0) continue;
+      if (id == null || team.indexOf(id) >= 0 || clash(id)) continue;
       if (legMode !== "all" && DEX[id].leg && !(legMode === "some" && Math.random() < 0.2)) continue;
       team.push(id);
     }
     let i = 0;
-    while (team.length < 4 && i < pool.length) { if (team.indexOf(pool[i]) < 0) team.push(pool[i]); i++; }   // tiny-pool fallback
+    while (team.length < 4 && i < pool.length) { if (team.indexOf(pool[i]) < 0 && !clash(pool[i])) team.push(pool[i]); i++; }   // tiny-pool fallback
     return team;
   }
 
@@ -65,35 +66,37 @@
     while (PRE[cur] && g++ < 6) { cur = PRE[cur]; c.push(cur); }
     return c;
   }
-  // Devolve a squad WITHOUT duplicates: if two mons collapse to the same
-  // form (Clefairy + Clefable both → Clefairy on a low floor), the collider
-  // climbs back up ITS OWN chain to the lowest free stage — one of every
-  // face on the field, even when the level rules would merge them.
   function devolve(ids, lv) {
     const f = window.JourneyStyle && JourneyStyle.formAt;
-    if (!f) return ids.slice();
-    const used = {};
-    return ids.map((id) => {
-      const chain = chainOf(id);                     // [true form … base]
-      let i = chain.indexOf(f(id, lv));
-      if (i < 0) i = chain.length - 1;
-      while (i > 0 && used[chain[i]]) i--;           // climb toward the true form
-      const form = chain[i];
-      used[form] = 1;
-      return form;
-    });
+    return f ? ids.map((id) => f(id, lv)) : ids.slice();
+  }
+  function formAtLv(id, lv) {
+    return (lv && window.JourneyStyle && JourneyStyle.formAt) ? JourneyStyle.formAt(id, lv) : id;
+  }
+  // 🚫 One of each face, enforced BEFORE the battle: at this floor's level,
+  // a family collapses to one pickable entry (Charmander + Charmeleon are
+  // the SAME mon at Lv5 — same form, same stats), represented by its
+  // least-evolved owned member so the card you tap is the mon that fights.
+  function gauntletPool(attId, lv) {
+    const pool = Duel.poolFor(attId);
+    const rep = {};
+    pool.slice().sort((a, b) => chainOf(a).length - chainOf(b).length)
+      .forEach((id) => { const fm = formAtLv(id, lv); if (rep[fm] == null) rep[fm] = id; });
+    const keep = {}; Object.keys(rep).forEach((fm) => { keep[rep[fm]] = 1; });
+    return pool.filter((id) => keep[id]);
   }
 
   function nextFoe(attId, lad) {
     const t = Store.towerOf(attId);
     const streak = lad === "rental" ? (t.rStreak || 0) : lad === "max" ? (t.mStreak || 0) : t.streak;
     const no = streak + 1;                               // this battle's number
+    const lv = lad === "max" ? 100 : floorLevel(no);     // for form-collision dedupe
     const boost = Math.min(1.5, 1.02 + streak * 0.02);   // the tower tightens its grip
     // 🌩 every 14th floor the elevator opens on the LEGENDS FLOOR — four
     // random legendaries, no trainer, no mercy. PALMER keeps the other 7s.
     if (no % 14 === 0) {
       return { name: "THE LEGENDS FLOOR", tycoon: true, legends: true, boost: boost + 0.05,
-        team: randomTeam(attId, "all"), face: 493 };
+        team: randomTeam(attId, "all", lv), face: 493 };
     }
     if (no % 7 === 0) {
       return { name: "TOWER TYCOON PALMER", tycoon: true, boost: boost + 0.08,
@@ -102,7 +105,7 @@
     // Random challenger — legendaries stay out of their pool until the streak
     // earns them (5+), and even then only sometimes.
     return { name: CLASSES[(Math.random() * CLASSES.length) | 0] + " " + NAMES[(Math.random() * NAMES.length) | 0],
-      tycoon: false, boost: boost, team: randomTeam(attId, streak >= 5 ? "some" : "none") };
+      tycoon: false, boost: boost, team: randomTeam(attId, streak >= 5 ? "some" : "none", lv) };
   }
 
   // Per-phone challenger (like the Safari) + which ladder they're climbing:
@@ -168,8 +171,8 @@
         ? "The FULL-POWER ladder: every floor is LEVEL 100 — full evolutions, full arsenals, boosted ×" + nextFoe(me, "max").boost.toFixed(2) + ". No training wheels, no mercy."
         : "A random trainer, four random Pokémon from your unlocked generations, boosted ×" + nextFoe(me, "classic").boost.toFixed(2) + " — you won't know the lineup until the balls open.")
       + (lv < 58 ? " Every floor IS a level — everyone fights in the form they'd be at Lv" + lv + ", and the heaviest moves stay locked until Lv58." : "")));
-    if (!rental && Duel.poolFor(me).length < 4) {
-      card.appendChild(el("p", { class: "empty" }, "The tower asks for FOUR Pokémon — catch a few more in the Safari first (or flip to 🎲 Rental)."));
+    if (!rental && gauntletPool(me, lv).length < 4) {
+      card.appendChild(el("p", { class: "empty" }, "The tower asks for FOUR different Pokémon — at Lv" + lv + " a family counts as ONE. Catch more variety in the Safari (or flip to 🎲 Rental)."));
     } else {
       card.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => climb() }, rental ? "🎲 Battle — take your rentals" : "⚔ Battle — pick your 4"),
@@ -214,7 +217,7 @@
     };
     if (isRental) {
       // 🎲 the tower hands you the squad — see it, steel yourself, go.
-      const mine = randomTeam(me, "none");
+      const mine = randomTeam(me, "none", lv);
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
         el("p", { class: "hint" }, "🎲 Your rentals for floor " + ((Store.towerOf(me).rStreak || 0) + 1) + " (Lv" + lv + ") — no swaps, no re-rolls. First two lead the 2v2."),
@@ -227,9 +230,9 @@
       ctrl = Modal.open("🎲 Rental squad", body, null, { noFooter: true });
       return;
     }
-    Duel.pickParty({ attId: me, min: 4, max: 4,
+    Duel.pickParty({ attId: me, min: 4, max: 4, pool: gauntletPool(me, lv),
       title: "🗼 Floor " + no + " (Lv" + lv + ") — vs " + foe.name,
-      hint: "4v4 DOUBLE battle — your first two lead the field (2v2), the other two ride the bench. Their four stay secret until sent out.",
+      hint: "4v4 DOUBLE battle — your first two lead the field (2v2), the other two ride the bench. At this floor's level a family is ONE pick (Charmander and Charmeleon are the same mon at Lv5). Their four stay secret until sent out.",
       onDone: go });
   }
 
@@ -256,4 +259,6 @@
 
   window.Views = window.Views || {};
   window.Views.tower = view;
+  // Tuning/debug hook (used by tests; harmless in production).
+  window.TowerDebug = { gauntletPool: gauntletPool, randomTeam: randomTeam, devolve: devolve };
 })();
