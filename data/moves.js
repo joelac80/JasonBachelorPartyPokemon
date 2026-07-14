@@ -30,14 +30,14 @@
     "Headbutt":    { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Stomp":       { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Double-Edge": { t: "normal", cat: "phys", pow: 100, acc: 100, fx: { recoil: 0.25 } },
-    "Take Down":   { t: "normal", cat: "phys", pow: 90, acc: 85, fx: { recoil: 0.25 } },
+    "Take Down":   { t: "normal", cat: "phys", pow: 90, acc: 85, fx: { recoil: 0.15 } },
     "Hyper Beam":  { t: "normal", cat: "spec", pow: 150, acc: 90, recharge: true },
     "Swift":       { t: "normal", cat: "spec", pow: 60, acc: 101 },
     "Tri Attack":  { t: "normal", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 20 } } },
     "Return":      { t: "normal", cat: "phys", pow: 75, acc: 100 },
     "Strength":    { t: "normal", cat: "phys", pow: 70, acc: 100 },
     "Cut":         { t: "normal", cat: "phys", pow: 50, acc: 95 },
-    "Fury Swipes": { t: "normal", cat: "phys", pow: 55, acc: 90 },
+    "Fury Swipes": { t: "normal", cat: "phys", pow: 55, acc: 90, fx: { crit: "high" } },
     "Egg Bomb":    { t: "normal", cat: "phys", pow: 100, acc: 75 },
     "Growl":       { t: "normal", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -1 } } },
     "Leer":        { t: "normal", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "def", stg: -1 } } },
@@ -97,7 +97,7 @@
     // the cartridge's 100% confusion isn't modeled — the flinch is the daze
     "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 55, fx: { flinch: 60 } },
     "Mach Punch":  { t: "fighting", cat: "phys", pow: 40, acc: 100, pri: 1 },
-    "Submission":  { t: "fighting", cat: "phys", pow: 80, acc: 80, fx: { recoil: 0.25 } },
+    "Submission":  { t: "fighting", cat: "phys", pow: 95, acc: 80, fx: { recoil: 0.15 } },
     // ---- Poison ----
     "Sludge":      { t: "poison", cat: "spec", pow: 65, acc: 100, fx: { status: { id: "psn", chance: 30 } }, spread: true },
     "Sludge Bomb": { t: "poison", cat: "spec", pow: 90, acc: 100, fx: { status: { id: "psn", chance: 30 } } },
@@ -109,7 +109,7 @@
     "Dig":         { t: "ground", cat: "phys", pow: 80, acc: 100, charge: { msg: "burrowed underground!", invuln: true } },
     "Mud-Slap":    { t: "ground", cat: "spec", pow: 40, acc: 100, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
     "Bone Club":   { t: "ground", cat: "phys", pow: 65, acc: 85, fx: { flinch: 10 } },
-    "Bonemerang":  { t: "ground", cat: "phys", pow: 50, acc: 90 },
+    "Bonemerang":  { t: "ground", cat: "phys", pow: 60, acc: 90, fx: { flinch: 20 } },
     // ---- Flying ----
     "Wing Attack": { t: "flying", cat: "phys", pow: 60, acc: 100 },
     "Aerial Ace":  { t: "flying", cat: "phys", pow: 60, acc: 101 },
@@ -128,7 +128,7 @@
     // ---- Bug ----
     "Fury Cutter": { t: "bug", cat: "phys", pow: 50, acc: 95 },
     "Megahorn":    { t: "bug", cat: "phys", pow: 120, acc: 85 },
-    "Pin Missile": { t: "bug", cat: "phys", pow: 55, acc: 85 },
+    "Pin Missile": { t: "bug", cat: "phys", pow: 65, acc: 85, fx: { crit: "high" } },
     "Twineedle":   { t: "bug", cat: "phys", pow: 60, acc: 100, fx: { status: { id: "psn", chance: 20 } } },
     "Leech Life":  { t: "bug", cat: "phys", pow: 40, acc: 100, fx: { drain: 0.5 } },
     "String Shot": { t: "bug", cat: "status", pow: 0, acc: 95, fx: { stat: { who: "foe", stat: "spe", stg: -1 } } },
@@ -228,7 +228,7 @@
     // Rock
     "Stone Edge":   { t: "rock", cat: "phys", pow: 100, acc: 80, fx: { crit: "high" } },
     "Power Gem":    { t: "rock", cat: "spec", pow: 80, acc: 100 },
-    "Rock Blast":   { t: "rock", cat: "phys", pow: 65, acc: 90 },
+    "Rock Blast":   { t: "rock", cat: "phys", pow: 65, acc: 90, fx: { crit: "high" } },
     "Rock Polish":  { t: "rock", cat: "status", pow: 0, acc: 101, fx: { stat: { who: "self", stat: "spe", stg: 2 } } },
     // Ghost
     "Shadow Claw":  { t: "ghost", cat: "phys", pow: 70, acc: 100, fx: { crit: "high" } },

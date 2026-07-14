@@ -511,13 +511,14 @@
         // their OWN shinies and must not borrow the Safari collection's.
         m.shiny = forced || (!u.shinyExact && isShinyFor(u.attId, id));   // carried into battle
         // battle EXP: KOs banked before this battle (this mon must land the
-        // blow itself to earn more). Veterans hit harder: +2% attack per
-        // banked KO, capped at +20%.
+        // blow itself to earn more). Veterans hit harder: +1% attack per
+        // banked KO, capped at +10% — enough to feel, not enough to trivialize
+        // the bosses (the old 2%/20% made a trained team steamroll).
         const t0 = ((Store.state.pokedex || {}).trainers || {})[u.attId];
         const rec0 = (t0 && t0.caught && t0.caught[id]) || {};
         m.kos0 = rec0.kos || 0;
         m.kos = 0;
-        m.atk = m.atk * (1 + Math.min(0.2, 0.02 * m.kos0));
+        m.atk = m.atk * (1 + Math.min(0.1, 0.01 * m.kos0));
         // League-calibre foes (Elite Four/Champion/RED) hit and endure
         // harder than any gym — rank boost keeps the ladder a ladder.
         // Accepts a scalar (whole team) or an ARRAY aligned to monIds (the
@@ -1320,7 +1321,7 @@
           : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + ")";
       }
       // A line the trainer FULLY owns doesn't tease an evolution — its KOs
-      // bank straight into the veteran attack bonus instead (+2% a KO).
+      // bank straight into the veteran attack bonus instead (+1% a KO, cap +10%).
       const worth = !Store.evoWorthTargets || Store.evoWorthTargets(u.attId, m.id).length > 0;
       if (!worth) return "⚔ " + m.name + " earned battle EXP — the veteran grows stronger! (" + total + " KOs banked)";
       return total >= need
@@ -2073,7 +2074,7 @@
       m.hpMax = meg.hpMax;
       m.hp = Math.max(1, Math.round(meg.hpMax * ratio));
       m.x = meg.x; m.types = meg.types; m.spe = meg.spe;
-      m.atk = meg.atk * (1 + Math.min(0.2, 0.02 * (m.kos0 || 0)));
+      m.atk = meg.atk * (1 + Math.min(0.1, 0.01 * (m.kos0 || 0)));
       m.name = meg.name;
       S.megaSide[ptr.side] = true;
       try { if (u.attId && window.Store && Store.recordMega) Store.recordMega(u.attId, megaId); } catch (_) {}
