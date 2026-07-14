@@ -635,6 +635,7 @@
         // shared-party double (Battle Tower) as two separate 4-mon parties —
         // 8 party balls and the same lead mon standing in both field slots.
         const setup = { mode: "local", title: title, first: S.first,
+          level: opts.level || null,   // battle-wide level: Lv tags + moveset caps must match on watchers
           gym: opts.gym || null, league: lg || null, hof: opts.hof || null,
           a: { shared: !!(opts.a || {}).shared, units: ((opts.a || {}).units || []) },
           b: { shared: !!(opts.b || {}).shared, units: ((opts.b || {}).units || []) } };

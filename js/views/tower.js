@@ -42,6 +42,13 @@
     return team;
   }
 
+  // 🛗 The tower CLIMBS: every floor is a level — Lv50 at the door, +1 per
+  // win, Lv100 up on floor 51. The battle-wide level feeds the engine's
+  // moveset curve (35 + Lv×1.4): on the first eight floors the biggest nukes
+  // (Hyper Beam tier) stay in everyone's back pocket, and from floor 9
+  // (Lv58) the full arsenal is unlocked while the ×boost keeps tightening.
+  function floorLevel(no) { return Math.min(100, 49 + no); }
+
   function nextFoe(attId, rental) {
     const t = Store.towerOf(attId);
     const streak = rental ? (t.rStreak || 0) : t.streak;
@@ -106,27 +113,35 @@
 
     const card = el("div", { class: "safari-card tower-card" + (isTycoon || isLegends ? " tycoon" : "") });
     body.appendChild(card);
+    const lv = floorLevel(no);
     card.appendChild(el("div", { class: "nuz-lab-head" }, isLegends
-      ? "🌩 Floor " + no + " — THE LEGENDS FLOOR"
+      ? "🌩 Floor " + no + " — THE LEGENDS FLOOR (Lv" + lv + ")"
       : isTycoon
-      ? "👑 Floor " + no + " — TOWER TYCOON PALMER bars the way"
-      : "🛗 Floor " + no + " — a challenger is waiting"));
+      ? "👑 Floor " + no + " — TOWER TYCOON PALMER bars the way (Lv" + lv + ")"
+      : "🛗 Floor " + no + " — a challenger is waiting (Lv" + lv + ")"));
     card.appendChild(el("p", { class: "hint" }, isLegends
       ? "The elevator opens on an empty hall… and FOUR RANDOM LEGENDARIES descend. No trainer. No mercy."
       : isTycoon
       ? "“You've climbed well. But this floor is MINE.” Beat the Tycoon for the " + (no >= 21 ? "GOLD" : "silver") + " print."
       : (rental
         ? "The tower hands YOU four random rentals and the foe four of their own — pure piloting skill, boosted ×" + nextFoe(me, true).boost.toFixed(2) + "."
-        : "A random trainer, four random Pokémon from your unlocked generations, boosted ×" + nextFoe(me, false).boost.toFixed(2) + " — you won't know the lineup until the balls open.")));
+        : "A random trainer, four random Pokémon from your unlocked generations, boosted ×" + nextFoe(me, false).boost.toFixed(2) + " — you won't know the lineup until the balls open.")
+      + (lv < 58 ? " Every floor climbs a level — the heaviest moves stay locked until Lv58 (floor 9)." : "")));
     if (!rental && Duel.poolFor(me).length < 4) {
       card.appendChild(el("p", { class: "empty" }, "The tower asks for FOUR Pokémon — catch a few more in the Safari first (or flip to 🎲 Rental)."));
     } else {
       card.appendChild(el("div", { class: "safari-actions" }, [
         el("button", { class: "btn primary", onClick: () => climb() }, rental ? "🎲 Battle — take your rentals" : "⚔ Battle — pick your 4"),
-        streak > 0 ? el("button", { class: "btn subtle sm", onClick: () => {
-          if (!confirm("Walk away and bank the memory? Your current " + (rental ? "rental " : "") + "streak of " + streak + " resets.")) return;
-          Store.towerLoss(me, "the walk of shame", rental); Router.render();
-        } }, "🚪 Leave the tower") : null,
+        // Two-tap leave — native confirm() is silently suppressed in
+        // iOS home-screen apps, so the button itself asks twice.
+        streak > 0 ? (function () {
+          let armed = false;
+          const btn = el("button", { class: "btn subtle sm", onClick: () => {
+            if (!armed) { armed = true; btn.textContent = "🚪 Sure? Streak of " + streak + " resets — tap again"; return; }
+            Store.towerLoss(me, "the walk of shame", rental); Router.render();
+          } }, "🚪 Leave the tower");
+          return btn;
+        })() : null,
       ]));
     }
 
@@ -138,8 +153,10 @@
   function climb() {
     const isRental = rental;
     const foe = nextFoe(me, isRental);
+    const t0 = Store.towerOf(me);
+    const lv = floorLevel((isRental ? (t0.rStreak || 0) : t0.streak) + 1);
     const go = (ids) => {
-      Duel.start({ mode: "local", title: "the Battle Tower",
+      Duel.start({ mode: "local", title: "the Battle Tower", level: lv,
         tower: { onEnd: (winSide) => {
           if (winSide === "a") { Store.towerWin(me, foe.name, foe.tycoon, ids, isRental); sfx("fanfare"); }
           else { Store.towerLoss(me, foe.name, isRental); sfx("error"); }
@@ -155,7 +172,7 @@
       const mine = randomTeam(me, "none");
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
-        el("p", { class: "hint" }, "🎲 Your rentals for floor " + ((Store.towerOf(me).rStreak || 0) + 1) + " — no swaps, no re-rolls. First two lead the 2v2."),
+        el("p", { class: "hint" }, "🎲 Your rentals for floor " + ((Store.towerOf(me).rStreak || 0) + 1) + " (Lv" + lv + ") — no swaps, no re-rolls. First two lead the 2v2."),
         el("div", { class: "nuz-foe-row" }, mine.map((id) => Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: "" }) : null)),
         el("div", { class: "toolbar" }, [
           el("button", { class: "btn primary", onClick: () => { ctrl.close(); go(mine); } }, "⚔ Take them up"),
@@ -166,7 +183,7 @@
       return;
     }
     Duel.pickParty({ attId: me, min: 4, max: 4,
-      title: "🗼 Floor " + (Store.towerOf(me).streak + 1) + " — vs " + foe.name,
+      title: "🗼 Floor " + (Store.towerOf(me).streak + 1) + " (Lv" + lv + ") — vs " + foe.name,
       hint: "4v4 DOUBLE battle — your first two lead the field (2v2), the other two ride the bench. Their four stay secret until sent out.",
       onDone: go });
   }
