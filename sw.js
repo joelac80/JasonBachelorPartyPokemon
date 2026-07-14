@@ -10,7 +10,7 @@
    Live sync (Firestore) is the one thing that needs a signal — the app
    already degrades to local play + localStorage, and the append-only
    merge folds everything back together when the connection returns. */
-const VERSION = "bachhub-v86";
+const VERSION = "bachhub-v87";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();

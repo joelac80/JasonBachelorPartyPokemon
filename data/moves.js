@@ -30,7 +30,7 @@
     "Headbutt":    { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Stomp":       { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Double-Edge": { t: "normal", cat: "phys", pow: 100, acc: 100, fx: { recoil: 0.25 } },
-    "Take Down":   { t: "normal", cat: "phys", pow: 80, acc: 85, fx: { recoil: 0.25 } },
+    "Take Down":   { t: "normal", cat: "phys", pow: 90, acc: 85, fx: { recoil: 0.25 } },
     "Hyper Beam":  { t: "normal", cat: "spec", pow: 120, acc: 90, recharge: true },
     "Swift":       { t: "normal", cat: "spec", pow: 60, acc: 101 },
     "Tri Attack":  { t: "normal", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 20 } } },
@@ -38,7 +38,7 @@
     "Strength":    { t: "normal", cat: "phys", pow: 70, acc: 100 },
     "Cut":         { t: "normal", cat: "phys", pow: 50, acc: 95 },
     "Fury Swipes": { t: "normal", cat: "phys", pow: 55, acc: 90 },
-    "Egg Bomb":    { t: "normal", cat: "phys", pow: 90, acc: 75 },
+    "Egg Bomb":    { t: "normal", cat: "phys", pow: 100, acc: 75 },
     "Growl":       { t: "normal", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -1 } } },
     "Leer":        { t: "normal", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "def", stg: -1 } } },
     "Screech":     { t: "normal", cat: "status", pow: 0, acc: 85, fx: { stat: { who: "foe", stat: "def", stg: -2 } } },
@@ -94,7 +94,8 @@
     "Brick Break": { t: "fighting", cat: "phys", pow: 65, acc: 100 },
     "Cross Chop":  { t: "fighting", cat: "phys", pow: 100, acc: 80, fx: { crit: "high" } },
     "Low Kick":    { t: "fighting", cat: "phys", pow: 55, acc: 90, fx: { flinch: 30 } },
-    "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 50 },
+    // the cartridge's 100% confusion isn't modeled — the flinch is the daze
+    "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 55, fx: { flinch: 60 } },
     "Mach Punch":  { t: "fighting", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Submission":  { t: "fighting", cat: "phys", pow: 80, acc: 80, fx: { recoil: 0.25 } },
     // ---- Poison ----
@@ -152,7 +153,7 @@
     "Pursuit":     { t: "dark", cat: "phys", pow: 40, acc: 100 },
     // ---- Steel ----
     "Metal Claw":  { t: "steel", cat: "phys", pow: 50, acc: 95, fx: { stat: { who: "self", stat: "atk", stg: 1, chance: 10 } } },
-    "Iron Tail":   { t: "steel", cat: "phys", pow: 90, acc: 75, fx: { stat: { who: "foe", stat: "def", stg: -1, chance: 30 } } },
+    "Iron Tail":   { t: "steel", cat: "phys", pow: 100, acc: 75, fx: { stat: { who: "foe", stat: "def", stg: -1, chance: 30 } } },
     "Steel Wing":  { t: "steel", cat: "phys", pow: 70, acc: 90, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 10 } } },
     // ---- Fairy (Gen-2 had no Fairy type; these read as fairy in our chart) ----
     "Fairy Wind":  { t: "fairy", cat: "spec", pow: 40, acc: 100 },
@@ -303,7 +304,7 @@
     "Lunge":        { t: "bug", cat: "phys", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -1 } } },
     "First Impression":{ t: "bug", cat: "phys", pow: 90, acc: 100, pri: 2 },
     // Rock
-    "Meteor Assault":{ t: "rock", cat: "phys", pow: 100, acc: 100, recharge: true },
+    "Meteor Assault":{ t: "rock", cat: "phys", pow: 140, acc: 100, recharge: true },
     "Diamond Storm":{ t: "rock", cat: "phys", pow: 100, acc: 95, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 50 } }, spread: true },
     // Ghost
     "Moongeist Beam":{ t: "ghost", cat: "spec", pow: 100, acc: 100 },
@@ -317,7 +318,7 @@
     "Scale Shot":   { t: "dragon", cat: "phys", pow: 75, acc: 90 },
     "Clanging Scales":{ t: "dragon", cat: "spec", pow: 110, acc: 100, fx: { stat: { who: "self", stat: "def", stg: -1 } }, spread: true },
     "Glaive Rush":  { t: "dragon", cat: "phys", pow: 120, acc: 100 },
-    "Roar of Time": { t: "dragon", cat: "spec", pow: 120, acc: 90, recharge: true },
+    "Roar of Time": { t: "dragon", cat: "spec", pow: 140, acc: 90, recharge: true },
     "Spacial Rend": { t: "dragon", cat: "spec", pow: 100, acc: 95, fx: { crit: "high" } },
     // Dark
     "Knock Off":    { t: "dark", cat: "phys", pow: 65, acc: 100 },

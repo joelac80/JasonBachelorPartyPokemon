@@ -84,17 +84,31 @@
   //    learnset weakest-first…
   //  • …but a refilled move is CLAMPED to the curve (Slash at Lv5 hits like
   //    a Lv5 move, shown as "Slash 46") — no learnset lottery.
+  // ⚖️ A gamble must stay a gamble worth TAKING: a low-accuracy or charge/
+  // recharge move keeps a 25% power premium over the curve (the cartridge
+  // ratio — Blizzard:Ice Beam is 110:90). A flat clamp used to hand back a
+  // Blizzard at Ice Beam's exact number: same power, 70% accuracy, a
+  // strictly-worse button. Expected damage still favors the reliable move
+  // (110×0.7 < 88) — the premium buys the high roll, not a free lunch.
+  function riskCapFor(m, cap) {
+    return ((m.acc && m.acc <= 85) || m.charge || m.recharge) ? cap * 1.25 : cap;
+  }
+  // End-of-turn chip, as a fraction of max HP. Burn is gentle (1/16) because
+  // it ALSO halves physical attack; poison bites 1/10; Leech Seed keeps the
+  // cartridge 1/8 (it feeds the seeder, and Grass mons are flat immune).
+  const RESIDUAL_DIV = { brn: 16, psn: 10, seed: 8 };
   function capMoves(moves, level) {
     if (!level || level >= 58) return moves;
     const cap = 40 + level * 1.2;
     const want = level >= 24 ? 4 : level >= 12 ? 3 : 2;
-    const kept = moves.filter((m) => !m.pow || m.pow <= cap);
+    const kept = moves.filter((m) => !m.pow || m.pow <= riskCapFor(m, cap));
     const dmg = moves.filter((m) => m.pow).sort((a, b) => a.pow - b.pow);
     const nDmg = () => kept.filter((m) => m.pow).length;
     for (let i = 0; i < dmg.length && (kept.length < want || nDmg() < 2); i++) {
       if (kept.indexOf(dmg[i]) >= 0) continue;
+      const lid = riskCapFor(dmg[i], cap);
       // clone before clamping — move objects are shared across mons
-      kept.push(dmg[i].pow > cap ? Object.assign({}, dmg[i], { pow: Math.round(cap) }) : dmg[i]);
+      kept.push(dmg[i].pow > lid ? Object.assign({}, dmg[i], { pow: Math.round(lid) }) : dmg[i]);
     }
     return kept;
   }
@@ -1140,12 +1154,15 @@
     function endResidual() {
       if (S.done) return;
       const steps = [];
-      const chip = (m) => Math.max(1, Math.round(m.hpMax / 8));
+      const chip = (m, kind) => Math.max(1, Math.round(m.hpMax / (RESIDUAL_DIV[kind] || RESIDUAL_DIV.seed)));
       ["a", "b"].forEach((sd) => sides[sd].units.forEach((u) => {
         const m = mon(u);
         if (m.hp <= 0) return;
         if (m.status === "brn" || m.status === "psn") {
-          const d = chip(m);
+          // Burn chips gently (1/16) — it ALSO halves physical attack, so a
+          // 1/8 bite on top was punishing twice. Poison bites harder (1/10)
+          // but no longer melts a mon in five turns.
+          const d = chip(m, m.status);
           steps.push([(m.status === "brn" ? "🔥 " : "☠️ ") + m.name + (m.status === "brn" ? " is hurt by its burn!" : " is hurt by poison!") + " (−" + d + " HP)", 1000, () => {
             m.hp = Math.max(0, m.hp - d); paintHp(u); if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted"); sfx("error");
           }]);
@@ -2232,5 +2249,6 @@
       alive: function () { return document.body.contains(overlay); } };
   }
 
-  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead };
+  window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead,
+    _capMoves: capMoves, _residualDiv: RESIDUAL_DIV };   // test seams
 })();
