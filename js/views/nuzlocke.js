@@ -14,7 +14,7 @@
        Elite Four, every Champion (RED included) — 114 battles, randomized
        teams, EVERYTHING at Lv 100 (a curve over 114 battles was noise —
        this is the full-power marathon), permadeath the whole way.
-    ⚡ BLITZ GAUNTLET — the one that SCALES: 15 seeded-random battles from
+    ⚡ BLITZ GAUNTLET — the one that SCALES: 27 seeded-random battles from
        across the whole saga (12 gyms era-ascending, 2 Elite Four, a
        Champion finale), the cap climbing 14 → 100 across the run.
     🎬 MOVIE MARATHON — the attrition epic: no starter, no grass, no caps.
@@ -59,12 +59,13 @@
   const regionReset = (run) => run.region === "ages" || run.region === "trek";
   function seqFor(run) {
     if (run.region === "blitz") {
-      // ⚡ 15 seeded battles from the WHOLE saga: 12 gyms (era-ascending so
-      // the story still climbs), 2 Elite Four stages, one Champion finale.
+      // ⚡ 27 seeded battles from the WHOLE saga: 16 gyms (era-ascending so
+      // the story still climbs), 8 Elite Four, TWO Champions — and one
+      // VILLAIN waiting past the last throne.
       const rnd = mulberry32(((run.seed || 1) ^ 0xB117) >>> 0);
       const gyms = [], picked = {};
       let guard = 0;
-      while (gyms.length < 12 && guard++ < 500) {
+      while (gyms.length < 16 && guard++ < 600) {
         const i = (rnd() * 68) | 0;
         if (picked[i]) continue; picked[i] = 1;
         const R = REGIONS.find((x) => i >= x.gym0 && i < x.gym0 + x.gymN);
@@ -75,14 +76,27 @@
       REGIONS.forEach((R) => R.league.forEach((k) => (k === R.champKey ? champs : e4).push({ k: k, R: R })));
       const stages = [], usedS = {};
       guard = 0;
-      while (stages.length < 2 && guard++ < 200) {
+      while (stages.length < 8 && guard++ < 400) {
         const p = e4[(rnd() * e4.length) | 0];
         if (usedS[p.k]) continue; usedS[p.k] = 1;
         stages.push({ t: "stage", key: p.k, R: p.R });
       }
       stages.sort((a, b) => a.R.gen - b.R.gen);
-      const c = champs[(rnd() * champs.length) | 0];
-      return gyms.concat(stages, [{ t: "stage", key: c.k, R: c.R }]);
+      const cpicks = [], usedC = {};
+      guard = 0;
+      while (cpicks.length < 2 && guard++ < 200) {
+        const c = champs[(rnd() * champs.length) | 0];
+        if (usedC[c.k]) continue; usedC[c.k] = 1;
+        cpicks.push({ t: "stage", key: c.k, R: c.R });
+      }
+      cpicks.sort((a, b) => a.R.gen - b.R.gen);
+      const seqB = gyms.concat(stages, cpicks);
+      const V = (window.CANON_TRAINERS || []).filter((x) => x.name !== "PROF. OAK" && x.team && x.team.length);
+      if (V.length) {
+        const v = V[(rnd() * V.length) | 0];
+        seqB.push({ t: "villain", key: "villain-" + v.name, name: v.name, R: (cpicks[1] || cpicks[0] || gyms[gyms.length - 1]).R });
+      }
+      return seqB;
     }
     const regions = allRegions(run) ? REGIONS : [regionByKey(run.region)].filter(Boolean);
     const seq = [];
@@ -109,6 +123,16 @@
     // step keeps the last region's R so the border gate never re-triggers.)
     if (run.region === "ages" && regions.length) {
       seq.push({ t: "stage", key: "oak", R: regions[regions.length - 1], oak: 1 });
+    }
+    // 🌍 MASTER RANDOMIZER: the whole deck — every gym, every Elite Four,
+    // every Champion, RED included — shuffled FLAT. Draw Cynthia first if
+    // the seed says so; everything is Lv 100 so any order is survivable.
+    if (run.region === "master" && run.mode === "random") {
+      const rnd = mulberry32(((run.seed || 1) ^ strHash("master-deck")) >>> 0);
+      for (let i = seq.length - 1; i > 0; i--) {
+        const j = (rnd() * (i + 1)) | 0;
+        const t = seq[i]; seq[i] = seq[j]; seq[j] = t;
+      }
     }
     return seq;
   }
@@ -208,7 +232,7 @@
     if (run.region === "movie") return 100;          // 🎬 full power, no caps
     if (run.region === "master") return 100;         // 🌍 the FULL-POWER marathon
     if (run.region === "blitz") {                    // ⚡ the one that SCALES
-      return Math.min(100, Math.round(14 + doneCount(run) * (86 / 14)));
+      return Math.min(100, Math.round(14 + doneCount(run) * (86 / 26)));
     }
     if (regionReset(run)) {
       // 🕰/🎒 The region curve RESETS each generation — ages earns it with a
@@ -317,10 +341,11 @@
   // Gym teams keep the leader's REAL ace (data lists it last).
   const gymAce = (g) => (g && g.team && g.team[g.team.length - 1]) || 0;
 
-  // Leader shuffle: region randomizers AND the master randomizer. Blitz
-  // stays out — its reel already picks random gyms.
+  // Leader shuffle: SINGLE-REGION randomizers only. Master shuffles its
+  // whole 114-battle deck instead, and blitz's reel already picks random
+  // gyms — both keep canon leaders at whatever slot the deck deals.
   function leaderShuffled(run) {
-    return !!(run && run.mode === "random" && run.region !== "blitz");
+    return !!(run && run.mode === "random" && run.region !== "blitz" && run.region !== "master");
   }
   // 🎲 Randomizers deal the REGION'S OWN leaders in a seeded random order:
   // a Kanto run shuffles Kanto's 8 gyms (each leader exactly once, their
@@ -446,7 +471,7 @@
       const headline = lastRun.over === "master" ? "🌍 MASTER OF ALL REGIONS — nine regions, every trainer, permadeath on!"
         : lastRun.over === "ages" ? "🕰 TRAINER OF THE AGES — nine generations, nine teams, one unbroken journey!"
         : lastRun.over === "trek" ? "🎒 THE LONG WALK IS OVER — one team, nine regions, border to border!"
-        : lastRun.over === "blitz" ? "⚡ BLITZ COMPLETE — 15 battles, 14 → 100, and the Champion fell!"
+        : lastRun.over === "blitz" ? "⚡ BLITZ COMPLETE — 27 battles, 14 → 100, and even the villain at the end fell!"
         : lastRun.over === "premiere" ? "🎬 THE CREDITS ROLL — the whole filmography survived, permadeath on!"
         : lastRun.over === "legend" ? "🗻 LEGEND — past the crown, and RED still fell!"
         : lastRun.over === "champion" ? "🏆 CHAMPION — the run is complete!"
@@ -483,9 +508,9 @@
       // The structure comes from the SLOT strip above — this lab only ever
       // starts the one structure whose slot is open.
       newKind === "master"
-        ? el("p", { class: "hint" }, "🌍 ALL NINE REGIONS in canon order — each region’s leaders and Elite Four dealt in a SHUFFLED order (real squads), every Champion, RED included: 114 battles, EVERYTHING at Lv 100 from the first bell. No curve, no mercy.")
+        ? el("p", { class: "hint" }, "🌍 THE WHOLE DECK, SHUFFLED FLAT: every gym, every Elite Four, every Champion, RED included — 114 battles in a completely random order (you might draw CYNTHIA first), real squads, EVERYTHING at Lv 100. No curve, no mercy.")
         : newKind === "blitz"
-          ? el("p", { class: "hint" }, "⚡ The one that SCALES: 15 seeded-random battles drawn from the whole saga — 12 gyms rising through the eras, two Elite Four ambushes, and a surprise CHAMPION finale, each fielding their REAL squad. The cap climbs Lv 14 → 100 across the run. A whole nuzlocke in one sitting.")
+          ? el("p", { class: "hint" }, "⚡ The one that SCALES: 27 seeded-random battles from the whole saga — 16 gyms rising through the eras, 8 Elite Four, TWO Champions, and one VILLAIN waiting at the very end — each fielding their REAL squad. The cap climbs Lv 14 → 100 across the run.")
         : newKind === "ages"
           ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey — and at the very end, the road leads home: PROFESSOR OAK waits in Pallet Town as the LAST BOSS.")
           : newKind === "trek"
@@ -506,7 +531,7 @@
         : el("div", { class: "nuz-starters" }, starterIds.map((id) =>
           el("button", { class: "nuz-starter", onClick: () => {
             const label = newKind === "master" ? "🌍 MASTER RANDOMIZER (all nine regions, everything Lv 100!)"
-              : newKind === "blitz" ? "⚡ BLITZ GAUNTLET (15 scaled battles!)"
+              : newKind === "blitz" ? "⚡ BLITZ GAUNTLET (27 scaled battles!)"
               : newKind === "ages" ? "🕰 THROUGH THE AGES (nine generations, a fresh team each era!)"
               : newKind === "trek" ? "🎒 LONG WALK (one team through all nine regions!)"
               : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
@@ -528,9 +553,9 @@
         movie ? null : el("div", {}, "• Catch wilds by BATTLING them — weaken, then throw mid-fight. KO it and it's lost."),
         el("div", {}, "• Any of your Pokémon that faints is dead for the rest of the run."),
         el("div", {}, newKind === "master"
-          ? "• Nine regions in canon order: 68 gyms, nine leagues, RED on Mt. Silver — all at Lv 100. The LAST Champion crowns the MASTER."
+          ? "• The saga's full deck shuffled flat: 68 gyms, nine leagues, RED — 114 battles in random order, all at Lv 100. The last card standing crowns the MASTER."
           : newKind === "blitz"
-            ? "• 15 randomized battles, cap scaling Lv 14 → 100: twelve gyms through the eras, two Elite Four, one surprise Champion. Fastest full nuzlocke in the app."
+            ? "• 27 randomized battles, cap scaling Lv 14 → 100: sixteen gyms through the eras, eight Elite Four, two Champions — and one villain past the last throne."
           : newKind === "ages"
             ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. After the last Champion, one road remains: PROFESSOR OAK in Pallet Town — beat the LAST BOSS to be crowned TRAINER OF THE AGES."
             : newKind === "trek"
@@ -615,11 +640,11 @@
 
     if (run.region === "blitz") {
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
-        el("div", { class: "nuz-lab-head" }, "⚡ BLITZ GAUNTLET — Battle " + Math.min(doneCount(run) + 1, 15) + "/15"),
+        el("div", { class: "nuz-lab-head" }, "⚡ BLITZ GAUNTLET — Battle " + Math.min(doneCount(run) + 1, 27) + "/27"),
         el("p", { class: "hint" }, "Fifteen random battles from across the whole saga, the cap climbing Lv 14 → 100. Currently Lv " + runLevel(run) + " — a Champion waits at the end, and permadeath rides the whole ride."),
       ]));
       host.appendChild(el("div", { class: "safari-stats" }, [
-        stat("⚡ " + doneCount(run) + "/15", "Battles"),
+        stat("⚡ " + doneCount(run) + "/27", "Battles"),
         stat("📈 Lv " + runLevel(run), "Blitz cap"),
         stat(run.catches, "Caught"),
         stat("🪦 " + run.deaths, "Lost forever"),
@@ -628,7 +653,7 @@
     }
     if (master) {
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
-        el("div", { class: "nuz-lab-head" }, "🌍 MASTER RANDOMIZER — Region " + (REGIONS.indexOf(R) + 1) + "/9: " + (R ? R.emoji + " " + R.name : "")),
+        el("div", { class: "nuz-lab-head" }, "🌍 MASTER RANDOMIZER — next stop: " + (R ? R.emoji + " " + R.name : "the deck")),
         el("p", { class: "hint" }, "Every gym, every Elite Four, every Champion across all nine regions — " +
           doneCount(run) + "/" + seqFor(run).length + " battles down, randomized teams, EVERYTHING at Lv 100. Permadeath from the first step to the last."),
       ]));
@@ -909,7 +934,7 @@
       const n = idx - R.gym0 + 1;
       const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, run.region === "blitz"
-        ? "⚡ Battle " + (doneCount(run) + 1) + "/15 — Leader " + (g ? g.leader : "?") + " (" + R.name + ")"
+        ? "⚡ Battle " + (doneCount(run) + 1) + "/27 — Leader " + (g ? g.leader : "?") + " (" + R.name + ")"
         : "🏟 " + R.name + " Gym " + n + "/" + R.gymN + " — Leader " + (g ? g.leader : "?")));
       if (g) {
         next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
@@ -956,9 +981,23 @@
       }
       return;
     }
+    // ❗ the blitz reel's closing VILLAIN — one canon rogue, full squad
+    if (step.t === "villain") {
+      const v = (window.CANON_TRAINERS || []).find((x) => x.name === step.name);
+      next.appendChild(el("div", { class: "nuz-lab-head" }, "⚡ Battle " + (doneCount(run) + 1) + "/27 — ❗ THE VILLAIN FINALE"));
+      if (v) {
+        const hc = gymHandicap(run);
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, v.team, Math.min(v.team.length, hc.size), step.key).map((id) => foeImg(run, id))));
+        next.appendChild(el("div", { class: "safari-actions" }, [
+          el("button", { class: "btn primary", onClick: () => battleVillain(run, step, v) }, "⚔ Face " + v.title + " " + v.name),
+        ]));
+        next.appendChild(el("p", { class: "hint" }, "Past the last throne, one rogue blocks the road out. Beat them and the BLITZ GAUNTLET is conquered."));
+      }
+      return;
+    }
     const li = R.league.indexOf(step.key);
     next.appendChild(el("div", { class: "nuz-lab-head" }, run.region === "blitz"
-      ? "⚡ Battle " + (doneCount(run) + 1) + "/15 — " + (step.key === R.champKey ? "THE CHAMPION FINALE" : R.name + " Elite Four")
+      ? "⚡ Battle " + (doneCount(run) + 1) + "/27 — " + (step.key === R.champKey ? "A CHAMPION" : R.name + " Elite Four")
       : "👑 " + R.name + " League — " + li + "/" + R.league.length));
     if (st) {
       next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, st.team, st.team.length, "stage-" + st.key).map((id) => foeImg(run, id))));
@@ -1252,6 +1291,8 @@
   }
   function ambushPool(run) {
     const all = (window.CANON_TRAINERS || []).filter((t) => t.name !== "PROF. OAK");
+    // 🎲 randomizer runs: any villain from any era can jump the road
+    if (run && run.mode === "random") return all;
     if (!run || !run.region) return all;
     const R = curRegion(run);
     const gen = R ? R.gen : 9;
@@ -1316,6 +1357,31 @@
       });
   }
 
+  // ❗ The blitz finale: the villain fights like a stage — credited into
+  // run.league under its "villain-…" key so the reel completes, and the
+  // crown fires when the sequence is spent.
+  function battleVillain(run, step, v) {
+    const hc = gymHandicap(run);
+    partyThen(run, 6, "❗ THE VILLAIN FINALE — " + v.title + " " + v.name,
+      "The last battle of the gauntlet. Every faint is permanent.",
+      (ids) => {
+        Duel.start({ mode: "local", level: runLevel(run),
+          a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
+          b: { units: [{ npc: v.title + " " + v.name, ai: true,
+            monIds: foeTeam(run, v.team, Math.min(v.team.length, hc.size), step.key), boost: hc.boost }] },
+          nuzlocke: { onEnd: (fainted, winSide) => {
+            Store.nuzDeaths(me, fainted || [], slot);
+            if (winSide === "a") {
+              Store.nuzStage(me, step.key, slot);
+              sfx("fanfare");
+              const r2 = Store.nuzRun(me, slot);
+              if (r2 && !r2.over && !nextStep(r2)) Store.nuzBlitzCrown(me);
+            }
+            renderKeepScroll();
+          } } });
+      });
+  }
+
   function battleStage(run, st) {
     const cx = stageClimax(run, st);
     if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage._skip = 0; battleStage(run, st); }); return; }
@@ -1361,5 +1427,5 @@
   window.Views = window.Views || {};
   window.Views.nuzlocke = view;
   // Tuning/debug hook (used by tests; harmless in production).
-  window.NuzDebug = { gymFor: gymFor, seqFor: seqFor, foeTeam: foeTeam };
+  window.NuzDebug = { gymFor: gymFor, seqFor: seqFor, foeTeam: foeTeam, runLevel: runLevel };
 })();
