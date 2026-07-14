@@ -685,12 +685,26 @@
     // 🌩 roaming legendary — alert every phone. It's a RACE: the first
     // trainer to land the catch claims the only one, and the storm passes
     // for everyone else (or it wanders off after 20 min uncaught).
+    // Announced storm ids PERSIST: reopening the app (iOS reloads the PWA
+    // every time it's backgrounded a while) must not re-pop a storm this
+    // phone already saw.
+    const ROAM_SEEN_KEY = "jasonBachHub.roamSeen.v1";
+    let roamSeenList = [];
+    try { roamSeenList = JSON.parse(localStorage.getItem(ROAM_SEEN_KEY) || "[]") || []; } catch (_) {}
     const handledRoam = {};
+    roamSeenList.forEach((id) => { handledRoam[id] = 1; });
+    function markRoamSeen(id) {
+      if (!id || roamSeenList.indexOf(id) >= 0) return;
+      roamSeenList.push(id);
+      if (roamSeenList.length > 20) roamSeenList = roamSeenList.slice(-20);
+      try { localStorage.setItem(ROAM_SEEN_KEY, JSON.stringify(roamSeenList)); } catch (_) {}
+    }
     let roamCtrl = null;   // the open "Hunt it" popup, so a claim can dismiss it
     Sync.onRoam((data) => {
       if (!data || !data.id) return;
       if (data.state === "live" && !handledRoam[data.id]) {
         handledRoam[data.id] = 1;
+        markRoamSeen(data.id);
         if (data.t && Date.now() - data.t > 1200000) return;   // stale event
         const nm = (window.DEX && DEX[data.monId] && DEX[data.monId].n) || "legendary";
         notify("🌩 Roaming legendary!", "A wild " + nm + " is loose — first catch claims it!");
@@ -707,6 +721,7 @@
       }
       if (data.state === "done" && data.claimedBy && !handledRoam[data.id + "d"]) {
         handledRoam[data.id + "d"] = 1;
+        markRoamSeen(data.id + "d");
         if (roamCtrl) { try { roamCtrl.close(); } catch (_) {} roamCtrl = null; }
         notify("🌩 Claimed!", data.claimedBy + " caught the roaming legendary — the storm passes.");
       }

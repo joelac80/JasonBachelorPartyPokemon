@@ -581,8 +581,11 @@
     // The latest known data for one duel doc (setup + acts + rx), for late watchers.
     duelData(id) { return (id && duelMap[id]) || null; },
     // ---- roaming legendary (room-wide RACE — first catch claims it) ----
+    // Storms are RARE by law: at most one every 45 minutes, live, claimed or
+    // wandered off — every phone's dice can roll, the cooldown holds anyway.
     startRoam(monId) {
       if (!roamRef || !monId) return;
+      if (roamLast && roamLast.t && nowMs() - roamLast.t < 2700000) return;
       roamRef.set({ id: newId("rm"), monId: monId, state: "live", by: conf.name || "", t: nowMs() }).catch(function () {});
     },
     claimRoam(byName) {
@@ -595,6 +598,7 @@
       return roamLast;
     },
     onRoam(fn) { roamSubs.push(fn); return () => { const i = roamSubs.indexOf(fn); if (i >= 0) roamSubs.splice(i, 1); }; },
+    _fireRoam(d) { roamLast = d; roamSubs.forEach((f) => { try { f(d); } catch (_) {} }); },   // test seam
 
     // Spectator reaction — floats up on every screen watching THAT duel.
     sendDuelReaction(id, emoji) {
