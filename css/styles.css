@@ -2385,3 +2385,11 @@ html, body { overscroll-behavior-y: contain; }
 .inbox-emoji { font-size: 1.25rem; flex: 0 0 auto; }
 .inbox-main { flex: 1; min-width: 0; font-size: .92rem; }
 .inbox-when { font-size: .72rem; opacity: .6; margin-top: 2px; }
+
+/* 🎭 The boss's last word — a held card at battle's end, tap Continue to move on. */
+.duel-outro-pop { z-index: 500; background: rgba(10, 12, 24, 0.72); }
+.duel-outro { text-align: center; padding: 18px 16px; max-width: 380px; }
+.duel-outro-face { width: 96px; height: 96px; image-rendering: pixelated; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4)); }
+.duel-outro-name { font-weight: 800; font-size: 1.05em; margin: 6px 0 4px; }
+.duel-outro-quote { font-style: italic; line-height: 1.5; margin-bottom: 14px; }
+.duel-outro-go { min-width: 60%; }

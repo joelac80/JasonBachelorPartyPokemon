@@ -1172,7 +1172,11 @@
         const def = mv.cat === "spec" ? "spd" : "def";
         const statMod = stageMul(m.stg[off]) / stageMul(mon(target).stg[def]);
         const burnMod = (mv.cat === "phys" && m.status === "brn") ? 0.5 : 1;
-        return Math.max(1, Math.round(o.base * teff * statMod * burnMod * spreadMult));
+        // 🎯 STAB: a move of the attacker's OWN element hits ×1.2 — read off
+        // the LIVE types so a Mega's new typing counts. Kept below the
+        // cartridge 1.5 to preserve the 3-4-hit rhythm.
+        const stabMod = ((m.types || []).indexOf(mv.type) >= 0) ? 1.2 : 1;
+        return Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult));
       };
       let dmg = 0;
       if (!miss && !immune && !isStatus && tm) dmg = dmgFor(tu, eff);
@@ -1648,19 +1652,36 @@
       // (unit.outro.{win,lose} — real canon lines where we have them) always
       // plays; the generic pool only seasons featured battles. Wild mons
       // don't monologue.
-      let outro = null;
+      let outroInfo = null;
       if (!opts.wild) {
         const wU = sides[winSide].units[0], lU = sides[other(winSide)].units[0];
-        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || (chatty ? bossLine(OUTRO_LOSE, lU.party[0].id) : null); if (oln) outro = ["🗣 " + lU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(lU, oln); }]; }
-        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || (chatty ? bossLine(OUTRO_WIN, wU.party[0].id) : null); if (oln) outro = ["🗣 " + wU.name + ": “" + oln + "”", 2300, () => { sfx("select"); sayBubble(wU, oln); }]; }
+        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || (chatty ? bossLine(OUTRO_LOSE, lU.party[0].id) : null); if (oln) outroInfo = { u: lU, line: oln }; }
+        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || (chatty ? bossLine(OUTRO_WIN, wU.party[0].id) : null); if (oln) outroInfo = { u: wU, line: oln }; }
       }
-      beats([
-        how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
-        outro,
-        ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
+      // 🎭 The boss's last word is a MOMENT now, not a passing line: a card
+      // with their ace and their real quote, held until the player taps
+      // Continue — a Champion's concession deserves a beat of silence.
+      const outroPop = (info, next) => {
+        const spk = info.u, aceId = (spk.party[spk.party.length - 1] || spk.party[0] || {}).id;
+        const src = (window.DEX_SPRITES && DEX_SPRITES[aceId]) || (window.Store && Store.sprite(aceId)) || "";
+        const lay = el("div", { class: "modal-overlay duel-outro-pop" }, [
+          el("div", { class: "modal duel-outro" }, [
+            src ? el("img", { class: "duel-outro-face", src: src, alt: "" }) : null,
+            el("div", { class: "duel-outro-name" }, "🗣 " + spk.name),
+            el("div", { class: "duel-outro-quote" }, "“" + info.line + "”"),
+            el("button", { class: "btn primary duel-outro-go", onClick: () => { lay.remove(); sfx("select"); next(); } }, "Continue ▸"),
+          ]),
+        ]);
+        document.body.appendChild(lay);
+        sfx("select");
+      };
       // Nuzlocke runs level-gate their OWN evolutions (the box, not the real
       // dex) — the 3-KO prompt here would evolve the wrong Squirtle.
-      ].filter(Boolean), () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); });
+      const finishUp = () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); };
+      beats([
+        how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
+        ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
+      ].filter(Boolean), () => { if (outroInfo) outroPop(outroInfo, finishUp); else finishUp(); });
       if (!record) return;
       // End the room broadcast no matter which branch records below —
       // watchers' screens resolve and the LIVE banner clears.
@@ -2103,7 +2124,8 @@
             if (!bestStatus || s > bestStatus.score) bestStatus = { score: s, mIdx: i, tIdx: f.i };
             return;
           }
-          const score = mv.pow * effFor(mv.type, mon(f.u).types, mv) * (mv.acc / 100);
+          const score = mv.pow * effFor(mv.type, mon(f.u).types, mv) * (mv.acc / 100)
+            * ((m.types || []).indexOf(mv.type) >= 0 ? 1.2 : 1);
           if (!best || score > best.score) best = { score: score, mIdx: i, tIdx: f.i };
         });
       });
