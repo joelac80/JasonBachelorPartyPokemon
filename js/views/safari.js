@@ -5,12 +5,12 @@
    builds their OWN dex of every Pokémon... with one exception: a 🌩 ROAMING
    legendary is one-of-one for the room — first trainer to land the catch
    claims it (Sync.claimRoam) and the storm passes for everyone else.
-   Raise the odds the CLASSIC Safari way:
-     • 🍓 Berry   +10% each (5% it takes the snack and runs; also halves
-                  the per-throw flee chance)
-     • 🪨 Rock    +30% each (15% it spooks and bolts)
-     • Helper     +15% (a 2nd trainer joins; earns an assist + a share of the
-                        points — half, or the full haul on a legendary)
+   Raise the odds the CLASSIC Safari way — with DIMINISHING RETURNS (each
+   repeat is worth 65% of the last) and an escalating flee risk (+5 pts per
+   aid already thrown, capped 50%):
+     • 🍓 Berry   starts +8% (4% flee; a berry also halves the per-throw
+                  flee chance on ball throws)
+     • 🪨 Rock    starts +20% (12% flee)
      • 🟣 Master Ball — a progression currency (Champions and nuzlocke crowns
                   earn them); arm one for a guaranteed catch
      • ⚔ Or battle it to weaken it — lower HP = better odds, but a KO (or a
@@ -51,11 +51,17 @@
   }
 
   const TIER_COLOR = { Common: "#8a97a8", Evolved: "#5fbf6a", Strong: "#3aa0e6", Elite: "#7a5aa0", Legendary: "#e6b800" };
-  // 🍓/🪨 the classic Safari gamble, tuned for this app:
+  // 🍓/🪨 the classic Safari gamble — with DIMINISHING RETURNS and a wild
+  // one that gets warier with every throw: each repeat of an aid is worth
+  // 65% of the last (berry 8→5→3…, rock 20→13→8…), and EVERY aid thrown
+  // raises the flee risk of the next by 5 points (capped 50%). Stacking
+  // forever stopped being free — especially against legendaries, which
+  // still take the total at half strength.
   const AIDS = {
-    berry: { pct: 0.10, fleeRisk: 0.05, emoji: "🍓" },
-    rock:  { pct: 0.30, fleeRisk: 0.15, emoji: "🪨" },
+    berry: { base: 0.08, fleeBase: 0.04, emoji: "🍓" },
+    rock:  { base: 0.20, fleeBase: 0.12, emoji: "🪨" },
   };
+  const AID_DECAY = 0.65, AID_FLEE_STEP = 0.05;
 
   // Catch rates are DRASTICALLY tiered — commons are easy, legendaries are a
   // 4%-base celebration (and boosts only work at half strength on them).
@@ -250,6 +256,7 @@
   let current = null, busy = false, status = "", level = 0, helper = "", shiny = false, revealId = null, currentGlyph = null;
   let roamHunt = "";                                    // roam event id when this encounter IS the roamer
   let berries = 0, rocks = 0, masterArmed = false;     // this encounter's throws
+  let berryBonus = 0, rockBonus = 0;                    // accumulated % (diminishing)
   let throwMsg = "";                                    // last berry/rock feedback
   let dexMode = "normal";                               // dex grid: normal | shiny
 
@@ -262,7 +269,7 @@
 
     // Wipe all this-encounter boost state (called on new find / trainer swap / run).
     function clearBoosts() {
-      level = 0; berries = 0; rocks = 0; masterArmed = false; helper = ""; throwMsg = ""; roamHunt = "";
+      level = 0; berries = 0; rocks = 0; berryBonus = 0; rockBonus = 0; masterArmed = false; helper = ""; throwMsg = ""; roamHunt = "";
     }
 
     // 🏁 The roaming mon is ONE-OF-ONE: gone means another trainer claimed it
@@ -296,30 +303,36 @@
       current = null; busy = false; status = ""; shiny = false; currentGlyph = null; clearBoosts();
     }
 
-    // Effective catch chance = base + all active boosts (capped at 100%).
-    // Legendaries resist: boosts work at HALF strength on them, so even fully
-    // stacked they're ~65% — only the Master Ball dare guarantees one.
+    // Effective catch chance = base + accumulated throw bonuses (capped 100%).
+    // Legendaries resist: boosts work at HALF strength on them — between the
+    // diminishing throws and the escalating flee, a Master Ball or a 🩸 boss
+    // battle is the honest route to one.
     function chanceFor(nfo) {
       if (masterArmed) return 1;
-      const boosts = AIDS.berry.pct * berries + AIDS.rock.pct * rocks + (helper ? 0.15 : 0);
+      const boosts = berryBonus + rockBonus;
       return Math.min(1, nfo.base + boosts * (nfo.leg ? 0.5 : 1));
     }
+    // Next-throw preview: what THIS aid would add, and its flee risk right now.
+    function aidGain(kind) { return AIDS[kind].base * Math.pow(AID_DECAY, kind === "rock" ? rocks : berries); }
+    function aidFlee(kind) { return Math.min(0.5, AIDS[kind].fleeBase + AID_FLEE_STEP * (berries + rocks)); }
+    function pctTxt(v) { return Math.max(1, Math.round(v * 100)) + "%"; }
 
-    // 🍓/🪨 The push-your-luck throws: berries are gentle (+10%, 5% it grabs
-    // the snack and runs), rocks are greedy (+30%, 15% it spooks and bolts).
-    // Stack as many as your nerve allows — EVERY throw rolls its own flee.
+    // 🍓/🪨 The push-your-luck throws: every extra throw is worth LESS and
+    // riles the wild one MORE — the flee roll happens before the gain lands.
     function throwAid(kind) {
       if (!current || busy) return;
-      const a = AIDS[kind], rock = kind === "rock";
+      const rock = kind === "rock";
       const nfo0 = info(current);
-      if (Math.random() < a.fleeRisk) {
+      if (Math.random() < aidFlee(kind)) {
         wildEscaped(current, nfo0,
           rock ? nfo0.name + " spooked at the rock and bolted!" : nfo0.name + " grabbed the berry and ran off!",
           rock ? "🪨 Too aggressive — it's gone!" : "🍓 It took the snack and split!");
         return;
       }
-      if (rock) rocks++; else berries++;
-      throwMsg = rock ? "🪨 The rock rattled it — it's dazed! (+30% catch)" : "🍓 It's munching happily… (+10% catch)";
+      const gain = aidGain(kind);
+      if (rock) { rocks++; rockBonus += gain; } else { berries++; berryBonus += gain; }
+      throwMsg = rock ? "🪨 The rock rattled it — it's dazed! (+" + pctTxt(gain) + " catch)"
+        : "🍓 It's munching happily… (+" + pctTxt(gain) + " catch)";
       sfx(rock ? "blip" : "coin");
       renderEncounter();
     }
@@ -463,20 +476,12 @@
       renderStats(); renderBoard(); renderTeam(); renderDex();
     }
 
-    // A helper is a second trainer teaming up (a "double-battle" catch): +15%,
-    // and they earn an assist toward the Best Helper badge on a successful catch.
-    function pickHelper() {
-      const others = Store.state.attendees.filter((a) => a.id !== active());
-      const grid = el("div", { class: "sl-vote-grid" }, others.map((a) =>
-        el("button", { class: "sl-vote-pick", onClick: () => { helper = a.id; sfx("select"); ref.close(); renderEncounter(); } },
-          el("span", { class: "sl-vote-name" }, a.name))));
-      const body = el("div", { class: "modal-form" }, [el("div", { class: "field" }, [el("span", {}, "Who's teaming up? (+15% — earns them an assist + a share of the points)"), grid])]);
-      const ref = Modal.open("🤝 Double-battle catch", body, null, {});
-    }
+    // (🤝 helper catches are shelved until phones can tell they're actually
+    // together — the assist plumbing below stays for the day they return.)
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔴 Pokédex Safari"),
-      el("p", { class: "page-sub" }, "Find a wild one, then raise the odds the classic way: 🍓 berries (+10%, but 5% it takes the snack and runs), 🪨 rocks (+30%, but 15% it spooks) — or arm a 🟣 Master Ball for a sure thing. Champions and nuzlocke crowns earn the Master Balls."),
+      el("p", { class: "page-sub" }, "Find a wild one, then raise the odds the classic way: 🍓 berries (start +8%) and 🪨 rocks (start +20%) — every extra throw does LESS and riles it MORE, so know when to stop. Or arm a 🟣 Master Ball for a sure thing (Champions and nuzlocke crowns earn them)."),
     ]));
 
     // ---- trainer selector (per-phone, NOT synced) ----
@@ -580,9 +585,8 @@
         breakdown = " (🟣 Master Ball!)";
       } else {
         const parts = [];
-        if (berries) parts.push(berries + " berr" + (berries > 1 ? "ies" : "y"));
-        if (rocks) parts.push(rocks + " rock" + (rocks > 1 ? "s" : ""));
-        if (helper) parts.push("helper");
+        if (berries) parts.push(berries + " berr" + (berries > 1 ? "ies" : "y") + " +" + Math.round(berryBonus * 100) + "%");
+        if (rocks) parts.push(rocks + " rock" + (rocks > 1 ? "s" : "") + " +" + Math.round(rockBonus * 100) + "%");
         breakdown = parts.length ? " (base " + Math.round(nfo.base * 100) + "% + " + parts.join(" + ") + ")" : "";
       }
       const odds = el("div", { class: "safari-odds" }, [
@@ -590,12 +594,11 @@
         el("span", {}, " catch chance" + breakdown + " · worth " + nfo.pts + " pt" + (nfo.pts > 1 ? "s" : "") + (nfo.leg ? " · resists boosts (½ effect)" : "")),
         el("span", { class: "safari-ball-chip" }, [ballIcon(ball), " " + ball.name + (ball.key === "master" ? " — sure catch!" : "")]),
       ]);
-      // Active-boost chips (berries / rocks / helper), stacked per throw.
+      // Active-boost chips (berries / rocks), showing the DIMINISHED totals.
       const activeChips = [];
       if (masterArmed) activeChips.push(el("span", { class: "safari-boost-chip master" }, "🟣 Master Ball armed"));
-      if (berries) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓×" + berries + " +" + Math.round(AIDS.berry.pct * berries * 100) + "%"));
-      if (rocks) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "🪨×" + rocks + " +" + Math.round(AIDS.rock.pct * rocks * 100) + "%"));
-      if (helper) activeChips.push(el("span", { class: "safari-boost-chip helper" }, "🤝 " + attendeeName(helper) + " +15%"));
+      if (berries) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓×" + berries + " +" + Math.round(berryBonus * 100) + "%"));
+      if (rocks) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "🪨×" + rocks + " +" + Math.round(rockBonus * 100) + "%"));
 
       const mleft = (window.Store && Store.mballLeft && Store.mballLeft(active())) || 0;
       let challengeArea;
@@ -606,11 +609,8 @@
         ]);
       } else {
         const btns = [
-          el("button", { class: "btn subtle sm", onClick: () => throwAid("berry") }, "🍓 Toss a Berry (+10% · 5% flee)"),
-          el("button", { class: "btn subtle sm", onClick: () => throwAid("rock") }, "🪨 Throw a Rock (+30% · 15% flee)"),
-          helper
-            ? el("button", { class: "btn subtle sm", onClick: () => { helper = ""; renderEncounter(); } }, "🤝 Remove helper")
-            : el("button", { class: "btn subtle sm", onClick: pickHelper }, "🤝 Add a helper (+15%)"),
+          el("button", { class: "btn subtle sm", onClick: () => throwAid("berry") }, "🍓 Toss a Berry (+" + pctTxt(aidGain("berry")) + " · " + pctTxt(aidFlee("berry")) + " flee)"),
+          el("button", { class: "btn subtle sm", onClick: () => throwAid("rock") }, "🪨 Throw a Rock (+" + pctTxt(aidGain("rock")) + " · " + pctTxt(aidFlee("rock")) + " flee)"),
         ];
         if (mleft > 0) btns.push(el("button", { class: "btn subtle sm safari-master-btn", onClick: toggleMaster }, "🟣 Master Ball ×" + mleft + " — sure catch"));
         else btns.push(el("span", { class: "hint safari-mball-hint" }, "🟣 Master Balls ×0 — beat a Champion for 5, nuzlocke crowns pay 3 (ultimates 5)"));
@@ -626,7 +626,6 @@
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [
         meta,
-        helper ? el("div", { class: "safari-teamup" }, "🤝 " + attendeeName(active()) + " & " + attendeeName(helper) + " — double-battle catch!") : null,
         odds,
         el("div", { class: "safari-challenge" }, [
           activeChips.length ? el("div", { class: "safari-challenge-row" }, [el("span", { class: "safari-challenge-lbl" }, "Boost")].concat(activeChips)) : null,
@@ -972,9 +971,6 @@
   window.Views = window.Views || {};
   window.Views.safari = view;
   // Tuning/debug hook (used by tests; harmless in production).
-  // Set THIS phone's catcher (e.g. from a profile's "Catch as" button) — local,
-  // never synced. Clears any in-progress encounter so the new trainer starts fresh.
-  window.Safari = { catchAs: function (id) { if (myCatcher !== id) { myCatcher = id; current = null; status = ""; } } };
   window.SafariDebug = { info: info, weightFor: weightFor, legendaryOwner: legendaryOwner,
     randomEncounter: randomEncounter, ownsNormal: ownsNormal, ownsShiny: ownsShiny };
 })();

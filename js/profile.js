@@ -87,8 +87,10 @@
 
     const links = el("div", { class: "pf-links" }, [
       el("a", { class: "btn subtle sm", href: "#/roster", onClick: () => ctrl.close() }, "🎴 Squad"),
-      el("a", { class: "btn subtle sm", href: "#/safari",
-        onClick: () => { if (window.Safari) Safari.catchAs(attId); ctrl.close(); } }, "🔴 Catch as " + a.name.split(" ")[0]),
+      // (No "catch as them" — every phone catches as its own signed-in
+      // trainer. Their collection is fair game to browse, though.)
+      el("a", { class: "btn subtle sm", href: "#/dex",
+        onClick: () => ctrl.close() }, "📕 Pokédex"),
     ]);
 
     const body = el("div", { class: "pf-body" }, [head, stats, troRow, gymRow, links]);
