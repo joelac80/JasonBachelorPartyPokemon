@@ -151,7 +151,7 @@
           a: { units: [{ attId: attId, defy: meta && meta.defiant,
             // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
             monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: foes, boost: 1.12 }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: foes, boost: 1.12, outro: t.outro || undefined }] },
           onResult: () => Router.render() });
       } });
   }
@@ -164,7 +164,9 @@
     let tries = 0;
     // Wait until the gym battle's own end screens (evolution / rematch) clear.
     (function whenClear() {
-      if (++tries > 25 || !/^#\/gyms/.test(location.hash)) return;   // give up / left the page
+      // the circuit lives on BOTH pages: the 🗺 Journey (#/regions) and the
+      // legacy #/gyms route — an ambush must fire from either
+      if (++tries > 25 || !/^#\/(gyms|regions)/.test(location.hash)) return;   // give up / left the page
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
       const ico = U.energyIcon(t.type);
       let ctrl;
@@ -197,6 +199,9 @@
     if (story) { offerEncounter(attId, story, true); return; }
     // 🎲 Era-true surprise: this region's cast — or, rarely, the professor.
     if (Math.random() > 0.28) return;
+    // 🎈 SECRET: Team Rocket tails the journey through EVERY region — Jessie,
+    // James & Meowth jump out with the squad they ran in this era of the show.
+    if (window.TEAM_ROCKET && Math.random() < 0.22) { offerEncounter(attId, TEAM_ROCKET.for(region), false); return; }
     const oak = pool.find((t) => t.name === "PROF. OAK");
     const local = pool.filter((t) => ((t.story && t.story.region) || t.region) === region && t !== oak);
     const t = (oak && Math.random() < 0.08) ? oak : local[Math.floor(Math.random() * local.length)];
@@ -338,5 +343,6 @@
     GYMS: GYMS,
     card: circuitCard,
     idxsForRegion: function (name) { return GYMS.map(function (g, i) { return i; }).filter(function (i) { return GYMS[i].region === name; }); },
+    _maybeEncounter: maybeEncounter,   // test seam
   };
 })();

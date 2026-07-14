@@ -59,4 +59,31 @@
       region: "Kanto",  // no story slot — the professor is the rare roaming wildcard, any region
       quote: "I've devoted my whole life to Pokémon research… now let me show you what decades of study can really do!" },
   ];
+
+  // 🎈 TEAM ROCKET — Jessie, James & Meowth, the saga's traveling SECRET.
+  // Deliberately NOT in CANON_TRAINERS (no tournament seats, no villain
+  // pools): they AMBUSH — Journey surprise encounters and nuzlocke roads —
+  // in EVERY region, running the squad they actually had in that era of the
+  // show. Meowth talks his way into the ace slot; the blast-off is
+  // guaranteed television.
+  window.TEAM_ROCKET = {
+    teams: {
+      Kanto:  [23, 109, 108, 52],                //  Ekans, Koffing, Lickitung — and Meowth
+      Johto:  [24, 110, 71, 202, 52],            //  Arbok, Weezing, Victreebel, Wobbuffet
+      Hoenn:  [336, 331, 269, 358, 52],          //  Seviper, Cacnea, Dustox, Chimecho
+      Sinnoh: [336, 455, 469, 439, 52],          //  Seviper, Carnivine, Yanmega, Mime Jr.
+      Unova:  [527, 562, 591, 202, 52],          //  Woobat, Yamask, Amoonguss, Wobbuffet
+      Kalos:  [686, 711, 202, 52],               //  Inkay, Gourgeist, Wobbuffet
+      Alola:  [747, 778, 202, 52],               //  Mareanie, Mimikyu, Wobbuffet
+      Galar:  [24, 110, 202, 52],                //  the Rocket Gacha classics
+      Paldea: [336, 686, 778, 202, 52],          //  the greatest-hits farewell tour
+    },
+    for(region) {
+      return { name: "JESSIE & JAMES", title: "Team Rocket", type: "poison", tier: 1,
+        team: (this.teams[region] || this.teams.Kanto).slice(),
+        quote: "Prepare for trouble — and make it double! To protect the world from devastation… TEAM ROCKET blasts off at the speed of light! Surrender now, or prepare to fight!",
+        outro: { lose: "WOBBUFFEEET— looks like Team Rocket's blasting off agaaaain! ✨",
+                 win: "Meowth, that's right! Da twerp actually LOST!" } };
+    },
+  };
 })();

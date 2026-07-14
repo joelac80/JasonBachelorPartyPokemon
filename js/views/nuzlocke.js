@@ -1413,9 +1413,15 @@
       let t = story;
       if (!t) {
         if (forceStoryOnly) return;
-        const pool = ambushPool(run);
-        if (!pool.length) return;
-        t = pool[(Math.random() * pool.length) | 0];
+        // 🎈 SECRET: sometimes the ambush isn't a villain at all — Team
+        // Rocket stalks every region's roads with their era-true squad.
+        if (window.TEAM_ROCKET && Math.random() < 0.25) {
+          t = TEAM_ROCKET.for((legacyRegionOf(run) || {}).name || "Kanto");
+        } else {
+          const pool = ambushPool(run);
+          if (!pool.length) return;
+          t = pool[(Math.random() * pool.length) | 0];
+        }
       }
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
@@ -1443,7 +1449,7 @@
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost) }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost), outro: t.outro || undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
             if (isStory && winSide === "a") Store.nuzStoryWin(me, t.name, slot);
@@ -1524,5 +1530,5 @@
   window.Views.nuzlocke = view;
   // Tuning/debug hook (used by tests; harmless in production).
   window.NuzDebug = { gymFor: gymFor, seqFor: seqFor, foeTeam: foeTeam, runLevel: runLevel,
-    ambushPool: ambushPool, villainMoment: villainMoment, storyDue: storyDue };
+    ambushPool: ambushPool, villainMoment: villainMoment, storyDue: storyDue, maybeAmbush: maybeAmbush };
 })();
