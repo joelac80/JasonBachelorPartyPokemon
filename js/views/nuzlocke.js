@@ -283,11 +283,13 @@
   // EXCEPT the leader's ACE: pass it and it always closes the team in its
   // real form, caps be damned (Brock may open with a Geodude, but the run
   // still ends against his Steelix — randomizer included).
-  function foeTeam(run, baseTeam, size, stageKey, ace) {
+  // `canon` skips the species randomizer (gyms: the randomizer swaps the
+  // LEADER instead, and that leader brings their real squad).
+  function foeTeam(run, baseTeam, size, stageKey, ace, canon) {
     const cap = runLevel(run);
     const want = ace ? Math.max(0, size - 1) : size;
     let ids;
-    if (run.mode === "random") {
+    if (run.mode === "random" && !canon) {
       const rnd = mulberry32(((run.seed || 1) ^ strHash(stageKey)) >>> 0);
       const pool = wildsFor(run);
       ids = [];
@@ -305,6 +307,30 @@
   }
   // Gym teams keep the leader's REAL ace (data lists it last).
   const gymAce = (g) => (g && g.team && g.team[g.team.length - 1]) || 0;
+
+  // 🎲 Randomizer runs shuffle WHO guards each gym slot: a seeded
+  // Fisher-Yates over the ENTIRE 68-leader circuit (any region, any era),
+  // stable for the whole run, no repeat leaders. The drawn leader brings
+  // their REAL squad — the mystery is who's behind the doors, so gym 1 of
+  // a Kanto randomizer might be CLAIR, and Brock could be anywhere.
+  // Leader shuffle applies to REGION randomizers only — blitz and master
+  // keep their own randomized-team design (their labels pin canon regions).
+  function leaderShuffled(run) {
+    return !!(run && run.mode === "random" && run.region !== "master" && run.region !== "blitz");
+  }
+  function gymFor(run, idx) {
+    const g = gymAt(idx);
+    if (!leaderShuffled(run) || !window.GymCircuit) return g;
+    const all = GymCircuit.GYMS || [];
+    if (!all.length) return g;
+    const rnd = mulberry32(((run.seed || 1) ^ 0x9E3779B9) >>> 0);
+    const order = all.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = (rnd() * (i + 1)) | 0;
+      const t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    return all[order[idx % order.length]] || g;
+  }
 
   // Foe previews stay VISIBLE in every structure — a nuzlocke is hard enough
   // with three encounters a road; scouting the next team is fair knowledge.
@@ -458,7 +484,7 @@
             : movie
               ? el("p", { class: "hint" }, "🎬 The attrition epic: draft ANY six non-legendaries — that's the whole cast, full power, no level caps, no wild grass. Then the entire filmography rolls in release order: " + filmN + " films, every movie legend at full boss strength, MEWTWO on opening night. A beaten film's legend may join the cast — but only over a fallen seat.")
             : newKind === "random"
-              ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
+              ? el("p", { class: "hint" }, "🎲 One region’s roads — but every gym is guarded by a RANDOM LEADER drawn from all nine regions (their real squad, level-capped, real ace), and the Elite Four field random Pokémon. A fresh gauntlet every run.")
               : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
       newKind === "classic" || newKind === "random" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
         el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; renderKeepScroll(); } }, r.emoji + " " + r.name))) : null,
@@ -809,11 +835,11 @@
     host.appendChild(next);
     if (act === 1 && kBadges < 8) {
       const idx = KANTO_GYM0 + kBadges;
-      const g = gymAt(idx);
+      const g = gymFor(run, idx);
       const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Gym " + (kBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g), leaderShuffled(run)).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
@@ -832,11 +858,11 @@
       }
     } else if (jBadges < 8) {
       const idx = JOHTO_GYM0 + jBadges;
-      const g = gymAt(idx);
+      const g = gymFor(run, idx);
       next.appendChild(el("div", { class: "nuz-lab-head" }, "🏟 Johto Gym " + (jBadges + 1) + "/8 — Leader " + (g ? g.leader : "?")));
       if (g) {
         const hc2 = gymHandicap(run);
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc2.size), "gym" + idx, gymAce(g), leaderShuffled(run)).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
@@ -865,14 +891,14 @@
     const master = run.region === "master";
     if (step.t === "gym") {
       const idx = step.idx;
-      const g = gymAt(idx);
+      const g = gymFor(run, idx);
       const n = idx - R.gym0 + 1;
       const hc = gymHandicap(run);
       next.appendChild(el("div", { class: "nuz-lab-head" }, run.region === "blitz"
         ? "⚡ Battle " + (doneCount(run) + 1) + "/15 — Leader " + (g ? g.leader : "?") + " (" + R.name + ")"
         : "🏟 " + R.name + " Gym " + n + "/" + R.gymN + " — Leader " + (g ? g.leader : "?")));
       if (g) {
-        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g)).map((id) => foeImg(run, id))));
+        next.appendChild(el("div", { class: "nuz-foe-row" }, foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g), leaderShuffled(run)).map((id) => foeImg(run, id))));
         next.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
@@ -1166,7 +1192,7 @@
 
   function battleGym(run, idx, g) {
     const hc = gymHandicap(run);
-    const team = foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g));
+    const team = foeTeam(run, g.team, Math.min(g.team.length, hc.size), "gym" + idx, gymAce(g), leaderShuffled(run));
     partyThen(run, 6, "⚔ Nuzlocke gym — Leader " + g.leader,
       "Bring up to 6 of the living. Every faint in there is permanent.",
       (ids) => {
