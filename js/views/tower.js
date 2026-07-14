@@ -1,11 +1,15 @@
-/* tower.js — 🗼 The Battle Tower: endless 4v4 DOUBLE battles against
-   randomized trainers, with saved win streaks. Every battle: pick FOUR of
-   your Pokémon (first two lead the 2v2 field, two ride the bench) against a
-   random trainer running four random Pokémon from your unlocked generations.
-   Foes hit a little harder every win; every 7th battle TOWER TYCOON PALMER
-   himself blocks the elevator. A loss resets the streak — your BEST streak
-   is forever (and prints honors at 3/7/21). Streaks in Store.tower; battles
-   never touch the real ladder, Elo, or leaderboards. */
+/* tower.js — 🗼 The Battle Tower: THE 1→100 GAUNTLET. Endless 4v4 DOUBLE
+   battles against randomized trainers where every floor IS a level: floor 1
+   is a Lv1 scrap between base forms, floor 100 a Lv100 war. Both squads
+   obey the evolution rules (JourneyStyle.formAt) — your Charizard climbs
+   the tower as a Charmander until Lv16 — and movesets follow the engine's
+   level curve (full arsenals from Lv58). Pick FOUR of your Pokémon (first
+   two lead the 2v2 field, two ride the bench) against a random trainer
+   running four randoms from your unlocked generations. Foes hit a little
+   harder every win; every 7th battle TOWER TYCOON PALMER himself blocks
+   the elevator. A loss resets the streak — your BEST streak is forever
+   (and prints honors at 3/7/21). Streaks in Store.tower; battles never
+   touch the real ladder, Elo, or leaderboards. */
 (function () {
   const { el } = U;
   const DEX = window.DEX || {};
@@ -42,12 +46,17 @@
     return team;
   }
 
-  // 🛗 The tower CLIMBS: every floor is a level — Lv50 at the door, +1 per
-  // win, Lv100 up on floor 51. The battle-wide level feeds the engine's
-  // moveset curve (35 + Lv×1.4): on the first eight floors the biggest nukes
-  // (Hyper Beam tier) stay in everyone's back pocket, and from floor 9
-  // (Lv58) the full arsenal is unlocked while the ×boost keeps tightening.
-  function floorLevel(no) { return Math.min(100, 49 + no); }
+  // 🛗 THE 1→100 GAUNTLET: every floor IS a level. Floor 1 is a Lv1 scrap
+  // between base forms; floor 100 is a Lv100 war. The battle-wide level
+  // feeds the engine's moveset curve (35 + Lv×1.4 — full arsenals from
+  // Lv58), and EVERY Pokémon walks in obeying the evolution rules: your
+  // Charizard is a Charmander until floor 16 and doesn't get his wings
+  // back until floor 36 (JourneyStyle.formAt, the True Story walk).
+  function floorLevel(no) { return Math.min(100, no); }
+  function devolve(ids, lv) {
+    const f = window.JourneyStyle && JourneyStyle.formAt;
+    return f ? ids.map((id) => f(id, lv)) : ids.slice();
+  }
 
   function nextFoe(attId, rental) {
     const t = Store.towerOf(attId);
@@ -80,7 +89,7 @@
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🗼 Battle Tower"),
-      el("p", { class: "page-sub" }, "Endless 4v4 double battles against random trainers — foes hit harder every floor, PALMER guards every 7th, and one loss resets the streak. How high can you climb?"),
+      el("p", { class: "page-sub" }, "THE 1→100 GAUNTLET: 4v4 double battles where every floor IS a level — everyone enters in the form they'd really be at that level and evolves as you climb. Foes hit harder every floor, PALMER guards every 7th, one loss resets the streak. Can you reach floor 100?"),
     ]));
 
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
@@ -126,7 +135,7 @@
       : (rental
         ? "The tower hands YOU four random rentals and the foe four of their own — pure piloting skill, boosted ×" + nextFoe(me, true).boost.toFixed(2) + "."
         : "A random trainer, four random Pokémon from your unlocked generations, boosted ×" + nextFoe(me, false).boost.toFixed(2) + " — you won't know the lineup until the balls open.")
-      + (lv < 58 ? " Every floor climbs a level — the heaviest moves stay locked until Lv58 (floor 9)." : "")));
+      + (lv < 58 ? " Every floor IS a level — everyone fights in the form they'd be at Lv" + lv + ", and the heaviest moves stay locked until Lv58." : "")));
     if (!rental && Duel.poolFor(me).length < 4) {
       card.appendChild(el("p", { class: "empty" }, "The tower asks for FOUR Pokémon — catch a few more in the Safari first (or flip to 🎲 Rental)."));
     } else {
@@ -156,16 +165,19 @@
     const t0 = Store.towerOf(me);
     const lv = floorLevel((isRental ? (t0.rStreak || 0) : t0.streak) + 1);
     const go = (ids) => {
+      // Both squads walk in at the FLOOR's level: devolved to the forms
+      // they'd really be. (Streaks record your real picks, not the forms.)
+      const mine = devolve(ids, lv), theirs = devolve(foe.team, lv);
       Duel.start({ mode: "local", title: "the Battle Tower", level: lv,
         tower: { onEnd: (winSide) => {
           if (winSide === "a") { Store.towerWin(me, foe.name, foe.tycoon, ids, isRental); sfx("fanfare"); }
           else { Store.towerLoss(me, foe.name, isRental); sfx("error"); }
           Router.render();
         } },
-        a: { shared: true, units: [{ attId: me, monIds: ids }, { attId: me, monIds: ids }] },
+        a: { shared: true, units: [{ attId: me, monIds: mine }, { attId: me, monIds: mine }] },
         b: { shared: true, units: [
-          { npc: foe.name, ai: true, monIds: foe.team, boost: foe.boost, vsFace: foe.tycoon ? foe.face : null },
-          { npc: foe.name, ai: true, monIds: foe.team, boost: foe.boost } ] } });
+          { npc: foe.name, ai: true, monIds: theirs, boost: foe.boost, vsFace: foe.tycoon ? foe.face : null },
+          { npc: foe.name, ai: true, monIds: theirs, boost: foe.boost } ] } });
     };
     if (isRental) {
       // 🎲 the tower hands you the squad — see it, steel yourself, go.
@@ -173,7 +185,7 @@
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
         el("p", { class: "hint" }, "🎲 Your rentals for floor " + ((Store.towerOf(me).rStreak || 0) + 1) + " (Lv" + lv + ") — no swaps, no re-rolls. First two lead the 2v2."),
-        el("div", { class: "nuz-foe-row" }, mine.map((id) => Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: "" }) : null)),
+        el("div", { class: "nuz-foe-row" }, devolve(mine, lv).map((id) => Store.sprite(id) ? el("img", { class: "nuz-foe-img", src: Store.sprite(id), alt: "" }) : null)),
         el("div", { class: "toolbar" }, [
           el("button", { class: "btn primary", onClick: () => { ctrl.close(); go(mine); } }, "⚔ Take them up"),
           el("button", { class: "btn subtle", onClick: () => ctrl.close() }, "Not yet"),

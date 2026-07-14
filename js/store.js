@@ -1541,12 +1541,14 @@
         const nm = this._nuzName(attId);
         if (rental) {
           t.rStreak = (t.rStreak || 0) + 1; t.rBest = Math.max(t.rBest || 0, t.rStreak); t.upd = Date.now();
-          if (tycoon) Store.chron(s, "🎲", nm + " beat PALMER with a RENTAL squad — rental streak " + t.rStreak + "!!");
+          if (t.rStreak === 100) Store.chron(s, "👑", nm + " CONQUERED THE 1→100 GAUNTLET on RENTALS ALONE — floor 100, Lv100, no losses!!");
+          else if (tycoon) Store.chron(s, "🎲", nm + " beat PALMER with a RENTAL squad — rental streak " + t.rStreak + "!!");
           else if (t.rStreak % 5 === 0) Store.chron(s, "🎲", nm + " is " + t.rStreak + " deep on RENTAL Pokémon alone!");
           return;
         }
         const prevBest = t.best || 0;
         t.streak += 1; t.best = Math.max(prevBest, t.streak); t.upd = Date.now();
+        if (t.streak === 100 && prevBest < 100) Store.chron(s, "👑", nm + " CONQUERED THE 1→100 GAUNTLET — floor 100, Lv100, one hundred straight!!");
         if (t.streak === 7 && prevBest < 7) {
           s.hof = s.hof || [];
           s.hof.push({ attId: attId, ts: Date.now(), party: (partyIds || []).slice(0, 6), key: "tower", champ: "PALMER", rank: "Tower Ace", region: "" });
@@ -1609,7 +1611,7 @@
         { key: "kos", emoji: "💥", title: "Knockout Artist", unit: "lifetime KOs",
           v: this.koLife(attId), at: [50, 200, 500, 1500] },
         { key: "tower", emoji: "🗼", title: "Tower Monarch", unit: "best tower streak",
-          v: (this.towerOf(attId) || {}).best || 0, at: [7, 14, 28, 50] },
+          v: (this.towerOf(attId) || {}).best || 0, at: [7, 25, 50, 100] },
         { key: "nuzlocke", emoji: "🪦", title: "Permadeath Proof", unit: "",
           v: nzTier, at: [1, 2, 3, 4],
           steps: ["win any Nuzlocke crown", "topple RED for the Legend tier",
