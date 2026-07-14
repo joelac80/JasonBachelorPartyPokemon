@@ -140,7 +140,8 @@
     // STARMIE at Lv24, exactly like the games).
     const foes = lvl ? t.team.map((id, i) => i === t.team.length - 1 ? id : JS.formAt(id, lvl)) : t.team.slice();
     Duel.pickParty({ attId: attId, min: 1, max: size, level: lvl || undefined,
-      title: "vs " + t.title + " " + t.name + " — pick up to " + size,
+      // 🎭 masked surprises stay masked through the pick — the VS intro is the reveal
+      title: "vs " + (isStory ? t.title + " " + t.name : "???") + " — pick up to " + size,
       hint: (isStory ? "📖 A story battle! Pure glory — and they WILL be back until you win." :
         "A surprise battle! Bragging rights only — no badge, no rating.") +
         (lvl ? " (True Story: fought at Lv " + lvl + " — both teams step down to era-true forms.)" : ""),
@@ -169,12 +170,17 @@
       if (++tries > 25 || !/^#\/(gyms|regions)/.test(location.hash)) return;   // give up / left the page
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
       const ico = U.energyIcon(t.type);
+      // 🎭 SURPRISES arrive MASKED: you get the VOICE (their quote) and the
+      // type energy as clues, but the name only lights up at the VS intro —
+      // and you can't cherry-pick fights by name before walking away. Story
+      // battles stay NAMED: those are scripted chapters, the intro is the point.
+      const masked = !isStory;
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
         el("p", { class: "hint" }, isStory && t.story ? "📖 " + t.story.intro : "❗ On your way out of the gym, a challenger blocks the path!"),
         el("div", { class: "enc-hero" }, [
           ico ? el("img", { class: "enc-ico", src: ico, alt: t.type }) : null,
-          el("div", {}, [el("div", { class: "enc-name" }, t.name), el("div", { class: "enc-title" }, t.title)]),
+          el("div", {}, [el("div", { class: "enc-name" }, masked ? "???" : t.name), el("div", { class: "enc-title" }, masked ? "A mysterious challenger" : t.title)]),
         ]),
         el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
         el("div", { class: "toolbar" }, [
