@@ -458,6 +458,14 @@
       if (endedList.length > 50) endedList = endedList.slice(-50);
       try { localStorage.setItem(DUEL_ENDED_KEY, JSON.stringify(endedList)); } catch (_) {}
     }
+    // The blacklist stops AUTO re-opens — an explicit "Watch" tap on a battle
+    // that's still live means "let me back in", so the mark must lift.
+    function unmarkDuelEnded(id) {
+      if (!id || !endedDuels[id]) return;
+      delete endedDuels[id];
+      endedList = endedList.filter((x) => x !== id);
+      try { localStorage.setItem(DUEL_ENDED_KEY, JSON.stringify(endedList)); } catch (_) {}
+    }
     let latestDuel = null;
     Sync.onDuel((data) => {
       latestDuel = data;
@@ -732,9 +740,30 @@
       }
     });
 
-    function openDuelWatch(id) {
+    // `explicit` = a real user tap (Home strip / Watch & cheer) — those must
+    // never fail SILENTLY: a dead battle gets a toast, a battle this device
+    // stopped watching gets its blacklist lifted so the tap rejoins it.
+    function openDuelWatch(id, explicit) {
       const d = (Sync.duelData && Sync.duelData(id)) || (id && latestDuel && latestDuel.id === id ? latestDuel : null);
-      if (!d || !d.id || !d.setupJson || d.state !== "live" || duelScreens[d.id] || endedDuels[d.id]) return;
+      if (!d || !d.id || !d.setupJson) {
+        if (explicit && window.U && U.toast) U.toast("📡 Can't reach that battle yet — give it a second and tap again.");
+        return;
+      }
+      if (d.state !== "live") {
+        if (explicit && window.U && U.toast) U.toast("🏁 That battle just ended.");
+        return;
+      }
+      const open = duelScreens[d.id];
+      if (open) {
+        // Really on screen → the tap has nothing to add. A stale entry whose
+        // overlay is gone (torn down without onEnd) must not block forever.
+        if (!open.alive || open.alive()) return;
+        delete duelScreens[d.id];
+      }
+      if (endedDuels[d.id]) {
+        if (!explicit) return;
+        unmarkDuelEnded(d.id);
+      }
       let setup; try { setup = JSON.parse(d.setupJson); } catch (_) { return; }
       const did = d.id;
       duelScreens[did] = Duel.start(Object.assign({}, setup, {
@@ -756,9 +785,9 @@
     // the current one) dismisses any offer still on screen so they never stack.
     let liveOfferCtrl = null, liveOfferId = "";
     function closeLiveOffer() { if (liveOfferCtrl) { try { liveOfferCtrl.close(); } catch (_) {} liveOfferCtrl = null; liveOfferId = ""; } }
-    function openSpectator(data) {
+    function openSpectator(data, explicit) {
       if (!data) return;
-      if (data.mode === "duel-remote") { openDuelWatch(data.id); return; }   // turn-by-turn watch
+      if (data.mode === "duel-remote") { openDuelWatch(data.id, explicit); return; }   // turn-by-turn watch
       if (!window.Battle || !Battle.spectate || specHandle) return;          // already watching one
       specId = data.id;
       specHandle = Battle.spectate({
@@ -771,8 +800,9 @@
         setTimeout(() => { if (specHandle && specId === data.id) { specHandle.finish(data.winner || data.aName); specHandle = null; specId = ""; } }, 1900);
       }
     }
-    // Let the Home "Live now" banner open the spectator screen.
-    window.watchLiveBattle = openSpectator;
+    // Let the Home "Live now" banner open the spectator screen — a real tap,
+    // so it may rejoin a battle this device stopped watching earlier.
+    window.watchLiveBattle = (data) => openSpectator(data, true);
     Sync.onLiveBattle((data) => {
       if (!data || !data.id) return;
       const me = Sync.myClientId();
@@ -801,7 +831,7 @@
             data.stakes ? el("div", { class: "chal-ev" }, data.stakes) : null,
             data.event ? el("div", { class: "chal-ev" }, "Event: " + data.event) : null,
             el("div", { class: "toolbar" }, [
-              el("button", { class: "btn primary", onClick: () => { closeLiveOffer(); openSpectator(data); } }, "👀 Watch & cheer"),
+              el("button", { class: "btn primary", onClick: () => { closeLiveOffer(); openSpectator(data, true); } }, "👀 Watch & cheer"),
               el("button", { class: "btn subtle", onClick: () => { closeLiveOffer(); } }, "Dismiss"),
             ]),
           ]);

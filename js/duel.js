@@ -77,24 +77,67 @@
 
   // 📉 A battle fought at a LEVEL caps what anyone can KNOW: no Earthquake on
   // a Lv 10 Pokémon. The curve is 40 + Lv×1.2 (Lv5 ≈ 46, Lv14 ≈ 57, Lv32 ≈ 78,
-  // Lv48 ≈ 98); Lv 58+ knows it all. Status moves always stay. TWO guarantees
-  // keep low-level fights fair without leaking full-power moves:
-  //  • every mon keeps at least TWO damaging moves (coverage — a bad type
-  //    matchup is a tough spot, not a dead end), refilled weakest-first…
+  // Lv48 ≈ 98); Lv 58+ knows it all. Status moves always stay. The guarantees
+  // that keep low-level fights fair without leaking full-power moves:
+  //  • the slots fill in as a real trainer's would — at least 2 damaging
+  //    moves early, 3 from Lv 12, the full 4 from Lv 24 — refilled from the
+  //    learnset weakest-first…
   //  • …but a refilled move is CLAMPED to the curve (Slash at Lv5 hits like
   //    a Lv5 move, shown as "Slash 46") — no learnset lottery.
   function capMoves(moves, level) {
     if (!level || level >= 58) return moves;
     const cap = 40 + level * 1.2;
+    const want = level >= 24 ? 4 : level >= 12 ? 3 : 2;
     const kept = moves.filter((m) => !m.pow || m.pow <= cap);
     const dmg = moves.filter((m) => m.pow).sort((a, b) => a.pow - b.pow);
     const nDmg = () => kept.filter((m) => m.pow).length;
-    for (let i = 0; i < dmg.length && (kept.length < 2 || nDmg() < 2); i++) {
+    for (let i = 0; i < dmg.length && (kept.length < want || nDmg() < 2); i++) {
       if (kept.indexOf(dmg[i]) >= 0) continue;
       // clone before clamping — move objects are shared across mons
       kept.push(dmg[i].pow > cap ? Object.assign({}, dmg[i], { pow: Math.round(cap) }) : dmg[i]);
     }
     return kept;
+  }
+
+  // 🧗 THE STAB LADDER — three rungs per type, weakest first, every name a
+  // real MOVES_DB move (effects ride along). When the level curve strips a
+  // mon of EVERY damaging move of its own element (Charmeleon at Lv 14: its
+  // only fire move is a 90-power Flamethrower), the ladder hands back the
+  // rung that level would really know — Ember through Lv 16, Flame Wheel
+  // 17-41, Flamethrower itself once the curve allows 90 (Lv 42+).
+  const STAB_LADDER = {
+    normal: ["Tackle", "Headbutt", "Hyper Voice"],
+    fire: ["Ember", "Flame Wheel", "Flamethrower"],
+    water: ["Water Gun", "Bubble Beam", "Surf"],
+    electric: ["Thunder Shock", "Spark", "Thunderbolt"],
+    grass: ["Absorb", "Razor Leaf", "Energy Ball"],
+    ice: ["Powder Snow", "Aurora Beam", "Ice Beam"],
+    fighting: ["Mach Punch", "Brick Break", "Sky Uppercut"],
+    poison: ["Poison Sting", "Sludge", "Sludge Bomb"],
+    ground: ["Mud-Slap", "Scorching Sands", "Earth Power"],
+    flying: ["Gust", "Wing Attack", "Drill Peck"],
+    psychic: ["Confusion", "Psybeam", "Psychic"],
+    bug: ["Leech Life", "Bug Bite", "Bug Buzz"],
+    rock: ["Rock Throw", "Ancient Power", "Power Gem"],
+    ghost: ["Shadow Sneak", "Hex", "Shadow Ball"],
+    dragon: ["Twister", "Dragon Breath", "Dragon Pulse"],
+    dark: ["Pursuit", "Bite", "Crunch"],
+    steel: ["Bullet Punch", "Steel Wing", "Flash Cannon"],
+    fairy: ["Fairy Wind", "Draining Kiss", "Moonblast"],
+  };
+  function ladderMove(t, level) {
+    const rungs = STAB_LADDER[t] || [];
+    const cap = level && level < 58 ? 40 + level * 1.2 : Infinity;
+    let pick = null;
+    for (let i = 0; i < rungs.length; i++) {
+      const mv = moveObj(rungs[i]);
+      if (!mv) continue;
+      if (pick === null || mv.pow <= cap) pick = mv;   // climb while the curve allows
+    }
+    // rung 1 can sit a hair over a very low cap (Rock Throw 50 at Lv 5) —
+    // clamp it like any refilled move rather than hand back nothing
+    if (pick && pick.pow > cap) pick = Object.assign({}, pick, { pow: Math.round(cap) });
+    return pick;
   }
 
   // Lv50 battle stats from the species power stat (x = base experience). Moves
@@ -114,7 +157,32 @@
       types.forEach((t) => (MOVES[t] || MOVES.normal).forEach((m) => moves.push(typeMove(t, m))));
       if (types.length === 1 && types[0] !== "normal") moves.push(typeMove("normal", ["Tackle", 40, 100]));
     }
+    // Which of its OWN types the full-power set actually attacks with — the
+    // STAB guarantee restores what the level cap strips, never re-curates.
+    const hadStab = {};
+    moves.forEach((m) => { if (m.pow && types.indexOf(m.type) >= 0) hadStab[m.type] = 1; });
     moves = capMoves(moves, level).slice(0, 4);
+    // 🎯 STAB guarantee: losing every move of your own element to the level
+    // curve (a Charmeleon with no fire) is not allowed — the ladder fills
+    // the gap with the rung this level has earned.
+    if (level && level < 58) types.forEach((t) => {
+      if (!hadStab[t] || moves.some((m) => m.pow && m.type === t)) return;
+      const mv = ladderMove(t, level);
+      if (!mv || moves.some((m) => m.name === mv.name)) return;
+      if (moves.length >= 4) {
+        // make room by dropping the weakest damaging move of a FOREIGN type
+        // (status moves and the mon's other element stay untouchable)
+        let worst = -1;
+        for (let i = 0; i < moves.length; i++) {
+          const m = moves[i];
+          if (!m.pow || types.indexOf(m.type) >= 0) continue;
+          if (worst < 0 || m.pow < moves[worst].pow) worst = i;
+        }
+        if (worst < 0) return;
+        moves.splice(worst, 1);
+      }
+      moves.push(mv);
+    });
     // 🩹 HP grows with the battle level, damage in lockstep via the move
     // curve — so every level band lands in the classic 3-4-hit rhythm.
     // Lv5 = 55% pool, Lv14 = 64%, Lv36 = 86%, Lv50+ = full (standard
@@ -2056,7 +2124,10 @@
       setTimeout(() => { if (!S.done) { S.ready = true; beginSelect(); pump(); } }, 900);
     }, 1700);
 
-    return { receiveActs: receiveActs, receiveRx: receiveRx, close: close };
+    // `alive` lets the app tell a screen that's really up from stale
+    // bookkeeping (an overlay torn down without its onEnd ever firing).
+    return { receiveActs: receiveActs, receiveRx: receiveRx, close: close,
+      alive: function () { return document.body.contains(overlay); } };
   }
 
   window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead };
