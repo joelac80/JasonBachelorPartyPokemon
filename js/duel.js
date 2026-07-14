@@ -211,6 +211,7 @@
       slp: 0,              // remaining sleep turns
       seeded: false,       // Leech Seed drain each turn
       _flinch: false,      // flinched this turn (volatile)
+      _confN: 0,           // 💫 confused for N more actions (volatile)
       _recharge: false,    // must spend next turn recharging (Hyper Beam etc.)
       _charging: null,     // mid two-turn move ({move}): must strike next turn
       _invuln: false,      // semi-invulnerable while charging (Dig/Fly/Phantom Force)
@@ -965,7 +966,7 @@
       u.cur = to;
       const m = mon(u);
       m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
-      m._flinch = false; m.seeded = false; m._recharge = false; m._charging = null; m._invuln = false;
+      m._flinch = false; m.seeded = false; m._recharge = false; m._charging = null; m._invuln = false; m._confN = 0;
     }
     // 🔴 Wild battles: a thrown ball spends the turn. Catch odds come from the
     // wild mon's REMAINING HP via opts.wild.chanceFn — weaken it for a better
@@ -1066,6 +1067,36 @@
       // Flinched by a faster foe's move earlier this turn → lose the turn.
       if (m._flinch) { m._flinch = false; menu.innerHTML = "";
         beats([[m.name + " flinched and couldn't move!", 1000, () => sfx("error")]], resolveNext); return; }
+      // 💫 Confusion: counts down per ACTION. Snap out at zero; otherwise the
+      // baked coin-toss decides — heads it acts, tails it decks itself with a
+      // typeless 40-power hit (own attack vs own defense, cartridge-style).
+      if (o.conf && (m._confN || 0) > 0) {
+        m._confN = Math.max(0, m._confN - 1);
+        if (m._confN <= 0) {
+          menu.innerHTML = "";
+          beats([["💫 " + m.name + " snapped out of confusion!", 950, () => sfx("blip")]], () => resolveMoveGo(o, u));
+          return;
+        }
+        if (o.conf.self) {
+          const d = Math.max(1, Math.round(o.conf.dmg / stageMul(m.stg ? m.stg.def : 0)));
+          menu.innerHTML = "";
+          beats([
+            ["💫 " + m.name + " is confused!", 900, () => sfx("error")],
+            ["It hurt itself in its confusion! (−" + d + " HP)", 1150, () => {
+              m.hp = Math.max(0, m.hp - d); paintHp(u);
+              if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted");
+              sfx("error");
+            }],
+          ], resolveNext);
+          return;
+        }
+        menu.innerHTML = "";
+        beats([["💫 " + m.name + " is confused!", 900, () => sfx("blip")]], () => {
+          if (o.loaf) { resolveMove(Object.assign({}, o, { conf: null }), u); return; }   // still might loaf
+          resolveMoveGo(o, u);
+        });
+        return;
+      }
       // ⚠ Borrowed power throws its tantrum: the form was never caught, and
       // right now it doesn't feel like listening. Line picked off the baked
       // statusRoll so every watching phone reads the same insubordination.
@@ -1122,7 +1153,7 @@
       // Leech Seed…). The foe's own self-buffs still go through (they don't
       // touch the buried mon).
       const fx0 = mv.fx;
-      const foeAimed = !isStatus || (fx0 && (fx0.status || fx0.seed || fx0.flinch || (fx0.stat && fx0.stat.who === "foe")));
+      const foeAimed = !isStatus || (fx0 && (fx0.status || fx0.seed || fx0.flinch || fx0.confuse != null || (fx0.stat && fx0.stat.who === "foe")));
       const avoided = tm && tm._invuln && foeAimed;
       const miss = immune ? false : (o.miss || !!avoided);
       // Spread moves (Surf, Earthquake, Discharge…) splash EVERY other fielded
@@ -1392,6 +1423,10 @@
         if (fx.recoil && dmgDealt > 0) { const r = Math.max(1, Math.round(dmgDealt * fx.recoil)); m.hp = Math.max(0, m.hp - r);
           push("💢 " + m.name + " is hit with recoil! (−" + r + " HP)", 950, "error"); }
         if (fx.flinch && act.fxHit && tm && tm.hp > 0) tm._flinch = true;
+        if (fx.confuse != null && act.fxHit && tm && tm.hp > 0 && act.eff !== 0 && !tm._confN) {
+          tm._confN = act.confN || 3;
+          push("💫 " + tm.name + " became confused!", 950, "blip");
+        }
       }
 
       // Spread damage: splash each secondary foe (damage only — no secondary
@@ -1930,6 +1965,7 @@
         else if (fx.recoil) base = "💢 recoil";
         else if (fx.seed) base = "🌱 seed";
         else if (fx.flinch) base = "😵 flinch " + fx.flinch + "%";
+        else if (fx.confuse != null) base = "💫 confuse " + fx.confuse + "%";
         else if (fx.crit === "high") base = "🎯 high crit";
       }
       if (base) tags.push(base);
@@ -2014,6 +2050,7 @@
         let ch = 100;
         if (mv.fx.status) ch = mv.fx.status.chance;
         else if (mv.fx.flinch != null) ch = mv.fx.flinch;
+        else if (mv.fx.confuse != null) ch = mv.fx.confuse;
         else if (mv.fx.stat && mv.fx.stat.chance != null) ch = mv.fx.stat.chance;
         // (fx.stats setup/drawback moves are always 100% → ch stays 100)
         fxHit = Math.random() * 100 < (ch == null ? 100 : ch);
@@ -2028,9 +2065,18 @@
       // pick time like everything else, so watchers replay the same tantrum.
       // A mid-charge mon always completes its move (no stuck Dig).
       const loaf = !m._charging && !!(u.defy && u.defy[m.id]) && Math.random() < 0.5;
+      // 💫 If the actor is confused, its coin-toss (50% hit yourself), the
+      // self-hit damage spread, and the incoming confusion DURATION (for
+      // moves that inflict it) are all baked here — every phone replays the
+      // same stumble. A mid-charge mon still completes its move.
+      const conf = (!m._charging && (m._confN || 0) > 0)
+        ? { self: Math.random() < 0.5, dmg: Math.max(1, Math.round(40 * m.atk * (0.85 + Math.random() * 0.15))) }
+        : null;
+      const confN = 2 + Math.floor(Math.random() * 3);
       sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
         order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, statusRoll: statusRoll,
-          armed: armed, courage: armed, loaf: loaf, pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
+          armed: armed, courage: armed, loaf: loaf, conf: conf, confN: confN,
+          pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
     }
 
     // ---- gym-leader AI: picks the hardest-hitting move vs the best target,

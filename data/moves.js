@@ -12,6 +12,7 @@
         status {id:"par"|"brn"|"psn"|"slp"|"frz", chance}
         stat   {who:"self"|"foe", stat:"atk"|"def"|"spa"|"spd"|"spe"|"acc", stg, chance?}
         flinch chance
+        confuse chance — 💫 volatile: 50% coin-toss to deck yourself each action, 2-4 actions
         drain  fraction of damage dealt healed to the user (Giga Drain 0.5)
         heal   fraction of the user's max HP restored (Recover 0.5)
         recoil fraction of damage dealt taken by the user (Double-Edge 0.25)
@@ -49,7 +50,7 @@
     "Soft-Boiled": { t: "normal", cat: "status", pow: 0, acc: 101, fx: { heal: 0.5 } },
     "Rest":        { t: "psychic", cat: "status", pow: 0, acc: 101, fx: { rest: true } },
     "Sand-Attack": { t: "ground", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
-    "Supersonic":  { t: "normal", cat: "status", pow: 0, acc: 55, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
+    "Supersonic":  { t: "normal", cat: "status", pow: 0, acc: 55, fx: { confuse: 100 } },
     // ---- Fire ----
     "Ember":       { t: "fire", cat: "spec", pow: 40, acc: 100, fx: { status: { id: "brn", chance: 10 } } },
     "Flamethrower":{ t: "fire", cat: "spec", pow: 90, acc: 100, fx: { status: { id: "brn", chance: 10 } } },
@@ -94,8 +95,7 @@
     "Brick Break": { t: "fighting", cat: "phys", pow: 65, acc: 100 },
     "Cross Chop":  { t: "fighting", cat: "phys", pow: 100, acc: 80, fx: { crit: "high" } },
     "Low Kick":    { t: "fighting", cat: "phys", pow: 55, acc: 90, fx: { flinch: 30 } },
-    // the cartridge's 100% confusion isn't modeled — the flinch is the daze
-    "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 55, fx: { flinch: 60 } },
+    "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 55, fx: { confuse: 100 } },
     "Mach Punch":  { t: "fighting", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Submission":  { t: "fighting", cat: "phys", pow: 95, acc: 80, fx: { recoil: 0.15 } },
     // ---- Poison ----
@@ -119,8 +119,8 @@
     "Fly":         { t: "flying", cat: "phys", pow: 90, acc: 95, charge: { msg: "flew up high!", invuln: true } },
     "Gust":        { t: "flying", cat: "spec", pow: 40, acc: 100 },
     // ---- Psychic ----
-    "Confusion":   { t: "psychic", cat: "spec", pow: 50, acc: 100 },
-    "Psybeam":     { t: "psychic", cat: "spec", pow: 65, acc: 100 },
+    "Confusion":   { t: "psychic", cat: "spec", pow: 50, acc: 100, fx: { confuse: 10 } },
+    "Psybeam":     { t: "psychic", cat: "spec", pow: 65, acc: 100, fx: { confuse: 10 } },
     "Psychic":     { t: "psychic", cat: "spec", pow: 90, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 10 } } },
     "Hypnosis":    { t: "psychic", cat: "status", pow: 0, acc: 60, fx: { status: { id: "slp", chance: 100 } } },
     "Agility":     { t: "psychic", cat: "status", pow: 0, acc: 101, fx: { stat: { who: "self", stat: "spe", stg: 2 } } },
@@ -140,7 +140,7 @@
     "Lick":        { t: "ghost", cat: "phys", pow: 30, acc: 100, fx: { status: { id: "par", chance: 30 } } },
     "Night Shade": { t: "ghost", cat: "spec", pow: 60, acc: 100 },
     "Shadow Ball": { t: "ghost", cat: "spec", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 20 } } },
-    "Confuse Ray": { t: "ghost", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
+    "Confuse Ray": { t: "ghost", cat: "status", pow: 0, acc: 100, fx: { confuse: 100 } },
     // ---- Dragon ----
     "Dragon Breath":{ t: "dragon", cat: "spec", pow: 60, acc: 100, fx: { status: { id: "par", chance: 30 } } },
     "Dragon Claw": { t: "dragon", cat: "phys", pow: 80, acc: 100 },
@@ -157,7 +157,7 @@
     "Steel Wing":  { t: "steel", cat: "phys", pow: 70, acc: 90, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 10 } } },
     // ---- Fairy (Gen-2 had no Fairy type; these read as fairy in our chart) ----
     "Fairy Wind":  { t: "fairy", cat: "spec", pow: 40, acc: 100 },
-    "Sweet Kiss":  { t: "fairy", cat: "status", pow: 0, acc: 75, fx: { stat: { who: "foe", stat: "acc", stg: -1 } } },
+    "Sweet Kiss":  { t: "fairy", cat: "status", pow: 0, acc: 75, fx: { confuse: 100 } },
     "Moonblast":   { t: "fairy", cat: "spec", pow: 95, acc: 100, fx: { stat: { who: "foe", stat: "spa", stg: -1, chance: 30 } } },
     "Charm":       { t: "fairy", cat: "status", pow: 0, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -2 } } },
 
@@ -181,7 +181,7 @@
     // Water
     "Aqua Jet":     { t: "water", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Aqua Tail":    { t: "water", cat: "phys", pow: 90, acc: 90 },
-    "Water Pulse":  { t: "water", cat: "spec", pow: 60, acc: 100 },
+    "Water Pulse":  { t: "water", cat: "spec", pow: 60, acc: 100, fx: { confuse: 20 } },
     "Muddy Water":  { t: "water", cat: "spec", pow: 90, acc: 85, fx: { stat: { who: "foe", stat: "acc", stg: -1, chance: 30 } }, spread: true },
     // Electric
     "Discharge":    { t: "electric", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 30 } }, spread: true },
@@ -223,7 +223,7 @@
     // Bug
     "Bug Buzz":     { t: "bug", cat: "spec", pow: 90, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 10 } } },
     "X-Scissor":    { t: "bug", cat: "phys", pow: 80, acc: 100 },
-    "Signal Beam":  { t: "bug", cat: "spec", pow: 75, acc: 100 },
+    "Signal Beam":  { t: "bug", cat: "spec", pow: 75, acc: 100, fx: { confuse: 10 } },
     "Silver Wind":  { t: "bug", cat: "spec", pow: 60, acc: 100 },
     // Rock
     "Stone Edge":   { t: "rock", cat: "phys", pow: 100, acc: 80, fx: { crit: "high" } },
@@ -291,7 +291,7 @@
     "Sandsear Storm":{ t: "ground", cat: "spec", pow: 100, acc: 80, fx: { status: { id: "brn", chance: 20 } }, spread: true },
     "Headlong Rush":{ t: "ground", cat: "phys", pow: 120, acc: 100, fx: { stats: [{ who: "self", stat: "def", stg: -1 }, { who: "self", stat: "spd", stg: -1 }] } },
     // Flying
-    "Hurricane":    { t: "flying", cat: "spec", pow: 110, acc: 70 },
+    "Hurricane":    { t: "flying", cat: "spec", pow: 110, acc: 70, fx: { confuse: 30 } },
     "Dual Wingbeat":{ t: "flying", cat: "phys", pow: 80, acc: 90 },
     "Bleakwind Storm":{ t: "flying", cat: "spec", pow: 100, acc: 80, fx: { stat: { who: "foe", stat: "spe", stg: -1, chance: 30 } }, spread: true },
     // Psychic
