@@ -409,8 +409,17 @@
     // On accept, the challenger broadcasts a live battle for the whole room.
     // (Duel challenges skip this — the accepter announces via the duel doc.)
     Sync.onChallengeAccepted((ch) => {
-      if (window.Inbox && ch.fromClient === Sync.myClientId())
-        Inbox.log("✅", (ch.toName || "They") + " accepted your " + (ch.kind === "trade" ? "trade offer" : "challenge") + ".");
+      // ✅ Tell the SENDER out loud — a toast in the foreground, an OS ping
+      // when the phone's asleep — not just a quiet inbox line.
+      if (ch.fromClient === Sync.myClientId()) {
+        const what = ch.kind === "trade" ? "trade offer" : "challenge";
+        const who = ch.toName || "They";
+        const tail = ch.kind === "duel" ? " — get ready, the battle is starting!" : ".";
+        notify("✅ Accepted!", who + " accepted your " + what + tail);
+        if (window.U && U.toast) U.toast("✅ " + who + " accepted your " + what + tail);
+        if (window.SFX && SFX.blip) SFX.blip();
+        if (window.Inbox) Inbox.log("✅", who + " accepted your " + what + ".");
+      }
       if (ch.kind === "duel") return;
       // Trade accepted → the offerer's phone celebrates too (state syncs in).
       if (ch.kind === "trade") {

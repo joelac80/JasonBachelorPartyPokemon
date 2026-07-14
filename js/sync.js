@@ -504,6 +504,7 @@
     onChallengeAccepted(fn) { chAccSubs.push(fn); return () => { const i = chAccSubs.indexOf(fn); if (i >= 0) chAccSubs.splice(i, 1); }; },
     onChallengeDeclined(fn) { chDecSubs.push(fn); return () => { const i = chDecSubs.indexOf(fn); if (i >= 0) chDecSubs.splice(i, 1); }; },
     _fireDeclined(c) { chDecSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
+    _fireAccepted(c) { chAccSubs.forEach((f) => { try { f(c); } catch (_) {} }); },   // test seam
 
     // ---- live battles (broadcast so the whole room can watch — many at once) ----
     // Returns the battle's id; callers keep it to finish that exact battle.
