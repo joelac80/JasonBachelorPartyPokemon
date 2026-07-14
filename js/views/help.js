@@ -75,7 +75,7 @@
       title: "⭐ Trophies & profiles",
       items: [
         { r: null, e: "🧢", t: "Ash Ketchum", d: "Most Pokémon caught in the Safari." },
-        { r: null, e: "🟣", t: "Master Catcher", d: "Most catches via the epic Master Ball dare." },
+        { r: null, e: "🟣", t: "Master Catcher", d: "Most catches landed with a 🟣 Master Ball." },
         { r: null, e: "🤝", t: "Best Helper", d: "Most assists helping others catch." },
         { r: null, e: "⚔️", t: "Battle Champ", d: "Most Battle Arena wins." },
         { r: null, e: "✨", t: "Shiny Hunter", d: "Most shiny Pokémon caught in the Safari (1-in-20 encounters)." },

@@ -80,7 +80,7 @@
     dl("drinks.csv", rows);
   }
   function exportCatches() {
-    const rows = [csvRow(["trainer", "team", "pokemon", "dex_no", "ball", "master_dare", "helper", "day", "time", "ts"])];
+    const rows = [csvRow(["trainer", "team", "pokemon", "dex_no", "ball", "master_ball", "helper", "day", "time", "ts"])];
     ((Store.state.pokedex && Store.state.pokedex.log) || []).slice().reverse().forEach((c) => rows.push(csvRow([nm(c.trainer), teamName(c.trainer), c.name, c.dexId, c.ball || "", c.master ? "yes" : "", c.helper ? nm(c.helper) : "", Store.dayLabel(c.ts), timeStr(c.ts), c.ts])));
     dl("catches.csv", rows);
   }

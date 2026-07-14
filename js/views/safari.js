@@ -819,7 +819,7 @@
         boardHost.appendChild(el("p", { class: "hint" }, "🤝 = Best Helper — most assists on catches wins the badge."));
       }
 
-      // ---- Master Catchers (landed via the epic Master Ball dare) ----
+      // ---- Master Catchers (most catches landed with a Master Ball) ----
       const masters = Store.state.attendees
         .map((a) => ({ a, n: masterCatchesOf(a.id) }))
         .filter((r) => r.n > 0)
@@ -833,7 +833,7 @@
             el("span", { class: "safari-board-name" }, r.a.name),
             el("span", { class: "safari-board-n" }, r.n + " master catch" + (r.n > 1 ? "es" : "")),
           ]))));
-        boardHost.appendChild(el("p", { class: "hint" }, "🟣 = Master Catcher — most Pokémon caught via the epic Master Ball dare."));
+        boardHost.appendChild(el("p", { class: "hint" }, "🟣 = Master Catcher — most Pokémon caught with a Master Ball."));
       }
     }
     function helpsOf(id) { return rec(id).helps || 0; }
