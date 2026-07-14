@@ -487,7 +487,7 @@
           row("🎭 The cast", "the region's own " + R.gymN + " leaders dealt into a RANDOM order, then its Elite Four shuffled too — real squads, real aces. The only randomness is WHO guards WHICH badge, and the deal locks the moment the run starts."),
           row("📈 The levels", "the same proven Lv 14 → ~58 curve as the Region Run."),
           row("📦 The box", "same as the Region Run — one box, this region's grass."),
-          row("❗ The villains", "the one wild card: ambushes draw from ANY era, not just this region's."),
+          row("❗ The villains", "region-locked — only this region's own rogues walk its roads — but WHEN they strike is shuffled: any moment from your first badge to the Champion's doorstep."),
           row("🏆 The crown", "beat Champion " + R.champ + " at the end of the shuffled gauntlet."),
         ],
       },
@@ -756,7 +756,7 @@
     } else {
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
         el("div", { class: "nuz-lab-head" }, (R ? R.emoji + " THE " + R.name.toUpperCase() + " RUN" : "") + (run.mode === "random" ? " — 🎲 RANDOMIZER" : "")),
-        run.mode === "random" ? el("p", { class: "hint" }, "The region's leaders and Elite Four were dealt into a random order when this run began — real squads, real aces, new hands guarding the badges. The Champion still closes.") : null,
+        run.mode === "random" ? el("p", { class: "hint" }, "The region's leaders and Elite Four were dealt into a random order when this run began — real squads, real aces, new hands guarding the badges. The Champion still closes, and the region's own villains shuffled WHEN they strike.") : null,
       ]));
     }
 
@@ -1018,7 +1018,7 @@
           : run.region === "blitz"
             ? "The blitz reel was dealt when the run began — every win raises the cap ~3 levels, with fresh grass after each battle. The VILLAIN waits at battle 27."
             : leaderShuffled(run)
-              ? "The badges fall in order, but the LEADERS were dealt at random when the run began — and villains from ANY era prowl the roads between them…"
+              ? "The badges fall in order, but the LEADERS were dealt at random when the run began — and the region's villains shuffled their ambush moments too…"
               : "Gyms fall IN ORDER — no skipping ahead. And villains prowl the roads between them…"));
       }
       return;
@@ -1350,6 +1350,15 @@
     if (run.region) return curRegion(run);
     return REGIONS[run.act === 2 ? 1 : 0] || null;     // legacy: Kanto then Johto
   }
+  // 🎲 Region randomizers keep the CAST canon but shuffle the CLOCK: each of
+  // the region's story villains rolls a seeded strike moment anywhere from
+  // "after the first badge" (1) to "on the Champion's doorstep" (the last
+  // pre-Champion stage). Progress counts badges + league stages together.
+  function villainMoment(run, R, t) {
+    const span = Math.max(1, R.gymN + ((R.league || []).length) - 1);
+    const rnd = mulberry32(((run.seed || 1) ^ strHash("vtime-" + t.name)) >>> 0);
+    return 1 + Math.floor(rnd() * span);
+  }
   function storyDue(run) {
     if (!run || run.over || run.region === "movie" || run.region === "blitz") return null;
     const R = legacyRegionOf(run);
@@ -1357,15 +1366,27 @@
     const inRegion = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
     const beaten = {}; (run.story || []).forEach((n) => { beaten[n] = 1; });
     const era = eraKey(run);
+    const shuffled = leaderShuffled(run);
+    const lgDone = shuffled ? (R.league || []).filter((k) => run.league.indexOf(k) >= 0).length : 0;
+    const prog = shuffled ? inRegion + lgDone : inRegion;
+    const dueAt = (t) => (shuffled ? villainMoment(run, R, t) : t.story.badge);
     const due = (window.CANON_TRAINERS || []).filter((t) =>
-      t.story && t.story.region === R.name && inRegion >= t.story.badge &&
+      t.story && t.story.region === R.name && prog >= dueAt(t) &&
       !beaten[t.name] && storySnooze[t.name] !== era);
-    due.sort((a, b) => a.story.badge - b.story.badge);
+    due.sort((a, b) => dueAt(a) - dueAt(b));
     return due[0] || null;
   }
   function ambushPool(run) {
     const all = (window.CANON_TRAINERS || []).filter((t) => t.name !== "PROF. OAK");
-    // 🎲 randomizer runs: any villain from any era can jump the road
+    // 🎲 single-region randomizers are region-LOCKED: only this region's own
+    // rogues walk its roads — the shuffle moved their CLOCKS, not the cast
+    if (run && leaderShuffled(run)) {
+      const R = legacyRegionOf(run);
+      const rn = R ? R.name : "";
+      const own = all.filter((t) => ((t.story && t.story.region) || t.region) === rn);
+      return own.length ? own : all;
+    }
+    // 🌍 the master deck: any villain from any era can jump the road
     if (run && run.mode === "random") return all;
     if (!run || !run.region) return all;
     const R = curRegion(run);
@@ -1502,5 +1523,6 @@
   window.Views = window.Views || {};
   window.Views.nuzlocke = view;
   // Tuning/debug hook (used by tests; harmless in production).
-  window.NuzDebug = { gymFor: gymFor, seqFor: seqFor, foeTeam: foeTeam, runLevel: runLevel };
+  window.NuzDebug = { gymFor: gymFor, seqFor: seqFor, foeTeam: foeTeam, runLevel: runLevel,
+    ambushPool: ambushPool, villainMoment: villainMoment, storyDue: storyDue };
 })();
