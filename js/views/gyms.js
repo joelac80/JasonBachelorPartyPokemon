@@ -26,10 +26,15 @@
     { leader: "MISTY",     badge: "Cascade",  type: "water",    region: "Kanto",  team: [55, 195, 131, 121] },
     { leader: "LT. SURGE", badge: "Thunder",  type: "electric", region: "Kanto",  team: [101, 462, 466, 26] },
     { leader: "ERIKA",     badge: "Rainbow",  type: "grass",    region: "Kanto",  team: [189, 182, 71, 465] },
-    { leader: "JANINE",    badge: "Soul",     type: "poison",   region: "Kanto",  team: [49, 110, 168, 169] },
+    // 🔴🔵 Kanto runs the RED/BLUE track: KOGA holds Fuchsia (his daughter
+    // Janine is the GSC-era stand-in) and GIOVANNI guards Viridian — the same
+    // man who ambushes as Rocket Boss at badge 7, exactly like the cartridge.
+    // He and Johto-E4 Koga are tracked by different keys, so the dual roles
+    // never cross-credit (same as BLUE/BRUNO/LANCE).
+    { leader: "KOGA",      badge: "Soul",     type: "poison",   region: "Kanto",  team: [109, 89, 49, 110] },
     { leader: "SABRINA",   badge: "Marsh",    type: "psychic",  region: "Kanto",  team: [196, 866, 65] },
     { leader: "BLAINE",    badge: "Volcano",  type: "fire",     region: "Kanto",  team: [219, 78, 467] },
-    { leader: "BLUE",      badge: "Earth",    type: "ground",   region: "Kanto",  team: [18, 65, 464, 130, 103, 59] },
+    { leader: "GIOVANNI",  badge: "Earth",    type: "ground",   region: "Kanto",  team: [111, 51, 31, 34, 112] },
     // ---- Hoenn (idx 16-23) — needed before the Hoenn Elite Four ----
     { leader: "ROXANNE",   badge: "Stone",    type: "rock",     region: "Hoenn",  team: [76, 464, 409, 476] },
     { leader: "BRAWLY",    badge: "Knuckle",  type: "fighting", region: "Hoenn",  team: [68, 286, 214, 297] },
