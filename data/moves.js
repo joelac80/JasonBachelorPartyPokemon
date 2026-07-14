@@ -31,7 +31,7 @@
     "Stomp":       { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Double-Edge": { t: "normal", cat: "phys", pow: 100, acc: 100, fx: { recoil: 0.25 } },
     "Take Down":   { t: "normal", cat: "phys", pow: 90, acc: 85, fx: { recoil: 0.25 } },
-    "Hyper Beam":  { t: "normal", cat: "spec", pow: 120, acc: 90, recharge: true },
+    "Hyper Beam":  { t: "normal", cat: "spec", pow: 150, acc: 90, recharge: true },
     "Swift":       { t: "normal", cat: "spec", pow: 60, acc: 101 },
     "Tri Attack":  { t: "normal", cat: "spec", pow: 80, acc: 100, fx: { status: { id: "par", chance: 20 } } },
     "Return":      { t: "normal", cat: "phys", pow: 75, acc: 100 },
@@ -76,7 +76,7 @@
     "Mega Drain":  { t: "grass", cat: "spec", pow: 60, acc: 100, fx: { drain: 0.5 } },
     "Giga Drain":  { t: "grass", cat: "spec", pow: 70, acc: 100, fx: { drain: 0.5 } },
     "Razor Leaf":  { t: "grass", cat: "phys", pow: 60, acc: 95, fx: { crit: "high" } },
-    "Solar Beam":  { t: "grass", cat: "spec", pow: 110, acc: 100, charge: { msg: "absorbed light!" } },
+    "Solar Beam":  { t: "grass", cat: "spec", pow: 150, acc: 100, charge: { msg: "absorbed light!" } },
     "Vine Whip":   { t: "grass", cat: "phys", pow: 45, acc: 100 },
     "Petal Dance": { t: "grass", cat: "spec", pow: 90, acc: 100 },
     "Sleep Powder":{ t: "grass", cat: "status", pow: 0, acc: 75, fx: { status: { id: "slp", chance: 100 } } },
@@ -167,7 +167,7 @@
     // ============================================================
     // Normal
     "Extreme Speed":{ t: "normal", cat: "phys", pow: 80, acc: 100, pri: 2 },
-    "Giga Impact":  { t: "normal", cat: "phys", pow: 130, acc: 90, recharge: true },
+    "Giga Impact":  { t: "normal", cat: "phys", pow: 150, acc: 90, recharge: true },
     "Hyper Voice":  { t: "normal", cat: "spec", pow: 90, acc: 100, spread: true },
     "Crush Claw":   { t: "normal", cat: "phys", pow: 75, acc: 95, fx: { stat: { who: "foe", stat: "def", stg: -1, chance: 50 } } },
     "Wish":         { t: "normal", cat: "status", pow: 0, acc: 101, fx: { heal: 0.5 } },
@@ -275,7 +275,7 @@
     "Ivy Cudgel":   { t: "grass", cat: "phys", pow: 100, acc: 100, fx: { crit: "high" } },
     "Apple Acid":   { t: "grass", cat: "spec", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1 } } },
     // Ice
-    "Freeze-Dry":   { t: "ice", cat: "spec", pow: 70, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
+    "Freeze-Dry":   { t: "ice", cat: "spec", pow: 70, acc: 100, freezeDry: true, fx: { status: { id: "frz", chance: 20 } } },
     "Glaciate":     { t: "ice", cat: "spec", pow: 65, acc: 95, fx: { stat: { who: "foe", stat: "spe", stg: -1 } }, spread: true },
     "Freezing Glare":{ t: "psychic", cat: "spec", pow: 90, acc: 100, fx: { status: { id: "frz", chance: 10 } } },
     // Fighting
@@ -304,7 +304,7 @@
     "Lunge":        { t: "bug", cat: "phys", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "atk", stg: -1 } } },
     "First Impression":{ t: "bug", cat: "phys", pow: 90, acc: 100, pri: 2 },
     // Rock
-    "Meteor Assault":{ t: "rock", cat: "phys", pow: 140, acc: 100, recharge: true },
+    "Meteor Assault":{ t: "rock", cat: "phys", pow: 150, acc: 100, recharge: true },
     "Diamond Storm":{ t: "rock", cat: "phys", pow: 100, acc: 95, fx: { stat: { who: "self", stat: "def", stg: 1, chance: 50 } }, spread: true },
     // Ghost
     "Moongeist Beam":{ t: "ghost", cat: "spec", pow: 100, acc: 100 },
@@ -318,7 +318,7 @@
     "Scale Shot":   { t: "dragon", cat: "phys", pow: 75, acc: 90 },
     "Clanging Scales":{ t: "dragon", cat: "spec", pow: 110, acc: 100, fx: { stat: { who: "self", stat: "def", stg: -1 } }, spread: true },
     "Glaive Rush":  { t: "dragon", cat: "phys", pow: 120, acc: 100 },
-    "Roar of Time": { t: "dragon", cat: "spec", pow: 140, acc: 90, recharge: true },
+    "Roar of Time": { t: "dragon", cat: "spec", pow: 150, acc: 90, recharge: true },
     "Spacial Rend": { t: "dragon", cat: "spec", pow: 100, acc: 95, fx: { crit: "high" } },
     // Dark
     "Knock Off":    { t: "dark", cat: "phys", pow: 65, acc: 100 },

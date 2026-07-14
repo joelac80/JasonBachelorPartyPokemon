@@ -67,7 +67,8 @@
     if (!d) return null;
     return { name: name, type: d.t, cat: d.cat || "phys", pow: d.pow || 0,
       acc: (d.acc == null ? 100 : d.acc), pri: d.pri || 0, fx: d.fx || null,
-      spread: !!d.spread, recharge: !!d.recharge, charge: d.charge || null };
+      spread: !!d.spread, recharge: !!d.recharge, charge: d.charge || null,
+      freezeDry: !!d.freezeDry };
   }
   function typeMove(t, m) { return { name: m[0], type: t, cat: "phys", pow: m[1], acc: m[2], pri: 0, fx: null }; }
   // Gen-1/2 stat-stage multiplier (−6..+6).
@@ -217,10 +218,15 @@
       moves: moves };
   }
 
-  function effFor(moveType, defTypes) {
+  function effFor(moveType, defTypes, mv) {
     const f = window.Battle && Battle.effectiveness;
     if (!f) return 1;
-    return defTypes.reduce((m, t) => m * f(moveType, t), 1);
+    let e = defTypes.reduce((m, t) => m * f(moveType, t), 1);
+    // ❄️💧 Freeze-Dry's signature: it hits WATER super-effectively. Ice vs
+    // water is normally ×0.5, so replacing it with ×2 is a clean ×4 on any
+    // water-typed target (dual types compose correctly: Water/Grass → ×4).
+    if (mv && mv.freezeDry && defTypes.indexOf("water") >= 0) e *= 4;
+    return e;
   }
 
   // Last resort when every move is nullified by immunity (e.g. a mono-Normal
@@ -1108,7 +1114,7 @@
       const tm = tu ? mon(tu) : null;
       // Type effect is computed now against the ACTUAL target (re-target safe);
       // stat-stage and burn modifiers use current battle state (deterministic).
-      const eff = tm ? effFor(mv.type, tm.types) : 1;
+      const eff = tm ? effFor(mv.type, tm.types, mv) : 1;
       const immune = eff === 0;
       // A semi-invulnerable target (mid-Dig/Fly/Phantom Force) can't be hit —
       // by damaging moves OR foe-targeting status moves (Thunder Wave, Toxic,
@@ -1139,7 +1145,7 @@
       let dmg = 0;
       if (!miss && !immune && !isStatus && tm) dmg = dmgFor(tu, eff);
       const spread = spreadFoes.map((x) => {
-        const teff = effFor(mv.type, mon(x.fu).types);
+        const teff = effFor(mv.type, mon(x.fu).types, mv);
         return { tUnit: x.i, eff: teff, dmg: dmgFor(x.fu, teff) };
       });
       applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
@@ -2046,7 +2052,7 @@
             if (!bestStatus || s > bestStatus.score) bestStatus = { score: s, mIdx: i, tIdx: f.i };
             return;
           }
-          const score = mv.pow * effFor(mv.type, mon(f.u).types) * (mv.acc / 100);
+          const score = mv.pow * effFor(mv.type, mon(f.u).types, mv) * (mv.acc / 100);
           if (!best || score > best.score) best = { score: score, mIdx: i, tIdx: f.i };
         });
       });
@@ -2130,7 +2136,7 @@
           [el("button", { class: "btn primary", onClick: () => doMove(u, ptr, m._charging.move, (foes[0] || { i: 0 }).i) }, "💥 Unleash " + cm.name + "!")]));
         return;
       }
-      const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types) === 0));
+      const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types, mv) === 0));
       // Dire Hit armed: Z-move style — it's active, now unleash
       // a move on THIS same turn (can't miss, guaranteed crit).
       if (S.zmove) {
@@ -2250,5 +2256,5 @@
   }
 
   window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead,
-    _capMoves: capMoves, _residualDiv: RESIDUAL_DIV };   // test seams
+    _capMoves: capMoves, _residualDiv: RESIDUAL_DIV, _effFor: effFor };   // test seams
 })();
