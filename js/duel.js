@@ -383,10 +383,21 @@
     // party — any of the four can go into either slot (just not the same mon
     // on both at once). We build the party once (slot 0's) and point slot 1 at
     // it, so switching/fainting is a single shared bench.
+    // A side is shared when the setup SAYS so — or when it obviously is:
+    // two slots run by the same trainer with identical team lists (a stale
+    // phone's broadcast drops the flag; without this a watcher would double
+    // the ball row and field the same lead in both slots).
+    function looksShared(sd) {
+      const us = ((opts[sd] || {}).units || []);
+      if (us.length !== 2) return false;
+      const same = (a, b) => (a || "") === (b || "");
+      return same(us[0].attId, us[1].attId) && same(us[0].npc, us[1].npc)
+        && JSON.stringify(us[0].monIds || []) === JSON.stringify(us[1].monIds || []);
+    }
     ["a", "b"].forEach((sd) => {
       const us = sides[sd].units;
       us.forEach((u) => { u._side = sd; });
-      if ((opts[sd] || {}).shared && us.length === 2) {
+      if (((opts[sd] || {}).shared || looksShared(sd)) && us.length === 2) {
         us[1].party = us[0].party;               // one party, two field pointers
         us[0].cur = 0; us[1].cur = 1;
         sides[sd].shared = true;

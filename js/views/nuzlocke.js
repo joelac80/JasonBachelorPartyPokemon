@@ -338,7 +338,7 @@
     // Trainer picker (per phone, like the Safari).
     const sel = el("select", { class: "in" }, [el("option", { value: "" }, "— pick a trainer —")].concat(
       Store.state.attendees.map((a) => el("option", { value: a.id, selected: me === a.id ? "true" : null }, a.name))));
-    sel.addEventListener("change", () => { me = sel.value; slot = ""; wildId = 0; wildShiny = 0; Router.render(); });
+    sel.addEventListener("change", () => { me = sel.value; slot = ""; wildId = 0; wildShiny = 0; renderKeepScroll(); });
     const lockedRow = U.lockedTrainerRow("Running as:");
     if (lockedRow) { if (me !== lockedRow.dataset.me) { me = lockedRow.dataset.me; slot = ""; } root.appendChild(lockedRow); }
     else root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Running as:"), sel]));
@@ -393,7 +393,7 @@
         : r.over === "abandoned" ? "🏳️ ended"
         : "🏆 done";
       return el("button", { class: "btn sm" + (slot === d.k ? " primary" : " subtle"), onClick: () => {
-        slot = d.k; wildId = 0; wildShiny = 0; Router.render();
+        slot = d.k; wildId = 0; wildShiny = 0; renderKeepScroll();
       } }, [
         el("span", {}, d.e + " " + d.t),
         el("span", { class: "nuz-slot-st" + (r && !r.over ? " live" : "") }, st),
@@ -461,7 +461,7 @@
               ? el("p", { class: "hint" }, "🎲 One region — but every trainer you meet fields RANDOM Pokémon (era-appropriate, level-capped). A fresh gauntlet every run.")
               : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
       newKind === "classic" || newKind === "random" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
-        el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; Router.render(); } }, r.emoji + " " + r.name))) : null,
+        el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; renderKeepScroll(); } }, r.emoji + " " + r.name))) : null,
       newKind === "master" || newKind === "blitz" ? el("p", { class: "hint" }, "The professors have gathered: choose ANY starter from the whole saga.") : null,
       newKind === "ages" || newKind === "trek" ? el("p", { class: "hint" }, "The journey begins where it all began — Gen 1, Professor Oak's lab.") : null,
       movie
@@ -478,7 +478,7 @@
             if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
             Store.nuzStart(me, id, newKind === "random" || newKind === "master" || newKind === "blitz" ? "random" : "",
               newKind === "master" ? "master" : newKind === "ages" ? "ages" : newKind === "trek" ? "trek" : newKind === "blitz" ? "blitz" : newRegion);
-            wildId = 0; sfx("fanfare"); Router.render();
+            wildId = 0; sfx("fanfare"); renderKeepScroll();
           } }, [
             Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
             el("span", { class: "nuz-starter-n" }, monName(id)),
@@ -531,7 +531,7 @@
     host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
       el("button", { class: "btn subtle sm", onClick: () => {
         if (!confirm("Abandon this Nuzlocke run? It ends here — badges, box and all.")) return;
-        Store.nuzAbandon(me, slot); wildId = 0; sfx("error"); Router.render();
+        Store.nuzAbandon(me, slot); wildId = 0; sfx("error"); renderKeepScroll();
       } }, "🏳️ Abandon run"),
     ]));
   }
@@ -550,7 +550,7 @@
         el("div", { class: "safari-actions" }, [
           el("button", { class: "btn subtle sm", onClick: () => {
             if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
-            Store.nuzRetire(me, slot); wildId = 0; Router.render();
+            Store.nuzRetire(me, slot); wildId = 0; renderKeepScroll();
           } }, "👑 Retire as Champion"),
         ]),
       ]));
@@ -613,7 +613,7 @@
         el("div", { class: "safari-actions" }, [
           el("button", { class: "btn subtle sm", onClick: () => {
             if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
-            Store.nuzRetire(me, slot); wildId = 0; Router.render();
+            Store.nuzRetire(me, slot); wildId = 0; renderKeepScroll();
           } }, "👑 Retire as Champion"),
         ]),
       ]));
@@ -646,7 +646,7 @@
         const names = ids.map((id) => monName(id)).join(", ");
         if (!confirm("Premiere the 🎬 MOVIE MARATHON with this cast — " + names + "? " + ((window.MOVIE_BOSSES || []).length || 16) + " films at full power, permadeath is ON — no take-backs.")) return;
         Store.nuzStartMovie(me, ids);
-        wildId = 0; sfx("fanfare"); Router.render();
+        wildId = 0; sfx("fanfare"); renderKeepScroll();
       } });
   }
   function nextFilm(run) {
@@ -694,7 +694,7 @@
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], "movie");
             if (winSide === "a") { Store.nuzStage(me, b.key, "movie"); sfx("fanfare"); offerCostar(b); }
-            Router.render();
+            renderKeepScroll();
           } } });
       });
   }
@@ -716,7 +716,7 @@
         Store.sprite(id) ? el("img", { class: "evo-prompt-img", src: Store.sprite(id), alt: "", style: { display: "block", margin: "0 auto" } }) : null,
         el("div", { class: "nuz-lab-head", style: { textAlign: "center" } }, monName(id)),
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
-          el("button", { class: "btn primary", onClick: () => { ctrl.close(); Store.nuzRecruit(me, id, b.film); sfx("fanfare"); Router.render(); } }, "🌟 Welcome to the cast"),
+          el("button", { class: "btn primary", onClick: () => { ctrl.close(); Store.nuzRecruit(me, id, b.film); sfx("fanfare"); renderKeepScroll(); } }, "🌟 Welcome to the cast"),
           el("button", { class: "btn subtle", onClick: () => ctrl.close() }, "Decline — the moment passes"),
         ]),
       ]);
@@ -738,7 +738,7 @@
         el("button", { class: "nuz-starter", onClick: () => {
           if (!confirm("Leave the whole team with Professor " + (prev ? prev.prof : "Oak") + " and begin " + R.name + " with " + monName(id) + "? The box resets — permadeath stays ON.")) return;
           Store.nuzNewRegion(me, id, R.key);
-          wildId = 0; sfx("fanfare"); Router.render();
+          wildId = 0; sfx("fanfare"); renderKeepScroll();
         } }, [
           Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
           el("span", { class: "nuz-starter-n" }, monName(id)),
@@ -972,7 +972,7 @@
     const settle = () => {
       // Whatever wasn't touched holds its Everstone — the auto-check stays quiet.
       eligible.forEach((m, i) => { if (!acted[i] && !m.dead) { try { Store.nuzNoEvo(me, m.id, slot); } catch (_) {} } });
-      evoOpen = false; Router.render();
+      evoOpen = false; renderKeepScroll();
     };
     const rows = eligible.map((m, i) => {
       const targets = evoTargetsFor(m, run);
@@ -1093,7 +1093,7 @@
               Store.nuzDeaths(me, fainted || [], slot);
               if (outcome === "caught") { Store.nuzCatch(me, id, shiny, slot); sfx("fanfare"); }
               else sfx("error");
-              wildId = 0; wildShiny = 0; Router.render();
+              wildId = 0; wildShiny = 0; renderKeepScroll();
             },
           } });
       });
@@ -1177,7 +1177,7 @@
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
             if (winSide === "a") { Store.nuzBadge(me, idx, slot); sfx("fanfare"); maybeAmbush(); }
-            Router.render();
+            renderKeepScroll();
           } } });
       });
   }
@@ -1271,7 +1271,7 @@
             Store.nuzDeaths(me, fainted || [], slot);
             if (isStory && winSide === "a") Store.nuzStoryWin(me, t.name, slot);
             Store.update((s) => Store.chron(s, isStory ? "📖" : "❗", aName(me) + (winSide === "a" ? (isStory ? " wrote the next chapter — beat " : " fought off ") : " survived ") + t.title + " " + t.name + (isStory ? " at the story's appointed hour!" : (winSide === "a" ? "'s Nuzlocke ambush!" : "'s Nuzlocke ambush — barely."))));
-            Router.render();
+            renderKeepScroll();
           } } });
       });
   }
@@ -1296,7 +1296,7 @@
               }
               maybeAmbush();      // villains prowl the league roads too
             }
-            Router.render();
+            renderKeepScroll();
           } } });
       });
   }
