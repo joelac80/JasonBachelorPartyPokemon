@@ -27,8 +27,8 @@
     "Quick Attack":{ t: "normal", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Body Slam":   { t: "normal", cat: "phys", pow: 70, acc: 100, fx: { status: { id: "par", chance: 30 } } },
     "Slash":       { t: "normal", cat: "phys", pow: 70, acc: 100, fx: { crit: "high" } },
-    "Headbutt":    { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 20 } },
-    "Stomp":       { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 20 } },
+    "Headbutt":    { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
+    "Stomp":       { t: "normal", cat: "phys", pow: 65, acc: 100, fx: { flinch: 30 } },
     "Double-Edge": { t: "normal", cat: "phys", pow: 100, acc: 100, fx: { recoil: 0.25 } },
     "Take Down":   { t: "normal", cat: "phys", pow: 90, acc: 85, fx: { recoil: 0.15 } },
     "Hyper Beam":  { t: "normal", cat: "spec", pow: 150, acc: 90, recharge: true },
@@ -93,9 +93,9 @@
     "Karate Chop": { t: "fighting", cat: "phys", pow: 50, acc: 100, fx: { crit: "high" } },
     "Brick Break": { t: "fighting", cat: "phys", pow: 65, acc: 100 },
     "Cross Chop":  { t: "fighting", cat: "phys", pow: 100, acc: 80, fx: { crit: "high" } },
-    "Low Kick":    { t: "fighting", cat: "phys", pow: 55, acc: 90, fx: { flinch: 20 } },
+    "Low Kick":    { t: "fighting", cat: "phys", pow: 55, acc: 90, fx: { flinch: 30 } },
     // the cartridge's 100% confusion isn't modeled — the flinch is the daze
-    "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 55, fx: { flinch: 40 } },
+    "Dynamic Punch":{ t: "fighting", cat: "phys", pow: 100, acc: 55, fx: { flinch: 60 } },
     "Mach Punch":  { t: "fighting", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Submission":  { t: "fighting", cat: "phys", pow: 95, acc: 80, fx: { recoil: 0.15 } },
     // ---- Poison ----
@@ -115,7 +115,7 @@
     "Aerial Ace":  { t: "flying", cat: "phys", pow: 60, acc: 101 },
     "Drill Peck":  { t: "flying", cat: "phys", pow: 80, acc: 100 },
     "Peck":        { t: "flying", cat: "phys", pow: 35, acc: 100 },
-    "Sky Attack":  { t: "flying", cat: "phys", pow: 140, acc: 90, fx: { flinch: 20 }, charge: { msg: "started glowing!" } },
+    "Sky Attack":  { t: "flying", cat: "phys", pow: 140, acc: 90, fx: { flinch: 30 }, charge: { msg: "started glowing!" } },
     "Fly":         { t: "flying", cat: "phys", pow: 90, acc: 95, charge: { msg: "flew up high!", invuln: true } },
     "Gust":        { t: "flying", cat: "spec", pow: 40, acc: 100 },
     // ---- Psychic ----
@@ -134,7 +134,7 @@
     "String Shot": { t: "bug", cat: "status", pow: 0, acc: 95, fx: { stat: { who: "foe", stat: "spe", stg: -1 } } },
     // ---- Rock ----
     "Rock Throw":  { t: "rock", cat: "phys", pow: 50, acc: 90 },
-    "Rock Slide":  { t: "rock", cat: "phys", pow: 75, acc: 90, fx: { flinch: 20 }, spread: true },
+    "Rock Slide":  { t: "rock", cat: "phys", pow: 75, acc: 90, fx: { flinch: 30 }, spread: true },
     "Ancient Power":{ t: "rock", cat: "spec", pow: 60, acc: 100 },
     // ---- Ghost ----
     "Lick":        { t: "ghost", cat: "phys", pow: 30, acc: 100, fx: { status: { id: "par", chance: 30 } } },
@@ -147,7 +147,7 @@
     "Outrage":     { t: "dragon", cat: "phys", pow: 90, acc: 100 },
     "Twister":     { t: "dragon", cat: "spec", pow: 40, acc: 100, fx: { flinch: 20 } },
     // ---- Dark ----
-    "Bite":        { t: "dark", cat: "phys", pow: 60, acc: 100, fx: { flinch: 20 } },
+    "Bite":        { t: "dark", cat: "phys", pow: 60, acc: 100, fx: { flinch: 30 } },
     "Crunch":      { t: "dark", cat: "phys", pow: 80, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 20 } } },
     "Faint Attack":{ t: "dark", cat: "phys", pow: 60, acc: 101 },
     "Pursuit":     { t: "dark", cat: "phys", pow: 40, acc: 100 },
@@ -197,7 +197,7 @@
     // Ice
     "Ice Shard":    { t: "ice", cat: "phys", pow: 40, acc: 100, pri: 1 },
     "Ice Fang":     { t: "ice", cat: "phys", pow: 65, acc: 95, fx: { status: { id: "frz", chance: 10 } } },
-    "Icicle Crash": { t: "ice", cat: "phys", pow: 85, acc: 90, fx: { flinch: 20 } },
+    "Icicle Crash": { t: "ice", cat: "phys", pow: 85, acc: 90, fx: { flinch: 30 } },
     // Fighting
     "Aura Sphere":  { t: "fighting", cat: "spec", pow: 80, acc: 101 },
     "Close Combat": { t: "fighting", cat: "phys", pow: 120, acc: 100, fx: { stats: [{ who: "self", stat: "def", stg: -1 }, { who: "self", stat: "spd", stg: -1 }] } },
@@ -211,7 +211,7 @@
     // Ground
     "Earth Power":  { t: "ground", cat: "spec", pow: 90, acc: 100, fx: { stat: { who: "foe", stat: "spd", stg: -1, chance: 10 } } },
     // Flying
-    "Air Slash":    { t: "flying", cat: "spec", pow: 75, acc: 95, fx: { flinch: 20 } },
+    "Air Slash":    { t: "flying", cat: "spec", pow: 75, acc: 95, fx: { flinch: 30 } },
     "Brave Bird":   { t: "flying", cat: "phys", pow: 120, acc: 100, fx: { recoil: 0.33 } },
     "Roost":        { t: "flying", cat: "status", pow: 0, acc: 101, fx: { heal: 0.5 } },
     "Air Cutter":   { t: "flying", cat: "spec", pow: 60, acc: 95, fx: { crit: "high" } },
