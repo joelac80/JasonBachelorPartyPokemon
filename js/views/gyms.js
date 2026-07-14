@@ -25,7 +25,7 @@
     { leader: "BROCK",     badge: "Boulder",  type: "rock",     region: "Kanto",  team: [76, 464, 139, 141, 208] , defeat: "I took you for granted — hard as rock, and you still cracked me." },
     { leader: "MISTY",     badge: "Cascade",  type: "water",    region: "Kanto",  team: [55, 195, 131, 121] , defeat: "Wow, you're too much! All right — the Cascade Badge is yours!" },
     { leader: "LT. SURGE", badge: "Thunder",  type: "electric", region: "Kanto",  team: [101, 462, 466, 26] , defeat: "WHOA, soldier! You're the real deal — a shockingly good battle!" },
-    { leader: "ERIKA",     badge: "Rainbow",  type: "grass",    region: "Kanto",  team: [189, 182, 71, 465] , defeat: "Oh… I concede. You are remarkably strong — like a fragrant breeze." },
+    { leader: "ERIKA",     badge: "Rainbow",  type: "grass",    region: "Kanto",  team: [189, 182, 71, 465, 45] , defeat: "Oh… I concede. You are remarkably strong — like a fragrant breeze." },
     // 🔴🔵 Kanto runs the RED/BLUE track: KOGA holds Fuchsia (his daughter
     // Janine is the GSC-era stand-in) and GIOVANNI guards Viridian — the same
     // man who ambushes as Rocket Boss at badge 7, exactly like the cartridge.
@@ -33,7 +33,7 @@
     // never cross-credit (same as BLUE/BRUNO/LANCE).
     { leader: "KOGA",      badge: "Soul",     type: "poison",   region: "Kanto",  team: [109, 89, 49, 110] , defeat: "Fwahaha! You have proven your worth — even the ways of the ninja bow to you!" },
     { leader: "SABRINA",   badge: "Marsh",    type: "psychic",  region: "Kanto",  team: [196, 866, 65] , defeat: "I foresaw this defeat… and still, it stings." },
-    { leader: "BLAINE",    badge: "Volcano",  type: "fire",     region: "Kanto",  team: [219, 78, 467] , defeat: "I have burned down to nothing! Not even ashes remain! HOT stuff, kid!" },
+    { leader: "BLAINE",    badge: "Volcano",  type: "fire",     region: "Kanto",  team: [219, 78, 467, 59] , defeat: "I have burned down to nothing! Not even ashes remain! HOT stuff, kid!" },
     { leader: "GIOVANNI",  badge: "Earth",    type: "ground",   region: "Kanto",  team: [111, 51, 31, 34, 112] , defeat: "Ha! So the Earth Badge leaves my hands… you truly are formidable." },
     // ---- Hoenn (idx 16-23) — needed before the Hoenn Elite Four ----
     { leader: "ROXANNE",   badge: "Stone",    type: "rock",     region: "Hoenn",  team: [76, 464, 409, 476] , defeat: "So THIS is a real battle… nothing in my textbooks reads like you." },
@@ -93,7 +93,7 @@
     { leader: "LARRY",     badge: "Normal",   type: "normal",   region: "Paldea", team: [775, 982, 765, 398] , defeat: "…It's just a job, and today I got outworked. Order whatever you like." },
     { leader: "RYME",      badge: "Ghost",    type: "ghost",    region: "Paldea", team: [354, 778, 426, 972] , defeat: "Yo — that beat DROPPED me! Mic's yours, champ!" },
     { leader: "TULIP",     badge: "Psychic",  type: "psychic",  region: "Paldea", team: [981, 282, 956, 671] , defeat: "Flawless. Your technique needs no touch-up at all." },
-    { leader: "GRUSHA",    badge: "Ice",      type: "ice",      region: "Paldea", team: [975, 873, 614, 998] , defeat: "…Cold. Precise. You'd do well on the mountain. Take it." },
+    { leader: "GRUSHA",    badge: "Ice",      type: "ice",      region: "Paldea", team: [873, 614, 998, 975] , defeat: "…Cold. Precise. You'd do well on the mountain. Take it." },
   ];
   window.GYM_CIRCUIT = GYMS;   // profiles/tests can read the circuit
 

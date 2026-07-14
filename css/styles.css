@@ -2198,6 +2198,21 @@ html, body { overscroll-behavior-y: contain; }
 .tdex-sub { font-size: 0.72em; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tdex-chip { display: inline-block; margin-top: 4px; font-size: 0.66em; padding: 1px 7px; border-radius: 9px; background: rgba(255, 255, 255, 0.08); opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tdex-chip.lit { background: rgba(255, 215, 90, 0.15); opacity: 1; }
+/* 🎴 tap a dex card → the trainer's page (team + collected quotes) */
+.tdex-card.tappable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tdex-card.tappable:active { transform: scale(0.97); }
+.tdexm-hero { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.tdexm-hero .tdex-ace { width: 64px; height: 64px; flex: 0 0 auto; }
+.tdexm-h { font-size: 0.9em; margin: 10px 0 6px; opacity: 0.85; }
+.tdexm-team { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.tdexm-mon { text-align: center; min-width: 0; }
+.tdexm-img { width: 52px; height: 52px; image-rendering: pixelated; }
+.tdexm-img.dark { filter: brightness(0) opacity(0.45); }
+.tdexm-nm { font-size: 0.68em; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tdexm-acechip { display: inline-block; font-size: 0.62em; font-weight: 800; color: #7a5c00; background: rgba(255, 215, 90, 0.35); border-radius: 8px; padding: 0 6px; margin-top: 2px; }
+.tdexm-q { margin: 8px 0; }
+.tdexm-qk { font-size: 0.7em; font-weight: 800; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.03em; }
+.tdexm-qv { font-size: 0.88em; font-style: italic; line-height: 1.45; }
 
 /* ═══ 🎖 Tiered achievements (Bronze → Silver → Gold → Platinum) ═══ */
 .ach-board { display: flex; flex-direction: column; gap: 4px; margin: 6px 0 12px; }
