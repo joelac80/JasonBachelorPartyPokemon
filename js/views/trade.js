@@ -336,6 +336,18 @@
     renderInbox();
     render();
     renderRecent();
+
+    // 🔄 Live-sync updates must NOT rebuild the whole page here: a full
+    // Router.render() re-enters view() and wipes your half-composed offer
+    // (the `pick` state lives in this closure), so a busy room made the
+    // screen "keep refreshing" mid-pick. Instead, refresh the three
+    // sections in place — they re-read fresh Store state (new offers show
+    // up, accepted trades update your pool) while your picks survive.
+    // Router clears this hook the moment you navigate away.
+    window.__deferRender = function () {
+      try { renderInbox(); render(); renderRecent(); } catch (_) {}
+      return true;
+    };
   }
 
   window.Views = window.Views || {};
