@@ -100,11 +100,13 @@
   function ballIcon(tier) { return el("span", { class: "ball-ico " + tier.key, style: { "--ball-top": tier.top } }); }
 
   // Near-flat encounter odds — cool Pokémon show up almost as often as commons;
-  // the drama lives in the catch rate, not the sighting. Legendaries stay rare
-  // but are NOT one-of-one anymore: everyone can catch their own.
+  // the drama lives in the catch rate, not the sighting. Legendaries are the
+  // exception: a sighting is an EVENT (~1% of walks on a fresh pool), so the
+  // multiplier keeps them scarce even as caught commons thin the table out
+  // (uncatchable legendaries linger, which used to inflate their share).
   function weightFor(id) {
     const d = DEX[id]; let w = 1 / Math.pow(d.x, 0.30);
-    if (d.leg) w *= 0.7;
+    if (d.leg) w *= 0.2;
     return w;
   }
   function P() { return Store.state.pokedex; }
