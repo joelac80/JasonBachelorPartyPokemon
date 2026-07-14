@@ -1443,11 +1443,13 @@
     hisuiUnlocked(attId) { return this.leagueWins(attId).indexOf("cynthia") >= 0; },
 
     // 🗼 Battle Tower — 4v4 double-battle streaks vs randomized trainers.
-    // Per-trainer {streak, best} for the classic climb and {rStreak, rBest}
-    // for RENTAL mode (random squad handed to you). A loss resets the live
-    // streak, bests are forever — and the FIRST time a classic streak hits 7
-    // (Palmer's floor), the team is enshrined in the real Hall of Fame.
-    towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0, rStreak: 0, rBest: 0 }; },
+    // THREE ladders per trainer: {streak, best} for the 1→100 GAUNTLET,
+    // {rStreak, rBest} for RENTAL mode (random squad handed to you), and
+    // {mStreak, mBest} for the 💯 LEVEL 100 ladder (flat Lv100, everything
+    // fully evolved). A loss resets the live streak, bests are forever — and
+    // the FIRST time a gauntlet streak hits 7 (Palmer's floor), the team is
+    // enshrined in the real Hall of Fame.
+    towerOf(attId) { return (this.state.tower || {})[attId] || { streak: 0, best: 0, rStreak: 0, rBest: 0, mStreak: 0, mBest: 0 }; },
 
     // 🟣 Master Balls — a PROGRESSION currency, never bought: 5 for every
     // Champion beaten in The Journey, +3 per nuzlocke crown (+5 when the
@@ -1533,13 +1535,21 @@
       try { if (window.Sync && Sync.getMe && Sync.getMe() === attId) Sync.setMe(""); } catch (_) {}
       return true;
     },
-    towerWin(attId, foeName, tycoon, partyIds, rental) {
+    // mode: falsy/"classic" = the 1→100 gauntlet, true/"rental" = rentals,
+    // "max" = the flat LEVEL 100 ladder.
+    towerWin(attId, foeName, tycoon, partyIds, mode) {
       if (!attId) return;
       this.update((s) => {
         s.tower = s.tower || {};
         const t = s.tower[attId] = s.tower[attId] || { streak: 0, best: 0 };
         const nm = this._nuzName(attId);
-        if (rental) {
+        if (mode === "max") {
+          t.mStreak = (t.mStreak || 0) + 1; t.mBest = Math.max(t.mBest || 0, t.mStreak); t.upd = Date.now();
+          if (tycoon) Store.chron(s, "💯", nm + " beat PALMER at FULL POWER — Lv100 ladder streak " + t.mStreak + "!!");
+          else if (t.mStreak % 5 === 0) Store.chron(s, "💯", nm + " is " + t.mStreak + " deep on the LEVEL 100 ladder — no training wheels!");
+          return;
+        }
+        if (mode === true || mode === "rental") {
           t.rStreak = (t.rStreak || 0) + 1; t.rBest = Math.max(t.rBest || 0, t.rStreak); t.upd = Date.now();
           if (t.rStreak === 100) Store.chron(s, "👑", nm + " CONQUERED THE 1→100 GAUNTLET on RENTALS ALONE — floor 100, Lv100, no losses!!");
           else if (tycoon) Store.chron(s, "🎲", nm + " beat PALMER with a RENTAL squad — rental streak " + t.rStreak + "!!");
@@ -1557,15 +1567,16 @@
         else if (t.streak % 5 === 0) Store.chron(s, "🗼", nm + " is on a Battle Tower HEATER — " + t.streak + " straight!");
       });
     },
-    towerLoss(attId, foeName, rental) {
+    towerLoss(attId, foeName, mode) {
       if (!attId) return;
+      const rental = mode === true || mode === "rental", max = mode === "max";
       this.update((s) => {
         s.tower = s.tower || {};
         const t = s.tower[attId] = s.tower[attId] || { streak: 0, best: 0 };
-        const had = rental ? (t.rStreak || 0) : t.streak;
-        if (rental) t.rStreak = 0; else t.streak = 0;
+        const had = max ? (t.mStreak || 0) : rental ? (t.rStreak || 0) : t.streak;
+        if (max) t.mStreak = 0; else if (rental) t.rStreak = 0; else t.streak = 0;
         t.upd = Date.now();
-        if (had >= 3) Store.chron(s, "🗼", this._nuzName(attId) + "'s " + (rental ? "rental " : "") + "Battle Tower streak ends at " + had + " — " + (foeName || "the tower") + " takes it.");
+        if (had >= 3) Store.chron(s, "🗼", this._nuzName(attId) + "'s " + (max ? "Lv100 ladder" : rental ? "rental" : "Battle Tower") + " streak ends at " + had + " — " + (foeName || "the tower") + " takes it.");
       });
     },
 
@@ -1611,7 +1622,7 @@
         { key: "kos", emoji: "💥", title: "Knockout Artist", unit: "lifetime KOs",
           v: this.koLife(attId), at: [50, 200, 500, 1500] },
         { key: "tower", emoji: "🗼", title: "Tower Monarch", unit: "best tower streak",
-          v: (this.towerOf(attId) || {}).best || 0, at: [7, 25, 50, 100] },
+          v: Math.max((this.towerOf(attId) || {}).best || 0, (this.towerOf(attId) || {}).mBest || 0), at: [7, 25, 50, 100] },
         { key: "nuzlocke", emoji: "🪦", title: "Permadeath Proof", unit: "",
           v: nzTier, at: [1, 2, 3, 4],
           steps: ["win any Nuzlocke crown", "topple RED for the Legend tier",
@@ -1718,6 +1729,7 @@
       else if (tb >= 7) out.push({ emoji: "🗼", title: "Tower Ace", sub: "a 7-win streak — took Tower Tycoon PALMER's silver print" });
       else if (tb >= 3) out.push({ emoji: "🛗", title: "Tower Climber", sub: "a " + tb + "-win Battle Tower streak" });
       if ((twr.rBest || 0) >= 7) out.push({ emoji: "🎲", title: "Rental Ace", sub: "a 7-win Tower streak on RENTAL Pokémon alone" });
+      if ((twr.mBest || 0) >= 7) out.push({ emoji: "💯", title: "Full-Power Ace", sub: "a 7-win Tower streak on the LEVEL 100 ladder" });
       // 🪦 Nuzlocke — completed hardcore runs (fewest catches is the flex).
       const nz = (this.state.nuzlockeHof || []).filter((r) => r.att === attId);
       if (nz.length) {
@@ -1996,9 +2008,10 @@
       Object.keys(ptr2).forEach((tid) => {
         const a = ptr2[tid], b = ntr2[tid];
         if (!b) { ntr2[tid] = a; return; }
-        if ((a.upd || 0) > (b.upd || 0)) { b.streak = a.streak; b.rStreak = a.rStreak || 0; b.upd = a.upd; }
+        if ((a.upd || 0) > (b.upd || 0)) { b.streak = a.streak; b.rStreak = a.rStreak || 0; b.mStreak = a.mStreak || 0; b.upd = a.upd; }
         b.best = Math.max(b.best || 0, a.best || 0);
         b.rBest = Math.max(b.rBest || 0, a.rBest || 0);
+        b.mBest = Math.max(b.mBest || 0, a.mBest || 0);
       });
       // 🏆 Champions Tournament titles: keep the higher count per trainer.
       const ptw = (prev && prev.tourneyWins) || {};
