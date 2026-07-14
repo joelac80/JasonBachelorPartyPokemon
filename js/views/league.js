@@ -288,7 +288,8 @@
     // era-true forms, and movesets shrink to what the level would know.
     const JS = window.JourneyStyle;
     const lvl = (JS && JS.isStory(attId)) ? JS.stageLevel(idx) : 0;
-    const foes = lvl ? st.team.map((id) => JS.formAt(id, lvl)) : st.team.slice();
+    // 📖 story devolve — except the ACE (last slot), which fights TRUE
+    const foes = lvl ? st.team.map((id, i) => i === st.team.length - 1 ? id : JS.formAt(id, lvl)) : st.team.slice();
     chamberIntro(idx, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs " + foeName + " — pick EXACTLY " + size,
@@ -348,7 +349,8 @@
         // 📖 An opponent can carry a True Story level — both teams step down.
         const JS = window.JourneyStyle;
         const fielded = (o.level && JS) ? party.map((id) => JS.formAt(id, o.level)) : party;
-        const foes = (o.level && JS) ? (o.monIds || []).map((id) => JS.formAt(id, o.level)) : (o.monIds || []).slice();
+        const ml = (o.monIds || []);
+        const foes = (o.level && JS) ? ml.map((id, i) => i === ml.length - 1 ? id : JS.formAt(id, o.level)) : ml.slice();
         Duel.start({ mode: "local", title: (opts.title || "Gauntlet") + " (" + (i + 1) + "/" + total + ")",
           gauntlet: true, level: o.level || undefined,
           a: { units: [{ attId: attId, monIds: fielded }] },

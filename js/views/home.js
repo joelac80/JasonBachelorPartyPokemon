@@ -224,13 +224,13 @@
           [el("div", { class: "mode-head" }, g.head)].concat(g.rows.map((r) => row(r[0], r[1], r[2], r[3])))))));
     })();
 
-    // Quiet doors for everything that isn't catching or battling — the
-    // squad, the party corner, the settings. (The old overworld map said
-    // the same thing with more pixels.)
+    // Quiet doors for everything that isn't catching or battling. (Party
+    // Central still exists at #/party for the actual party weekend, but
+    // it's off the doors and nav — this is a Pokémon app now.)
     root.appendChild(el("div", { class: "home-quick home-doors" }, [
       { r: "roster",      e: "🎴", t: "Squad",         d: "The trainers" },
       { r: "leaderboard", e: "🏆", t: "Leaderboard",   d: "The squad, ranked" },
-      { r: "party",       e: "🎉", t: "Party Central", d: "Everything else" },
+      { r: "draft",       e: "🏆", t: "Draft Teams",   d: "Squads for Victory Road" },
       { r: "settings",    e: "⚙️", t: "Settings",      d: "Room & sync" },
     ].map(tile)));
   }

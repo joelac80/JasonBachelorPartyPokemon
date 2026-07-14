@@ -130,7 +130,10 @@
     const JS = window.JourneyStyle;
     const region = (t.story && t.story.region) || t.region || "";
     const lvl = (JS && JS.isStory(attId)) ? JS.encounterLevel(region, regionBadges(attId, region)) : 0;
-    const foes = lvl ? t.team.map((id) => JS.formAt(id, lvl)) : t.team.slice();
+    // 📖 Story battles devolve the squad — but the ACE (last slot) is the
+    // trainer's signature and always fights in its TRUE form (Misty's
+    // STARMIE at Lv24, exactly like the games).
+    const foes = lvl ? t.team.map((id, i) => i === t.team.length - 1 ? id : JS.formAt(id, lvl)) : t.team.slice();
     Duel.pickParty({ attId: attId, min: 1, max: size,
       title: "vs " + t.title + " " + t.name + " — pick up to " + size,
       hint: (isStory ? "📖 A story battle! Pure glory — and they WILL be back until you win." :
@@ -227,7 +230,8 @@
       // forms, and the level trims movesets to what it would really know.
       const JS = window.JourneyStyle;
       const lvl = (JS && JS.isStory(attId)) ? JS.gymLevel(idx) : 0;
-      const foes = lvl ? gym.team.map((id) => JS.formAt(id, lvl)) : gym.team.slice();
+      // 📖 devolve the squad, but the leader's ACE (last slot) stays TRUE
+      const foes = lvl ? gym.team.map((id, i) => i === gym.team.length - 1 ? id : JS.formAt(id, lvl)) : gym.team.slice();
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs Leader " + gym.leader + " — pick EXACTLY " + size,
         hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +

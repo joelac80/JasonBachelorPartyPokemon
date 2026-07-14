@@ -1217,9 +1217,12 @@
       // ---- instant (catch-up) path: no animation, apply everything now ----
       if (instant) {
         if (!act.miss && !(act.eff === 0 && !selfMove)) {
+          // drain/recoil key off the HP the target ACTUALLY lost — overkill
+          // damage doesn't heal (50 HP left + a 100 hit drains from 50).
+          const hpLost = (!isStatus && tm) ? Math.min(act.dmg, tm.hp) : 0;
           if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
           applySpread();
-          applyEffects(isStatus ? 0 : act.dmg, function () {});
+          applyEffects(isStatus ? 0 : hpLost, function () {});
           if (act.recharge && m.hp > 0) m._recharge = true;
         }
         settle();
@@ -1280,7 +1283,9 @@
         steps.push(["…and " + sm.name + " too! (−" + sp.dmg + " HP)", 700]);
       });
       // Post-damage / status-move effects (drain, recoil, status, stat, etc.).
-      const dmgDealt = (!isStatus && tm) ? act.dmg : 0;
+      // dmgDealt is capped at the target's CURRENT HP (still pre-hit here —
+      // the damage step is queued, not applied): overkill never over-heals.
+      const dmgDealt = (!isStatus && tm) ? Math.min(act.dmg, tm.hp) : 0;
       applyEffects(dmgDealt, (msg, delay, s) => { if (msg) steps.push([msg, delay, () => { paintHp(u); if (tu) paintHp(tu); if (s) sfx(s); }]); });
 
       beats(steps, () => {
