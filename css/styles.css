@@ -1993,6 +1993,11 @@ html, body { overscroll-behavior-y: contain; }
 .nuz-starter img { width: 64px; height: 64px; image-rendering: pixelated; }
 .nuz-starter-n { font-weight: 800; font-size: 12px; }
 .nuz-rules { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted, #8a97a8); margin-top: 8px; }
+/* ⚠ borrowed power — a capped picker card whose form was never caught */
+.duel-pick.is-defiant { border-color: #d9822b; }
+.duel-pick-defy { position: absolute; top: 2px; left: 2px; font-size: 12px;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,.5)); }
+
 /* 📋 the mode spec sheet — six identical lines per structure, so the
    difference between runs is literally the difference between the lines */
 .nuz-spec { border-left: 3px solid var(--line); padding-left: 10px; gap: 5px; margin: 8px 0 10px; }

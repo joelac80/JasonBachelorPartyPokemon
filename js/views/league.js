@@ -297,12 +297,14 @@
           : isFinal ? "The final battle. " + size + " vs " + size + " — the lineup is hidden."
           : "Even match: " + size + " vs " + size + ". The lineup is hidden.") +
           (lvl ? " 📖 True Story: fought at Lv " + lvl + "." : ""),
-        onDone: (ids) => {
+        onDone: (ids, meta) => {
           Duel.start({ mode: "local",
             title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
             level: lvl || undefined,
             league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal },
-            a: { units: [{ attId: attId, monIds: lvl ? ids.map((id) => JS.formAt(id, lvl)) : ids }] },
+            a: { units: [{ attId: attId, defy: meta && meta.defiant,
+              // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
+              monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },
             b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: foes,
               boost: st.boost || 1.15,
               outro: st.defeat ? { lose: st.defeat } : undefined }] },

@@ -258,26 +258,53 @@
   // their own lines — Politoed and Poliwrath, Slowbro and Slowking, both stay.
   function capPool(pool, level, min) {
     const JS = window.JourneyStyle;
-    if (!level || !JS || !JS.formAt) return pool;
-    const seen = {}; const reps = [];
-    pool.forEach((id) => {
-      const r = JS.formAt(id, level);
-      if (!seen[r]) { seen[r] = 1; reps.push(r); }
-    });
-    // drop any form that's an ANCESTOR of another shown form (same line,
-    // earlier stage) — walking the pre-evolution map keeps branches apart
+    if (!level || !JS || !JS.formAt) return { list: pool, defiant: {} };
     const PRE = {};
     const EV = window.EVO_LEVELS || {};
     Object.keys(EV).forEach((f) => (EV[f] || []).forEach((e) => { PRE[e.to] = +f; }));
-    const drop = {};
-    reps.forEach((r) => { let p = PRE[r]; while (p) { if (seen[p]) drop[p] = 1; p = PRE[p]; } });
-    const trimmed = reps.filter((r) => !drop[r]);
+    // Group the roster by what each mon IS at this cap. A group with a
+    // cap-legal catch shows that one honest card (the Venusaur folds into
+    // your real Bulbasaur). A group with NO legal catch shows the owned mon
+    // in its TRUE form instead — an ILLEGAL card: a Venusaur towering over
+    // a Lv 14 field, playable but liable to ignore you half the time.
+    const groups = {}, reps = [];
+    pool.forEach((id) => {
+      const r = JS.formAt(id, level);
+      if (!groups[r]) { groups[r] = { legal: false, owned: [] }; reps.push(r); }
+      let steps = 0, cur = id;
+      while (cur !== r && PRE[cur] != null && steps < 9) {
+        // baby retro-fits (pre-form id HIGHER than the grown form) are not
+        // missing stages — a caught Pikachu at cap 14 simply IS its Pichu
+        if (PRE[cur] < cur) steps++;
+        cur = PRE[cur];
+      }
+      if (steps === 0) groups[r].legal = true;
+      else groups[r].owned.push({ id: id, steps: steps });
+    });
+    const isAncestorOf = (a, b) => { let p = PRE[b]; while (p) { if (p === a) return true; p = PRE[p]; } return false; };
+    const defiant = {};
+    let cards = [];
+    reps.forEach((r) => {
+      const g = groups[r];
+      if (g.legal) { cards.push(r); return; }
+      // illegal family: keep the MAXIMAL owned forms — the latest of the
+      // line, with split finals (Poliwrath + Politoed) each their own card
+      g.owned.forEach((o) => {
+        if (g.owned.some((x) => x.id !== o.id && isAncestorOf(o.id, x.id))) return;
+        if (cards.indexOf(o.id) >= 0) return;
+        cards.push(o.id); defiant[o.id] = o.steps;
+      });
+    });
+    // drop any card that's an ANCESTOR of another shown card (same line,
+    // earlier stage) — the pre-evolution walk keeps branches apart
+    const have = {}; cards.forEach((c) => { have[c] = 1; });
+    cards = cards.filter((c) => !cards.some((x) => x !== c && isAncestorOf(c, x)));
     // never trim a roster below the battle's minimum — relax stage by stage
     // (duplicate lines come back first, then the raw roster) so a thin box
     // can still field a full team
-    if (trimmed.length >= (min || 1)) return trimmed;
-    if (reps.length >= (min || 1)) return reps;
-    return pool;
+    if (cards.length < (min || 1)) cards = reps;
+    if (cards.length < (min || 1)) cards = pool;
+    return { list: cards, defiant: defiant };
   }
 
   // Ordered party picker (modal) — used to challenge someone to a remote
@@ -287,7 +314,8 @@
     // otherwise the trainer's whole roster is fair game. opts.level trims the
     // roster to the battle's cap (one card per line, latest legal form).
     let pool = (opts.pool && opts.pool.length) ? opts.pool.slice() : poolFor(opts.attId);
-    if (opts.level) pool = capPool(pool, opts.level, opts.min || 1);
+    let defiant = {};
+    if (opts.level) { const cp = capPool(pool, opts.level, opts.min || 1); pool = cp.list; defiant = cp.defiant; }
     const max = opts.max || 6;
     const min = opts.min || 1;
     let picked = [];
@@ -300,7 +328,11 @@
     const cta = el("button", { class: "btn primary", onClick: () => {
       if (picked.length < min) return;
       try { const lp = lastParties(); lp[opts.attId] = picked.slice(); localStorage.setItem(LAST_KEY, JSON.stringify(lp)); } catch (_) {}
-      ref.close(); opts.onDone(picked.slice());
+      // meta.defiant: borrowed-power picks (form never caught) → the battle
+      // rolls DISOBEDIENCE on them; callers thread it into their unit.
+      const defyPicked = {};
+      picked.forEach((id) => { if (defiant[id]) defyPicked[id] = defiant[id]; });
+      ref.close(); opts.onDone(picked.slice(), { defiant: defyPicked });
     } }, "Ready");
     function paint() {
       grid.innerHTML = "";
@@ -311,13 +343,15 @@
         const idx = picked.indexOf(id);
         const shiny = isShinyFor(opts.attId, id);
         const src = frontSprite(id, shiny);
-        grid.appendChild(el("button", { class: "duel-pick" + (idx >= 0 ? " on" : "") + (shiny ? " is-shiny" : ""), title: st.name + (shiny ? " \u2728 SHINY" : ""), onClick: () => {
+        grid.appendChild(el("button", { class: "duel-pick" + (idx >= 0 ? " on" : "") + (shiny ? " is-shiny" : "") + (defiant[id] ? " is-defiant" : ""),
+          title: st.name + (shiny ? " \u2728 SHINY" : "") + (defiant[id] ? " \u26a0 illegal at this cap \u2014 obeys only half the time!" : ""), onClick: () => {
           const i = picked.indexOf(id);
           if (i >= 0) picked.splice(i, 1); else if (picked.length < max) picked.push(id);
           paint();
         } }, [
           src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
           shiny ? el("span", { class: "duel-pick-shiny" }, "\u2728") : null,
+          defiant[id] ? el("span", { class: "duel-pick-defy" }, "\u26a0") : null,
           idx >= 0 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
         ]));
       });
@@ -343,6 +377,8 @@
       el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
       filterBar,
       grid,
+      Object.keys(defiant).length ? el("p", { class: "hint" },
+        "⚠ ILLEGAL AT THIS CAP — you never caught its earlier forms, so it steps out in FULL form… and ignores you HALF the time. Catch the base form, or raise the cap, to command its respect.") : null,
       el("div", { class: "toolbar duel-pick-actions" }, [cta, teamBtn]),
     ]);
     paint();
@@ -484,6 +520,7 @@
       const bag = ((Store.state.pokedex || {}).trainers || {})[u.attId];
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
         ai: !!u.ai, boss: !!u.boss, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
+        defy: u.defy || null,                          // ⚠ borrowed power: {monId: stagesOver}
         vsFace: u.vsFace || null,                      // 🎬 boss portrait for the VS intro
         // 🎭 A boss can hide its last N party mons (u.reserve) — off the ball
         // row and VS intro until they're actually sent out ("one more!"), and
@@ -1000,6 +1037,15 @@
       // Flinched by a faster foe's move earlier this turn → lose the turn.
       if (m._flinch) { m._flinch = false; menu.innerHTML = "";
         beats([[m.name + " flinched and couldn't move!", 1000, () => sfx("error")]], resolveNext); return; }
+      // ⚠ Borrowed power throws its tantrum: the form was never caught, and
+      // right now it doesn't feel like listening. Line picked off the baked
+      // statusRoll so every watching phone reads the same insubordination.
+      if (o.loaf) {
+        const LOAF = [" is loafing around!", " turned away and ignored orders!", " pretended not to hear!", " yawned and did nothing!", " won't obey!"];
+        menu.innerHTML = "";
+        beats([["⚠ " + m.name + LOAF[Math.floor((o.statusRoll || 0) * LOAF.length) % LOAF.length], 1200, () => sfx("error")]], resolveNext);
+        return;
+      }
       resolveMoveGo(o, u);
     }
     // The actual move execution (targeting, damage, effects) once the mon is
@@ -1930,9 +1976,15 @@
       // Baked at pick time so the SAME-turn status check at resolution (para
       // full-skip / freeze thaw) is deterministic across every phone.
       const statusRoll = Math.random();
+      // ⚠ ILLEGAL-form disobedience: a mon fielded ABOVE the cap's law (a
+      // true-form Venusaur on a Lv 14 field, base form never caught) ignores
+      // orders HALF the time — flat 50%, one stage over or two. Rolled at
+      // pick time like everything else, so watchers replay the same tantrum.
+      // A mid-charge mon always completes its move (no stuck Dig).
+      const loaf = !m._charging && !!(u.defy && u.defy[m.id]) && Math.random() < 0.5;
       sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
         order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, statusRoll: statusRoll,
-          armed: armed, courage: armed, pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
+          armed: armed, courage: armed, loaf: loaf, pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
     }
 
     // ---- gym-leader AI: picks the hardest-hitting move vs the best target,

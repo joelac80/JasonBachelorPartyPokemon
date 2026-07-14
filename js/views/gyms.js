@@ -139,11 +139,13 @@
       hint: (isStory ? "📖 A story battle! Pure glory — and they WILL be back until you win." :
         "A surprise battle! Bragging rights only — no badge, no rating.") +
         (lvl ? " (True Story: fought at Lv " + lvl + " — both teams step down to era-true forms.)" : ""),
-      onDone: (ids) => {
+      onDone: (ids, meta) => {
         Duel.start({ mode: "local", title: isStory ? "a story showdown" : "a surprise showdown",
           level: lvl || undefined,
           encounter: { foe: t.title + " " + t.name, who: t.name },
-          a: { units: [{ attId: attId, monIds: lvl ? ids.map((id) => JS.formAt(id, lvl)) : ids }] },
+          a: { units: [{ attId: attId, defy: meta && meta.defiant,
+            // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
+            monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },
           b: { units: [{ npc: t.name, ai: true, monIds: foes, boost: 1.12 }] },
           onResult: () => Router.render() });
       } });
@@ -236,10 +238,12 @@
         title: "vs Leader " + gym.leader + " — pick EXACTLY " + size,
         hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +
           (lvl ? " 📖 True Story: fought at Lv " + lvl + " — both teams step down to era-true forms." : ""),
-        onDone: (ids) => {
+        onDone: (ids, meta) => {
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym", gym: { idx: idx, leader: gym.leader, badge: gym.badge },
             level: lvl || undefined,
-            a: { units: [{ attId: attId, monIds: lvl ? ids.map((id) => JS.formAt(id, lvl)) : ids }] },
+            a: { units: [{ attId: attId, defy: meta && meta.defiant,
+              // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
+              monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },
             b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: foes }] },
             onResult: () => { Router.render(); maybeEncounter(attId, idx); } });
         } });
