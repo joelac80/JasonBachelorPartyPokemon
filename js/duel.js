@@ -1296,6 +1296,10 @@
           ? "🔁 " + m.name + " has the EXP… but it ONLY evolves by TRADE — hit the Trading Post!"
           : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + ")";
       }
+      // A line the trainer FULLY owns doesn't tease an evolution — its KOs
+      // bank straight into the veteran attack bonus instead (+2% a KO).
+      const worth = !Store.evoWorthTargets || Store.evoWorthTargets(u.attId, m.id).length > 0;
+      if (!worth) return "⚔ " + m.name + " earned battle EXP — the veteran grows stronger! (" + total + " KOs banked)";
       return total >= need
         ? "⚡ " + m.name + " has enough battle EXP to EVOLVE after the battle!"
         : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + " KOs to evolve)";
@@ -1536,7 +1540,10 @@
       ctrl = Modal.open("Rematch?", body, null, { noFooter: true });
     }
     function showEvoPrompt(p, onDone) {
-      const targets = Store.evoTargets(p.mon.id);
+      // only branches that still unlock something — a form not yet caught,
+      // or a shiny upgrade (owned lines bank their KOs as the veteran bonus)
+      const targets = Store.evoWorthTargets ? Store.evoWorthTargets(p.attId, p.mon.id) : Store.evoTargets(p.mon.id);
+      if (!targets.length) { onDone(); return; }
       const nm = (id) => (DEX[id] && DEX[id].n) || ("#" + id);
       let ctrl;
       const evolveTo = (tid) => {

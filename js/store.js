@@ -1795,11 +1795,25 @@
       const t = (window.DEX_EVOS || {})[monId];
       return t && t.length ? t.slice() : [];
     },
+    // Evolutions that still UNLOCK something for this trainer: a form they
+    // haven't caught — or a shiny upgrade, when the veteran itself is shiny
+    // and the owned evolution isn't. A fully-owned line isn't worth spending
+    // KOs on (they'd keep feeding the veteran attack bonus instead), so the
+    // post-battle prompt never re-offers it.
+    evoWorthTargets(attId, monId) {
+      const t = (this.state.pokedex.trainers || {})[attId];
+      const r = t && t.caught && t.caught[monId];
+      if (!r) return [];
+      return this.evoTargets(monId).filter((tid) => {
+        const ex = t.caught[tid];
+        return !ex || (r.shiny && !ex.shiny);
+      });
+    },
     evoReady(attId, monId) {
       if (this.TRADE_EVOS[monId]) return false;   // Kadabra & co. ONLY evolve by trade
       const t = (this.state.pokedex.trainers || {})[attId];
       const r = t && t.caught && t.caught[monId];
-      return !!(r && (r.kos || 0) >= this.KO_TO_EVOLVE && this.evoTargets(monId).length);
+      return !!(r && (r.kos || 0) >= this.KO_TO_EVOLVE && this.evoWorthTargets(attId, monId).length);
     },
     evolveMon(attId, monId, targetId, by) {
       monId = +monId; targetId = +targetId;
