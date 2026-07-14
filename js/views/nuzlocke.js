@@ -392,7 +392,7 @@
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🪦 Nuzlocke Run"),
-      el("p", { class: "page-sub" }, "The true challenge: one starter, catches only by battle, gyms in order — and any Pokémon that faints is gone for the whole run. Run a single region, randomize it, or take the 🌍 master gauntlet across all nine. Fewest catches wears the crown."),
+      el("p", { class: "page-sub" }, "The true challenge: one starter, catches only by battle — and any Pokémon that faints is gone for the whole run. Seven structures share that law and differ in everything else; tap a save slot below and its lab spells out exactly how its road, its cast, its levels and its box work. Fewest catches wears the crown."),
     ]));
 
     // Trainer picker (per phone, like the Safari).
@@ -459,7 +459,99 @@
         el("span", { class: "nuz-slot-st" + (r && !r.over ? " live" : "") }, st),
       ]);
     })));
-    host.appendChild(el("p", { class: "hint" }, "💾 Six save slots — one run of EACH structure at once. Tap a slot to jump between runs; each keeps its own box, roads and crown."));
+    host.appendChild(el("p", { class: "hint" }, "💾 Seven save slots — one run of EACH structure at once. Tap a slot to jump between runs, or to read that structure's full rules before you start; each keeps its own box, roads and crown."));
+  }
+
+  // 📋 THE SPEC SHEET — every structure answers the SAME six questions
+  // (the road, the cast, the levels, the box, the villains, the crown),
+  // so the difference between any two runs is exactly the difference
+  // between their six lines. One tagline of flavor, then the facts.
+  function modeSpec(newKind, R, filmN) {
+    const row = (k, txt) => el("div", { class: "nuz-spec-row" }, [el("b", {}, k), " — " + txt]);
+    const S = {
+      classic: {
+        tag: "🎯 The classic. One region, played straight — the structure every other run bends.",
+        rows: [
+          row("🗺 The road", (R.gymN === 4 ? "the four island kahunas" : R.name + "'s " + R.gymN + " gyms") + " in canon order → its Elite Four in canon order → Champion " + R.champ + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
+          row("🎭 The cast", "the real leaders in their real order, each fielding their REAL squad, true ace closing."),
+          row("📈 The levels", "the proven curve: Lv 14 at gym 1, ~58 at the Champion" + (R.peak ? ", 62 on the peak" : "") + ". Your box evolves as the cap climbs."),
+          row("📦 The box", "one box, one region — the wild grass grows this region's generation of Pokémon."),
+          row("❗ The villains", "this era's rogues ambush on the roads between badges."),
+          row("🏆 The crown", "beat Champion " + R.champ + (R.peak ? " — and RED past the crown upgrades it to LEGEND" : "") + "."),
+        ],
+      },
+      random: {
+        tag: "🎲 A Region Run with the cast SHUFFLED — same road, same curve, new hands guarding the badges.",
+        rows: [
+          row("🗺 The road", "identical shape to a " + R.name + " Region Run — same gyms, same league, and the Champion still closes."),
+          row("🎭 The cast", "the region's own " + R.gymN + " leaders dealt into a RANDOM order, then its Elite Four shuffled too — real squads, real aces. The only randomness is WHO guards WHICH badge, and the deal locks the moment the run starts."),
+          row("📈 The levels", "the same proven Lv 14 → ~58 curve as the Region Run."),
+          row("📦 The box", "same as the Region Run — one box, this region's grass."),
+          row("❗ The villains", "the one wild card: ambushes draw from ANY era, not just this region's."),
+          row("🏆 The crown", "beat Champion " + R.champ + " at the end of the shuffled gauntlet."),
+        ],
+      },
+      master: {
+        tag: "🌍 Every battle in the whole saga, shuffled completely flat. The deepest deck, the highest stakes.",
+        rows: [
+          row("🗺 The road", "ALL of it: 68 gyms, nine Elite Fours, nine Champions, RED — 114 battles in one run."),
+          row("🎭 The cast", "one giant shuffled deck — any card can come first, so you might open against CYNTHIA. Everyone fields their real squad."),
+          row("📈 The levels", "there is NO curve. Everything is Lv 100 from battle one — your starter steps out in FINAL form."),
+          row("📦 The box", "one box for all 114 battles; the grass grows from whichever region your NEXT battle calls home."),
+          row("❗ The villains", "any villain from any era prowls between the cards."),
+          row("🏆 The crown", "clear the whole deck — the 114th card crowns the MASTER OF ALL REGIONS."),
+        ],
+      },
+      ages: {
+        tag: "🕰 Nine Region Runs back to back — and at every border, the whole team RETIRES. Nine eras, nine teams.",
+        rows: [
+          row("🗺 The road", "all nine regions in canon order, each with its full league — and then the road leads home to PALLET TOWN."),
+          row("🎭 The cast", "canon everything: real leaders, real order, real squads."),
+          row("📈 The levels", "the region curve, restarted — Lv 14 → ~58 in EVERY region."),
+          row("📦 The box", "RESETS at every border. Your team retires to the professor and a fresh regional starter begins the next era — the finale honors every team of every age."),
+          row("❗ The villains", "era-true ambushes, region by region."),
+          row("🏆 The crown", "beat PROFESSOR OAK, the LAST BOSS, after the ninth Champion — TRAINER OF THE AGES."),
+        ],
+      },
+      trek: {
+        tag: "🎒 Nine Region Runs back to back with ONE box the whole way. Nothing retires — but every border hurts.",
+        rows: [
+          row("🗺 The road", "all nine regions in canon order, RED on the road out of Johto, GEETA at the very end."),
+          row("🎭 The cast", "canon everything: real leaders, real order, real squads."),
+          row("📈 The levels", "the region curve, restarted — Lv 14 → ~58 in EVERY region."),
+          row("📦 The box", "NEVER resets — but every border pulls the survivors back DOWN to the fresh Lv 14 cap. Your Charizard walks into the next region as a Charmander and grows it all back. Every catch and every scar carries."),
+          row("❗ The villains", "era-true ambushes, region by region."),
+          row("🏆 The crown", "beat GEETA at the end of the ninth region to finish THE LONG WALK."),
+        ],
+      },
+      blitz: {
+        tag: "⚡ 27 random battles, one climbing cap, one VILLAIN waiting at the end. The sprint.",
+        rows: [
+          row("🗺 The road", "16 random gyms rising through the eras → 8 random Elite Four → TWO random Champions → one random VILLAIN as the finale."),
+          row("🎭 The cast", "random draws from the whole saga, each fielding their REAL squad — the reel locks the moment the run starts."),
+          row("📈 The levels", "the cap SCALES: Lv 14 at battle one → Lv 100 at the end, about +3 a win. Your box evolves as it climbs."),
+          row("📦 The box", "one box, with fresh grass after every battle — the wild pool follows the era you're fighting in."),
+          row("❗ The villains", "none prowl this road. THE villain IS the last battle."),
+          row("🏆 The crown", "drop the villain in battle 27 to take the BLITZ crown."),
+        ],
+      },
+      movie: {
+        tag: "🎬 The attrition epic: no catching, no curve — a six-seat cast against the whole filmography.",
+        rows: [
+          row("🗺 The road", filmN + " films in release order, every movie legend at FULL boss power — MEWTWO on opening night."),
+          row("🎭 The cast", "yours to draft: ANY six non-legendaries at the casting call. That's the whole cast."),
+          row("📈 The levels", "no caps — full power from the first frame."),
+          row("📦 The box", "no wild grass, no catches. The ONLY reinforcements are beaten co-star legends — and only a DEATH opens their seat."),
+          row("❗ The villains", "the bosses ARE the reel."),
+          row("🏆 The crown", "survive all " + filmN + " films for the MARATHON PREMIERE."),
+        ],
+      },
+    };
+    const spec = S[newKind] || S.classic;
+    return el("div", {}, [
+      el("p", { class: "hint nuz-spec-tag" }, spec.tag),
+      el("div", { class: "nuz-rules nuz-spec" }, spec.rows),
+    ]);
   }
 
   // ── Screen 1: no run (or finished run) → the starter lab ──────────────────
@@ -506,20 +598,10 @@
         ? "“Lights. Cameras. Permadeath. Six seats in the cast — and every legend on the reel is waiting at FULL power.”"
         : "“Every faint is forever in there. Choose your partner carefully — it's the only Pokémon you'll be given.”"),
       // The structure comes from the SLOT strip above — this lab only ever
-      // starts the one structure whose slot is open.
-      newKind === "master"
-        ? el("p", { class: "hint" }, "🌍 THE WHOLE DECK, SHUFFLED FLAT: every gym, every Elite Four, every Champion, RED included — 114 battles in a completely random order (you might draw CYNTHIA first), real squads, EVERYTHING at Lv 100. No curve, no mercy.")
-        : newKind === "blitz"
-          ? el("p", { class: "hint" }, "⚡ The one that SCALES: 27 seeded-random battles from the whole saga — 16 gyms rising through the eras, 8 Elite Four, TWO Champions, and one VILLAIN waiting at the very end — each fielding their REAL squad. The cap climbs Lv 14 → 100 across the run.")
-        : newKind === "ages"
-          ? el("p", { class: "hint" }, "🕰 The whole saga, generation by generation: all nine regions with their CANON leaders, and the level curve resets to 14 at every border — because your TEAM does too. Each new region, the box retires to the professor and a fresh regional starter begins the next era. Nine generations, nine teams, one unbroken journey — and at the very end, the road leads home: PROFESSOR OAK waits in Pallet Town as the LAST BOSS.")
-          : newKind === "trek"
-            ? el("p", { class: "hint" }, "🎒 One team, nine regions: the level curve resets to 14 at every border, but your BOX walks the whole way — every catch, every scar, every survivor, Kanto to Paldea. Your veterans will bully each region's early gyms… and permadeath will spend nine regions collecting its toll. Classic leaders, RED on the road, GEETA at the end.")
-            : movie
-              ? el("p", { class: "hint" }, "🎬 The attrition epic: draft ANY six non-legendaries — that's the whole cast, full power, no level caps, no wild grass. Then the entire filmography rolls in release order: " + filmN + " films, every movie legend at full boss strength, MEWTWO on opening night. A beaten film's legend may join the cast — but only over a fallen seat.")
-            : newKind === "random"
-              ? el("p", { class: "hint" }, "🎲 One region, its own cast — SHUFFLED: the region’s 8 leaders guard the gyms in a random order (real squads, real aces), then its Elite Four fall in a random order, then the Champion. A fresh deal every run.")
-              : el("p", { class: "hint" }, "🎯 One region, its canon leaders, the proven level curve — Lv 14 at gym 1 to the Champion at ~58."),
+      // starts the one structure whose slot is open. Its spec sheet is the
+      // single source of "how is THIS run different": same six lines for
+      // every structure, so tapping across slots reads as a comparison.
+      modeSpec(newKind, R, filmN),
       newKind === "classic" || newKind === "random" ? el("div", { class: "nuz-regions" }, REGIONS.map((r) =>
         el("button", { class: "btn sm" + (newRegion === r.key ? " primary" : " subtle"), onClick: () => { newRegion = r.key; renderKeepScroll(); } }, r.emoji + " " + r.name))) : null,
       newKind === "master" || newKind === "blitz" ? el("p", { class: "hint" }, "The professors have gathered: choose ANY starter from the whole saga.") : null,
@@ -549,20 +631,9 @@
             ];
           })()))),
       el("div", { class: "nuz-rules" }, [
-        el("div", {}, "📜 House rules:"),
+        el("div", {}, "📜 House rules (every structure, no exceptions):"),
         movie ? null : el("div", {}, "• Catch wilds by BATTLING them — weaken, then throw mid-fight. KO it and it's lost."),
         el("div", {}, "• Any of your Pokémon that faints is dead for the rest of the run."),
-        el("div", {}, newKind === "master"
-          ? "• The saga's full deck shuffled flat: 68 gyms, nine leagues, RED — 114 battles in random order, all at Lv 100. The last card standing crowns the MASTER."
-          : newKind === "blitz"
-            ? "• 27 randomized battles, cap scaling Lv 14 → 100: sixteen gyms through the eras, eight Elite Four, two Champions — and one villain past the last throne."
-          : newKind === "ages"
-            ? "• Nine regions in canon order, canon teams — and at every generation border your WHOLE box retires to the professor. New region, new starter, new team, Lv 14 again. After the last Champion, one road remains: PROFESSOR OAK in Pallet Town — beat the LAST BOSS to be crowned TRAINER OF THE AGES."
-            : newKind === "trek"
-              ? "• Nine regions in canon order, canon teams, the curve resetting to 14 at every border — but your box NEVER resets. One team walks the whole saga (RED included); GEETA crowns THE LONG WALK."
-              : movie
-              ? "• " + filmN + " films in release order, every boss at FULL power. No catching — the only reinforcements are co-star legends, and only a death opens their seat. Survive the whole reel for the MARATHON PREMIERE."
-              : "• " + R.gymN + " " + R.name + " gyms in order → the " + R.name + " Elite Four → Champion " + R.champ + " = the crown" + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
         el("div", {}, movie
           ? "• The crown board still counts the cast: fewest recruits (and fewest tombstones) is the flex."
           : "• Catch as many as you want… but the crown board ranks by FEWEST catches."),
@@ -641,7 +712,7 @@
     if (run.region === "blitz") {
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
         el("div", { class: "nuz-lab-head" }, "⚡ BLITZ GAUNTLET — Battle " + Math.min(doneCount(run) + 1, 27) + "/27"),
-        el("p", { class: "hint" }, "Fifteen random battles from across the whole saga, the cap climbing Lv 14 → 100. Currently Lv " + runLevel(run) + " — a Champion waits at the end, and permadeath rides the whole ride."),
+        el("p", { class: "hint" }, "27 random battles from across the whole saga — 16 gyms, 8 Elite Four, two Champions, one VILLAIN at the very end — the cap climbing Lv 14 → 100. Currently Lv " + runLevel(run) + ", and permadeath rides the whole ride."),
       ]));
       host.appendChild(el("div", { class: "safari-stats" }, [
         stat("⚡ " + doneCount(run) + "/27", "Battles"),
@@ -654,8 +725,8 @@
     if (master) {
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
         el("div", { class: "nuz-lab-head" }, "🌍 MASTER RANDOMIZER — next stop: " + (R ? R.emoji + " " + R.name : "the deck")),
-        el("p", { class: "hint" }, "Every gym, every Elite Four, every Champion across all nine regions — " +
-          doneCount(run) + "/" + seqFor(run).length + " battles down, randomized teams, EVERYTHING at Lv 100. Permadeath from the first step to the last."),
+        el("p", { class: "hint" }, "The whole saga shuffled flat — every gym, every Elite Four, every Champion, RED included: " +
+          doneCount(run) + "/" + seqFor(run).length + " cards down, real squads, EVERYTHING at Lv 100. Permadeath from the first card to the last."),
       ]));
     } else if (ages) {
       const teamN = 1 + ((run.retired || []).length);
@@ -685,6 +756,7 @@
     } else {
       host.appendChild(el("div", { class: "safari-card nuz-act2" }, [
         el("div", { class: "nuz-lab-head" }, (R ? R.emoji + " THE " + R.name.toUpperCase() + " RUN" : "") + (run.mode === "random" ? " — 🎲 RANDOMIZER" : "")),
+        run.mode === "random" ? el("p", { class: "hint" }, "The region's leaders and Elite Four were dealt into a random order when this run began — real squads, real aces, new hands guarding the badges. The Champion still closes.") : null,
       ]));
     }
 
@@ -942,10 +1014,12 @@
           el("button", { class: "btn primary", onClick: () => battleGym(run, idx, g) }, "⚔ Challenge " + g.leader),
         ]));
         next.appendChild(el("p", { class: "hint" }, master
-          ? "The master road runs through EVERY gym in the saga — and villains prowl the stretches between them…"
+          ? "The deck is shuffled flat — you never know whose card turns next, and villains prowl between the cards…"
           : run.region === "blitz"
-            ? "The blitz jumps era to era — every badge raises the cap ~6 levels. Fresh grass after every win."
-            : "Gyms fall IN ORDER — no skipping ahead. And villains prowl the roads between them…"));
+            ? "The blitz reel was dealt when the run began — every win raises the cap ~3 levels, with fresh grass after each battle. The VILLAIN waits at battle 27."
+            : leaderShuffled(run)
+              ? "The badges fall in order, but the LEADERS were dealt at random when the run began — and villains from ANY era prowl the roads between them…"
+              : "Gyms fall IN ORDER — no skipping ahead. And villains prowl the roads between them…"));
       }
       return;
     }
@@ -1304,7 +1378,8 @@
   }
   function maybeAmbush(forceStoryOnly) {
     const probe = Store.nuzRun(me, slot);
-    if (!probe || probe.over || probe.region === "movie") return;
+    // ⚡ Blitz keeps its road clean: the ONE villain is battle 27 itself.
+    if (!probe || probe.over || probe.region === "movie" || probe.region === "blitz") return;
     const story0 = storyDue(probe);
     if (!story0 && (forceStoryOnly || Math.random() > 0.28)) return;
     let tries = 0;
