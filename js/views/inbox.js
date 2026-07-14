@@ -23,6 +23,47 @@
 
     const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
 
+    // ---- start something — the inbox is a post office, not just a doormat.
+    // Trades compose at the Trading Post (the full picker lives there);
+    // battle requests go straight to a phone that's in the room RIGHT NOW.
+    function pickFoe() {
+      if (!window.Sync || !Sync.isLive || !Sync.isLive()) {
+        U.toast("📡 Battle requests need a live room — join one in Settings.");
+        return;
+      }
+      const meC = (Sync.myClientId && Sync.myClientId()) || "";
+      const here = ((Sync.presence && Sync.presence()) || [])
+        .filter((p) => p.clientId && p.clientId !== meC && p.attId);
+      if (!here.length) {
+        U.toast("😴 No one else is here right now — challenges land on phones that are IN the room.");
+        return;
+      }
+      let ctrl;
+      const body = el("div", { class: "modal-form" }, [
+        el("p", { class: "hint" }, "Who gets it? Trainers in the room right now:"),
+        el("div", { class: "sl-vote-grid" }, here.map((p) => {
+          const a = Store.attendee(p.attId);
+          const src = a && Store.favSprite ? Store.favSprite(a) : "";
+          return el("button", { class: "sl-vote-pick", onClick: () => {
+            ctrl.close();
+            if (window.QuickChallenge) QuickChallenge(p, { onSent: (nm) => U.toast("🎮 Challenge sent to " + nm + " — waiting on their phone!") });
+          } }, [
+            src ? el("img", { class: "sl-thumb", src: src, alt: "" }) : el("span", { class: "draft-thumb-ball" }),
+            el("span", { class: "sl-vote-name" }, p.name || (a && a.name) || "Trainer"),
+          ]);
+        })),
+      ]);
+      ctrl = Modal.open("⚔ Send a battle request", body, null, { noFooter: true });
+    }
+    root.appendChild(el("div", { class: "safari-card" }, [
+      el("div", { class: "nuz-lab-head" }, "📮 Start something"),
+      el("div", { class: "toolbar" }, [
+        el("button", { class: "btn primary", onClick: () => { location.hash = "#/trade"; } }, "🔁 Send trade offer"),
+        el("button", { class: "btn primary", onClick: pickFoe }, "⚔ Send battle request"),
+      ]),
+      el("p", { class: "hint" }, "Trade offers compose at the Trading Post and wait in their inbox; battle requests pop up on a phone that's here now."),
+    ]));
+
     // ---- open trade offers waiting on you (live, actionable) ----
     const open = me && Store.tradeOffers ? Store.tradeOffers().filter((o) => o.to === me) : [];
     if (open.length) {
