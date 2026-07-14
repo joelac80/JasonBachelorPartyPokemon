@@ -53,9 +53,35 @@
   // Charizard is a Charmander until floor 16 and doesn't get his wings
   // back until floor 36 (JourneyStyle.formAt, the True Story walk).
   function floorLevel(no) { return Math.min(100, no); }
+  // Pre-evolution map (child form → parent) for the dedupe walk below.
+  const PRE = {};
+  Object.keys(window.EVO_LEVELS || {}).forEach((from) => {
+    (window.EVO_LEVELS[from] || []).forEach((e) => { PRE[e.to] = +from; });
+  });
+  // The evolution chain from a mon's TRUE form down to its base:
+  // chainOf(Charizard) = [Charizard, Charmeleon, Charmander].
+  function chainOf(id) {
+    const c = [id]; let cur = id, g = 0;
+    while (PRE[cur] && g++ < 6) { cur = PRE[cur]; c.push(cur); }
+    return c;
+  }
+  // Devolve a squad WITHOUT duplicates: if two mons collapse to the same
+  // form (Clefairy + Clefable both → Clefairy on a low floor), the collider
+  // climbs back up ITS OWN chain to the lowest free stage — one of every
+  // face on the field, even when the level rules would merge them.
   function devolve(ids, lv) {
     const f = window.JourneyStyle && JourneyStyle.formAt;
-    return f ? ids.map((id) => f(id, lv)) : ids.slice();
+    if (!f) return ids.slice();
+    const used = {};
+    return ids.map((id) => {
+      const chain = chainOf(id);                     // [true form … base]
+      let i = chain.indexOf(f(id, lv));
+      if (i < 0) i = chain.length - 1;
+      while (i > 0 && used[chain[i]]) i--;           // climb toward the true form
+      const form = chain[i];
+      used[form] = 1;
+      return form;
+    });
   }
 
   function nextFoe(attId, lad) {
