@@ -196,7 +196,7 @@
     // Quiet doors — the crew, the full mode guide, and Settings. A title breaks
     // them off from the Battle tiles so the row reads as its own group.
     // (The old "Every way to play" directory is now its own page at #/guide.)
-    root.appendChild(el("h2", { class: "section-title" }, "🎴 The crew & tools"));
+    root.appendChild(el("h2", { class: "section-title" }, "🏆 Rank 'em"));
     root.appendChild(el("div", { class: "home-quick home-doors" }, [
       { r: "roster",      e: "🎴", t: "Squad",             d: "The trainers" },
       { r: "leaderboard", e: "🏆", t: "Leaderboard",       d: "The squad, ranked" },
