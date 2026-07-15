@@ -160,12 +160,26 @@
   // the move dictionary; a missing/short set falls back to the type table. A
   // battle-wide `level` (nuzlocke caps, True Story, Stadium cups) trims the
   // moveset down to what that level would really know.
+  // 🧬 Battle forms (megas, Hisuians, Origins, formes) have no learnset rows
+  // of their own — they fight with their BASE species' curated moveset
+  // instead of the bland generic type table. Megas/primals resolve through
+  // MEGA_FORMS; the rest map here.
+  const FORM_BASE = { 10001: 386, 10002: 386, 10003: 386, 10007: 487, 10061: 670,
+    10086: 720, 10118: 718, 10120: 718, 10157: 800, 10190: 890,
+    10229: 58, 10230: 59, 10231: 100, 10232: 101, 10233: 157, 10234: 211,
+    10235: 215, 10236: 503, 10237: 549, 10238: 570, 10239: 571, 10240: 628,
+    10241: 705, 10242: 706, 10243: 713, 10244: 724, 10245: 483, 10246: 484,
+    10276: 1024, 10277: 1024 };
+  function baseOf(monId) {
+    if (window.MEGA_FORMS && MEGA_FORMS[monId]) return MEGA_FORMS[monId].base;
+    return FORM_BASE[monId] || 0;
+  }
   function statsFor(monId, level) {
     const d = DEX[monId] || { n: "???", x: 60 };
     const x = d.x || 60;
     const types = (d.t && d.t.length ? d.t : ["normal"]).slice(0, 2);
     let moves = [];
-    const set = window.DEX_MOVESETS && DEX_MOVESETS[monId];
+    const set = window.DEX_MOVESETS && (DEX_MOVESETS[monId] || DEX_MOVESETS[baseOf(monId)]);
     if (set && set.length) set.forEach((nm) => { const mv = moveObj(nm); if (mv) moves.push(mv); });
     if (moves.length < 2) {                       // no/short learnset → type table
       moves = [];
@@ -2141,7 +2155,9 @@
     // side per battle, and records the form to the trainer's Mega-Dex.
     function megaEvolve(u, ptr, megaId) {
       const m = mon(u);
-      const meg = statsFor(megaId);
+      // level-capped battles (True Story, Stadium cups) mega WITHIN the cap —
+      // the form swaps, the HP pool and curve do not escape the level.
+      const meg = statsFor(megaId, opts.level);
       const ratio = m.hpMax ? (m.hp / m.hpMax) : 1;
       const was = m.name;
       m.megaId = megaId;
