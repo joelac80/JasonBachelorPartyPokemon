@@ -188,6 +188,17 @@
           lines.slice(0, 3).map((t) => el("div", { class: "whisper" }, t)))));
     })();
 
+    // Quiet doors for everything that isn't catching or battling — kept UP near
+    // the top so the utility doors (and Settings) don't hide below the long
+    // mode directory. (Party Central still exists at #/party for the actual
+    // party weekend, but it's off the doors and nav — this is a Pokémon app now.)
+    root.appendChild(el("div", { class: "home-quick home-doors" }, [
+      { r: "roster",      e: "🎴", t: "Squad",         d: "The trainers" },
+      { r: "leaderboard", e: "🏆", t: "Leaderboard",   d: "The squad, ranked" },
+      { r: "draft",       e: "🏆", t: "Draft Teams",   d: "Squads for Victory Road" },
+      { r: "settings",    e: "⚙️", t: "Settings",      d: "Room & sync" },
+    ].map(tile)));
+
     // 🧭 EVERY WAY TO PLAY — the complete mode directory: the explainer for a
     // newcomer, the index for a veteran. Every mode in the app, one line each,
     // every row a door. (Hidden CONTENT stays hidden — the Whispers above tease
@@ -223,16 +234,6 @@
         el("div", { class: "mode-group" },
           [el("div", { class: "mode-head" }, g.head)].concat(g.rows.map((r) => row(r[0], r[1], r[2], r[3])))))));
     })();
-
-    // Quiet doors for everything that isn't catching or battling. (Party
-    // Central still exists at #/party for the actual party weekend, but
-    // it's off the doors and nav — this is a Pokémon app now.)
-    root.appendChild(el("div", { class: "home-quick home-doors" }, [
-      { r: "roster",      e: "🎴", t: "Squad",         d: "The trainers" },
-      { r: "leaderboard", e: "🏆", t: "Leaderboard",   d: "The squad, ranked" },
-      { r: "draft",       e: "🏆", t: "Draft Teams",   d: "Squads for Victory Road" },
-      { r: "settings",    e: "⚙️", t: "Settings",      d: "Room & sync" },
-    ].map(tile)));
   }
 
   window.Views = window.Views || {};
