@@ -872,6 +872,34 @@
       if (crit) { overlay.classList.add("shake"); setTimeout(() => overlay.classList.remove("shake"), 450); }
     }
 
+    // 💥 Floating damage number — rises off the struck mon, colored by weight:
+    // yellow for crits, red for super-effective, grey for resisted.
+    function floatDmg(monEl, dmg, crit, eff) {
+      if (!monEl || !dmg) return;
+      const tone = crit ? " crit" : (eff > 1 ? " weak" : (eff > 0 && eff < 1 ? " resist" : ""));
+      const n = el("div", { class: "duel-dmg" + tone }, "−" + dmg + (crit ? "!" : ""));
+      n.style.left = (28 + Math.random() * 40).toFixed(0) + "%";
+      monEl.appendChild(n);
+      setTimeout(() => n.remove(), 1000);
+    }
+    // 🩸 Drain the HP readout DOWN to its new value instead of snapping — the
+    // fill bar already CSS-eases its width; here we tick the number to match so
+    // the two move together and every hit reads as a real chunk taken.
+    function drainHp(u, fromHp) {
+      if (!u || !u._num) { if (u) paintHp(u); return; }
+      const m = mon(u), to = Math.max(0, m.hp), from = Math.max(to, fromHp | 0);
+      paintHp(u);                                  // fill width + low/crit + party balls
+      if (from === to) return;
+      u._num.textContent = from + " / " + m.hpMax; // start at the OLD value…
+      const dur = 520; let t0 = 0;
+      requestAnimationFrame(function tick(ts) {     // …then tick down to the new
+        if (!t0) t0 = ts;
+        const k = Math.min(1, (ts - t0) / dur);
+        u._num.textContent = Math.round(from + (to - from) * k) + " / " + m.hpMax;
+        if (k < 1 && mon(u) === m) requestAnimationFrame(tick);
+      });
+    }
+
     // Spectator reactions — everyone's taps float up on every screen.
     let rxSeen = -1;
     function spawnRx(item) {
@@ -1589,6 +1617,7 @@
       const steps = chug.concat([used]);
       if (!isStatus && tm) {
         steps.push([null, 500, () => {
+          const before = tm.hp;
           tm.hp = Math.max(0, tm.hp - act.dmg);
           if (tm.hp <= 0) act._exp = creditKO(u, m);
           // A crit gets ONLY the red flash — stacking it with the hurt blink
@@ -1596,7 +1625,12 @@
           tu._monEl.classList.add(act.crit ? "crit" : "hurt");
           setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
           spawnHit(tu._monEl, TYPE_COLOR[act.mvType] || "#fff", act.crit);
-          paintHp(tu); sfx("coin");
+          floatDmg(tu._monEl, act.dmg, act.crit, act.eff);   // 💥 rising damage number
+          // a heavy blow (super-effective or a big HP chunk) rocks the screen
+          if (!act.crit && (act.eff > 1 || act.dmg >= before * 0.35)) {
+            overlay.classList.add("shake"); setTimeout(() => overlay.classList.remove("shake"), 380);
+          }
+          drainHp(tu, before); sfx("coin");                   // 🩸 tick the HP down, don't snap
         }]);
         if (act.crit) steps.push([act.armed ? "🎯💥 DIRE HIT — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
         if (act.eff >= 4) steps.push(["💥💥 It's SUPER effective!! (double weakness)", 950]);
@@ -1611,12 +1645,14 @@
         const sm = mon(su);
         if (sp.eff === 0) { steps.push(["…it doesn't affect " + sm.name + "…", 850, () => sfx("error")]); return; }
         steps.push([null, 450, () => {
+          const sbefore = sm.hp;
           sm.hp = Math.max(0, sm.hp - sp.dmg);
           if (sm.hp <= 0) sp._exp = creditKO(u, m);
           su._monEl.classList.add("hurt");
           setTimeout(() => su._monEl.classList.remove("hurt"), 600);
           spawnHit(su._monEl, TYPE_COLOR[act.mvType] || "#fff", false);
-          paintHp(su); sfx("coin");
+          floatDmg(su._monEl, sp.dmg, false, sp.eff);
+          drainHp(su, sbefore); sfx("coin");
         }]);
         steps.push(["…and " + sm.name + " too! (−" + sp.dmg + " HP)", 700]);
       });

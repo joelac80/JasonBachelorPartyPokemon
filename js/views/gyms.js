@@ -205,6 +205,15 @@
       document.body.appendChild(lay);
       if (window.SFX && SFX.fanfare) SFX.fanfare();
       setTimeout(closePop, 4600);
+      // 🌅/🏆 Key-moment curtains bracket the badge-pop: the FIRST badge in a
+      // region welcomes you to it; the LAST swings the League gate open. Both
+      // queue AFTER this pop clears (StoryBeats.curtain waits on .league-intro).
+      if (window.StoryBeats) {
+        const held = regionBadges(attId, g.region);
+        const total = GYMS.filter((x) => x.region === g.region).length;
+        if (held === 1) StoryBeats.arriveRegion(g.region);
+        else if (held >= total) StoryBeats.conquerRegion(g.region);
+      }
     })();
   }
   function offerEncounter(attId, t, isStory) {
