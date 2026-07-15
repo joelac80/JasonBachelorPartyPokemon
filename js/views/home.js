@@ -109,9 +109,12 @@
       })(),
       p.blurb ? el("p", { class: "hero-blurb" }, p.blurb) : null,
     ]);
-    // ── THE TWO PILLARS — catching and battling, every door on one screen.
-    // (The tiles themselves render lower down; the personal Journey status
-    // comes FIRST now, so returning trainers see their progress up top.) ──
+    // The big "Pokémon Journey" block sits right up top, just under the live
+    // "here now" / "watch" strips — the front door of the app.
+    root.appendChild(hero);
+
+    // ── THE TWO PILLARS — catching and battling. The personal Journey status +
+    // Whispers render just below the hero; the tiles + doors come after. ──
     const tile = (q) => el("a", { class: "hq-tile", href: "#/" + q.r }, [
       el("span", { class: "hq-e" }, q.e),
       el("span", { class: "hq-t" }, q.t),
@@ -200,10 +203,6 @@
       { r: "guide",       e: "🧭", t: "Every Way to Play", d: "The full mode directory" },
       { r: "settings",    e: "⚙️", t: "Settings",          d: "Room & sync" },
     ].map(tile)));
-
-    // The marketing hero is cool — but it lands AFTER the welcome walkthrough,
-    // so it sits at the BOTTOM now instead of pushing the useful stuff down.
-    root.appendChild(hero);
   }
 
   window.Views = window.Views || {};
