@@ -881,7 +881,7 @@
       const n = el("div", { class: "duel-dmg" + tone }, "−" + dmg + (crit ? "!" : ""));
       n.style.left = (28 + Math.random() * 40).toFixed(0) + "%";
       monEl.appendChild(n);
-      setTimeout(() => n.remove(), 1000);
+      setTimeout(() => n.remove(), 2000);
     }
     // 🩸 Drain the HP readout DOWN to its new value instead of snapping — the
     // fill bar already CSS-eases its width; here we tick the number to match so
