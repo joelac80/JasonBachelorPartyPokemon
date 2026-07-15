@@ -281,8 +281,11 @@
 
   function challengeGym(idx) {
     const gym = GYMS[idx];
-    const size = gym.team.length;
     const go = (attId) => {
+      // 📖 True Story rosters grow like the games — badge 1 is a 3v3, the
+      // region's last badges 6v6; ⚔ Challenge keeps the full rematch squad.
+      const JS0 = window.JourneyStyle;
+      const size = (JS0 && JS0.isStory(attId) && JS0.gymSize) ? Math.min(gym.team.length, JS0.gymSize(idx)) : gym.team.length;
       const why = gymLockedWhy(idx, attId);
       if (why) { alert("🔒 " + why); return; }
       if (Duel.poolFor(attId).length < size) {
@@ -294,8 +297,10 @@
       // forms, and the level trims movesets to what it would really know.
       const JS = window.JourneyStyle;
       const lvl = (JS && JS.isStory(attId)) ? JS.gymLevel(idx) : 0;
+      // the story cut keeps the front of the squad plus the ACE (last slot)
+      const squad = size < gym.team.length ? gym.team.slice(0, size - 1).concat([gym.team[gym.team.length - 1]]) : gym.team.slice();
       // 📖 devolve the squad, but the leader's ACE (last slot) stays TRUE
-      const foes = lvl ? gym.team.map((id, i) => i === gym.team.length - 1 ? id : JS.formAt(id, lvl)) : gym.team.slice();
+      const foes = lvl ? squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl)) : squad;
       Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
         title: "vs Leader " + gym.leader + " — pick EXACTLY " + size,
         hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +
@@ -339,11 +344,13 @@
           }))
         : el("div", { class: "gymc-holders none" }, "No badge holders yet"),
       why ? el("div", { class: "gymc-lock" }, "🔒 " + why)
-          : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, "⚔ Challenge (" + g.team.length + "v" + g.team.length +
-              (function () {   // 📖 True Story shows each badge's story level up front
-                const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
-                return (window.JourneyStyle && me && JourneyStyle.isStory(me)) ? " · Lv " + JourneyStyle.gymLevel(idx) : "";
-              })() + ")"),
+          : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, (function () {
+              const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
+              const story = !!(window.JourneyStyle && me && JourneyStyle.isStory(me));
+              // 📖 True Story shows the era-true roster size AND level up front
+              const n = story && JourneyStyle.gymSize ? Math.min(g.team.length, JourneyStyle.gymSize(idx)) : g.team.length;
+              return "⚔ Challenge (" + n + "v" + n + (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
+            })()),
     ]);
   }
 

@@ -977,6 +977,15 @@
     // Reset a switched-in mon's volatile battle state (stat stages, flinch,
     // Leech Seed) — the major status (par/brn/psn) rides along, cartridge-style.
     function switchIn(u, to) {
+      // 🔴 a Dynamaxed mon that leaves the field reverts immediately
+      const out = mon(u);
+      if (out && out._dyna) {
+        const ratio = out.hpMax ? out.hp / out.hpMax : 1;
+        out.hpMax = out._dynaBase || out.hpMax;
+        out.hp = Math.max(1, Math.round(out.hpMax * ratio));
+        out._dyna = 0; out._dynaBase = 0;
+      }
+      if (u._monEl) u._monEl.classList.remove("dyna", "tera", "z-charge");
       u.cur = to;
       const m = mon(u);
       m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
@@ -1188,8 +1197,10 @@
         const burnMod = (mv.cat === "phys" && m.status === "brn") ? 0.5 : 1;
         // 🎯 STAB: a move of the attacker's OWN element hits ×1.2 — read off
         // the LIVE types so a Mega's new typing counts. Kept below the
-        // cartridge 1.5 to preserve the 3-4-hit rhythm.
-        const stabMod = ((m.types || []).indexOf(mv.type) >= 0) ? 1.2 : 1;
+        // cartridge 1.5 to preserve the 3-4-hit rhythm. 💎 A TERASTALLIZED
+        // mon's tera-type moves hit the full cartridge ×1.5 instead.
+        const stabMod = (m._tera && m._tera === mv.type) ? 1.5
+          : ((m.types || []).indexOf(mv.type) >= 0) ? 1.2 : 1;
         return Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult));
       };
       let dmg = 0;
@@ -1201,7 +1212,7 @@
       applyMove({ kind: "move", side: o.side, unit: o.unit, move: o.move, tUnit: tUnit,
         miss: miss, avoided: !!avoided, crit: o.crit, armed: o.armed, courage: o.courage, eff: eff, dmg: dmg,
         cat: mv.cat, mvType: mv.type, fx: mv.fx, fxHit: o.fxHit, slpTurns: o.slpTurns, by: o.by,
-        spread: spread, recharge: mv.recharge },
+        spread: spread, recharge: mv.recharge, zed: o.zed },
         u, false, resolveNext);
     }
 
@@ -1211,6 +1222,22 @@
       if (S.done) return;
       const steps = [];
       const chip = (m, kind) => Math.max(1, Math.round(m.hpMax / (RESIDUAL_DIV[kind] || RESIDUAL_DIV.seed)));
+      // 🔴 Dynamax winds down: 3 turns of towering, then back to size (HP
+      // ratio preserved — a healthy giant shrinks into a healthy mon).
+      ["a", "b"].forEach((sd) => sides[sd].units.forEach((u) => {
+        const m = mon(u);
+        if (!m._dyna || m.hp <= 0) return;
+        m._dyna -= 1;
+        if (m._dyna > 0) return;
+        steps.push(["🔴 " + m.name + " returned to normal size.", 900, () => {
+          const ratio = m.hpMax ? m.hp / m.hpMax : 1;
+          m.hpMax = m._dynaBase || m.hpMax;
+          m.hp = Math.max(1, Math.round(m.hpMax * ratio));
+          m._dynaBase = 0;
+          if (u._monEl) u._monEl.classList.remove("dyna");
+          paintHp(u);
+        }]);
+      }));
       ["a", "b"].forEach((sd) => sides[sd].units.forEach((u) => {
         const m = mon(u);
         if (m.hp <= 0) return;
@@ -1475,7 +1502,8 @@
       menu.innerHTML = "";
       u._monEl.classList.add("attack");
       setTimeout(() => u._monEl.classList.remove("attack"), 600);
-      const used = [m.name + " used " + mv.name + "!", 800, () => sfx("select")];
+      const used = [(act.zed ? "🌀 " + m.name + " UNLEASHES its Z-Power! " : "") + m.name + " used " + mv.name + "!",
+        act.zed ? 1400 : 800, () => { sfx(act.zed ? "fanfare" : "select"); if (act.zed && u._monEl) u._monEl.classList.remove("z-charge"); }];
       if (act.miss) {
         const missMsg = act.avoided ? (tm ? tm.name : "The foe") + " avoided the attack!" : "…it missed!";
         beats(chug.concat([used, [missMsg, 1000, () => sfx("error")]]), () => { advance(); done(); }); return;
@@ -2069,18 +2097,21 @@
       const armed = !!z;                               // Dire Hit: unleashed on THIS hit
       S.zmove = false;
       const isStatus = mv.cat === "status";
+      // 🌀 an armed Z-Power fires on the next DAMAGING move: ×1.8, can't miss
+      const zed = !!u._zArmed && !isStatus && !!mv.pow;
+      if (zed) u._zArmed = false;
       // Roll accuracy, crit, damage spread and any effect proc NOW (baked into
       // the synced order); type effect + stat/burn mods are applied at
       // resolution against whoever's actually standing there (re-target safe).
       const accMod = stageMul(m.stg ? m.stg.acc : 0);
-      const miss = !armed && mv.acc < 101 && (Math.random() * 100 >= mv.acc * accMod);
+      const miss = !zed && !armed && mv.acc < 101 && (Math.random() * 100 >= mv.acc * accMod);
       const highCrit = !!(mv.fx && mv.fx.crit === "high");
       // Crit odds run canon-flavored: 5% base, 12.5% for high-crit moves
       // (Slash, Razor Leaf…), and crits hit ×1.5 — not ×2 — so a lucky
       // streak stings instead of deleting the run. The Dire Hit still
       // guarantees the crit.
       const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.125 : 0.05));
-      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * m.atk * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
+      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * (zed ? 1.8 : 1) * m.atk * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
       // Secondary effect: does it proc? (self-buff status moves always do.)
       let fxHit = false, slpTurns = 0;
       if (mv.fx && !miss) {
@@ -2112,7 +2143,7 @@
       const confN = 2 + Math.floor(Math.random() * 3);
       sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
         order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, statusRoll: statusRoll,
-          armed: armed, courage: armed, loaf: loaf, conf: conf, confN: confN,
+          armed: armed, courage: armed, loaf: loaf, conf: conf, confN: confN, zed: zed,
           pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
     }
 
@@ -2172,6 +2203,48 @@
       if (u._monEl) { u._monEl.classList.add("mega-go"); setTimeout(() => { if (u._monEl) u._monEl.classList.remove("mega-go"); }, 1000); }
       sfx("fanfare");
       msg.textContent = "✨ " + was + " Mega Evolved into " + meg.name + "!";
+      renderMenu();
+    }
+
+    // 🎪 GENERATION GIMMICKS — each is a once-per-side battle moment sharing
+    // the Mega slot (one spectacle per side per battle, pick your era):
+    // 🌀 Z-MOVE (Alola open): arm it, and the next damaging move hits ×1.8
+    //    and cannot miss. 🔴 DYNAMAX (Galar open): HP pool ×1.75 for 3 turns,
+    //    then it shrinks back (ratio kept; ends early on switch-out).
+    // 💎 TERASTALLIZE (Paldea open): crystallize into the primary type —
+    //    mono-typed from here on, tera-type moves at the full ×1.5 STAB.
+    function zPower(u, ptr) {
+      const m = mon(u);
+      S.megaSide[ptr.side] = true;
+      u._zArmed = true;
+      if (u._monEl) u._monEl.classList.add("z-charge");
+      sfx("fanfare");
+      msg.textContent = "🌀 " + m.name + " is surrounded by Z-Power! Its next strike will be devastating!";
+      renderMenu();
+    }
+    function dynamax(u, ptr) {
+      const m = mon(u);
+      S.megaSide[ptr.side] = true;
+      const ratio = m.hpMax ? m.hp / m.hpMax : 1;
+      m._dynaBase = m.hpMax;
+      m._dyna = 3;
+      m.hpMax = Math.round(m.hpMax * 1.75);
+      m.hp = Math.max(1, Math.round(m.hpMax * ratio));
+      if (u._monEl) u._monEl.classList.add("dyna");
+      renderHp(ptr.side);
+      sfx("fanfare");
+      msg.textContent = "🔴 " + m.name + " DYNAMAXED — it towers over the field! (3 turns)";
+      renderMenu();
+    }
+    function teraize(u, ptr) {
+      const m = mon(u);
+      S.megaSide[ptr.side] = true;
+      const t = (m.types || ["normal"])[0];
+      m._tera = t;
+      m.types = [t];
+      if (u._monEl) u._monEl.classList.add("tera");
+      sfx("fanfare");
+      msg.textContent = "💎 " + m.name + " TERASTALLIZED into pure " + t.toUpperCase() + " — its " + t + " moves shine at full power!";
       renderMenu();
     }
 
@@ -2248,11 +2321,18 @@
       // has reached Kalos on the Gen Ladder (beat ALDER → Gen 6).
       const megaIds = (window.MEGA_BY_BASE && MEGA_BY_BASE[m.id]) || null;
       const megaOpen = !(window.Store && Store.genCapFor) || Store.genCapFor(u.attId) >= 6;
-      if (mode === "local" && !u.ai && megaOpen && megaIds && megaIds.length && !m.megaId && !S.megaSide[ptr.side]) {
+      if (mode === "local" && !u.ai && !S.megaSide[ptr.side] && !m.megaId) {
         const F = window.MEGA_FORMS || {};
-        menu.appendChild(el("div", { class: "battle-menu-row mega-row" },
-          megaIds.map((mid) => el("button", { class: "btn mega-btn", onClick: () => megaEvolve(u, ptr, mid) },
-            "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : "")))));
+        const cap = (window.Store && Store.genCapFor) ? Store.genCapFor(u.attId) : 9;
+        const gims = [];
+        if (megaOpen && megaIds && megaIds.length) megaIds.forEach((mid) => gims.push(
+          el("button", { class: "btn mega-btn", onClick: () => megaEvolve(u, ptr, mid) },
+            "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : ""))));
+        // 🎪 the era gimmicks unlock down the Gen Ladder, like megas do
+        if (cap >= 7) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => zPower(u, ptr) }, "🌀 Z-Move"));
+        if (cap >= 8 && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => dynamax(u, ptr) }, "🔴 Dynamax"));
+        if (cap >= 9 && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraize(u, ptr) }, "💎 Terastallize"));
+        if (gims.length) menu.appendChild(el("div", { class: "battle-menu-row mega-row" }, gims));
       }
       const row = [];
       if (opts.wild && mode === "local" && !u.ai) {

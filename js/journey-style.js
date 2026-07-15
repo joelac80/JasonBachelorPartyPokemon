@@ -84,8 +84,24 @@
     ]);
   }
 
+  // 📖 True Story ROSTER curve — early leaders run small teams like the
+  // cartridges did: a region's first badge is a 3v3, growing to 6v6 by the
+  // end (Alola's four kahunas stride 3→6 in four steps). The Elite Four
+  // field the canon FIVE; Champions and RED keep their full six.
+  const SIZES8 = [3, 3, 4, 4, 5, 5, 6, 6], SIZES4 = [3, 4, 5, 6];
+  function gymSize(idx) {
+    const GYMS = window.GYM_CIRCUIT || [];
+    const g = GYMS[idx]; if (!g) return 6;
+    const list = regionGymIdxs(g.region);
+    const t = list.length <= 4 ? SIZES4 : SIZES8;
+    const pos = Math.max(0, Math.min(t.length - 1, list.indexOf(idx)));
+    return t[pos] || 6;
+  }
+  function stageSize(rank) { return /Elite Four/.test(rank || "") ? 5 : 6; }
+
   window.JourneyStyle = {
     of: styleOf, set: setStyle, isStory: isStory, formAt: formAt,
     gymLevel: gymLevel, stageLevel: stageLevel, encounterLevel: encounterLevel, row: row,
+    gymSize: gymSize, stageSize: stageSize,
   };
 })();

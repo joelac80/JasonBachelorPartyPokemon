@@ -2393,3 +2393,13 @@ html, body { overscroll-behavior-y: contain; }
 .duel-outro-name { font-weight: 800; font-size: 1.05em; margin: 6px 0 4px; }
 .duel-outro-quote { font-style: italic; line-height: 1.5; margin-bottom: 14px; }
 .duel-outro-go { min-width: 60%; }
+
+/* 🎪 generation gimmicks: the mon element wears the moment */
+.dyna { transform: scale(1.5); transform-origin: bottom center;
+  filter: drop-shadow(0 0 16px rgba(255, 64, 64, 0.8)) saturate(1.35); transition: transform 0.5s ease; }
+.tera { filter: saturate(1.9) brightness(1.3) drop-shadow(0 0 12px rgba(150, 220, 255, 0.95)); }
+.z-charge { animation: zpulse 0.8s ease-in-out infinite; }
+@keyframes zpulse { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 14px rgba(255, 215, 60, 0.95)) brightness(1.25); } }
+.gim-z { border-color: #e6b800; }
+.gim-dyna { border-color: #e04040; }
+.gim-tera { border-color: #6ec6ff; }

@@ -276,7 +276,11 @@
 
   function challengeLeague(idx, attId) {
     const st = LEAGUE[idx];
-    const size = st.team.length;
+    // 📖 True Story: the Elite Four run the canon FIVE; Champions and RED
+    // keep their six. ⚔ Challenge always fields the full rematch squad.
+    const JS0 = window.JourneyStyle;
+    const story0 = !!(JS0 && JS0.isStory(attId));
+    const size = story0 && JS0.stageSize ? Math.min(st.team.length, JS0.stageSize(st.rank)) : st.team.length;
     const isRed = st.key === "red";
     const isFinal = !!st.final;
     const why = leagueBlocked(attId, idx);
@@ -288,8 +292,10 @@
     // era-true forms, and movesets shrink to what the level would know.
     const JS = window.JourneyStyle;
     const lvl = (JS && JS.isStory(attId)) ? JS.stageLevel(idx) : 0;
+    // the story cut keeps the front of the squad plus the ACE (last slot)
+    const squad = size < st.team.length ? st.team.slice(0, size - 1).concat([st.team[st.team.length - 1]]) : st.team.slice();
     // 📖 story devolve — except the ACE (last slot), which fights TRUE
-    const foes = lvl ? st.team.map((id, i) => i === st.team.length - 1 ? id : JS.formAt(id, lvl)) : st.team.slice();
+    const foes = lvl ? squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl)) : squad;
     chamberIntro(idx, () => {
       Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
         title: "vs " + foeName + " — pick EXACTLY " + size,
