@@ -109,28 +109,14 @@
       })(),
       p.blurb ? el("p", { class: "hero-blurb" }, p.blurb) : null,
     ]);
-    root.appendChild(hero);
-
-    // ── THE TWO PILLARS — catching and battling, every door on one screen ──
+    // ── THE TWO PILLARS — catching and battling, every door on one screen.
+    // (The tiles themselves render lower down; the personal Journey status
+    // comes FIRST now, so returning trainers see their progress up top.) ──
     const tile = (q) => el("a", { class: "hq-tile", href: "#/" + q.r }, [
       el("span", { class: "hq-e" }, q.e),
       el("span", { class: "hq-t" }, q.t),
       el("span", { class: "hq-d" }, q.d),
     ]);
-    root.appendChild(el("h2", { class: "section-title" }, "🔴 Catch 'em"));
-    root.appendChild(el("div", { class: "home-quick six" }, [
-      { r: "safari",  e: el("span", { class: "pokeball-ico", "aria-label": "Poké Ball" }), t: "Safari Zone",    d: "Berries, rocks, throw — Gen 1-9, shinies 1-in-20" },
-      { r: "dex",     e: "📕", t: "Pokédex",        d: "Every collection — Hisui, Unown, Mega, Trainers" },
-      { r: "trade",   e: "🔁", t: "Trading Post",   d: "Swap with friends — some only evolve by trade" },
-    ].map(tile)));
-    root.appendChild(el("h2", { class: "section-title" }, "⚔️ Battle 'em"));
-    root.appendChild(el("div", { class: "home-quick" }, [
-      { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
-      { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions — ⚔ Challenge or 📖 True Story" },
-      { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
-      { r: "cups",     e: "🏟", t: "Stadium Cups",  d: "Baby · Poké · Prime · Rental" },
-      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Seven permadeath epics" },
-    ].map(tile)));
 
     // 🧭 YOUR JOURNEY — the signed-in trainer's battle career, front and
     // center: ladder progress, tower streak, nuzlocke run, dex haul. Every
@@ -188,52 +174,36 @@
           lines.slice(0, 3).map((t) => el("div", { class: "whisper" }, t)))));
     })();
 
-    // Quiet doors for everything that isn't catching or battling — kept UP near
-    // the top so the utility doors (and Settings) don't hide below the long
-    // mode directory. (Party Central still exists at #/party for the actual
-    // party weekend, but it's off the doors and nav — this is a Pokémon app now.)
-    root.appendChild(el("div", { class: "home-quick home-doors" }, [
-      { r: "roster",      e: "🎴", t: "Squad",         d: "The trainers" },
-      { r: "leaderboard", e: "🏆", t: "Leaderboard",   d: "The squad, ranked" },
-      { r: "draft",       e: "🏆", t: "Draft Teams",   d: "Squads for Victory Road" },
-      { r: "settings",    e: "⚙️", t: "Settings",      d: "Room & sync" },
+    // ── THE TWO PILLARS — catching and battling, below the personal status ──
+    root.appendChild(el("h2", { class: "section-title" }, "🔴 Catch 'em"));
+    root.appendChild(el("div", { class: "home-quick six" }, [
+      { r: "safari",  e: el("span", { class: "pokeball-ico", "aria-label": "Poké Ball" }), t: "Safari Zone",    d: "Berries, rocks, throw — Gen 1-9, shinies 1-in-20" },
+      { r: "dex",     e: "📕", t: "Pokédex",        d: "Every collection — Hisui, Unown, Mega, Trainers" },
+      { r: "trade",   e: "🔁", t: "Trading Post",   d: "Swap with friends — some only evolve by trade" },
+    ].map(tile)));
+    root.appendChild(el("h2", { class: "section-title" }, "⚔️ Battle 'em"));
+    root.appendChild(el("div", { class: "home-quick" }, [
+      { r: "battle",   e: "⚔️", t: "Battle Arena",  d: "Real duels, friend vs friend" },
+      { r: "regions",  e: "🗺", t: "The Journey",   d: "Nine regions — ⚔ Challenge or 📖 True Story" },
+      { r: "tower",    e: "🗼", t: "Battle Tower",  d: "Streaks, PALMER, the Legends floor" },
+      { r: "cups",     e: "🏟", t: "Stadium Cups",  d: "Baby · Poké · Prime · Rental" },
+      { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Seven permadeath epics" },
     ].map(tile)));
 
-    // 🧭 EVERY WAY TO PLAY — the complete mode directory: the explainer for a
-    // newcomer, the index for a veteran. Every mode in the app, one line each,
-    // every row a door. (Hidden CONTENT stays hidden — the Whispers above tease
-    // it — but no MODE is a secret.)
-    (function modeIndex() {
-      const row = (r, e, t, d) => el("a", { class: "mode-row", href: "#/" + r }, [
-        el("span", { class: "mode-e" }, e),
-        el("span", { class: "mode-txt" }, [el("strong", { class: "mode-t" }, t), el("span", { class: "mode-d" }, d)]),
-      ]);
-      const groups = [
-        { head: "🔴 Catching", rows: [
-          ["safari", el("span", { class: "pokeball-ico", "aria-label": "Poké Ball" }), "Safari Zone", "Walk the grass across Gen 1-9 — 🍓 berry & 🪨 rock throws, ✨ shinies 1-in-20, 🟣 Master Balls earned by Champions & crowns"],
-          ["safari", "🥊", "Wild battles", "Weaken 'em first — real battles that end in a throw, with a live catch meter"],
-          ["trade", "🔁", "Trading Post", "Swap catches with friends — some species only ever evolve by trade"],
-          ["dex", "📕", "Pokédex", "Every collection in one book: Gen 1-9, Hisui, Unown, Mega and Trainer dexes"],
-        ] },
-        { head: "⚔️ Battling each other", rows: [
-          ["battle", "⚔️", "Battle Arena", "Live duels phone-to-phone — singles or doubles, the Elo belt on the line"],
-          ["battle", "🎲", "Rental battles", "Deal random rental sixes to everyone in the Arena — nobody needs a single catch"],
-          ["cups", "🏟", "Stadium Cups", "Round robin into finals with the whole room: Baby (Lv 5) · Poké (own catches) · Prime (Lv 100) · Rental"],
-          ["brackets", "🥇", "Brackets", "A seeded knockout for the room — winner takes the bragging rights"],
-        ] },
-        { head: "🗺 Battling the saga", rows: [
-          ["regions", "🗺", "The Journey", "68 gyms, nine Elite Fours, every Champion — fought ⚔ Challenge style (full-power rematch squads) or 📖 True Story (the classic Lv 14 → 58 curve)"],
-          ["tower", "🗼", "Battle Tower", "Streak doubles with your catches or rentals — PALMER at 7, and a Legends floor above"],
-          ["movies", "🎬", "Movie Legends", "The films, each showing in its own era — every poster hides a boss"],
-          ["legends", "🌌", "Legendary Challenge", "Every generation's gods once their Champion falls… and sealed story specials beyond"],
-          ["nuzlocke", "🪦", "Nuzlocke", "Seven permadeath structures, one save each: Classic · Randomizer · Master · Through the Ages · The Long Walk · ⚡ Blitz · Movie Marathon"],
-        ] },
-      ];
-      root.appendChild(el("h2", { class: "section-title" }, "🧭 Every way to play"));
-      root.appendChild(el("div", { class: "mode-index" }, groups.map((g) =>
-        el("div", { class: "mode-group" },
-          [el("div", { class: "mode-head" }, g.head)].concat(g.rows.map((r) => row(r[0], r[1], r[2], r[3])))))));
-    })();
+    // Quiet doors — the crew, the full mode guide, and Settings. Kept above the
+    // marketing hero so the useful stuff is reachable without scrolling.
+    // (The old "Every way to play" directory is now its own page at #/guide.)
+    root.appendChild(el("div", { class: "home-quick home-doors" }, [
+      { r: "roster",      e: "🎴", t: "Squad",             d: "The trainers" },
+      { r: "leaderboard", e: "🏆", t: "Leaderboard",       d: "The squad, ranked" },
+      { r: "draft",       e: "🏆", t: "Draft Teams",       d: "Squads for Victory Road" },
+      { r: "guide",       e: "🧭", t: "Every Way to Play", d: "The full mode directory" },
+      { r: "settings",    e: "⚙️", t: "Settings",          d: "Room & sync" },
+    ].map(tile)));
+
+    // The marketing hero is cool — but it lands AFTER the welcome walkthrough,
+    // so it sits at the BOTTOM now instead of pushing the useful stuff down.
+    root.appendChild(hero);
   }
 
   window.Views = window.Views || {};

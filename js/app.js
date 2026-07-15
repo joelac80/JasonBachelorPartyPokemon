@@ -42,6 +42,7 @@
     .add("messages", V.messages)
     .add("poster", V.poster)
     .add("settings", V.settings)
+    .add("guide", V.guide)
     .add("help", V.help);
   Router.setNotFound(V.home);
 
