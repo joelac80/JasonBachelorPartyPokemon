@@ -314,6 +314,8 @@
               monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },
             b: { units: [{ npc: isRed ? "RED" : st.rank.toUpperCase() + " " + st.name, ai: true, monIds: foes,
               boost: st.boost || 1.15,
+              // 🎪 the Elite Four / Champion ace unleashes their region's gimmick
+              gimmick: ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[st.region],
               outro: st.defeat ? { lose: st.defeat } : undefined }] },
             onResult: () => {
               Router.render();

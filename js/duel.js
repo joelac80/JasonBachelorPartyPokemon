@@ -565,6 +565,7 @@
         speak: u.speak || null,
         ace: u.ace || null,                            // {line} for the last-mon moment
         outro: u.outro || null,                        // {win, lose} closing quotes
+        gimmick: u.gimmick || null,                    // 🎪 the ace's region spectacle (z/dyna/tera/mega)
         party: party, cur: 0, potions: 2, courage: true, armed: false };
     }
     const sides = {
@@ -2161,6 +2162,12 @@
       if (m._recharge) { doMove(u, ptr, 0, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
       // Mid two-turn move: it's locked into completing the charge move.
       if (m._charging) { doMove(u, ptr, m._charging.move, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
+      // 🎪 THE ACE'S SPECTACLE — a boss unleashes its region's gimmick the
+      // moment its LAST Pokémon (a 3+ squad down to one) hits the field: a
+      // Paldea leader terastallizes, Galar Dynamaxes, Alola fires a Z-Move,
+      // Kalos Mega Evolves (if its ace has a form). It's free (doesn't cost
+      // the turn) — fire it, then renderMenu re-schedules aiAct to attack.
+      if (aiGimmick(u, ptr)) return;
       let best = null, bestStatus = null;
       livingEnemies(ptr.side).forEach((f) => {
         m.moves.forEach((mv, i) => {
@@ -2179,6 +2186,28 @@
       if (best && best.score > 0) { doMove(u, ptr, best.mIdx, best.tIdx); return; }
       if (bestStatus) { doMove(u, ptr, bestStatus.mIdx, bestStatus.tIdx); return; }   // walled → try status
       doMove(u, ptr, 99, (livingEnemies(ptr.side)[0] || { i: 0 }).i);   // nothing → Struggle
+    }
+
+    // 🎪 The AI ace's once-per-battle gimmick. Fires only when a boss's LAST
+    // Pokémon (a real squad, 3+, down to one) is on the field and the side's
+    // spectacle slot is still free. Returns true if it transformed (the caller
+    // waits a beat, then attacks). Region-native: u.gimmick is set by the
+    // gym/league caller from the leader's region.
+    function aiGimmick(u, ptr) {
+      if (!u.gimmick || S.megaSide[ptr.side]) return false;
+      const m = mon(u);
+      const isAce = u.party.length >= 3 && u.party.filter((x) => x.hp > 0).length === 1;
+      if (!isAce) return false;
+      if (m.megaId || m._tera || m._dyna || u._zArmed) return false;   // already spent
+      if (u.gimmick === "mega") {
+        const ids = (window.MEGA_BY_BASE && MEGA_BY_BASE[m.id]) || null;
+        if (!ids || !ids.length) return false;                        // this ace has no mega
+        megaEvolve(u, ptr, ids[0]); return true;
+      }
+      if (u.gimmick === "z") { zPower(u, ptr); return true; }
+      if (u.gimmick === "dyna") { dynamax(u, ptr); return true; }
+      if (u.gimmick === "tera") { teraize(u, ptr); return true; }
+      return false;
     }
 
     // ✨ Mega Evolution — a free pre-move transform (doesn't cost the turn).

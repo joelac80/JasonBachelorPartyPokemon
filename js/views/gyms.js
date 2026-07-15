@@ -313,6 +313,8 @@
               // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
               monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },
             b: { units: [{ npc: "LEADER " + gym.leader, ai: true, monIds: foes,
+              // 🎪 the leader's ACE unleashes their region's gimmick
+              gimmick: ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[gym.region],
               // 🗣 the badge-handover line — every leader concedes in character
               outro: gym.defeat ? { lose: gym.defeat } : undefined }] },
             onResult: (winSide) => { Router.render(); if (winSide === "a") badgePop(idx, attId); maybeEncounter(attId, idx); } });
