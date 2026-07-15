@@ -1724,6 +1724,7 @@
               const w = s.league[player.attId] = s.league[player.attId] || [];
               const fresh = w.indexOf(lg.key) < 0;
               if (fresh) w.push(lg.key);
+              if (lg.style && Store.styleWin) Store.styleWin(s, player.attId, lg.key, lg.style);
               Store.grantPoints(s, "battle", player.teamId, lg.pts || 6);
               // 🏛 Hall of Fame: the champion AND the team that did it, forever.
               // Stamp WHICH league/region was won so the plaque can name it.
@@ -1755,6 +1756,7 @@
               const hs = s.gymCircuit[opts.gym.idx] = s.gymCircuit[opts.gym.idx] || [];
               const fresh = hs.indexOf(player.attId) < 0;
               if (fresh) hs.push(player.attId);
+              if (opts.gym.style && Store.styleWin) Store.styleWin(s, player.attId, "gym:" + opts.gym.idx, opts.gym.style);
               Store.grantPoints(s, "battle", player.teamId, 5);
               Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (opts.gym.badge || "gym") + " Badge!" + (fresh ? "" : " (rematch flex)"));
               if (fresh && opts.gym.idx < 16 && Store.gymBadgesInRange(player.attId, 0, 16) >= 16)

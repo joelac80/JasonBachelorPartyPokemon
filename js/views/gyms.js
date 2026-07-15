@@ -301,7 +301,8 @@
         hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +
           (lvl ? " 📖 True Story: fought at Lv " + lvl + " — both teams step down to era-true forms." : ""),
         onDone: (ids, meta) => {
-          Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym", gym: { idx: idx, leader: gym.leader, badge: gym.badge },
+          Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym",
+            gym: { idx: idx, leader: gym.leader, badge: gym.badge, style: lvl ? "story" : "challenge" },
             level: lvl || undefined,
             a: { units: [{ attId: attId, defy: meta && meta.defiant,
               // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)

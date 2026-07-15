@@ -301,7 +301,8 @@
           Duel.start({ mode: "local",
             title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
             level: lvl || undefined,
-            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal },
+            league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal,
+              style: lvl ? "story" : "challenge" },
             a: { units: [{ attId: attId, defy: meta && meta.defiant,
               // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
               monIds: lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids }] },

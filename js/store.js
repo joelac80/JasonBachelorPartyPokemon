@@ -927,6 +927,38 @@
       const label = side === "w" ? b.winner : b.loser;
       return (label || "").split(" & ").indexOf(name) >= 0;
     },
+    // ⚔/📖 THE STYLE LEDGER — every Journey win also remembers WHICH style
+    // it was fought in ("challenge" or "story"). Append-only per trainer;
+    // the next-region unlock still reads the plain ledgers (either style
+    // counts) — this is purely for the separate crowns.
+    styleWin(s, attId, key, style) {
+      if (!attId || !key || !style) return;
+      s.styleWins = s.styleWins || {};
+      const t = s.styleWins[attId] = s.styleWins[attId] || {};
+      const arr = t[style] = t[style] || [];
+      if (arr.indexOf(key) < 0) arr.push(key);
+    },
+    // A region is CROWNED in a style when all of its gym badges AND its
+    // Champion were beaten in that style. Returns { story: [...], challenge: [...] }.
+    regionStyleCrowns(attId) {
+      const out = { story: [], challenge: [] };
+      const sw = (this.state.styleWins || {})[attId] || {};
+      const GYMS = window.GYM_CIRCUIT || [];
+      const stages = window.LEAGUE_STAGES || [];
+      const regions = [];
+      GYMS.forEach((g) => { if (regions.indexOf(g.region) < 0) regions.push(g.region); });
+      regions.forEach((r) => {
+        const gymKeys = [];
+        GYMS.forEach((g, i) => { if (g.region === r) gymKeys.push("gym:" + i); });
+        const champ = stages.filter((st) => st.region === r && (st.rank === "Champion" || st.rank === "Top Champion"))[0];
+        if (!champ || !gymKeys.length) return;
+        ["story", "challenge"].forEach((st) => {
+          const w = sw[st] || [];
+          if (gymKeys.every((k) => w.indexOf(k) >= 0) && w.indexOf(champ.key) >= 0) out[st].push(r);
+        });
+      });
+      return out;
+    },
     duelRecord(attId) {
       const a = this.attendee(attId); if (!a) return { w: 0, l: 0 };
       let w = 0, l = 0;
@@ -1633,6 +1665,10 @@
           v: this.leagueWins(attId).length, at: [5, 16, 33, leagueTotal] },
         { key: "duels", emoji: "⚔️", title: "Rival of Rivals", unit: "duel wins vs friends",
           v: this.duelRecord(attId).w, at: [5, 15, 40, 100] },
+        { key: "chalcrown", emoji: "⚔", title: "The Conqueror", unit: "regions completed in CHALLENGE style (every badge + the crown, full-power)",
+          v: this.regionStyleCrowns(attId).challenge.length, at: [1, 2, 4, 9] },
+        { key: "storycrown", emoji: "📖", title: "The Storyteller", unit: "regions completed in TRUE STORY style (every badge + the crown, era-true levels)",
+          v: this.regionStyleCrowns(attId).story.length, at: [1, 2, 4, 9] },
         { key: "kos", emoji: "💥", title: "Knockout Artist", unit: "lifetime KOs",
           v: this.koLife(attId), at: [50, 200, 500, 1500] },
         { key: "tower", emoji: "🗼", title: "Tower Monarch", unit: "best tower streak",
@@ -1971,6 +2007,16 @@
         const bseen = {}; bl.forEach((r) => { bseen[(r.ts || 0) + "|" + r.attId] = 1; });
         pb.beltLog.forEach((r) => { const k = (r.ts || 0) + "|" + r.attId; if (!bseen[k]) { bseen[k] = 1; bl.push(r); } });
       }
+      // ⚔/📖 per-style Journey wins: nested append-only union.
+      const psw = (prev && prev.styleWins) || {};
+      const nsw = next.styleWins = next.styleWins || {};
+      Object.keys(psw).forEach((tid) => {
+        const dst = nsw[tid] = nsw[tid] || {};
+        Object.keys(psw[tid] || {}).forEach((sk) => {
+          const arr = dst[sk] = dst[sk] || [];
+          (psw[tid][sk] || []).forEach((k) => { if (arr.indexOf(k) < 0) arr.push(k); });
+        });
+      });
       // 🏅 gym badges: union the holder list per gym.
       const pc = (prev && prev.gymCircuit) || {};
       const nc = next.gymCircuit = next.gymCircuit || {};
