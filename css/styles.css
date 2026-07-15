@@ -1199,7 +1199,72 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
    space where the move buttons live instead of the whole scene jumping. */
 .battle-arena { flex: 0 0 46dvh; position: relative; overflow: hidden;
   background: linear-gradient(#bfe3ff 0 58%, #a6d88f 58%, #8fd07a 100%); }
+/* 🌍 Per-region / per-element biomes — the arena wears where it's fought.
+   Every scene keeps the sky-over-ground split so sprites + platforms read
+   the same; only the palette (and a wash of scene detail) changes. */
+.battle-arena.bg-field { background: linear-gradient(#bfe3ff 0 58%, #a6d88f 58%, #8fd07a 100%); }
+.battle-arena.bg-dusk { background:
+  radial-gradient(120% 70% at 80% 6%, rgba(255,180,90,.55), transparent 60%),
+  linear-gradient(#f7a25a 0 34%, #b06a8f 34% 58%, #6f5d4c 58%, #564a3c 100%); }
+.battle-arena.bg-sea { background:
+  radial-gradient(90% 40% at 20% 8%, rgba(255,255,255,.35), transparent 60%),
+  linear-gradient(#8fd6ff 0 52%, #2b8fce 52%, #1f6fa8 100%); }
+.battle-arena.bg-snow { background:
+  linear-gradient(#d7ecff 0 54%, #f4fbff 54%, #dfeaf4 100%); }
+.battle-arena.bg-city { background:
+  linear-gradient(#9fb4d6 0 40%, #6d7f9c 40% 58%, #8a9aa6 58%, #74838f 100%); }
+.battle-arena.bg-lumi { background:
+  radial-gradient(80% 60% at 50% 30%, rgba(255,150,220,.35), transparent 65%),
+  linear-gradient(#5b3f8f 0 56%, #7a5aa8 56%, #4d3a72 100%); }
+.battle-arena.bg-beach { background:
+  linear-gradient(#8fe0ff 0 40%, #34a9d6 40% 56%, #f2e0a8 56%, #e6ce8e 100%); }
+.battle-arena.bg-stadium { background:
+  linear-gradient(#2b3550 0 32%, #384a6e 32% 46%, #3f8f45 46%, #2f7a38 100%); }
+.battle-arena.bg-canyon { background:
+  radial-gradient(100% 60% at 70% 4%, rgba(255,210,150,.5), transparent 60%),
+  linear-gradient(#f0b878 0 50%, #c9743f 50%, #9c4f2c 100%); }
+.battle-arena.bg-volcano { background:
+  radial-gradient(70% 50% at 50% 96%, rgba(255,110,30,.55), transparent 60%),
+  linear-gradient(#3a2230 0 54%, #5a2a24 54%, #351a18 100%); }
+.battle-arena.bg-sky { background:
+  radial-gradient(60% 40% at 30% 20%, rgba(255,255,255,.5), transparent 60%),
+  linear-gradient(#7fc6ff 0 62%, #b9e4a0 62%, #9fd487 100%); }
+.battle-arena.bg-cave { background:
+  radial-gradient(80% 60% at 50% 20%, rgba(120,110,150,.3), transparent 65%),
+  linear-gradient(#2e2b3c 0 56%, #45415a 56%, #322f45 100%); }
+.battle-arena.bg-rift { background:
+  radial-gradient(70% 55% at 50% 20%, rgba(180,120,255,.4), transparent 60%),
+  linear-gradient(#241a3a 0 54%, #3a2a5c 54%, #241a38 100%); }
+/* 🌦 Ambient weather — a full-bleed particle layer over the biome. Particles
+   are plain <i> tags positioned/timed inline in duel.js. */
+.battle-wx { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.battle-wx i { position: absolute; top: -12%; }
+.battle-wx.wx-snow i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.9);
+  animation: wxFall linear infinite; }
+.battle-wx.wx-rain i { width: 2px; height: 16px; background: linear-gradient(rgba(180,220,255,.1), rgba(170,210,255,.8));
+  animation: wxFall linear infinite; }
+.battle-wx.wx-sand i { width: 8px; height: 3px; border-radius: 2px; background: rgba(210,170,110,.7); top: auto;
+  bottom: 20%; animation: wxDrift linear infinite; }
+.battle-wx.wx-ember i { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,150,60,.9);
+  box-shadow: 0 0 6px rgba(255,120,30,.9); top: auto; bottom: -8%; animation: wxRise linear infinite; }
+.battle-wx.wx-sun i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,240,180,.5);
+  filter: blur(2px); animation: wxTwinkle ease-in-out infinite; }
+.battle-wx.wx-rift i { width: 7px; height: 7px; border-radius: 50%; background: rgba(200,150,255,.8);
+  box-shadow: 0 0 8px rgba(170,110,255,.9); top: auto; bottom: -8%; animation: wxRise linear infinite; }
+@keyframes wxFall { 0% { transform: translateY(0); } 100% { transform: translateY(52dvh); } }
+@keyframes wxRise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-52dvh); opacity: 0; } }
+@keyframes wxDrift { 0% { transform: translateX(-20vw); opacity: 0; } 15%,85% { opacity: 1; } 100% { transform: translateX(120vw); opacity: 0; } }
+@keyframes wxTwinkle { 0%,100% { opacity: .2; transform: scale(.8); } 50% { opacity: .7; transform: scale(1.2); } }
 .battle-platform { position: absolute; width: 42%; max-width: 240px; height: 30px; border-radius: 50%; background: rgba(60,120,40,0.28); }
+/* platform pads pick up the ground they sit on */
+.bg-snow .battle-platform { background: rgba(120,150,190,.28); }
+.bg-sea .battle-platform, .bg-beach .battle-platform { background: rgba(20,90,140,.30); }
+.bg-canyon .battle-platform { background: rgba(120,60,30,.32); }
+.bg-volcano .battle-platform { background: rgba(20,10,10,.4); }
+.bg-city .battle-platform { background: rgba(40,55,75,.35); }
+.bg-lumi .battle-platform, .bg-rift .battle-platform { background: rgba(70,40,110,.4); }
+.bg-cave .battle-platform { background: rgba(20,18,30,.45); }
+.bg-dusk .battle-platform { background: rgba(70,55,45,.38); }
 .battle-platform.foe { top: 28%; right: 5%; }
 .battle-platform.you { bottom: 15%; left: 5%; }
 .battle-sprite { position: absolute; width: 130px; height: 130px; display: flex; align-items: flex-end; justify-content: center; }

@@ -36,6 +36,31 @@
   const TYPE_EMOJI = { normal: "⭐", fire: "🔥", water: "💧", electric: "⚡", grass: "🌿", ice: "❄️", fighting: "🥊", poison: "☠️", ground: "⛰️", flying: "🪽", psychic: "🔮", bug: "🐛", rock: "🪨", ghost: "👻", dragon: "🐉", dark: "🌑", steel: "⚙️", fairy: "✨" };
   const TYPE_COLOR = { normal: "#a8a878", fire: "#f08030", water: "#6890f0", electric: "#e0b400", grass: "#78c850", ice: "#58b8c8", fighting: "#c03028", poison: "#a040a0", ground: "#c8a850", flying: "#a890f0", psychic: "#f85888", bug: "#a8b820", rock: "#b8a038", ghost: "#705898", dragon: "#7038f8", dark: "#705848", steel: "#9898b0", fairy: "#e87898" };
 
+  // 🌍 BATTLE BIOMES — the arena wears the region it's fought in. A named
+  // region (passed as opts.env from the gym/league circuit) wins; otherwise
+  // the scene is drawn from the FOE's element so every wild/tower/bracket
+  // fight still gets thematic ground under its feet. Each biome is a CSS
+  // class `bg-<scene>` (see styles.css) and may carry ambient weather.
+  const REGION_SCENE = {
+    Kanto: "field", Johto: "dusk", Hoenn: "sea", Sinnoh: "snow", Unova: "city",
+    Kalos: "lumi", Alola: "beach", Galar: "stadium", Paldea: "canyon", Hisui: "rift",
+  };
+  const TYPE_SCENE = {
+    fire: "volcano", ice: "snow", water: "sea", grass: "field", bug: "field",
+    rock: "canyon", ground: "canyon", electric: "city", steel: "city",
+    psychic: "lumi", fairy: "lumi", ghost: "dusk", dark: "dusk",
+    dragon: "sky", flying: "sky", poison: "cave", fighting: "field", normal: "field",
+  };
+  // Ambient weather reads off the SCENE (calm scenes stay clear so weather
+  // stays a moment, not wallpaper): snowfields snow, volcanoes ember, canyons
+  // blow sand, the ancient rift drifts with motes.
+  const SCENE_WX = { snow: "snow", volcano: "ember", canyon: "sand", rift: "rift" };
+  function battleScene(env, foeType) {
+    if (env && REGION_SCENE[env]) return REGION_SCENE[env];   // named region
+    if (env && /^bg-/.test(env)) return env.slice(3);          // explicit scene
+    return (foeType && TYPE_SCENE[foeType]) || "field";        // element fallback
+  }
+
   // Two damage moves per type: [name, power, accuracy] — a reliable jab and
   // a heavy haymaker that sometimes whiffs.
   const MOVES = {
@@ -788,7 +813,20 @@
 
     const msg = el("div", { class: "battle-msg" }, title + " — " + label("a") + " VS " + label("b") + "!");
     const menu = el("div", { class: "battle-menu" });
-    const arena = el("div", { class: "battle-arena" }, [
+    // 🌍 Dress the stage: named region (opts.env) or the FOE's element, plus a
+    // matching ambient-weather layer. The foe is whichever side ISN'T my view.
+    const foeLead = mon(sides[other(myView)].units[0]);
+    const scene = battleScene(opts.env, (foeLead.types || [])[0]);
+    const wx = opts.weather || SCENE_WX[scene] || null;
+    const arena = el("div", { class: "battle-arena bg-" + scene }, [
+      wx ? el("div", { class: "battle-wx wx-" + wx },
+        Array.from({ length: wx === "rift" ? 14 : 24 }, () => {
+          const p = el("i");
+          p.style.left = (Math.random() * 100).toFixed(1) + "%";
+          p.style.animationDelay = (-Math.random() * 4).toFixed(2) + "s";
+          p.style.animationDuration = (2.2 + Math.random() * 2.6).toFixed(2) + "s";
+          return p;
+        })) : null,
       el("div", { class: "battle-platform foe" }), el("div", { class: "battle-platform you" }),
       hpBoxes[other(myView)], sprites[other(myView)], sprites[myView], hpBoxes[myView],
     ]);
