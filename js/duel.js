@@ -212,6 +212,34 @@
       }
       moves.push(mv);
     });
+    // 🧬 FORM-TYPE STAB: a battle form that gains a NEW type (Mega Charizard X
+    // → fire/DRAGON, Mega Gyarados → water/DARK, Primal Groudon → ground/FIRE)
+    // inherits its base's moveset, which has NO move of that new element — so
+    // it could never use its new STAB. Hand it the ladder move of any type it
+    // holds but can't yet hit with, so the type change actually MEANS something.
+    // Runs at every level (unlike the cap guarantee): the top rung above Lv58.
+    const baseId = baseOf(monId);
+    if (baseId && DEX[baseId]) {
+      const baseTypes = (DEX[baseId].t || []).slice(0, 2);
+      types.forEach((t) => {
+        if (baseTypes.indexOf(t) >= 0) return;                 // not a NEW type
+        if (moves.some((m) => m.pow && m.type === t)) return;  // already can hit with it
+        const mv = ladderMove(t, level);
+        if (!mv || moves.some((m) => m.name === mv.name)) return;
+        if (moves.length >= 4) {
+          // evict the weakest damaging move of a type this form does NOT hold
+          let worst = -1;
+          for (let i = 0; i < moves.length; i++) {
+            const mm = moves[i];
+            if (!mm.pow || types.indexOf(mm.type) >= 0) continue;
+            if (worst < 0 || mm.pow < moves[worst].pow) worst = i;
+          }
+          if (worst < 0) return;
+          moves.splice(worst, 1);
+        }
+        moves.push(mv);
+      });
+    }
     // 🩹 HP grows with the battle level, damage in lockstep via the move
     // curve — so every level band lands in the classic 3-4-hit rhythm.
     // Lv5 = 55% pool, Lv14 = 64%, Lv36 = 86%, Lv50+ = full (standard
@@ -2226,6 +2254,10 @@
       m.x = meg.x; m.types = meg.types; m.spe = meg.spe;
       m.atk = meg.atk * (1 + Math.min(0.1, 0.01 * (m.kos0 || 0)));
       m.name = meg.name;
+      // 🧬 adopt the mega's moveset so a type-CHANGING form can wield its new
+      // STAB (Mega Charizard X gains a Dragon move it never had as Charizard).
+      // Same-type megas keep their kit — only the gained element is added.
+      m.moves = meg.moves;
       S.megaSide[ptr.side] = true;
       try { if (u.attId && window.Store && Store.recordMega) Store.recordMega(u.attId, megaId); } catch (_) {}
       renderSprites(ptr.side); renderHp(ptr.side);
