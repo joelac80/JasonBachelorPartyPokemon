@@ -49,16 +49,17 @@
     fire: "volcano", ice: "snow", water: "sea", grass: "field", bug: "field",
     rock: "canyon", ground: "canyon", electric: "city", steel: "city",
     psychic: "lumi", fairy: "lumi", ghost: "dusk", dark: "dusk",
-    dragon: "sky", flying: "sky", poison: "cave", fighting: "field", normal: "field",
+    dragon: "sky", flying: "sky", poison: "cave", fighting: "stadium", normal: "field",
   };
   // Ambient weather reads off the SCENE (calm scenes stay clear so weather
   // stays a moment, not wallpaper): snowfields snow, volcanoes ember, canyons
   // blow sand, the ancient rift drifts with motes.
   const SCENE_WX = { snow: "snow", volcano: "ember", canyon: "sand", rift: "rift" };
   function battleScene(env, foeType) {
-    if (env && REGION_SCENE[env]) return REGION_SCENE[env];   // named region
-    if (env && /^bg-/.test(env)) return env.slice(3);          // explicit scene
-    return (foeType && TYPE_SCENE[foeType]) || "field";        // element fallback
+    if (env && REGION_SCENE[env]) return REGION_SCENE[env];   // named region (league halls)
+    if (env && /^bg-/.test(env)) return env.slice(3);          // explicit scene ("bg-snow")
+    if (env && TYPE_SCENE[env]) return TYPE_SCENE[env];        // an element — per-gym theming
+    return (foeType && TYPE_SCENE[foeType]) || "field";        // else the foe's element
   }
 
   // Two damage moves per type: [name, power, accuracy] — a reliable jab and

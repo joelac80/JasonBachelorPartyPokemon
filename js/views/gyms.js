@@ -317,7 +317,7 @@
         onDone: (ids, meta) => {
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym",
             gym: { idx: idx, leader: gym.leader, badge: gym.badge, style: lvl ? "story" : "challenge" },
-            env: gym.region,                              // 🌍 the arena wears the region
+            env: gym.type,                                // 🌍 each gym wears its own element (Blaine→volcano, Misty→sea…)
             level: lvl || undefined,
             a: { units: [{ attId: attId, defy: meta && meta.defiant,
               // ⚠ illegal picks fight in TRUE form (their disobedience is the tax)
