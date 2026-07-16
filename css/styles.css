@@ -2497,3 +2497,16 @@ html, body { overscroll-behavior-y: contain; }
   text-shadow: 1px 1px 0 rgba(0,0,0,.4); cursor: pointer; box-shadow: 0 2px 3px rgba(0,0,0,.22); }
 .tera-chip.own { box-shadow: 0 0 0 2.5px #fff inset, 0 2px 3px rgba(0,0,0,.28); }
 .tera-chip:active { transform: scale(.95); }
+/* 🧢 THE FINAL CHALLENGE — Ash's card past the podium */
+.ash-card { display: flex; align-items: center; gap: 12px; margin: 10px 0 14px; padding: 12px 14px;
+  border-radius: 16px; border: 2.5px solid #e6b800; background: linear-gradient(105deg, #fff8e0, #ffeeb8);
+  box-shadow: 0 3px 10px rgba(180,130,0,.25); }
+.ash-card.locked { border-color: #9aa2ad; background: linear-gradient(105deg, #f2f4f7, #e6e9ee); box-shadow: none; }
+.ash-card.beaten { border-color: #58b8c8; background: linear-gradient(105deg, #eefcff, #dcf4f8); }
+.ash-face { width: 56px; height: 56px; image-rendering: pixelated; }
+.ash-sil { font-size: 34px; width: 56px; text-align: center; filter: grayscale(1); opacity: .7; }
+.ash-txt { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.ash-txt b { font-family: var(--pixel); font-size: 11px; }
+.ash-txt span { font-size: 12.5px; color: #4a4130; }
+.ash-card.locked .ash-txt span { color: #5b6470; }
+.ash-card .btn { flex: 0 0 auto; }

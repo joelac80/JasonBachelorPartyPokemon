@@ -177,6 +177,53 @@
     return nm + (total > 2 ? " · " + total + " left" : "");
   }
 
+  // 🧢 vs POKÉMON MASTER ASH KETCHUM — the reward past every reward. His
+  // Masters Eight team, ace closing, and a world-champion script: Gengar
+  // GIGANTAMAXES, Lucario and Charizard MEGA EVOLVE, and Pikachu closes
+  // wreathed in Z-Power. He alone ignores the one-spectacle rule — the
+  // player still gets just one. Recorded on the league ledger (key "ash"),
+  // enshrined in the Hall of Fame.
+  function battleAsh(attId) {
+    if (Duel.poolFor(attId).length < 6) { alert("Bring SIX of your own for this one — the Master fields his full team."); return; }
+    const lay = el("div", { class: "league-intro final" }, [
+      el("div", { class: "league-intro-inner" }, [
+        el("div", { class: "league-intro-mt" }, "🧢"),
+        el("div", { class: "league-intro-flair" }, "THE FINAL CHALLENGE"),
+        el("div", { class: "league-intro-name" }, "POKÉMON MASTER ASH KETCHUM"),
+        el("div", { class: "league-intro-quote" },
+          "The boy from Pallet Town who never stopped walking. Nine regions, every league, the Masters Eight crown — and one last battle before the sun. His whole team transforms: Gigantamax Gengar, Mega Lucario, Mega Charizard… and Pikachu, wreathed in Z-Power, closes."),
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); pick(); } }, "⚡ I'm ready"),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    requestAnimationFrame(() => lay.classList.add("go"));
+    sfx("fanfare");
+    function pick() {
+      Duel.pickParty({ attId: attId, min: 6, max: 6,
+        title: "vs POKÉMON MASTER ASH — pick your 6",
+        hint: "🧢 His full champion team is waiting, and EVERY phase of it transforms. You get ONE spectacle of your own — spend it well.",
+        onDone: (ids) => {
+          Duel.start({ mode: "local", title: "the Final Challenge",
+            env: "bg-dusk",                              // 🌅 fought into the setting sun
+            league: { key: "ash", name: "ASH KETCHUM", rank: "Pokémon Master", region: "", pts: 30 },
+            a: { units: [{ attId: attId, monIds: ids }] },
+            b: { units: [{ npc: "POKÉMON MASTER ASH", ai: true,
+              // Sirfetch'd → Dragonite → G-MAX Gengar → MEGA Lucario → MEGA Charizard X → Z-Pikachu
+              monIds: [865, 149, 94, 448, 6, 25],
+              boost: 1.5, vsFace: 25,
+              gimmicks: [null, null, { g: "dyna", gmax: true }, { g: "mega", megaId: 10059 }, { g: "mega", megaId: 10034 }, { g: "z" }],
+              speak: { 5: ["Pikachu — I choose YOU! One more time, buddy!"] },
+              ace: { line: "This is it — everything Pikachu and I have, right here, right now!" },
+              outro: { lose: "…Wow. That was everything we had — and you took it. The torch is yours now, Champion. Take care of them.",
+                       win: "Not yet! That fire you've got — keep feeding it. We'll be waiting, just past the horizon!" } }] },
+            onResult: () => Router.render() });
+        } });
+    }
+  }
+
   function view(root, opts) {
     opts = opts || {};
     // When embedded inside The Journey (region area) we skip our own page title.
@@ -187,6 +234,40 @@
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
     if (!attId) { root.appendChild(el("p", { class: "hint" }, "Add trainers first (Squad page).")); return; }
+
+    // 🧢 THE FINAL CHALLENGE — conquer all nine regions (Top Champion GEETA)
+    // AND win this Cup, and a trainer from Pallet Town comes down from the
+    // stands: POKÉMON MASTER ASH KETCHUM, fielding the champion team he had
+    // before he walked into the sun — and EVERY phase of it transforms.
+    (function finalChallenge() {
+      const cupWon = ((Store.state.tourneyWins || {})[attId] || 0) > 0;
+      const geeta = Store.leagueWins(attId).indexOf("geeta") >= 0;
+      const beaten = Store.leagueWins(attId).indexOf("ash") >= 0;
+      if (!geeta && !cupWon) return;                 // not even a whisper yet
+      if (!(geeta && cupWon)) {                      // half the key → a silhouette in the stands
+        root.appendChild(el("div", { class: "ash-card locked" }, [
+          el("div", { class: "ash-sil" }, "🧢"),
+          el("div", { class: "ash-txt" }, [
+            el("b", {}, "Someone is watching from the stands…"),
+            el("span", {}, geeta
+              ? "Win the Champions Cup, and he'll come down to meet you."
+              : "Conquer all nine regions, then win this Cup — and he'll come down to meet you."),
+          ]),
+        ]));
+        return;
+      }
+      root.appendChild(el("div", { class: "ash-card" + (beaten ? " beaten" : "") }, [
+        el("img", { class: "ash-face", src: SP[25] || Store.sprite(25), alt: "" }),
+        el("div", { class: "ash-txt" }, [
+          el("b", {}, "🧢 POKÉMON MASTER — ASH KETCHUM"),
+          el("span", {}, beaten
+            ? "The torch is passed — but he'll always come back for one more."
+            : "“So YOU'RE the one who conquered every region AND my Cup! I've been waiting my whole journey for a battle like this!”"),
+        ]),
+        el("button", { class: "btn spin-btn", onClick: () => battleAsh(attId) },
+          beaten ? "🔁 One more, buddy" : "⚡ THE FINAL CHALLENGE"),
+      ]));
+    })();
 
     // Lock in the 6-mon tournament squad, then build the bracket.
     const enter = (att) => {

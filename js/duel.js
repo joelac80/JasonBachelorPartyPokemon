@@ -620,6 +620,10 @@
         ace: u.ace || null,                            // {line} for the last-mon moment
         outro: u.outro || null,                        // {win, lose} closing quotes
         gimmick: u.gimmick || null,                    // 🎪 the ace's region spectacle (z/dyna/tera/mega)
+        // 🧢 a WORLD-CHAMPION script: per-party-slot transforms ({g, megaId,
+        // teraType, gmax} or null, aligned to monIds) — the ultimate boss
+        // doesn't share the one-spectacle rule; each phase gets its moment.
+        gimmicks: u.gimmicks || null,
         party: party, cur: 0, potions: 2, courage: true, armed: false };
     }
     const sides = {
@@ -1890,13 +1894,15 @@
               // 🏛 Hall of Fame: the champion AND the team that did it, forever.
               // Stamp WHICH league/region was won so the plaque can name it.
               const enshrine = () => { if (fresh) { s.hof = s.hof || []; s.hof.push({ attId: player.attId, ts: now(), party: player.party.map((x) => x.id), key: lg.key, champ: lg.name, rank: lg.rank, region: lg.region || "" }); } };
-              if (lg.key === "red") { enshrine(); Store.chron(s, "🗻", player.name + " climbed Mt. Silver and defeated RED. There is nothing left to prove. THE ABSOLUTE CHAMPION."); }
+              if (lg.key === "ash") { enshrine(); Store.chron(s, "🧢", player.name + " defeated POKÉMON MASTER ASH KETCHUM — Pikachu bows, the torch is passed, and a silhouette walks into the sun. THE JOURNEY IS COMPLETE."); }
+              else if (lg.key === "red") { enshrine(); Store.chron(s, "🗻", player.name + " climbed Mt. Silver and defeated RED. There is nothing left to prove. THE ABSOLUTE CHAMPION."); }
               else if (lg.final) { enshrine(); Store.chron(s, "🎹", player.name + " out-dueled CYNTHIA in the final battle — the piano falls silent. THE TRUE CHAMPION OF CHAMPIONS."); }
               else if (lg.rank === "Top Champion") { enshrine(); Store.chron(s, "🏆", player.name + " toppled TOP CHAMPION " + lg.name + " — nine regions conquered. Enshrined in the HALL OF FAME!"); }
               else if (lg.rank === "Champion") { enshrine(); Store.chron(s, "👑", player.name + " defeated Champion " + lg.name + " — welcome to the HALL OF FAME!" + (lg.key === "lance" && fresh ? " …the summit of Mt. Silver just rumbled." : "")); }
               else Store.chron(s, "⭐", player.name + " toppled " + lg.rank + " " + lg.name + "!");
             } else {
-              if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " descends the mountain to train.");
+              if (lg.key === "ash") Store.chron(s, "🧢", "ASH grins and rubs his nose — \"Not yet!\" " + player.name + " will be back for the torch.");
+              else if (lg.key === "red") Store.chron(s, "🗻", "RED said nothing. " + player.name + " descends the mountain to train.");
               else if (lg.final) Store.chron(s, "🎹", "CYNTHIA remains undefeated — the piano plays on for " + player.name + ".");
               else Store.chron(s, "🤖", lg.rank + " " + lg.name + " stands undefeated — " + player.name + " will be back.");
             }
@@ -2280,6 +2286,20 @@
       if (m._recharge) { doMove(u, ptr, 0, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
       // Mid two-turn move: it's locked into completing the charge move.
       if (m._charging) { doMove(u, ptr, m._charging.move, (livingEnemies(ptr.side)[0] || { i: 0 }).i); return; }
+      // 🧢 A WORLD-CHAMPION SCRIPT (u.gimmicks): the ultimate boss doesn't
+      // share the one-spectacle-per-side rule — each scripted party slot
+      // transforms on its first action (Mega Charizard, G-Max Gengar,
+      // Z-Pikachu…). Free, like every transform; the attack follows.
+      if (u.gimmicks) {
+        const plan = u.gimmicks[u.cur];
+        if (plan && !m._gimmed) {
+          m._gimmed = true;
+          if (plan.g === "mega" && plan.megaId) { megaEvolve(u, ptr, plan.megaId); return; }
+          if (plan.g === "z") { zPower(u, ptr); return; }
+          if (plan.g === "dyna") { dynamax(u, ptr, plan.gmax); return; }
+          if (plan.g === "tera") { teraize(u, ptr, plan.teraType || aiTeraType(u, ptr)); return; }
+        }
+      }
       // 🎪 THE ACE'S SPECTACLE — a boss unleashes its region's gimmick the
       // moment its LAST Pokémon (a 3+ squad down to one) hits the field: a
       // Paldea leader terastallizes, Galar Dynamaxes, Alola fires a Z-Move,
@@ -2402,7 +2422,7 @@
       msg.textContent = "🌀 " + m.name + " is surrounded by Z-Power! Its next strike will be devastating!";
       renderMenu();
     }
-    function dynamax(u, ptr) {
+    function dynamax(u, ptr, gmax) {
       const m = mon(u);
       S.megaSide[ptr.side] = true;
       const ratio = m.hpMax ? m.hp / m.hpMax : 1;
@@ -2413,7 +2433,9 @@
       if (u._monEl) u._monEl.classList.add("dyna");
       renderHp(ptr.side);
       sfx("fanfare");
-      msg.textContent = "🔴 " + m.name + " DYNAMAXED — it towers over the field! (3 turns)";
+      msg.textContent = gmax
+        ? "🔴 " + m.name + " GIGANTAMAXED — its shape itself has changed! It looms over the whole field! (3 turns)"
+        : "🔴 " + m.name + " DYNAMAXED — it towers over the field! (3 turns)";
       renderMenu();
     }
     function teraize(u, ptr, pick) {
