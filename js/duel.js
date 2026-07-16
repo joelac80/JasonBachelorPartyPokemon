@@ -598,12 +598,28 @@
     // (speak/ace/outro), which always play. Repetition is the enemy of cool.
     const chatty = !!(opts.league || opts.movie || opts.legend || opts.secret);
 
+    // 🎛️ CARTRIDGE MODE — the real games' stats and damage math, hidden
+    // behind a per-phone switch (cartridge-mode.js). A remote setup pins the
+    // flag for BOTH phones (opts.cartridge) so the engines never disagree.
+    const CART = !!(opts.cartridge != null ? opts.cartridge
+      : (window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS));
+
     function makeUnit(u) {
       // NPC units (gym leaders) have no attendee — just a name and an AI flag.
       const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
+      // 🎛️ Cartridge Mode: every AI mon fights at its CURVE level (the level
+      // plan replaces boost multipliers entirely — see cartridge-mode.js).
+      const cartPlan = CART && u.ai ? CartridgeMode.plan(opts, u) : null;
       const party = (u.monIds || []).map((id, i) => {
         if (!id) return null;
-        const m = statsFor(id, opts.level); m.hp = m.hpMax;
+        let mid = id, mLvl = 0;
+        if (CART) {
+          mLvl = cartPlan ? cartPlan[i] : (opts.level || 50);
+          // era law at ITS OWN level: a story ace steps down to the form its
+          // (edged) level allows — the true-form one-shot at Lv 14 is gone
+          if (opts.level && u.ai && window.JourneyStyle) mid = JourneyStyle.formAt(id, mLvl);
+        }
+        const m = statsFor(mid, CART ? mLvl : opts.level); m.hp = m.hpMax;
         // ✨ shiny is a trainer's own catch — but an NPC boss can FORCE it via
         // u.shiny (true = all, or an array of ids). Mewtwo uses this to field his
         // cloned army in their eerie shadow palette (shiny Charizard is jet-black).
@@ -620,6 +636,16 @@
         m.kos0 = rec0.kos || 0;
         m.kos = 0;
         m.atk = m.atk * (1 + Math.min(0.1, 0.01 * m.kos0));
+        if (CART) {
+          // 🎛️ real stats at a real level; the boost multiplier is already
+          // spent (it became the level edge), only raid hpBoost survives
+          const cs = CartridgeMode.statsAt(mid, mLvl);
+          m.lvl = mLvl; m.cart = cs; m.spe = cs.spe;
+          m.vetMul = 1 + Math.min(0.1, 0.01 * m.kos0);
+          m.hpMax = cs.hp;
+          if (u.hpBoost && u.hpBoost !== 1) m.hpMax = Math.round(m.hpMax * u.hpBoost);
+          m.hp = m.hpMax;
+        } else {
         // League-calibre foes (Elite Four/Champion/RED) hit and endure
         // harder than any gym — rank boost keeps the ladder a ladder.
         // Accepts a scalar (whole team) or an ARRAY aligned to monIds (the
@@ -629,6 +655,7 @@
         // 🩸 BOSS: a raid-style extended HP pool (Safari legendary bosses) —
         // HP only, so the fight is long rather than one-shot lethal.
         if (u.hpBoost && u.hpBoost !== 1) { m.hpMax = Math.round(m.hpMax * u.hpBoost); m.hp = m.hpMax; }
+        }
         m.species = m.name;
         // 🔡 A boss can field lettered Unown (u.glyphs, aligned to monIds) so a
         // swarm can spell a word — the sprite + name follow the glyph.
@@ -981,6 +1008,7 @@
         const setup = { mode: "local", title: title, first: S.first,
           level: opts.level || null,   // battle-wide level: Lv tags + moveset caps must match on watchers
           gims: opts.gims || null,     // 🏟 gimmick ruleset rides along (cups, custom friendlies)
+          cartridge: CART,             // 🎛️ both phones must run the SAME engine
           gym: opts.gym || null, league: lg || null, hof: opts.hof || null,
           a: { shared: !!(opts.a || {}).shared, units: ((opts.a || {}).units || []) },
           b: { shared: !!(opts.b || {}).shared, units: ((opts.b || {}).units || []) } };
@@ -1326,6 +1354,25 @@
         if (teff === 0) return 0;
         const off = mv.cat === "spec" ? "spa" : "atk";
         const def = mv.cat === "spec" ? "spd" : "def";
+        // 🎛️ CARTRIDGE MODE: the real formula — level term, true Atk/Def
+        // division, full 1.5 STAB (2.0 tera-on-own-type), the same roll and
+        // crit the order baked. Stages scale the STATS, cartridge-style.
+        if (CART) {
+          const tm2 = mon(target);
+          const spec = mv.cat === "spec";
+          const ca = m.cart || CartridgeMode.statsAt(m.id || 1, m.lvl || 50);
+          const cd = tm2.cart || CartridgeMode.statsAt(tm2.id || 1, tm2.lvl || 50);
+          let A = (spec ? ca.spa : ca.atk) * stageMul(m.stg[off]);
+          if (+m.id === 10094) A *= 2;               // ⚡ the Light Ball, canon: both categories
+          const D = Math.max(1, (spec ? cd.spd : cd.def) * stageMul(tm2.stg[def]));
+          const burn = (mv.cat === "phys" && m.status === "brn") ? 0.5 : 1;
+          const orig = m._teraBase || m.types || [];
+          const own = orig.indexOf(mv.type) >= 0;
+          const stab = (m._tera && m._tera === mv.type) ? (own ? 2 : 1.5) : (own ? 1.5 : 1);
+          const raw = Math.floor(Math.floor(Math.floor(2 * (m.lvl || 50) / 5 + 2) * mv.pow * A / D) / 50) + 2;
+          return Math.max(1, Math.round(raw * teff * (o.crit ? 1.5 : 1) * (o.zed ? 1.8 : 1)
+            * (o.roll || 0.92) * stab * burn * spreadMult * (m.vetMul || 1)));
+        }
         const statMod = stageMul(m.stg[off]) / stageMul(mon(target).stg[def]);
         const burnMod = (mv.cat === "phys" && m.status === "brn") ? 0.5 : 1;
         // 🎯 STAB: a move of the attacker's OWN element hits ×1.2 — read off
@@ -2284,7 +2331,10 @@
       // streak stings instead of deleting the run. The Dire Hit still
       // guarantees the crit.
       const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.125 : 0.05));
-      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * (zed ? 1.8 : 1) * m.atk * offTilt(m, mv) * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
+      // the damage roll is baked HERE (synced in the order) — the live model
+      // folds it into base; 🎛️ cartridge applies it at resolution (o.roll)
+      const roll = 0.85 + Math.random() * 0.15;
+      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * (zed ? 1.8 : 1) * m.atk * offTilt(m, mv) * (crit ? 1.5 : 1) * roll));
       // Secondary effect: does it proc? (self-buff status moves always do.)
       let fxHit = false, slpTurns = 0;
       if (mv.fx && !miss) {
@@ -2311,11 +2361,14 @@
       // moves that inflict it) are all baked here — every phone replays the
       // same stumble. A mid-charge mon still completes its move.
       const conf = (!m._charging && (m._confN || 0) > 0)
-        ? { self: Math.random() < 0.5, dmg: Math.max(1, Math.round(40 * m.atk * (0.85 + Math.random() * 0.15))) }
+        ? { self: Math.random() < 0.5, dmg: CART && m.cart
+            // 🎛️ cartridge confusion: the classic 40-pow typeless self-hit
+            ? Math.max(1, Math.round((Math.floor(Math.floor(Math.floor(2 * (m.lvl || 50) / 5 + 2) * 40 * m.cart.atk / Math.max(1, m.cart.def)) / 50) + 2) * (0.85 + Math.random() * 0.15)))
+            : Math.max(1, Math.round(40 * m.atk * (0.85 + Math.random() * 0.15))) }
         : null;
       const confN = 2 + Math.floor(Math.random() * 3);
       sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
-        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, statusRoll: statusRoll,
+        order: { kind: "move", move: mIdx, tUnit: tIdx, miss: miss, crit: crit, base: base, roll: roll, statusRoll: statusRoll,
           armed: armed, courage: armed, loaf: loaf, conf: conf, confN: confN, zed: zed,
           pri: (mIdx === 99 ? 0 : (mv.pri || 0)), fxHit: fxHit, slpTurns: slpTurns } });
     }
@@ -2435,15 +2488,17 @@
       const m = mon(u);
       // level-capped battles (True Story, Stadium cups) mega WITHIN the cap —
       // the form swaps, the HP pool and curve do not escape the level.
-      const meg = statsFor(megaId, opts.level);
+      const meg = statsFor(megaId, CART ? (m.lvl || 50) : opts.level);
       const ratio = m.hpMax ? (m.hp / m.hpMax) : 1;
       const was = m.name;
       m.megaId = megaId;
       m.hpMax = meg.hpMax;
-      m.hp = Math.max(1, Math.round(meg.hpMax * ratio));
       m.x = meg.x; m.types = meg.types; m.spe = meg.spe;
       m.lean = meg.lean;   // ⚖️ a stat-flipped mega (Mewtwo X!) changes its identity
       m.atk = meg.atk * (1 + Math.min(0.1, 0.01 * (m.kos0 || 0)));
+      // 🎛️ cartridge: the mega's REAL stats at the same level (HP ratio kept)
+      if (CART) { m.cart = CartridgeMode.statsAt(megaId, m.lvl || 50); m.hpMax = m.cart.hp; m.spe = m.cart.spe; }
+      m.hp = Math.max(1, Math.round(m.hpMax * ratio));
       m.name = meg.name;
       // 🧬 adopt the mega's moveset so a type-CHANGING form can wield its new
       // STAB (Mega Charizard X gains a Dragon move it never had as Charizard).

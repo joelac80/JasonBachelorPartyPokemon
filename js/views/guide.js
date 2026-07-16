@@ -57,6 +57,26 @@
       el("a", { class: "btn spin-btn", href: "#/home" }, "🏠 Back to Home"),
       el("a", { class: "btn subtle", href: "#/help" }, "📖 Field Guide — setup, Live Sync & troubleshooting"),
     ]));
+
+    // 🎛️ the hidden workshop door: 7 quick taps on the version dot flips
+    // CARTRIDGE MODE (real stats, real damage math, level-driven bosses).
+    let taps = 0, tapT = 0;
+    const cartOn = () => window.CartridgeMode && CartridgeMode.on();
+    const dot = el("p", { class: "hint", style: "text-align:center;opacity:.45;user-select:none;",
+      onClick: () => {
+        const now = Date.now();
+        taps = (now - tapT < 1600) ? taps + 1 : 1;
+        tapT = now;
+        if (taps >= 7 && window.CartridgeMode) {
+          taps = 0;
+          const on = CartridgeMode.toggle();
+          dot.textContent = "• v" + (on ? " 🎛️" : "");
+          alert(on
+            ? "🎛️ CARTRIDGE MODE — ON (beta)\n\nReal base stats at real levels, the true damage formula, and bosses that outlevel you instead of out-multiplying you. Every region climbs 1 → Champion, then resets.\n\nTap 7 more times to switch back."
+            : "🎛️ CARTRIDGE MODE — OFF\n\nBack to the classic engine.");
+        }
+      } }, "• v" + (cartOn() ? " 🎛️" : ""));
+    root.appendChild(dot);
   }
 
   window.Views = window.Views || {};
