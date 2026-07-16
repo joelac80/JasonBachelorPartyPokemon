@@ -42,7 +42,11 @@
     { leader: "FLANNERY",  badge: "Heat",     type: "fire",     region: "Hoenn",  team: [323, 219, 229, 324] , defeat: "Oh… I've still got a lot to learn. But my fire isn't out yet!" },
     { leader: "NORMAN",    badge: "Balance",  type: "normal",   region: "Hoenn",  team: [335, 295, 143, 289] , defeat: "…No excuses. As a Gym Leader — and a father — I accept this loss." },
     { leader: "WINONA",    badge: "Feather",  type: "flying",   region: "Hoenn",  team: [279, 277, 227, 357, 334] , defeat: "Even with the wind at my back… you flew higher." },
-    { leader: "TATE&LIZA", badge: "Mind",     type: "psychic",  region: "Hoenn",  team: [344, 282, 178, 337, 338] , defeat: "Our combination… broken! Your bond is stronger than ours!" },
+    // 👥 CANON DOUBLE BATTLE: the twins fight as TWO trainers on one side —
+    // Tate flies Xatu into Solrock, Liza grounds Claydol into Lunatone.
+    { leader: "TATE&LIZA", badge: "Mind",     type: "psychic",  region: "Hoenn",  team: [178, 337, 344, 338],
+      duo: { names: ["TATE", "LIZA"], teams: [[178, 337], [344, 338]] },
+      defeat: "Our combination… broken! Your bond is stronger than ours!" },
     { leader: "JUAN",      badge: "Rain",     type: "water",    region: "Hoenn",  team: [350, 340, 342, 365, 230] , defeat: "Magnifique! An elegance even water cannot mirror." },
     // ---- Sinnoh (idx 24-31) — needed before the Sinnoh Elite Four ----
     { leader: "ROARK",     badge: "Coal",     type: "rock",     region: "Sinnoh", team: [464, 76, 476, 409] , defeat: "This is embarrassing… I dug deep, and you went deeper." },
@@ -84,7 +88,10 @@
     { leader: "ALLISTER",  badge: "Ghost",    type: "ghost",    region: "Galar",  team: [864, 867, 778, 94] , defeat: "…y-you're scary strong… the masks liked you, though…" },
     { leader: "OPAL",      badge: "Fairy",    type: "fairy",    region: "Galar",  team: [468, 110, 303, 869] , defeat: "Hmph! You've got some pink in you after all, dear." },
     { leader: "GORDIE",    badge: "Rock",     type: "rock",     region: "Galar",  team: [874, 689, 526, 839] , defeat: "Ugh… Mum is NEVER letting me hear the end of this. Good match." },
-    { leader: "RAIHAN",    badge: "Dragon",   type: "dragon",   region: "Galar",  team: [330, 844, 776, 1018] , defeat: "Just snapped a selfie of my own defeat — that's a first. GG." },
+    // 👥 CANON DOUBLE BATTLE: Raihan runs Galar's only double gym SOLO —
+    // he fields two at once (shared party), weather-team style.
+    { leader: "RAIHAN",    badge: "Dragon",   type: "dragon",   region: "Galar",  team: [330, 844, 776, 1018], duoShared: true,
+      defeat: "Just snapped a selfie of my own defeat — that's a first. GG." },
     // ---- Paldea (Gen 9) ----
     { leader: "KATY",      badge: "Bug",      type: "bug",      region: "Paldea", team: [416, 168, 212, 918] , defeat: "Oh my — you've got quite the sweet tooth for victory, don't you?" },
     { leader: "BRASSIUS",  badge: "Grass",    type: "grass",    region: "Paldea", team: [930, 549, 556, 185] , defeat: "Magnificent… defeat, too, is art! AVANT-GARDE!" },
@@ -300,6 +307,39 @@
       const size = (JS0 && JS0.isStory(attId) && JS0.gymSize) ? Math.min(gym.team.length, JS0.gymSize(idx)) : gym.team.length;
       const why = gymLockedWhy(idx, attId);
       if (why) { alert("🔒 " + why); return; }
+      // 👥 CANON DOUBLE BATTLES — Tate & Liza fight as TWO trainers on one
+      // side; Raihan solo-doubles with a shared party. The player leads two
+      // of their own at once (first two picks step out together).
+      if (gym.duo || gym.duoShared) {
+        const total = gym.duo ? gym.duo.teams[0].length + gym.duo.teams[1].length : gym.team.length;
+        if (Duel.poolFor(attId).length < total) {
+          alert(gym.leader + " fights DOUBLES with " + total + " Pokémon — you need " + total + " of your own (catch more in the Safari!).");
+          return;
+        }
+        const lvl2 = (JS0 && JS0.isStory(attId)) ? JS0.gymLevel(idx) : 0;
+        // 📖 story devolve, ace (last slot) TRUE — same law as singles
+        const dv = (ids) => lvl2 ? ids.map((id, i) => i === ids.length - 1 ? id : JS0.formAt(id, lvl2)) : ids.slice();
+        const gim = ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[gym.region];
+        Duel.pickParty({ attId: attId, min: total, max: total, level: lvl2 || undefined,
+          title: "vs " + gym.leader + " — pick EXACTLY " + total,
+          hint: "⚔⚔ DOUBLE BATTLE — two of yours on the field at once (first two picks lead)." +
+            (lvl2 ? " 📖 True Story: fought at Lv " + lvl2 + "." : ""),
+          onDone: (ids, meta) => {
+            const mine = lvl2 ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS0.formAt(id, lvl2)) : ids;
+            Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym — DOUBLES",
+              gym: { idx: idx, leader: gym.leader, badge: gym.badge, style: lvl2 ? "story" : "challenge" },
+              env: gym.type, level: lvl2 || undefined,
+              a: { shared: true, units: [{ attId: attId, defy: meta && meta.defiant, monIds: mine },
+                                         { attId: attId, defy: meta && meta.defiant, monIds: mine }] },
+              b: gym.duo
+                ? { units: gym.duo.names.map((nm, k) => ({ npc: "LEADER " + nm, ai: true, monIds: dv(gym.duo.teams[k]),
+                    gimmick: gim, outro: k === 0 && gym.defeat ? { lose: gym.defeat } : undefined })) }
+                : { shared: true, units: [0, 1].map((k) => ({ npc: "LEADER " + gym.leader, ai: true, monIds: dv(gym.team),
+                    gimmick: gim, outro: k === 0 && gym.defeat ? { lose: gym.defeat } : undefined })) },
+              onResult: (winSide) => { Router.render(); if (winSide === "a") badgePop(idx, attId); maybeEncounter(attId, idx); } });
+          } });
+        return;
+      }
       if (Duel.poolFor(attId).length < size) {
         alert("Leader " + gym.leader + " runs " + size + " Pokémon — you need " + size + " of your own to challenge (catch more in the Safari!).");
         return;
@@ -370,6 +410,11 @@
           : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, (function () {
               const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
               const story = !!(window.JourneyStyle && me && JourneyStyle.isStory(me));
+              // 👥 canon double gyms announce themselves up front
+              if (g.duo || g.duoShared) {
+                return "⚔⚔ Double Battle (" + g.team.length + "v" + g.team.length +
+                  (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
+              }
               // 📖 True Story shows the era-true roster size AND level up front
               const n = story && JourneyStyle.gymSize ? Math.min(g.team.length, JourneyStyle.gymSize(idx)) : g.team.length;
               return "⚔ Challenge (" + n + "v" + n + (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
