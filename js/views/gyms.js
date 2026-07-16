@@ -146,6 +146,27 @@
     // trainer's signature and always fights in its TRUE form (Misty's
     // STARMIE at Lv24, exactly like the games).
     const foes = lvl ? t.team.map((id, i) => i === t.team.length - 1 ? id : JS.formAt(id, lvl)) : t.team.slice();
+    // 👥 A DUO ambush (Jessie & James!) is a real DOUBLE battle — two foes
+    // step out of the bushes at once, and you lead two of your own.
+    if (t.duo) {
+      if (Duel.poolFor(attId).length < 2) return;
+      const dv = (ids2) => lvl ? ids2.map((id, i) => i === ids2.length - 1 ? id : JS.formAt(id, lvl)) : ids2.slice();
+      Duel.pickParty({ attId: attId, min: 2, max: size, level: lvl || undefined,
+        title: "vs ??? & ??? — pick 2 or more",
+        hint: "⚔⚔ A DOUBLE ambush! Two voices in the bushes… your first two picks step out together. Bragging rights only." +
+          (lvl ? " (True Story: Lv " + lvl + ".)" : ""),
+        onDone: (ids, meta) => {
+          const mine = lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids;
+          Duel.start({ mode: "local", title: "a double ambush", level: lvl || undefined,
+            encounter: { foe: t.title + " " + t.name, who: t.name },
+            a: { shared: true, units: [{ attId: attId, defy: meta && meta.defiant, monIds: mine },
+                                       { attId: attId, defy: meta && meta.defiant, monIds: mine }] },
+            b: { units: t.duo.names.map((nm, k) => ({ npc: nm, ai: true, monIds: dv(t.duo.teams[k]), boost: 1.12,
+                 outro: k === 0 ? (t.outro || undefined) : undefined })) },
+            onResult: () => Router.render() });
+        } });
+      return;
+    }
     Duel.pickParty({ attId: attId, min: 1, max: size, level: lvl || undefined,
       // 🎭 masked surprises stay masked through the pick — the VS intro is the reveal
       title: "vs " + (isStory ? t.title + " " + t.name : "???") + " — pick up to " + size,

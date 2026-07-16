@@ -129,6 +129,25 @@
       quote: "Let us paint a masterpiece together — you, me, and the roar of dragons!" },
     { key: "geeta", region: "Paldea", name: "GEETA", rank: "Top Champion", type: "fairy",        team: [956, 713, 673, 976, 983, 970], pts: 24, boost: 1.55, needs: "hassel", reveal: "leon", mystery: true,
       quote: "As Top Champion, I oversee every league. Show me why you climbed all nine regions to reach me." },
+    // ---- 💠 BLUEBERRY ACADEMY (Indigo Disk DLC) — the league beneath the
+    // sea, unlocked past GEETA. The BB League fights by ITS house rule:
+    // every chamber is a DOUBLE battle, and every ace terastallizes.
+    { key: "crispin", region: "Blueberry", name: "CRISPIN", rank: "Elite Four", type: "fire", doubles: true,
+      team: [663, 103, 323, 467, 257], pts: 26, boost: 1.5, needs: "geeta", reveal: "geeta",
+      quote: "I cook with FIRE, and I battle the same way — two burners at once! Hope you brought seconds!" },
+    { key: "amarys", region: "Blueberry", name: "AMARYS", rank: "Elite Four", type: "steel", doubles: true,
+      team: [227, 395, 212, 579, 376], pts: 26, boost: 1.5, needs: "crispin", reveal: "geeta",
+      quote: "Statement: pairs operate at higher efficiency than units. Observation: you are about to be outnumbered by design." },
+    { key: "lacey", region: "Blueberry", name: "LACEY", rank: "Elite Four", type: "fairy", doubles: true,
+      team: [547, 730, 210, 869, 530], pts: 26, boost: 1.5, needs: "amarys", reveal: "geeta",
+      quote: "Everyone expects the cute ones~ but daddy taught me to finish with a DRILL. Two at a time, if you please!" },
+    { key: "drayton", region: "Blueberry", name: "DRAYTON", rank: "Elite Four", type: "dragon", doubles: true,
+      team: [149, 330, 254, 612, 1018], pts: 26, boost: 1.52, needs: "lacey", reveal: "geeta",
+      quote: "Effort's overrated — dragons in stereo do all my homework for me. Try not to make me stand up, yeah?" },
+    { key: "kieran", region: "Blueberry", name: "KIERAN", rank: "Champion", type: "poison", doubles: true,
+      team: [62, 469, 727, 861, 474, 1019], pts: 30, boost: 1.56, needs: "drayton", reveal: "geeta", mystery: true,
+      intro: "The terarium's last door. The kid who lost everything to become the strongest is waiting — and he does NOT smile anymore.",
+      quote: "I trained until everything else fell away. The whole academy calls me Champion now. So show me — SHOW ME what you've got!!" },
   ];
   // 🗣 What each leader ACTUALLY says when they fall — canon post-battle
   // quotes from the games (lightly trimmed to fit a speech bubble). Passed to
@@ -181,6 +200,11 @@
     larryf: "…That's a wrap. No excuses — it was a fair loss. Time to hit my usual spot for dinner.",
     hassel: "I-I-I felt your passion loud and clear! *sniffle* What a magnificent battle…",
     geeta: "Now THAT was a stupendous battle. I concede — every league is proud to call you its finest.",
+    crispin: "BURNT! Totally burnt! …Man. Guess I gotta go invent a new sauce about this feeling.",
+    amarys: "Result: defeat. Analysis: …your pair fought as one unit. Conclusion: I have more to learn. Thank you.",
+    lacey: "Aww, drilled right through us~! Okay okay, you win. Daddy's gonna hear ALL about you.",
+    drayton: "Whoa whoa, I actually stood up for that one. You beat my dragons in stereo — respect, seriously.",
+    kieran: "…I lost? After everything I… no. No, that was a REAL battle. Thank you. I think… I think I can smile about this one.",
   };
   LEAGUE.forEach((st) => { if (DEFEAT[st.key]) st.defeat = DEFEAT[st.key]; });
   window.LEAGUE_STAGES = LEAGUE;
@@ -296,6 +320,33 @@
     const squad = size < st.team.length ? st.team.slice(0, size - 1).concat([st.team[st.team.length - 1]]) : st.team.slice();
     // 📖 story devolve — except the ACE (last slot), which fights TRUE
     const foes = lvl ? squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl)) : squad;
+    // 💠 BLUEBERRY HOUSE RULE: every chamber is a DOUBLE battle — the
+    // chamber fields two at once (shared party), and so do you.
+    if (st.doubles) {
+      chamberIntro(idx, () => {
+        Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
+          title: "vs " + foeName + " — pick EXACTLY " + size,
+          hint: "⚔⚔ DOUBLE BATTLE — the Blueberry League fights two at a time (your first two picks lead). The lineup is hidden." +
+            (lvl ? " 📖 True Story: fought at Lv " + lvl + "." : ""),
+          onDone: (ids, meta) => {
+            const mine = lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids;
+            Duel.start({ mode: "local", title: "the Blueberry League — DOUBLES",
+              level: lvl || undefined, env: "bg-sea",
+              league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal,
+                style: lvl ? "story" : "challenge" },
+              a: { shared: true, units: [{ attId: attId, defy: meta && meta.defiant, monIds: mine },
+                                         { attId: attId, defy: meta && meta.defiant, monIds: mine }] },
+              b: { shared: true, units: [0, 1].map((k) => ({ npc: st.rank.toUpperCase() + " " + st.name, ai: true, monIds: foes.slice(),
+                   boost: st.boost || 1.15, gimmick: "tera",
+                   outro: k === 0 && st.defeat ? { lose: st.defeat } : undefined })) },
+              onResult: () => {
+                Router.render();
+                if (window.StoryBeats) StoryBeats.afterChampion(attId, st);
+              } });
+          } });
+      });
+      return;
+    }
     chamberIntro(idx, () => {
       Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
         title: "vs " + foeName + " — pick EXACTLY " + size,

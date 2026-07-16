@@ -91,10 +91,25 @@
       Galar:  [24, 110, 202, 52],                //  the Rocket Gacha classics
       Paldea: [336, 686, 778, 202, 52],          //  the greatest-hits farewell tour
     },
+    // 👥 who owns what — Jessie's mons vs James's (Meowth tags along with
+    // James). Aces LAST per side; the ambush fights as a real DOUBLE battle.
+    duoTeams: {
+      Kanto:  [[108, 23],  [52, 109]],       // Lickitung→EKANS · Meowth→KOFFING
+      Johto:  [[202, 24],  [52, 71, 110]],   // Wobbuffet→ARBOK · Victreebel→WEEZING
+      Hoenn:  [[269, 336], [52, 358, 331]],  // Dustox→SEVIPER · Chimecho→CACNEA
+      Sinnoh: [[469, 336], [52, 439, 455]],  // Yanmega→SEVIPER · Mime Jr.→CARNIVINE
+      Unova:  [[527, 202], [52, 562, 591]],  // Woobat→WOBBUFFET · Yamask→AMOONGUSS
+      Kalos:  [[202, 711], [52, 686]],       // Wobbuffet→GOURGEIST · Meowth→INKAY
+      Alola:  [[202, 778], [52, 747]],       // Wobbuffet→MIMIKYU · Meowth→MAREANIE
+      Galar:  [[202, 24],  [52, 110]],
+      Paldea: [[778, 336], [52, 202, 686]],  // the greatest-hits farewell tour
+    },
     // `again` = this trainer has blasted them off before — they remember.
     for(region, again) {
       return { name: "JESSIE & JAMES", title: "Team Rocket", type: "poison", tier: 1,
         team: (this.teams[region] || this.teams.Kanto).slice(),
+        duo: { names: ["JESSIE", "JAMES"],
+          teams: (this.duoTeams[region] || this.duoTeams.Kanto).map((a) => a.slice()) },
         quote: again
           ? "YOU AGAIN?! Prepare for trouble — you KNOW that it's double! Team Rocket never forgets a twerp… this time it's PERSONAL!"
           : "Prepare for trouble — and make it double! To protect the world from devastation… TEAM ROCKET blasts off at the speed of light! Surrender now, or prepare to fight!",

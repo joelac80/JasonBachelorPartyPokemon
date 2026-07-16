@@ -270,6 +270,9 @@
       ],
       finale: { npc: "ETERNATUS", name: "ETERNATUS", flair: "🌌 THE DARKEST DAY", icon: "🌌", face: 890,
         quote: "The sky over Hammerlocke splits open, raining red light. Something vast and skeletal uncoils from the clouds — the storm that felled Galar 3,000 years ago, awake and hungry." },
+      // 🐺 the wolves don't just watch anymore — the finale is a 2-on-1
+      // DOUBLE battle with ZACIAN & ZAMAZENTA fighting at your side.
+      ally: { name: "ZACIAN & ZAMAZENTA", monIds: [888, 889], boost: 1.2 },
       team: [890, 10190], reserve: 1,
       speak: { 1: ["The sky tears — ETERNATUS surges into its ETERNAMAX form, a storm with a heartbeat!",
                    "Two howls answer from the hills… Zacian and Zamazenta stand with you. NOW — BRING IT DOWN!"] },
@@ -300,14 +303,38 @@
       winChron: "walked the PATH OF LEGENDS — all five Titans fell, and Mabosstiff ate like a king!",
       loseChron: "the Titans kept their herbs",
       lead: "🥪 Klawf on the cliffs, Bombirdier overhead, Orthworm in the sands, Great Tusk in the crater — and a tiny Tatsugiri whose bodyguard is the size of the lake." },
-    { key: "dlc", tab: "Paldea", name: "THE TEAL MASK & INDIGO DISK", flair: "PALDEA SPECIAL · Kitakami & Blueberry",
-      sub: "Paldea Special · The Loyal Three, the ogre, the poison behind it all — and Terapagos · 6v6",
-      icon: "🎭", face: 1024, boost: 1.58, pts: 36, needs: "geeta", champ: "GEETA",
-      team: [1014, 1015, 1016, 1025, 1017, 1024],
-      quote: "The village sings of three loyal heroes… but the mask tells another story. The ogre was the hero, the poison pulled the strings — and beneath the academy, the crystal turtle holds the Terastal secret.",
-      winChron: "unmasked Kitakami and cracked the Indigo Disk — the Loyal Three, Pecharunt, Ogerpon and TERAPAGOS!",
-      loseChron: "the mask stayed on and the disk stayed sealed",
-      lead: "🎭 Okidogi, Munkidori and Fezandipiti — Pecharunt's puppets — then OGERPON unmasked, and TERAPAGOS, the Terastal heart." },
+    // ---- 🎭 THE TEAL MASK (Kitakami DLC) — the Loyal Three fall one by
+    // one as festival night unravels, and the "villain" of the village
+    // songs turns out to be the hero. The ogre defends her mountain last.
+    { key: "dlc", tab: "Paldea", name: "THE TEAL MASK", flair: "PALDEA SPECIAL · Kitakami Festival Night",
+      sub: "Paldea Special · The Loyal Three fall one by one — then the ogre, unmasked · one squad, 4 battles",
+      icon: "🎭", face: 1017, boost: 1.52, pts: 36, needs: "geeta", champ: "GEETA",
+      chain: [
+        { name: "OKIDOGI", flair: "🐕 THE LOYAL BRUTE · Paradise Barrens", icon: "🐕", face: 1014,
+          boost: 1.4, hpBoost: 2.0, team: [1014],
+          quote: "The first 'hero' of the village songs finds you in the barrens — a mountain of muscle wearing a stolen chain of gold, and no loyalty left in its eyes.",
+          outro: { lose: "The golden chain cracks. Okidogi slumps — and something like relief crosses its face.",
+            win: "The brute drags you off the barrens. The song, it seems, was right about ONE thing." } },
+        { name: "MUNKIDORI", flair: "🐒 THE LOYAL SCHEMER · Wistful Fields", icon: "🐒", face: 1015,
+          boost: 1.44, hpBoost: 2.0, team: [1015],
+          quote: "The second 'hero' never fights fair — it floats above the fields, fingers to its temples, and the air starts to taste like poison.",
+          outro: { lose: "The schemer's smirk finally slips. It flees toward the mountain, screeching for its master.",
+            win: "Your thoughts fold in half. When you wake, your Pokémon are carrying YOU home." } },
+        { name: "FEZANDIPITI", flair: "🐦 THE LOYAL CHARMER · Crystal Pool", icon: "🐦", face: 1016,
+          boost: 1.48, hpBoost: 2.0, team: [1016],
+          quote: "The last 'hero' is beautiful — iridescent, perfumed, adored. The scent off its wings could stop a heart. The village never asked what it was FOR.",
+          outro: { lose: "The perfume scatters on the night wind. Three heroes down — and the mountain starts to rumble.",
+            win: "The crowd sighs as the charmer takes a bow over you. Fairy tales die hard." } },
+      ],
+      finale: { npc: "OGERPON", name: "OGERPON", flair: "👹 THE OGRE, UNMASKED · Dreaded Den", icon: "👹", face: 1017,
+        quote: "At the top of the mountain, the 'monster' of every campfire story waits — small, quick, furious, and wearing the teal mask her only friend was murdered for. She is not the villain. She was NEVER the villain. But she will test you like one." },
+      team: [1017], boost: 1.58, hpBoost: 2.6,
+      outro: { lose: "Ogerpon lowers her cudgel and tilts her head. The mask comes off — and underneath is just… a face that's been alone too long. The mountain is quiet at last.",
+               win: "The ogre dances alone on the peak, cudgel high. The festival drums keep a respectful distance." },
+      quote: "The village sings of three loyal heroes and one wicked ogre. Festival night tells the truth: hunt the Loyal Three across Kitakami — poisoned puppets in stolen jewelry — then climb to the den where the REAL story has been hiding for two hundred years.",
+      winChron: "unmasked Kitakami — the Loyal Three fell one by one, and OGERPON danced free on the mountain!",
+      loseChron: "the mask stayed on and the songs stayed wrong",
+      lead: "🎭 Okidogi in the barrens, Munkidori in the fields, Fezandipiti at the pool — each a boss with a mountain of health — then OGERPON herself, the fastest fury in Kitakami." },
     { key: "paradox", tab: "Paldea", name: "THE PARADOX GAUNTLET", flair: "PALDEA SPECIAL · Area Zero, Unstuck in Time",
       sub: "Paldea Special · Three trials: the deep past, the far future — then the crystal heart of Area Zero · one squad",
       icon: "⏰", face: 1024, boost: 1.5, pts: 38, needs: "geeta", champ: "GEETA", after: "dlc",
@@ -457,6 +484,7 @@
         const go = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase() + " (" + (i + 1) + "/" + total + ")",
           a: { units: [{ attId: attId, monIds: leadIds }] },
           b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: t.boost, vsFace: t.face,
+            hpBoost: t.hpBoost || undefined,   // 🩸 raid-pool bosses (the Loyal Three)
             reserve: t.reserve || 0, speak: t.speak || null, outro: t.outro || null }] },
           onResult: (w) => { if (w === "a") runChainBattle(sp, attId, ids, i + 1); else fell(); } });
         if (i === 0) { go(ids); return; }
@@ -468,8 +496,14 @@
       eraIntro(fin, () => {
         const start = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase(),
           secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
-          a: { units: [{ attId: attId, monIds: leadIds }] },
+          // 🐺 an ALLY (sp.ally) turns the finale into a 2-on-1 double battle —
+          // the legendary wolves fight beside you against the Darkest Day.
+          a: sp.ally
+            ? { units: [{ attId: attId, monIds: leadIds },
+                        { npc: sp.ally.name, ai: true, monIds: sp.ally.monIds.slice(), boost: sp.ally.boost || 1 }] }
+            : { units: [{ attId: attId, monIds: leadIds }] },
           b: { units: [{ npc: fin.npc || sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: fin.face || sp.face,
+            hpBoost: sp.hpBoost || undefined,
             reserve: sp.reserve || 0, speak: sp.speak || null, outro: sp.outro || null }] },
           onResult: () => Router.render() });
         if (!(sp.chain || []).length) { start(ids); return; }
