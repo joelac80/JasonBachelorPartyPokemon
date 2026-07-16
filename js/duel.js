@@ -195,7 +195,8 @@
     10229: 58, 10230: 59, 10231: 100, 10232: 101, 10233: 157, 10234: 211,
     10235: 215, 10236: 503, 10237: 549, 10238: 570, 10239: 571, 10240: 628,
     10241: 705, 10242: 706, 10243: 713, 10244: 724, 10245: 483, 10246: 484,
-    10276: 1024, 10277: 1024 };
+    10276: 1024, 10277: 1024,
+    10094: 25 };   // ⚡ Ash's Pikachu fights with Pikachu's own curated kit
   function baseOf(monId) {
     if (window.MEGA_FORMS && MEGA_FORMS[monId]) return MEGA_FORMS[monId].base;
     return FORM_BASE[monId] || 0;
@@ -273,7 +274,11 @@
     const hpMul = level ? Math.min(1, 0.5 + level / 100) : 1;
     return { id: monId, name: d.n, x: x, types: types,
       spe: (window.DEX_SPEED && DEX_SPEED[monId]) || 50,   // Gen-2 base Speed → turn order
-      hpMax: Math.round((120 + Math.round(x * 0.5)) * hpMul), atk: 0.55 + x / 500,
+      hpMax: Math.round((120 + Math.round(x * 0.5)) * hpMul),
+      // ⚡ THE LIGHT BALL — Ash's Pikachu (10094) carries it forever: the
+      // attack of a 650-BST monster in a 320-BST body. Hits like a Mega,
+      // folds like paper, never evolves. The trophy past the final boss.
+      atk: monId === 10094 ? (0.55 + 650 / 500) : (0.55 + x / 500),
       // ---- live battle state (reset on switch-in where noted) ----
       status: null,        // major status: par | brn | psn | slp | frz
       slp: 0,              // remaining sleep turns
@@ -1894,7 +1899,14 @@
               // 🏛 Hall of Fame: the champion AND the team that did it, forever.
               // Stamp WHICH league/region was won so the plaque can name it.
               const enshrine = () => { if (fresh) { s.hof = s.hof || []; s.hof.push({ attId: player.attId, ts: now(), party: player.party.map((x) => x.id), key: lg.key, champ: lg.name, rank: lg.rank, region: lg.region || "" }); } };
-              if (lg.key === "ash") { enshrine(); Store.chron(s, "🧢", player.name + " defeated POKÉMON MASTER ASH KETCHUM — Pikachu bows, the torch is passed, and a silhouette walks into the sun. THE JOURNEY IS COMPLETE."); }
+              if (lg.key === "ash") { enshrine(); Store.chron(s, "🧢", player.name + " defeated POKÉMON MASTER ASH KETCHUM — Pikachu bows, the torch is passed, and a silhouette walks into the sun. THE JOURNEY IS COMPLETE.");
+                // ⚡ PIKACHU STAYS — Ash's partner joins the champion's own
+                // team (form 10094: Light Ball attack, never evolves). Once.
+                const tr = ((s.pokedex || {}).trainers || {})[player.attId];
+                if (tr) { tr.caught = tr.caught || {};
+                  if (!tr.caught[10094]) { tr.caught[10094] = { name: "Ash's Pikachu" };
+                    Store.chron(s, "⚡", "PIKACHU STAYED — Ash's partner, Light Ball and all, joins " + player.name + "'s team. He will never evolve. He doesn't need to."); } }
+              }
               else if (lg.key === "red") { enshrine(); Store.chron(s, "🗻", player.name + " climbed Mt. Silver and defeated RED. There is nothing left to prove. THE ABSOLUTE CHAMPION."); }
               else if (lg.final) { enshrine(); Store.chron(s, "🎹", player.name + " out-dueled CYNTHIA in the final battle — the piano falls silent. THE TRUE CHAMPION OF CHAMPIONS."); }
               else if (lg.rank === "Top Champion") { enshrine(); Store.chron(s, "🏆", player.name + " toppled TOP CHAMPION " + lg.name + " — nine regions conquered. Enshrined in the HALL OF FAME!"); }

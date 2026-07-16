@@ -328,7 +328,7 @@
         el("div", { class: "ash-txt" }, [
           el("b", {}, "🧢 POKÉMON MASTER — ASH KETCHUM"),
           el("span", {}, beaten
-            ? "The torch is passed — but he'll always come back for one more."
+            ? "The torch is passed — ⚡ Pikachu fights for YOU now (check your party). And he'll always come back for one more."
             : "“So YOU'RE the one who conquered every region AND my Cup! I've been waiting my whole journey for a battle like this!”"),
         ]),
         el("button", { class: "btn spin-btn", onClick: () => battleAsh(attId) },
