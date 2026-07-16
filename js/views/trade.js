@@ -231,7 +231,7 @@
           const on = d.mon === id && !!d.shiny === !!shiny;
           const src = spriteOf(id, shiny);
           const btn = el("button", { class: "duel-pick" + (on ? " on" : "") + (ok ? "" : " locked") + (shiny ? " is-shiny" : ""),
-            title: nameOf(id) + (shiny ? " ✨ SHINY" : "") + (locked ? " — partner, untradeable ❤" : ""),
+            title: nameOf(id) + (shiny ? " ✨ SHINY" : "") + (id === 10094 ? " — he chose YOU, untradeable ⚡" : locked ? " — partner, untradeable ❤" : ""),
             onClick: () => {
               if (!ok) { sfx("error"); return; }
               // Tapping the already-selected mon unpicks it.

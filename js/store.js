@@ -808,6 +808,7 @@
     // Can this trainer give this mon away? Partners are untradeable — unless
     // they also caught a wild one (the extra copy can go, the partner stays).
     canTrade(attId, monId) {
+      if (+monId === 10094) return false;   // ⚡ Ash's Pikachu — he chose YOU. Untradeable, always.
       const a = this.attendee(attId);
       const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
       const rec = t && t.caught && t.caught[monId];

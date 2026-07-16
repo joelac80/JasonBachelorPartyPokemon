@@ -10,6 +10,10 @@
   DEX[10094] = { n: "Ash's Pikachu", x: 112, t: ["electric"] };   // Pikachu's own body (x matches #25)
   window.DEX_SPEED = window.DEX_SPEED || {};
   DEX_SPEED[10094] = 90;
+  // 🎬 HIS kit, not a wild Pikachu's — the anime signature four. Volt Tackle's
+  // recoil on a 176-HP body is the Light Ball gamble in one move.
+  window.DEX_MOVESETS = window.DEX_MOVESETS || {};
+  DEX_MOVESETS[10094] = ["Thunderbolt", "Iron Tail", "Quick Attack", "Volt Tackle"];
   var S = window.DEX_SPRITES || (window.DEX_SPRITES = {});
   var B = window.DEX_SPRITES_BACK || (window.DEX_SPRITES_BACK = {});
   var SS = window.DEX_SPRITES_SHINY || (window.DEX_SPRITES_SHINY = {});
