@@ -177,6 +177,73 @@
     return nm + (total > 2 ? " · " + total + " left" : "");
   }
 
+  // 🕰 ASH THROUGH THE AGES — the secret mode past the final boss. Beat Peak
+  // Ash once and every team he EVER raised opens as a casual random draw:
+  // one era per battle, modest strength (1.12 — nostalgia, not a wall),
+  // Pikachu always closing. Johto brings the shiny Noctowl; Alola's Pikachu
+  // still carries the Z-ring. Wins record per era on the secrets ledger.
+  const ASH_ERAS = [
+    { key: "indigo",  era: "Indigo League",              emoji: "🗾", flavor: "Where it all began — the boy who overslept, and the very first six.",
+      team: [12, 17, 1, 4, 7, 25] },
+    { key: "orange",  era: "Orange Islands",             emoji: "🍊", flavor: "The island champion — Lapras ferried him there, and Charizard finally listened.",
+      team: [131, 143, 1, 7, 6, 25] },
+    { key: "johto",   era: "Johto — Silver Conference",  emoji: "🌸", flavor: "The Silver Conference squad — with the ✨ shiny Noctowl nobody believed he caught.",
+      team: [153, 155, 158, 164, 6, 25], shiny: [164] },
+    { key: "hoenn",   era: "Hoenn — Ever Grande",        emoji: "🌊", flavor: "Contest roads and frontier storms — Swellow flew through thunder for him.",
+      team: [277, 253, 341, 324, 362, 25] },
+    { key: "sinnoh",  era: "Sinnoh — Lily of the Valley", emoji: "🏔", flavor: "The team that took down a Darkrai. Ask Tobias — he remembers.",
+      team: [398, 389, 392, 418, 443, 25] },
+    { key: "unova",   era: "Unova — Vertress Conference", emoji: "🏙", flavor: "A fresh start in a far land — three starters and a Krookodile in shades.",
+      team: [521, 501, 500, 495, 553, 25] },
+    { key: "kalos",   era: "Kalos — Lumiose Finals",     emoji: "🗼", flavor: "One win from the crown — the bond phenomenon crackling at his side.",
+      team: [658, 663, 701, 715, 706, 25] },
+    { key: "alola",   era: "Alola — First Champion",     emoji: "🌺", flavor: "The first league he ever WON — Z-rings blazing under island stars.",
+      team: [722, 745, 727, 804, 809, 25], gimmick: "z" },
+    { key: "masters", era: "Masters Eight — World Champion", emoji: "🧢", flavor: "The summit team, sparring for fun this time. No transformations. Mostly.",
+      team: [865, 149, 94, 448, 6, 25] },
+    { key: "movies",  era: "Movie Marathon Hero",        emoji: "🎬", flavor: "The kid from every poster — frozen, petrified, and back on his feet by the credits.",
+      team: [131, 6, 254, 448, 143, 25] },
+  ];
+  function battleAges(attId) {
+    if (Duel.poolFor(attId).length < 6) { alert("Bring SIX of your own — even old Ash fields a full team."); return; }
+    const e = ASH_ERAS[Math.floor(Math.random() * ASH_ERAS.length)];
+    const nameOf = (id) => ((window.DEX || {})[id] || {}).n || ("#" + id);
+    const lay = el("div", { class: "league-intro final" }, [
+      el("div", { class: "league-intro-inner" }, [
+        el("div", { class: "league-intro-mt" }, e.emoji),
+        el("div", { class: "league-intro-flair" }, "ASH THROUGH THE AGES"),
+        el("div", { class: "league-intro-name" }, e.era.toUpperCase()),
+        el("div", { class: "league-intro-quote" }, e.flavor + " — " + e.team.map(nameOf).join(" · ")),
+        el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); pick(); } }, "⚡ Battle"),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Another time"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    requestAnimationFrame(() => lay.classList.add("go"));
+    sfx("select");
+    function pick() {
+      Duel.pickParty({ attId: attId, min: 6, max: 6,
+        title: "vs " + e.era + " ASH — pick your 6",
+        hint: e.emoji + " A friendly rematch across time: " + e.team.map(nameOf).join(", ") + ".",
+        onDone: (ids) => {
+          Duel.start({ mode: "local", title: "Ash — " + e.era,
+            secret: { key: "ashera:" + e.key, name: e.era + " Ash", pts: 8, icon: "🧢",
+              winChron: "out-dueled " + e.era.toUpperCase() + " ASH — another era of the legend, relived and beaten!",
+              loseChron: e.era + " Ash grins — \"Not yet!\"" },
+            a: { units: [{ attId: attId, monIds: ids }] },
+            b: { units: [{ npc: "ASH — " + e.era, ai: true,
+              monIds: e.team.slice(), boost: 1.12, vsFace: 25,
+              shiny: e.shiny || false, gimmick: e.gimmick || null,
+              ace: { line: "Pikachu — let's show 'em how we did it back then!" },
+              outro: { lose: "That team carried me through " + e.era + "… and you handled them like a champion. Awesome battle!",
+                       win: "Ha! The old crew's still got it!" } }] },
+            onResult: () => Router.render() });
+        } });
+    }
+  }
+
   // 🧢 vs POKÉMON MASTER ASH KETCHUM — the reward past every reward. His
   // Masters Eight team, ace closing, and a world-champion script: Gengar
   // GIGANTAMAXES, Lucario and Charizard MEGA EVOLVE, and Pikachu closes
@@ -267,6 +334,19 @@
         el("button", { class: "btn spin-btn", onClick: () => battleAsh(attId) },
           beaten ? "🔁 One more, buddy" : "⚡ THE FINAL CHALLENGE"),
       ]));
+      // 🕰 beat him once, and every era of his journey opens as a casual draw
+      if (beaten) {
+        const cleared = Store.secretWins(attId).filter((k) => k.indexOf("ashera:") === 0).length;
+        root.appendChild(el("div", { class: "ash-card ages" }, [
+          el("div", { class: "ash-sil", style: { filter: "none", opacity: "1" } }, "🕰"),
+          el("div", { class: "ash-txt" }, [
+            el("b", {}, "🕰 ASH THROUGH THE AGES"),
+            el("span", {}, "Every team he ever raised — one random era per battle, Pikachu always closing. " +
+              cleared + "/" + ASH_ERAS.length + " eras beaten."),
+          ]),
+          el("button", { class: "btn primary", onClick: () => battleAges(attId) }, "🎲 Draw an era"),
+        ]));
+      }
     })();
 
     // Lock in the 6-mon tournament squad, then build the bracket.
