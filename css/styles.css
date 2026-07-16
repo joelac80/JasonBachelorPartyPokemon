@@ -2489,3 +2489,11 @@ html, body { overscroll-behavior-y: contain; }
 .gim-z { border-color: #e6b800; }
 .gim-dyna { border-color: #e04040; }
 .gim-tera { border-color: #6ec6ff; }
+/* 💎 the Tera type picker — 18 crystal chips, colored by element. ⚔ marks
+   the types this mon can attack with; a white ring = its current types. */
+.tera-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px 10px; }
+.tera-chip { font-family: var(--pixel); font-size: 10px; font-weight: 800; padding: 10px 4px;
+  border-radius: 10px; border: none; background: var(--tc, #888); color: #fff;
+  text-shadow: 1px 1px 0 rgba(0,0,0,.4); cursor: pointer; box-shadow: 0 2px 3px rgba(0,0,0,.22); }
+.tera-chip.own { box-shadow: 0 0 0 2.5px #fff inset, 0 2px 3px rgba(0,0,0,.28); }
+.tera-chip:active { transform: scale(.95); }

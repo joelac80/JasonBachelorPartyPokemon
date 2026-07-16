@@ -16,7 +16,7 @@
       ["dex", "📕", "Pokédex", "Every collection in one book: Gen 1-9, Hisui, Unown, Mega and Trainer dexes"],
     ] },
     { head: "⚔️ Battling each other", rows: [
-      ["battle", "⚔️", "Battle Arena", "Live duels phone-to-phone — singles or doubles, the Elo belt on the line"],
+      ["battle", "⚔️", "Battle Arena", "Live duels phone-to-phone — singles or doubles, ALL four era gimmicks open (Mega · Z-Move · Dynamax · pick-your-type Tera), the Elo belt on the line"],
       ["battle", "🎲", "Rental battles", "Deal random rental sixes to everyone in the Arena — nobody needs a single catch"],
       ["cups", "🏟", "Stadium Cups", "Round robin into finals with the whole room: Baby (Lv 5) · Poké (own catches) · Prime (Lv 100) · Rental"],
       ["brackets", "🥇", "Brackets", "A seeded knockout for the room — winner takes the bragging rights"],

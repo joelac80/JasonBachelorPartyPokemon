@@ -1294,9 +1294,12 @@
         // 🎯 STAB: a move of the attacker's OWN element hits ×1.2 — read off
         // the LIVE types so a Mega's new typing counts. Kept below the
         // cartridge 1.5 to preserve the 3-4-hit rhythm. 💎 A TERASTALLIZED
-        // mon's tera-type moves hit the full cartridge ×1.5 instead.
+        // mon's tera-type moves hit the full cartridge ×1.5 — and its
+        // ORIGINAL types keep the 1.2 (cartridge-true), so an off-type tera
+        // is a new weapon, never an offensive downgrade.
         const stabMod = (m._tera && m._tera === mv.type) ? 1.5
-          : ((m.types || []).indexOf(mv.type) >= 0) ? 1.2 : 1;
+          : ((m.types || []).indexOf(mv.type) >= 0
+             || (m._teraBase && m._teraBase.indexOf(mv.type) >= 0)) ? 1.2 : 1;
         return Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult));
       };
       let dmg = 0;
@@ -1456,6 +1459,18 @@
           }]);
           beats(sendBeats, fin);
         });
+        return;
+      }
+      // 🎪 A player-fired transform, synced through the act stream so every
+      // phone — the opponent's and the watchers' — plays the same spectacle
+      // at the same seq. (Transforms are free: they don't spend the turn.)
+      if (act.kind === "gimmick") {
+        const gp = { side: act.side, unit: act.unit };
+        if (act.g === "mega") megaEvolve(u, gp, act.megaId);
+        else if (act.g === "z") zPower(u, gp);
+        else if (act.g === "dyna") dynamax(u, gp);
+        else if (act.g === "tera") teraize(u, gp, act.teraType);
+        done();
         return;
       }
       if (act.kind === "forfeit") {
@@ -2291,6 +2306,35 @@
       doMove(u, ptr, 99, (livingEnemies(ptr.side)[0] || { i: 0 }).i);   // nothing → Struggle
     }
 
+    // 💎 The AI ace picks its Tera type like a champion, not a mirror. Every
+    // type it can actually attack with (plus its own) is scored: OFFENSE — the
+    // ×1.5 tera STAB measured against everything left on the player's bench;
+    // DEFENSE — how the mono-tera shell takes the fielded foe's known moves;
+    // and a nudge AWAY from its own types, because the scary tera is the one
+    // you didn't see coming (a Dragon ace crystallizing into Steel as your
+    // Fairy sweeper winds up).
+    function aiTeraType(u, ptr) {
+      const m = mon(u);
+      const own = m.types || ["normal"];
+      const atkTypes = [];
+      (m.moves || []).forEach((v) => { if (v.pow && v.type !== "none" && atkTypes.indexOf(v.type) < 0) atkTypes.push(v.type); });
+      const cands = atkTypes.concat(own.filter((t) => atkTypes.indexOf(t) < 0));
+      if (!cands.length) return own[0];
+      const bench = sideMons(other(ptr.side)).filter((x) => x.hp > 0);
+      const fielded = livingEnemies(ptr.side).map((f) => mon(f.u));
+      let best = own[0], bestScore = -Infinity;
+      cands.forEach((t) => {
+        let score = 0;
+        // offense: the tera STAB only matters if a damaging move carries it
+        if (atkTypes.indexOf(t) >= 0) bench.forEach((f) => { score += 2 * (effFor(t, f.types || [], null) - 1); });
+        // defense: how the mono-t shell eats what's aimed at it right now
+        fielded.forEach((f) => (f.moves || []).forEach((v) => { if (v.pow) score -= (effFor(v.type, [t], v) - 1); }));
+        if (own.indexOf(t) >= 0) score -= 0.75;   // prefer the surprise
+        if (score > bestScore) { bestScore = score; best = t; }
+      });
+      return best;
+    }
+
     // 🎪 The AI ace's once-per-battle gimmick. Fires only when a boss's LAST
     // Pokémon (a real squad, 3+, down to one) is on the field and the side's
     // spectacle slot is still free. Returns true if it transformed (the caller
@@ -2309,7 +2353,7 @@
       }
       if (u.gimmick === "z") { zPower(u, ptr); return true; }
       if (u.gimmick === "dyna") { dynamax(u, ptr); return true; }
-      if (u.gimmick === "tera") { teraize(u, ptr); return true; }
+      if (u.gimmick === "tera") { teraize(u, ptr, aiTeraType(u, ptr)); return true; }
       return false;
     }
 
@@ -2372,16 +2416,45 @@
       msg.textContent = "🔴 " + m.name + " DYNAMAXED — it towers over the field! (3 turns)";
       renderMenu();
     }
-    function teraize(u, ptr) {
+    function teraize(u, ptr, pick) {
       const m = mon(u);
       S.megaSide[ptr.side] = true;
-      const t = (m.types || ["normal"])[0];
+      // any of the 18 — the player picks from the crystal grid, the AI ace
+      // picks the meanest option (aiTeraType); default stays the primary.
+      const t = pick || (m.types || ["normal"])[0];
+      m._teraBase = (m.types || []).slice();   // original STAB survives the crystal
       m._tera = t;
       m.types = [t];
       if (u._monEl) u._monEl.classList.add("tera");
       sfx("fanfare");
       msg.textContent = "💎 " + m.name + " TERASTALLIZED into pure " + t.toUpperCase() + " — its " + t + " moves shine at full power!";
       renderMenu();
+    }
+
+    // 🎪 Route a player's transform through the act stream — one code path
+    // for hot-seat, remote duels and broadcast watchers alike, so every
+    // phone plays the same spectacle at the same seq.
+    function fireGimmick(u, ptr, g, x) {
+      sendAct(Object.assign({ seq: S.seq + 1, kind: "gimmick", g: g, side: ptr.side, unit: ptr.unit }, x || {}));
+    }
+
+    // 💎 The Tera crystal is YOURS to color — pick any of the 18 types.
+    // ⚔-marked chips are types this mon can actually attack with (where the
+    // ×1.5 tera STAB shines); its current types wear a ring.
+    function teraPicker(u, ptr) {
+      const m = mon(u);
+      menu.innerHTML = "";
+      menu.appendChild(el("div", { class: "duel-turn " + posOf(ptr.side) },
+        "💎 " + m.name + " — crystallize into which type?"));
+      const atk = {};
+      (m.moves || []).forEach((v) => { if (v.pow && v.type !== "none") atk[v.type] = 1; });
+      menu.appendChild(el("div", { class: "tera-grid" }, Object.keys(TYPE_COLOR).map((t) =>
+        el("button", { class: "tera-chip" + ((m.types || []).indexOf(t) >= 0 ? " own" : ""),
+          style: { "--tc": TYPE_COLOR[t] },
+          onClick: () => fireGimmick(u, ptr, "tera", { teraType: t }) },
+          (atk[t] ? "⚔ " : "") + t.toUpperCase()))));
+      menu.appendChild(el("div", { class: "battle-menu-row" },
+        [el("button", { class: "btn subtle sm", onClick: () => renderMenu() }, "← Back")]));
     }
 
     function renderMenu() {
@@ -2452,22 +2525,26 @@
       const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)));
       if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99)));
       menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
-      // ✨ Mega Evolve — offered when the active mon has a mega form, this side
-      // hasn't used its Mega yet, it's a local (vs-AI) battle, and the trainer
-      // has reached Kalos on the Gen Ladder (beat ALDER → Gen 6).
+      // ✨ Mega Evolve + the era gimmicks — offered to this slot's own phone
+      // when the side's spectacle slot is free. Against the AI they unlock
+      // down the Gen Ladder (earn your eras); a PURE friend-vs-friend duel —
+      // hot-seat OR phone-to-phone — opens ALL of them: the full sandbox.
+      // Every transform routes through the act stream (fireGimmick), so
+      // remote opponents and watchers replay the same spectacle.
       const megaIds = (window.MEGA_BY_BASE && MEGA_BY_BASE[m.id]) || null;
-      const megaOpen = !(window.Store && Store.genCapFor) || Store.genCapFor(u.attId) >= 6;
-      if (mode === "local" && !u.ai && !S.megaSide[ptr.side] && !m.megaId) {
+      const pvp = !sides.a.units.some((x) => x.ai) && !sides.b.units.some((x) => x.ai);
+      const megaOpen = pvp || !(window.Store && Store.genCapFor) || Store.genCapFor(u.attId) >= 6;
+      if (!u.ai && !S.megaSide[ptr.side] && !m.megaId) {
         const F = window.MEGA_FORMS || {};
         const cap = (window.Store && Store.genCapFor) ? Store.genCapFor(u.attId) : 9;
         const gims = [];
         if (megaOpen && megaIds && megaIds.length) megaIds.forEach((mid) => gims.push(
-          el("button", { class: "btn mega-btn", onClick: () => megaEvolve(u, ptr, mid) },
+          el("button", { class: "btn mega-btn", onClick: () => fireGimmick(u, ptr, "mega", { megaId: mid }) },
             "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : ""))));
         // 🎪 the era gimmicks unlock down the Gen Ladder, like megas do
-        if (cap >= 7) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => zPower(u, ptr) }, "🌀 Z-Move"));
-        if (cap >= 8 && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => dynamax(u, ptr) }, "🔴 Dynamax"));
-        if (cap >= 9 && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraize(u, ptr) }, "💎 Terastallize"));
+        if (pvp || cap >= 7) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => fireGimmick(u, ptr, "z") }, "🌀 Z-Move"));
+        if ((pvp || cap >= 8) && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => fireGimmick(u, ptr, "dyna") }, "🔴 Dynamax"));
+        if ((pvp || cap >= 9) && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraPicker(u, ptr) }, "💎 Terastallize"));
         if (gims.length) menu.appendChild(el("div", { class: "battle-menu-row mega-row" }, gims));
       }
       const row = [];

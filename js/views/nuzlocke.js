@@ -484,7 +484,7 @@
         tag: "🎲 A Region Run with the cast SHUFFLED — same road, same curve, new hands guarding the badges.",
         rows: [
           row("🗺 The road", "identical shape to a " + R.name + " Region Run — same gyms, same league, and the Champion still closes."),
-          row("🎭 The cast", "the region's own " + R.gymN + " leaders dealt into a RANDOM order, then its Elite Four shuffled too — real squads, real aces. The only randomness is WHO guards WHICH badge, and the deal locks the moment the run starts."),
+          row("🎭 The cast", "the region's own " + R.gymN + " leaders dealt into a RANDOM order, then its Elite Four shuffled too — real squads, real aces. WHO guards WHICH badge is random — and every boss's ACE is dealt a random era gimmick (Mega, Z-Move, Dynamax or Tera) that fires when it hits the field. The deal locks the moment the run starts."),
           row("📈 The levels", "the same proven Lv 14 → ~58 curve as the Region Run."),
           row("📦 The box", "same as the Region Run — one box, this region's grass."),
           row("❗ The villains", "region-locked — only this region's own rogues walk its roads — but WHEN they strike is shuffled: any moment from your first badge to the Champion's doorstep."),
@@ -495,7 +495,7 @@
         tag: "🌍 Every battle in the whole saga, shuffled completely flat. The deepest deck, the highest stakes.",
         rows: [
           row("🗺 The road", "ALL of it: 68 gyms, nine Elite Fours, nine Champions, RED — 114 battles in one run."),
-          row("🎭 The cast", "one giant shuffled deck — any card can come first, so you might open against CYNTHIA. Everyone fields their real squad."),
+          row("🎭 The cast", "one giant shuffled deck — any card can come first, so you might open against CYNTHIA. Everyone fields their real squad — and every boss's ACE is dealt a random era gimmick (Mega, Z-Move, Dynamax or Tera), so Brock might Dynamax and Lance might terastallize."),
           row("📈 The levels", "there is NO curve. Everything is Lv 100 from battle one — your starter steps out in FINAL form."),
           row("📦 The box", "one box for all 114 battles; the grass grows from whichever region your NEXT battle calls home."),
           row("❗ The villains", "any villain from any era prowls between the cards."),
@@ -1303,6 +1303,17 @@
   function gymBoosts(team, hc) {
     return team.map((_, i) => (i === team.length - 1 ? hc.boost : (hc.support || hc.boost)));
   }
+  // 🎪 RANDOM-GIMMICK ACES — in the randomized structures (🌍 Master, 🎲
+  // single-region Randomizer, ⚡ Blitz) every boss rolls a seeded era gimmick
+  // for their ace: THIS Falkner Dynamaxes, THAT Lance terastallizes, Cynthia
+  // might Mega. Same run seed → the same chaos on a re-fight, so a wipe-and-
+  // retry faces the same monster. Straight structures stay era-true.
+  function nuzGimmick(run, key) {
+    if (!run || run.mode !== "random") return undefined;
+    const rnd = mulberry32(((run.seed || 1) ^ strHash("gim-" + key)) >>> 0);
+    return ["mega", "z", "dyna", "tera"][(rnd() * 4) | 0];
+  }
+  window.NuzGimmick = nuzGimmick;   // probe: tests + any future "next boss" preview
   // League-stage strength for region-aware runs: the canon Kanto ramp
   // (1.1 → 1.18 at the Champion, RED at 1.25) instead of the real ladder's
   // late-gen 1.5s — a nuzlocke box earns its stats the hard way. The master
@@ -1327,6 +1338,7 @@
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: "LEADER " + g.leader, ai: true,
             monIds: team, boost: gymBoosts(team, hc),
+            gimmick: nuzGimmick(run, "gym" + idx),   // 🎪 randomized runs: the ace transforms
             // 🗣 the badge-handover line — leaders concede in character here too
             outro: g.defeat ? { lose: g.defeat } : undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
@@ -1455,7 +1467,8 @@
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost), outro: t.outro || undefined }] },
+          b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost),
+            gimmick: nuzGimmick(run, "ambush-" + t.name), outro: t.outro || undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
             if (isStory && winSide === "a") Store.nuzStoryWin(me, t.name, slot);
@@ -1476,7 +1489,8 @@
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
           b: { units: [{ npc: v.title + " " + v.name, ai: true,
-            monIds: foeTeam(run, v.team, Math.min(v.team.length, hc.size), step.key), boost: hc.boost }] },
+            monIds: foeTeam(run, v.team, Math.min(v.team.length, hc.size), step.key), boost: hc.boost,
+            gimmick: nuzGimmick(run, step.key) }] },   // 🎪 the finale villain rolls one too
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
             if (winSide === "a") {
@@ -1499,7 +1513,8 @@
       (ids) => {
         Duel.start({ mode: "local", level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
-          b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: stageBoost(run, st) }] },
+          b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: stageBoost(run, st),
+            gimmick: nuzGimmick(run, "stage-" + st.key) }] },   // 🎪 randomized runs: the ace transforms
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], slot);
             if (winSide === "a") {
