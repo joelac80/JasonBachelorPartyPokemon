@@ -293,6 +293,21 @@
         moves.push(mv);
       });
     }
+    // 🎓 ERA COVERAGE LAW: a low-level kit carries ONE foreign surprise,
+    // not a rainbow. The level cap already shrinks move POWER, but a curated
+    // kit kept all four TYPES — so a Lv24 story Starmie nuked every starter
+    // super-effectively (Surf/Psychic/Ice/Thunder). Now: STAB always stays,
+    // status always stays, and off-type damaging moves trim to the strongest
+    // 1 (below Lv30) or 2 (below Lv45). Applies to BOTH sides — era law.
+    if (level && level < 45) {
+      const allowCov = level < 30 ? 1 : 2;
+      const foreign = moves.filter((m) => m.pow && types.indexOf(m.type) < 0);
+      if (foreign.length > allowCov) {
+        foreign.sort((a, b) => b.pow - a.pow);
+        const keepCov = foreign.slice(0, allowCov);
+        moves = moves.filter((m) => !m.pow || types.indexOf(m.type) >= 0 || keepCov.indexOf(m) >= 0);
+      }
+    }
     // 🩹 HP grows with the battle level, damage in lockstep via the move
     // curve — so every level band lands in the classic 3-4-hit rhythm.
     // Lv5 = 55% pool, Lv14 = 64%, Lv36 = 86%, Lv50+ = full (standard
