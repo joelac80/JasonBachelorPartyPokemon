@@ -1651,10 +1651,9 @@
           setTimeout(() => tu._monEl.classList.remove("hurt", "crit"), 700);
           spawnHit(tu._monEl, TYPE_COLOR[act.mvType] || "#fff", act.crit);
           floatDmg(tu._monEl, act.dmg, act.crit, act.eff);   // 💥 rising damage number
-          // a heavy blow (super-effective or a big HP chunk) rocks the screen
-          if (!act.crit && (act.eff > 1 || act.dmg >= before * 0.35)) {
-            overlay.classList.add("shake"); setTimeout(() => overlay.classList.remove("shake"), 380);
-          }
+          // (No extra shake for super-effective/big hits — with SE-heavy teams
+          // the screen never stopped moving. Crits alone rock the screen, via
+          // spawnHit; the damage number + red flash carry the weight.)
           drainHp(tu, before); sfx("coin");                   // 🩸 tick the HP down, don't snap
         }]);
         if (act.crit) steps.push([act.armed ? "🎯💥 DIRE HIT — a guaranteed critical hit!" : "💥 A critical hit!", 900, () => sfx("correct")]);
