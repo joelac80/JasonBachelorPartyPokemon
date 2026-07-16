@@ -2487,6 +2487,22 @@ html, body { overscroll-behavior-y: contain; }
 .duel-outro-quote { font-style: italic; line-height: 1.5; margin-bottom: 14px; }
 .duel-outro-go { min-width: 60%; }
 
+/* ❓ APP-STYLED CONFIRM — U.ask(). Same held-card feel as the outro pop:
+   a centered card with a big icon, the question, and two clear buttons.
+   Native confirm() is gone — iOS home-screen apps sometimes swallow it,
+   and it never looked like it belonged here anyway. */
+.modal-overlay.app-ask { z-index: 600; background: rgba(10, 12, 24, 0.72);
+  opacity: 0; transition: opacity .18s ease; }
+.modal-overlay.app-ask.go { opacity: 1; }
+.app-ask-card { text-align: center; padding: 20px 18px 16px; max-width: 340px;
+  transform: translateY(14px) scale(.96); transition: transform .18s ease; }
+.modal-overlay.app-ask.go .app-ask-card { transform: none; }
+.app-ask-ico { font-size: 44px; line-height: 1; margin-bottom: 10px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25)); }
+.app-ask-txt { font-weight: 700; line-height: 1.45; margin-bottom: 16px; white-space: pre-line; }
+.app-ask-row { display: flex; flex-direction: column; gap: 8px; }
+.app-ask-row .btn { width: 100%; margin: 0; }
+
 /* 🎪 generation gimmicks: the mon element wears the moment */
 .dyna { transform: scale(1.5); transform-origin: bottom center;
   filter: drop-shadow(0 0 16px rgba(255, 64, 64, 0.8)) saturate(1.35); transition: transform 0.5s ease; }

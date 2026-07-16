@@ -246,10 +246,10 @@
       el("button", { class: "btn primary", onClick: () => openFinal(rebuild) },
         J().finalDone ? "✔ Final Jeopardy (replay)" : "🌟 Play Final Jeopardy"),
       el("button", { class: "btn subtle", onClick: () => {
-        if (confirm("Clear BOTH rounds (reopen all clues) and zero the scores?")) {
+        U.ask("Clear BOTH rounds (reopen all clues) and zero the scores?", { icon: "⚠️", danger: true }, () => {
           Store.update((s) => { s.jeopardy.used = {}; s.jeopardy.scores = {}; s.jeopardy.finalDone = false; s.jeopardy.round = 0; });
           renderScores(scoreHost); paintTabs(); rebuild();
-        }
+        });
       } }, "↺ Reset board & scores"),
     ]));
 

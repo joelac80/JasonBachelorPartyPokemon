@@ -86,7 +86,7 @@
           const picker = el("div", { class: "pred-settle", style: { display: "none" } },
             [el("span", { class: "pred-settle-l" }, "Which one won?")].concat(
               p.options.map((o) => el("button", { class: "btn subtle sm", onClick: () => {
-                if (confirm("Mark “" + o.text + "” as the winner? This scores everyone who called it.")) { Store.resolvePrediction(p.id, o.id); sfx("correct"); renderAll(); }
+                U.ask("Mark “" + o.text + "” as the winner? This scores everyone who called it.", { icon: "❓" }, () => { Store.resolvePrediction(p.id, o.id); sfx("correct"); renderAll(); });
               } }, "✓ " + o.text))));
           const toggle = el("button", { class: "btn subtle sm pred-settle-btn", onClick: () => {
             const open = picker.style.display !== "none";

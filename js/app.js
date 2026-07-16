@@ -173,9 +173,10 @@
     try { history.replaceState(null, "", location.pathname + "#/home"); } catch (_) { location.hash = "#/home"; }
     const c = window.Sync && Sync.getConf ? Sync.getConf() : null;
     if (!c || (c.enabled && c.room === code)) return;
-    if (!confirm("📨 You've been invited to room " + code + "! Join it? This phone will sync with that crew (the app reloads).")) return;
+    U.ask("📨 You've been invited to room " + code + "! Join it? This phone will sync with that crew (the app reloads).", { icon: "❓" }, () => {
     Sync.switchRoom(code);
-  })();
+  });
+      })();
 
   Router.start();
 

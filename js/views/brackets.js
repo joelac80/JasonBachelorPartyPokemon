@@ -199,7 +199,7 @@
       el("div", { class: "brk-card-head" }, [
         el("h3", {}, "🏆 " + b.title),
         el("button", { class: "btn danger sm", onClick: () => {
-          if (confirm("Delete this bracket?")) { Store.update((s) => { s.brackets = s.brackets.filter((x) => x.id !== b.id); }); onChange(); }
+          U.ask("Delete this bracket?", { icon: "⚠️", danger: true }, () => { Store.update((s) => { s.brackets = s.brackets.filter((x) => x.id !== b.id); }); onChange(); });
         } }, "Delete"),
       ]),
       champ ? el("div", { class: "brk-champ" }, "👑 Champion: " + champ) : null,

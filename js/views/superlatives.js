@@ -80,9 +80,9 @@
       el("div", { class: "sl-actions" }, [
         el("button", { class: "btn primary sm", onClick: () => openVote(cat, redraw) }, "🗳 Cast a vote"),
         t.length ? el("button", { class: "btn subtle sm", onClick: () => {
-          if (confirm("Clear all votes for “" + cat.title + "”?")) {
+          U.ask("Clear all votes for “" + cat.title + "”?", { icon: "⚠️", danger: true }, () => {
             Store.update((s) => { delete s.superlativeVotes[cat.id]; }); redraw();
-          }
+          });
         } }, "Clear") : null,
         cat.custom ? el("button", { class: "btn danger sm", onClick: () => {
           Store.update((s) => { s.superlatives = s.superlatives.filter((c) => c.id !== cat.id); delete s.superlativeVotes[cat.id]; });

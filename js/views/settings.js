@@ -49,14 +49,14 @@
           el("input", { class: "in grow", value: t.name,
             onChange: (e) => cfgUpdate((s) => { s.teams.find(x=>x.id===t.id).name = e.target.value; }) }),
           el("button", { class: "btn danger sm", onClick: () => {
-            if (confirm("Delete " + t.name + "? Members become free agents.")) {
+            U.ask("Delete " + t.name + "? Members become free agents.", { icon: "⚠️", danger: true }, () => {
               cfgUpdate((s) => {
                 s.teams = s.teams.filter((x) => x.id !== t.id);
                 s.attendees.forEach((a) => { if (a.team === t.id) a.team = ""; });
                 for (const ev in s.scores) delete s.scores[ev][t.id];
               });
               render();
-            }
+            });
           } }, "✕"),
         ]));
       });
@@ -87,13 +87,13 @@
           el("input", { class: "in", type: "number", value: ev.points, style: { maxWidth: "90px" },
             onChange: (e) => cfgUpdate((s) => { s.events.find(x=>x.id===ev.id).points = parseInt(e.target.value,10)||0; }) }),
           el("button", { class: "btn danger sm", onClick: () => {
-            if (confirm("Delete event " + ev.name + "?")) {
+            U.ask("Delete event " + ev.name + "?", { icon: "⚠️", danger: true }, () => {
               cfgUpdate((s) => {
                 s.events = s.events.filter((x) => x.id !== ev.id);
                 delete s.scores[ev.id];
               });
               render();
-            }
+            });
           } }, "✕"),
         ]));
       });
@@ -325,20 +325,22 @@
           // phone (local-first), so rejoining later picks it right back up.
           cur ? el("div", { class: "toolbar" }, [
             el("button", { class: "btn subtle sm", onClick: () => {
-              if (!confirm("Leave room " + cur + "? You go back to solo play — nothing is deleted, and you can rejoin any time.")) return;
+              U.ask("Leave room " + cur + "? You go back to solo play — nothing is deleted, and you can rejoin any time.", { icon: "⚠️", danger: true }, () => {
               const reloading = Sync.leaveRoom();
               toast("👋 Left " + cur);
               if (!reloading) Router.render();
-            } }, "👋 Leave " + cur + " (back to solo)"),
+            });
+      } }, "👋 Leave " + cur + " (back to solo)"),
           ]) : null,
           el("p", { class: "hint" }, "🚪 Your rooms — tap to SWITCH; ✕ forgets a room from this list:"),
           el("div", { class: "toolbar", style: { flexWrap: "wrap" } }, known.map((r) =>
             el("span", { class: "room-chip-group" }, [
               el("button", { class: "btn sm " + (r.room === cur ? "primary" : "subtle"), onClick: () => {
                 if (r.room === cur) { toast("Already in " + r.room); return; }
-                if (!confirm("Switch this phone to room " + r.room + "? The app syncs with that crew" + (Sync.getConf().enabled ? " (reloads fresh)" : "") + ".")) return;
+                U.ask("Switch this phone to room " + r.room + "? The app syncs with that crew" + (Sync.getConf().enabled ? " (reloads fresh)" : "") + ".", { icon: "❓" }, () => {
                 Sync.switchRoom(r.room);
-              } }, "🚪 " + r.room + (r.room === cur ? " ✓" : "")),
+              });
+      } }, "🚪 " + r.room + (r.room === cur ? " ✓" : "")),
               r.room !== cur ? el("button", { class: "btn subtle sm room-forget", title: "Forget this room (just removes it from this list)", onClick: () => {
                 Sync.forgetRoom(r.room);
                 toast("Forgot " + r.room);
@@ -349,12 +351,13 @@
       })(),
       el("div", { class: "toolbar" }, [enableBtn, saveBtn,
         el("button", { class: "btn subtle", onClick: () => {
-          if (!confirm("👋 Log out of this trainer? The phone goes back to a fresh start (welcome tour included) — the room code stays filled in, and no scores are touched.")) return;
+          U.ask("👋 Log out of this trainer? The phone goes back to a fresh start (welcome tour included) — the room code stays filled in, and no scores are touched.", { icon: "⚠️", danger: true }, () => {
           try { Sync.setMe(""); } catch (_) {}
           try { localStorage.removeItem("jasonBachHub.onboarded"); } catch (_) {}
           location.hash = "#/home";
           location.reload();
-        } }, "👋 Log out trainer"),
+        });
+      } }, "👋 Log out trainer"),
       ]),
       // 👑 ROOM OWNER — claim the room with a PIN; destructive acts
       // (removing trainers, fresh slate, reset) then require it. First

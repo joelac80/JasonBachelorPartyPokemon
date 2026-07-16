@@ -355,7 +355,7 @@
           bt.title ? el("span", { class: "battle-log-ev" }, " · " + bt.title) : null,
         ]))));
       logHost.appendChild(el("div", { class: "toolbar" }, [
-        el("button", { class: "btn subtle sm", onClick: () => { if (confirm("Clear the battle log?")) { Store.update((s) => { s.battles = { log: [] }; }); renderLog(); } } }, "Clear battle log"),
+        el("button", { class: "btn subtle sm", onClick: () => { U.ask("Clear the battle log?", { icon: "⚠️", danger: true }, () => { Store.update((s) => { s.battles = { log: [] }; }); renderLog(); }); } }, "Clear battle log"),
       ]));
     }
 

@@ -242,10 +242,10 @@
 
     root.appendChild(el("div", { class: "toolbar" }, [
       el("button", { class: "btn subtle", onClick: () => {
-        if (confirm("Clear all badge holders?")) {
+        U.ask("Clear all badge holders?", { icon: "⚠️", danger: true }, () => {
           Store.update((s) => s.gymBadges.forEach((b) => { b.holder = ""; b.used = false; }));
           Router.render();
-        }
+        });
       } }, "Reset all badges"),
     ]));
   }

@@ -136,12 +136,31 @@
     row.dataset.me = me;
     return row;
   }
+  // ❓ APP-STYLED CONFIRM — the in-world replacement for native confirm().
+  // A held card in the outro style: icon, the question, one committed
+  // action button and a soft way out. `opts`: { ok, icon, danger, back }.
+  function ask(text, opts, onOk) {
+    opts = opts || {};
+    const lay = el("div", { class: "modal-overlay app-ask" }, [
+      el("div", { class: "modal app-ask-card" }, [
+        el("div", { class: "app-ask-ico" }, opts.icon || "❓"),
+        el("div", { class: "app-ask-txt" }, text),
+        el("div", { class: "toolbar app-ask-row" }, [
+          el("button", { class: "btn app-ask-ok " + (opts.danger ? "danger" : "primary"),
+            onClick: () => { lay.remove(); onOk(); } }, opts.ok || "✓ Yes, do it"),
+          el("button", { class: "btn subtle app-ask-no", onClick: () => lay.remove() }, opts.back || "↩ Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
   // 👑 OWNER GATE — runs `onOk` once the room-owner PIN is entered (inline
   // input; native prompt() is unreliable in iOS home-screen apps). When NO
-  // owner has claimed the room, falls back to a plain confirm().
+  // owner has claimed the room, falls back to the app-styled ask card.
   function ownerGate(actionLabel, onOk) {
     const owner = window.Store && Store.roomOwner && Store.roomOwner();
-    if (!owner) { if (confirm(actionLabel + " — are you sure?")) onOk(); return; }
+    if (!owner) { ask(actionLabel + " — are you sure?", { icon: "⚠️", danger: true }, onOk); return; }
     let ctrl;
     const pinIn = el("input", { class: "in", type: "password", inputmode: "numeric", placeholder: "Owner PIN", autocomplete: "off" });
     const msg = el("p", { class: "hint owner-gate-msg" }, "");
@@ -161,5 +180,5 @@
     ctrl = Modal.open("👑 Owner PIN", body, null, { noFooter: true });
     setTimeout(() => { try { pinIn.focus(); } catch (_) {} }, 60);
   }
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow, ownerGate };
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow, ownerGate, ask };
 })();

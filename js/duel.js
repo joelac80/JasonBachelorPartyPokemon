@@ -293,18 +293,22 @@
         moves.push(mv);
       });
     }
-    // 🎓 ERA COVERAGE LAW: a low-level kit carries ONE foreign surprise,
-    // not a rainbow. The level cap already shrinks move POWER, but a curated
-    // kit kept all four TYPES — so a Lv24 story Starmie nuked every starter
-    // super-effectively (Surf/Psychic/Ice/Thunder). Now: STAB always stays,
-    // status always stays, and off-type damaging moves trim to the strongest
-    // 1 (below Lv30) or 2 (below Lv45). Applies to BOTH sides — era law.
+    // 🎓 ERA COVERAGE LAW: a badge-era kit fights with its OWN types.
+    // The level cap already shrinks move POWER, but a curated kit kept all
+    // four TYPES — so a Lv24 story Starmie nuked every starter super-
+    // effectively (Surf/Psychic/Ice Beam/Thunderbolt). Now: STAB always
+    // stays, status always stays, and off-type damaging moves trim to
+    // NONE below Lv30 and the strongest 1 below Lv45 — Ice Beam comes
+    // back when the badges say so. A kit with no STAB damage keeps its
+    // single strongest foreign move so nothing is left swinging air.
+    // Applies to BOTH sides — era law.
     if (level && level < 45) {
-      const allowCov = level < 30 ? 1 : 2;
+      const allowCov = level < 30 ? 0 : 1;
       const foreign = moves.filter((m) => m.pow && types.indexOf(m.type) < 0);
       if (foreign.length > allowCov) {
         foreign.sort((a, b) => b.pow - a.pow);
-        const keepCov = foreign.slice(0, allowCov);
+        const hasStab = moves.some((m) => m.pow && types.indexOf(m.type) >= 0);
+        const keepCov = foreign.slice(0, Math.max(allowCov, hasStab ? 0 : 1));
         moves = moves.filter((m) => !m.pow || types.indexOf(m.type) >= 0 || keepCov.indexOf(m) >= 0);
       }
     }
@@ -2748,9 +2752,12 @@
             close(); return;
           }
         }
-        if (confirm("Give up? " + label(other(ptr.side)) + " take" + (sides[other(ptr.side)].units.length > 1 ? "" : "s") + " the win.")) {
-          sendAct({ seq: S.seq + 1, kind: "forfeit", side: ptr.side, unit: ptr.unit });
-        }
+        // 🏳️ forfeiting asks in-world: the battle menu becomes the question
+        // (native confirm() looked alien — and iOS home-screen apps sometimes
+        // swallow it entirely)
+        confirmPanel("🏳️ Give up? " + label(other(ptr.side)) + " take" + (sides[other(ptr.side)].units.length > 1 ? "" : "s") + " the win.",
+          "🏳️ Yes, forfeit",
+          () => sendAct({ seq: S.seq + 1, kind: "forfeit", side: ptr.side, unit: ptr.unit }));
       } }, "🏳️ Forfeit"));
       menu.appendChild(el("div", { class: "battle-menu-row duel-items" }, row));
     }

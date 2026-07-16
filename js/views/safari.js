@@ -955,10 +955,10 @@
       dexHost.appendChild(grid);
       const tools = [
         el("button", { class: "btn subtle sm", onClick: () => {
-          if (confirm("Reset the ENTIRE Safari (all trainers, catches, teams, log)?")) {
+          U.ask("Reset the ENTIRE Safari (all trainers, catches, teams, log)?", { icon: "⚠️", danger: true }, () => {
             Store.update((s) => { s.pokedex = { active: "", trainers: {}, log: [], given: 0, taken: 0 }; });
             location.reload();
-          }
+          });
         } }, "Reset Safari"),
       ];
       dexHost.appendChild(el("div", { class: "toolbar" }, tools));

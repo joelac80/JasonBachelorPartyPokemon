@@ -279,9 +279,10 @@
 
     root.appendChild(el("div", { class: "toolbar" }, [
       el("button", { class: "btn subtle sm", onClick: () => {
-        if (!confirm(c.stage === "done" ? "Clear the finished cup?" : "Cancel this cup? All its results are lost.")) return;
+        U.ask(c.stage === "done" ? "Clear the finished cup?" : "Cancel this cup? All its results are lost.", { icon: "⚠️", danger: true }, () => {
         Store.update((s) => { delete s.stadium; });
         seats = null; Router.render();
+      });
       } }, c.stage === "done" ? "🧹 Clear the cup" : "🏳️ Cancel cup"),
     ]));
   }

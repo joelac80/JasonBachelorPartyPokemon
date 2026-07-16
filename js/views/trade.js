@@ -118,9 +118,10 @@
             try { host.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) {}
           } }, "✏️ Edit"),
           el("button", { class: "btn danger sm", onClick: () => {
-            if (!confirm("Retract your offer to " + toN + "?")) return;
+            U.ask("Retract your offer to " + toN + "?", { icon: "⚠️", danger: true }, () => {
             Store.cancelTradeOffer(o.id); sfx("error"); renderInbox();
-          } }, "↩ Retract"),
+          });
+      } }, "↩ Retract"),
         ];
       } else {
         controls = [el("span", { class: "hint" }, fromN + " → " + toN + " · waiting")];
@@ -328,14 +329,15 @@
             render(); renderInbox();
             return;
           }
-          if (!confirm("🔁 " + an + "'s " + nameOf(pick.a.mon) + (pick.a.shiny ? " ✨" : "") + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + (pick.b.shiny ? " ✨" : "") + " — deal?")) return;
+          U.ask("🔁 " + an + "'s " + nameOf(pick.a.mon) + (pick.a.shiny ? " ✨" : "") + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + (pick.b.shiny ? " ✨" : "") + " — deal?", { icon: "❓" }, () => {
           const aSh = !!pick.a.shiny, bSh = !!pick.b.shiny;
           const result = Store.trade(pick.a.attId, pick.a.mon, pick.b.attId, pick.b.mon, undefined, { aShiny: aSh, bShiny: bSh });
           if (!result) { alert("That trade isn't allowed — partners stay home."); return; }
           const aM = pick.a.mon, bM = pick.b.mon;
           pick.a.mon = 0; pick.b.mon = 0; pick.a.shiny = false; pick.b.shiny = false;
           playTrade(an, aM, aSh, bn, bM, bSh, result, () => { render(); renderRecent(); });
-        } }, gate.kind === "offer" ? "📬 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
+        });
+      } }, gate.kind === "offer" ? "📬 SEND TRADE OFFER" : "🔁 MAKE THE TRADE"),
       ]));
       if (gate.kind === "offer") host.appendChild(el("p", { class: "hint", style: { textAlign: "center" } },
         "📬 Goes to " + gate.themName + "'s trade inbox — no need for them to be in the room right now."));

@@ -183,10 +183,10 @@
     // Reset scores control
     root.appendChild(el("div", { class: "toolbar" }, [
       el("button", { class: "btn danger", onClick: () => {
-        if (confirm("Reset ALL Victory Road scores to zero?")) {
+        U.ask("Reset ALL Victory Road scores to zero?", { icon: "⚠️", danger: true }, () => {
           Store.update((s) => { s.scores = {}; });
           Router.render();
-        }
+        });
       } }, "Reset all scores"),
     ]));
   }

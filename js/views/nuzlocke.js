@@ -617,11 +617,12 @@
               : newKind === "ages" ? "🕰 THROUGH THE AGES (nine generations, a fresh team each era!)"
               : newKind === "trek" ? "🎒 LONG WALK (one team through all nine regions!)"
               : R.name + (newKind === "random" ? " 🎲 RANDOMIZER" : "") + " Nuzlocke";
-            if (!confirm("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.")) return;
+            U.ask("Start a " + label + " run with " + monName(id) + "? Permadeath is ON — no take-backs.", { icon: "⚠️", danger: true }, () => {
             Store.nuzStart(me, id, newKind === "random" || newKind === "master" || newKind === "blitz" ? "random" : "",
               newKind === "master" ? "master" : newKind === "ages" ? "ages" : newKind === "trek" ? "trek" : newKind === "blitz" ? "blitz" : newRegion);
             wildId = 0; sfx("fanfare"); renderKeepScroll();
-          } }, (function () {
+          });
+      } }, (function () {
             // 🌍 master runs live at Lv 100 — the lab shows the FINAL form,
             // because that's who actually steps out of the ball.
             const show = newKind === "master" ? evolvedAt(id, 100) : id;
@@ -666,8 +667,9 @@
     // Bail-out (tombstones the run; a new start replaces it).
     host.appendChild(el("div", { class: "safari-actions nuz-abandon" }, [
       el("button", { class: "btn subtle sm", onClick: () => {
-        if (!confirm("Abandon this Nuzlocke run? It ends here — badges, box and all.")) return;
+        U.ask("Abandon this Nuzlocke run? It ends here — badges, box and all.", { icon: "⚠️", danger: true }, () => {
         Store.nuzAbandon(me, slot); wildId = 0; sfx("error"); renderKeepScroll();
+      });
       } }, "🏳️ Abandon run"),
     ]));
   }
@@ -685,9 +687,10 @@
         el("p", { class: "hint" }, "You're already a Nuzlocke CHAMPION (it's in the Hall of Fame). Now Gen 2 roams the grass, 8 Johto gyms stand in order… and RED waits on Mt. Silver. Or retire with the crown."),
         el("div", { class: "safari-actions" }, [
           el("button", { class: "btn subtle sm", onClick: () => {
-            if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
+            U.ask("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.", { icon: "❓" }, () => {
             Store.nuzRetire(me, slot); wildId = 0; renderKeepScroll();
-          } }, "👑 Retire as Champion"),
+          });
+      } }, "👑 Retire as Champion"),
         ]),
       ]));
     }
@@ -748,9 +751,10 @@
         el("p", { class: "hint" }, "You're already a Nuzlocke CHAMPION (it's in the Hall of Fame). RED waits at the peak for the Legend tier. Or retire with the crown."),
         el("div", { class: "safari-actions" }, [
           el("button", { class: "btn subtle sm", onClick: () => {
-            if (!confirm("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.")) return;
+            U.ask("Retire as Nuzlocke Champion? The run ends here — RED keeps waiting.", { icon: "❓" }, () => {
             Store.nuzRetire(me, slot); wildId = 0; renderKeepScroll();
-          } }, "👑 Retire as Champion"),
+          });
+      } }, "👑 Retire as Champion"),
         ]),
       ]));
     } else {
@@ -781,9 +785,10 @@
       onDone: (ids) => {
         if (!ids || ids.length < 6) return;
         const names = ids.map((id) => monName(id)).join(", ");
-        if (!confirm("Premiere the 🎬 MOVIE MARATHON with this cast — " + names + "? " + ((window.MOVIE_BOSSES || []).length || 16) + " films at full power, permadeath is ON — no take-backs.")) return;
+        U.ask("Premiere the 🎬 MOVIE MARATHON with this cast — " + names + "? " + ((window.MOVIE_BOSSES || []).length || 16) + " films at full power, permadeath is ON — no take-backs.", { icon: "⚠️", danger: true }, () => {
         Store.nuzStartMovie(me, ids);
         wildId = 0; sfx("fanfare"); renderKeepScroll();
+      });
       } });
   }
   function nextFilm(run) {
@@ -873,10 +878,11 @@
       el("p", { class: "hint" }, "The " + (prev ? prev.name : "") + " chapter is closed. Your team — " + alive + " standing, every tombstone honored — retires to Professor " + (prev ? prev.prof : "Oak") + "'s ranch, safe forever. Across the water, Professor " + R.prof + " has three new partners waiting… and the level curve starts over at 14."),
       el("div", { class: "nuz-starters" }, R.starters.map((id) =>
         el("button", { class: "nuz-starter", onClick: () => {
-          if (!confirm("Leave the whole team with Professor " + (prev ? prev.prof : "Oak") + " and begin " + R.name + " with " + monName(id) + "? The box resets — permadeath stays ON.")) return;
+          U.ask("Leave the whole team with Professor " + (prev ? prev.prof : "Oak") + " and begin " + R.name + " with " + monName(id) + "? The box resets — permadeath stays ON.", { icon: "⚠️", danger: true }, () => {
           Store.nuzNewRegion(me, id, R.key);
           wildId = 0; sfx("fanfare"); renderKeepScroll();
-        } }, [
+        });
+      } }, [
           Store.sprite(id) ? el("img", { src: Store.sprite(id), alt: monName(id) }) : el("span", { class: "tc-ball-fallback" }),
           el("span", { class: "nuz-starter-n" }, monName(id)),
         ]))),

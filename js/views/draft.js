@@ -122,13 +122,13 @@
 
     root.appendChild(el("div", { class: "toolbar" }, [
       el("button", { class: "btn subtle", onClick: () => {
-        if (confirm("Clear all team assignments and captains?")) {
+        U.ask("Clear all team assignments and captains?", { icon: "⚠️", danger: true }, () => {
           Store.update((s) => {
             s.attendees.forEach((a) => (a.team = ""));
             s.teams.forEach((t) => (t.captain = ""));
           });
           render();
-        }
+        });
       } }, "Clear draft"),
       el("button", { class: "btn subtle", onClick: () => { autoBalance(); render(); } }, "⚖️ Auto-balance rest"),
     ]));
