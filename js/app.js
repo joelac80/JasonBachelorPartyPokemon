@@ -340,6 +340,7 @@
         const setup = {
           title: ch.event || "Duel",
           first: aLead === bLead ? (Math.random() < 0.5 ? "a" : "b") : (aLead > bLead ? "a" : "b"),
+          gims: ch.gims || null,   // 🎪 the challenger's gimmick rules bind both phones
           a: { units: aUnits, shared: !!ch.solo2 }, b: { units: bUnits, shared: !!bShared },
         };
         const names = (us) => us.map((u) => (Store.attendee(u.attId) || {}).name || "?").join(" & ");

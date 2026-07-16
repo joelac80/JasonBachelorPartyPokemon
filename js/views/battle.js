@@ -54,11 +54,21 @@
     const nm = p.name || (a && a.name) || "Trainer";
     const me = window.Sync && Sync.getMe();
     if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+    // 🎪 the challenger sets the GIMMICK RULES — they ride the challenge and
+    // bind BOTH phones (null = all four open, [] = a clean classic duel).
+    let gimRule = null;
     const sent = (extra) => {
+      if (gimRule) extra.gims = gimRule.slice();
       Sync.sendChallenge(p.clientId, p.attId, nm, (opts.event || "").trim(), extra);
       if (opts.onSent) { try { opts.onSent(nm); } catch (_) {} }
     };
     let fmt;
+    const RULES = [["⚡ All", null], ["✨ Mega", ["mega"]], ["🌀 Z", ["z"]], ["🔴 Dyna", ["dyna"]], ["💎 Tera", ["tera"]], ["🚫 None", []]];
+    const ruleRow = el("div", { class: "chip-row" }, RULES.map((r, i) =>
+      el("button", { class: "chip" + ((gimRule === null && r[1] === null) ? " on" : ""), onClick: (e) => {
+        gimRule = r[1];
+        [...ruleRow.children].forEach((ch2, ix) => ch2.classList.toggle("on", ix === i));
+      } }, r[0])));
     const body = el("div", { class: "chal-modal" }, [
       el("div", { class: "chal-line" }, "Challenge " + nm + " to…"),
       el("div", { class: "toolbar" }, [
@@ -81,6 +91,9 @@
           } });
         } }, "🐾 Double — solo (4 Pokémon)"),
       ]),
+      el("div", { class: "chal-line", style: { marginTop: "8px" } }, "🎪 Gimmick rules"),
+      ruleRow,
+      el("p", { class: "hint" }, "All = every era open to both sides · pick ONE era for a themed duel · None = a clean classic."),
     ]);
     fmt = Modal.open("🎮 Pokémon Duel", body, null, {});
   }
@@ -100,6 +113,7 @@
     // or spend a turn to switch). Doubles = 2 field slots per side (2v2), each
     // slot a party of up to 3 that switches to its own bench.
     let format = "single";
+    let hotGims = "all";   // 🎪 hot-seat gimmick ruleset: all | mega | z | dyna | tera | none
     const duel = { a: [{ attId: "", party: [] }], b: [{ attId: "", party: [] }] };
     function blankUnits() { return format === "double" ? [{ attId: "", party: [] }, { attId: "", party: [] }] : [{ attId: "", party: [] }]; }
     const duelHost = el("div", { class: "duel-setup" });
@@ -172,6 +186,10 @@
         el("button", { class: "chip" + (format === "single" ? " on" : ""), onClick: () => { if (format !== "single") { format = "single"; duel.a = blankUnits(); duel.b = blankUnits(); renderDuel(); } } }, "⚔ Single — party up to 6"),
         el("button", { class: "chip" + (format === "double" ? " on" : ""), onClick: () => { if (format !== "double") { format = "double"; duel.a = blankUnits(); duel.b = blankUnits(); renderDuel(); } } }, "🐾 Double — 2 on the field"),
       ]));
+      // 🎪 GIMMICK RULES for the hot-seat duel — All / one era / classic None.
+      duelHost.appendChild(el("div", { class: "chip-row" }, [
+        ["⚡ All", "all"], ["✨ Mega", "mega"], ["🌀 Z", "z"], ["🔴 Dyna", "dyna"], ["💎 Tera", "tera"], ["🚫 None", "none"],
+      ].map((r) => el("button", { class: "chip" + (hotGims === r[1] ? " on" : ""), onClick: () => { hotGims = r[1]; renderDuel(); } }, r[0]))));
       if (format === "double") duelHost.appendChild(el("p", { class: "hint" },
         "2v2 on the field. Two trainers team up — each brings up to 3 (one fights, the rest are bench). Pick the SAME trainer in both slots to run a solo double from one party."));
       duelHost.appendChild(el("div", { class: "arena-grid" }, [
@@ -211,7 +229,9 @@
             }
             return { units: us.map((u) => ({ attId: u.attId, monIds: u.party.slice() })) };
           };
+          const gims = hotGims === "all" ? undefined : hotGims === "none" ? [] : [hotGims];
           Duel.start({ mode: "local", title: (eventLabel || "").trim() || "Duel",
+            gims: gims,
             a: buildSide(duel.a), b: buildSide(duel.b),
             onResult: () => { renderLog(); } });
         } }, "🎮 START DUEL"),

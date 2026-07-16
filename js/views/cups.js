@@ -19,7 +19,24 @@
     poke:   { e: "🔴", name: "Poké Cup",   lvl: 50,  desc: "Your OWN caught Pokémon at Lv 50 — the classic Stadium ruleset. Catch before you enter!" },
     prime:  { e: "👑", name: "Prime Cup",  lvl: 100, desc: "Anything goes at Lv 100 — legendaries welcome. The heavyweight belt." },
     rental: { e: "🎲", name: "Rental Cup", lvl: 50,  desc: "Everyone is dealt a seeded RENTAL six and chooses 3 per match — zero prep, pure skill." },
+    // 🎪 THE GIMMICK CUPS — each cup IS its spectacle: only that transform is
+    // legal (for everyone, Gen Ladder be damned), and every AI trainer's ace
+    // fires it. Mega restricts the roster to stone-worthy species; the rest
+    // run the whole dex; Mixed deals each trainer a random era, seeded.
+    mega:   { e: "✨", name: "Mega Cup",    lvl: 50, gim: "mega",  desc: "Mega-capable species ONLY — every ace Mega Evolves. Bring a stone-worthy squad." },
+    zcup:   { e: "🌀", name: "Z Cup",       lvl: 50, gim: "z",     desc: "Any species — every ace fires a Z-MOVE. One devastating, unmissable strike each." },
+    dyna:   { e: "🔴", name: "Dynamax Cup", lvl: 50, gim: "dyna",  desc: "Any species — every ace DYNAMAXES. Three towering turns each." },
+    tera:   { e: "💎", name: "Tera Cup",    lvl: 50, gim: "tera",  desc: "Any species — every ace TERASTALLIZES. Pick your crystal wisely." },
+    mixed:  { e: "🌈", name: "Mixed Cup",   lvl: 50, gim: "mixed", desc: "Every trainer draws a RANDOM gimmick for their ace — Mega, Z, Dynamax or Tera. Seeded chaos." },
   };
+  const GIMS = ["mega", "z", "dyna", "tera"];
+  // A player's gimmick in this cup: the cup's own, or their seeded Mixed draw.
+  function cupGim(c, key) {
+    const g = CUPS[c.cup].gim;
+    if (!g) return null;
+    if (g !== "mixed") return g;
+    return GIMS[(mulberry32(((c.seed || 1) ^ strHash("gim-" + key)) >>> 0)() * 4) | 0];
+  }
 
   function mulberry32(a) {
     return function () {
@@ -42,6 +59,8 @@
     if (cup === "baby") return ids.filter((id) => !DEX[id].leg && !PRE[id] && (window.EVO_LEVELS || {})[id]);
     if (cup === "prime") return ids;
     if (cup === "poke") return (window.Duel && Duel.poolFor(attId)) || [];
+    // ✨ Mega Cup: only species with a stone — the ace transform must be REAL
+    if (cup === "mega") return ids.filter((id) => (window.MEGA_BY_BASE || {})[id]);
     return ids.filter((id) => !DEX[id].leg);
   }
   function rentalSix(cup, seed, key) {
@@ -166,11 +185,19 @@
       onWin(rnd() < 0.5 ? i : j);
       return;
     }
+    // 🎪 gimmick cups: the AI's ace fires the cup's transform; humans get
+    // ONLY that cup's button, Gen Ladder be damned (opts.gims allowlist).
     const unitFor = (p, ids) => p.ai
-      ? { npc: p.name, ai: true, monIds: p.team.slice(0, 3) }
+      ? { npc: p.name, ai: true, monIds: p.team.slice(0, 3), gimmick: cupGim(c, p.key) }
       : { attId: p.key, monIds: ids };
+    // the battle's legal transforms = the two entrants' own (union) — in a
+    // Mega Cup that's just "mega"; in Mixed, each side's seeded draw.
+    const gimsAllowed = CUPS[c.cup].gim
+      ? [A, B].map((p) => cupGim(c, p.key)).filter((g, ix, a) => g && a.indexOf(g) === ix)
+      : null;
     const start = (aIds, bIds) => {
       Duel.start({ mode: "local", level: lvl, title: CUPS[c.cup].name,
+        gims: gimsAllowed || undefined,
         a: { units: [unitFor(A, aIds)] },
         b: { units: [unitFor(B, bIds)] },
         onResult: (winSide) => { if (winSide === "a") onWin(i); else if (winSide === "b") onWin(j); } });
@@ -178,9 +205,11 @@
     const pickFor = (p, done) => {
       if (p.ai) { done(null); return; }
       const pool = c.cup === "rental" ? p.team.slice() : cupPool(c.cup, p.key);
+      const g = cupGim(c, p.key);
       Duel.pickParty({ attId: p.key, min: 3, max: 3, pool: pool,
         title: CUPS[c.cup].e + " " + p.name + " — pick 3 (" + CUPS[c.cup].name + ")",
-        hint: c.cup === "rental" ? "Choose 3 of your dealt rental six." : CUPS[c.cup].desc,
+        hint: (c.cup === "rental" ? "Choose 3 of your dealt rental six." : CUPS[c.cup].desc) +
+          (g && CUPS[c.cup].gim === "mixed" ? " 🌈 YOUR drawn gimmick: " + ({ mega: "✨ Mega", z: "🌀 Z-Move", dyna: "🔴 Dynamax", tera: "💎 Tera" })[g] + "." : ""),
         onDone: done });
     };
     pickFor(A, (aIds) => pickFor(B, (bIds) => start(aIds, bIds)));
@@ -214,7 +243,8 @@
         el("span", { class: "nuz-hall-rank" }, c.stage === "done" && c.finals && c.finals.champ === r.idx ? "👑" : "#" + (rank + 1)),
         el("span", { class: "nuz-hall-name" }, (r.p.ai ? "🤖 " : "") + r.p.name),
         el("span", { class: "nuz-hall-sub" }, r.w + " win" + (r.w === 1 ? "" : "s") +
-          (c.cup === "rental" && r.p.team ? " · " + r.p.team.slice(0, 3).map((id) => (DEX[id] || {}).n || id).join("/") + "…" : "")),
+          (c.cup === "rental" && r.p.team ? " · " + r.p.team.slice(0, 3).map((id) => (DEX[id] || {}).n || id).join("/") + "…" : "") +
+          (CUPS[c.cup].gim === "mixed" ? " · " + ({ mega: "✨ Mega", z: "🌀 Z", dyna: "🔴 Dyna", tera: "💎 Tera" })[cupGim(c, r.p.key)] : "")),
       ]))),
     ]));
 
@@ -259,7 +289,7 @@
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏟 Stadium Cups"),
-      el("p", { class: "page-sub" }, "The Pokémon Stadium homage — Baby, Poké, Prime and Rental Cups: a round robin with friends and AI challengers, then a knockout FINALS for the crown." ),
+      el("p", { class: "page-sub" }, "The Pokémon Stadium homage — Baby, Poké, Prime and Rental Cups, plus the 🎪 GIMMICK CUPS (Mega · Z · Dynamax · Tera · Mixed) where every ace transforms: a round robin with friends and AI challengers, then a knockout FINALS for the crown." ),
     ]));
     if (!Store.state.attendees.length) { root.appendChild(el("p", { class: "empty" }, "Add trainers first (Squad page).")); return; }
     const c = cupOf();

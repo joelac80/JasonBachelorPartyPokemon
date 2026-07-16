@@ -201,6 +201,32 @@
     if (window.MEGA_FORMS && MEGA_FORMS[monId]) return MEGA_FORMS[monId].base;
     return FORM_BASE[monId] || 0;
   }
+
+  // ⚖️ THE LEAN SYSTEM — real stat identity on the compressed engine. Each
+  // mon carries [off, def] in -10..+10 (data/dex-leans.js, derived from its
+  // cartridge Atk:SpA and Def:SpD ratios). Positive off = special attacker
+  // (Alakazam +8), negative = physical (Machamp -6). Positive def = special
+  // WALL (Chansey +10 shrugs Thunderbolts, folds to Body Slam), negative =
+  // physical wall (Cloyster -10). The tilt moves damage ±35% on offense and
+  // ±30% on defense around the SAME average, so every mon's overall power —
+  // and the whole tuned difficulty curve — is unchanged; only the SHAPE of
+  // its threat now matches the games. Forms fall back to their base species.
+  function leanOf(monId) {
+    const L = window.DEX_LEANS || {};
+    return L[monId] || L[baseOf(monId)] || [0, 0];
+  }
+  // attacker's tilt on a move it THROWS
+  function offTilt(m, mv) {
+    const o = (m.lean || [0, 0])[0];
+    if (!o) return 1;
+    return mv.cat === "spec" ? 1 + 0.035 * o : mv.cat === "phys" ? 1 - 0.035 * o : 1;
+  }
+  // defender's tilt on a hit it TAKES
+  function defTilt(tm, mv) {
+    const d = (tm.lean || [0, 0])[1];
+    if (!d) return 1;
+    return mv.cat === "spec" ? 1 - 0.03 * d : mv.cat === "phys" ? 1 + 0.03 * d : 1;
+  }
   function statsFor(monId, level) {
     const d = DEX[monId] || { n: "???", x: 60 };
     const x = d.x || 60;
@@ -273,6 +299,7 @@
     // battles, the Lv100 ladder, and remote duels are untouched).
     const hpMul = level ? Math.min(1, 0.5 + level / 100) : 1;
     return { id: monId, name: d.n, x: x, types: types,
+      lean: leanOf(monId),   // ⚖️ [off, def] stat identity — see leanOf above
       spe: (window.DEX_SPEED && DEX_SPEED[monId]) || 50,   // Gen-2 base Speed → turn order
       hpMax: Math.round((120 + Math.round(x * 0.5)) * hpMul),
       // ⚡ THE LIGHT BALL — Ash's Pikachu (10094) carries it forever: the
@@ -953,6 +980,7 @@
         // 8 party balls and the same lead mon standing in both field slots.
         const setup = { mode: "local", title: title, first: S.first,
           level: opts.level || null,   // battle-wide level: Lv tags + moveset caps must match on watchers
+          gims: opts.gims || null,     // 🏟 gimmick ruleset rides along (cups, custom friendlies)
           gym: opts.gym || null, league: lg || null, hof: opts.hof || null,
           a: { shared: !!(opts.a || {}).shared, units: ((opts.a || {}).units || []) },
           b: { shared: !!(opts.b || {}).shared, units: ((opts.b || {}).units || []) } };
@@ -1309,7 +1337,9 @@
         const stabMod = (m._tera && m._tera === mv.type) ? 1.5
           : ((m.types || []).indexOf(mv.type) >= 0
              || (m._teraBase && m._teraBase.indexOf(mv.type) >= 0)) ? 1.2 : 1;
-        return Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult));
+        // ⚖️ the DEFENDER's lean: a special wall shrugs this if it's special,
+        // a physical wall if it's physical (attacker's tilt is baked in base)
+        return Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult * defTilt(mon(target), mv)));
       };
       let dmg = 0;
       if (!miss && !immune && !isStatus && tm) dmg = dmgFor(tu, eff);
@@ -2247,7 +2277,7 @@
       // streak stings instead of deleting the run. The Dire Hit still
       // guarantees the crit.
       const crit = !miss && !isStatus && (armed || Math.random() < (highCrit ? 0.125 : 0.05));
-      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * (zed ? 1.8 : 1) * m.atk * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
+      const base = (miss || isStatus) ? 0 : Math.max(1, Math.round(mv.pow * (zed ? 1.8 : 1) * m.atk * offTilt(m, mv) * (crit ? 1.5 : 1) * (0.85 + Math.random() * 0.15)));
       // Secondary effect: does it proc? (self-buff status moves always do.)
       let fxHit = false, slpTurns = 0;
       if (mv.fx && !miss) {
@@ -2328,7 +2358,10 @@
             return;
           }
           const score = mv.pow * effFor(mv.type, mon(f.u).types, mv) * (mv.acc / 100)
-            * ((m.types || []).indexOf(mv.type) >= 0 ? 1.2 : 1);
+            * ((m.types || []).indexOf(mv.type) >= 0 ? 1.2 : 1)
+            // ⚖️ lean-aware: a special attacker favors its special moves, and
+            // nobody Thunderbolts a Chansey when Body Slam is on the menu
+            * offTilt(m, mv) * defTilt(mon(f.u), mv);
           if (!best || score > best.score) best = { score: score, mIdx: i, tIdx: f.i };
         });
       });
@@ -2402,6 +2435,7 @@
       m.hpMax = meg.hpMax;
       m.hp = Math.max(1, Math.round(meg.hpMax * ratio));
       m.x = meg.x; m.types = meg.types; m.spe = meg.spe;
+      m.lean = meg.lean;   // ⚖️ a stat-flipped mega (Mewtwo X!) changes its identity
       m.atk = meg.atk * (1 + Math.min(0.1, 0.01 * (m.kos0 || 0)));
       m.name = meg.name;
       // 🧬 adopt the mega's moveset so a type-CHANGING form can wield its new
@@ -2566,18 +2600,23 @@
       // remote opponents and watchers replay the same spectacle.
       const megaIds = (window.MEGA_BY_BASE && MEGA_BY_BASE[m.id]) || null;
       const pvp = !sides.a.units.some((x) => x.ai) && !sides.b.units.some((x) => x.ai);
-      const megaOpen = pvp || !(window.Store && Store.genCapFor) || Store.genCapFor(u.attId) >= 6;
+      // 🏟 A RULESET (opts.gims) overrides everything: a Mega Cup offers ONLY
+      // the Mega button (regardless of Gen Ladder), a "no gimmicks" friendly
+      // offers none ([]). Without one: PvP opens all, vs-AI stays era-gated.
+      const allow = opts.gims || null;
+      const can = (g, dflt) => allow ? allow.indexOf(g) >= 0 : dflt;
+      const cap = (window.Store && Store.genCapFor) ? Store.genCapFor(u.attId) : 9;
+      const megaOpen = can("mega", pvp || !(window.Store && Store.genCapFor) || cap >= 6);
       if (!u.ai && !S.megaSide[ptr.side] && !m.megaId) {
         const F = window.MEGA_FORMS || {};
-        const cap = (window.Store && Store.genCapFor) ? Store.genCapFor(u.attId) : 9;
         const gims = [];
         if (megaOpen && megaIds && megaIds.length) megaIds.forEach((mid) => gims.push(
           el("button", { class: "btn mega-btn", onClick: () => fireGimmick(u, ptr, "mega", { megaId: mid }) },
             "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : ""))));
         // 🎪 the era gimmicks unlock down the Gen Ladder, like megas do
-        if (pvp || cap >= 7) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => fireGimmick(u, ptr, "z") }, "🌀 Z-Move"));
-        if ((pvp || cap >= 8) && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => fireGimmick(u, ptr, "dyna") }, "🔴 Dynamax"));
-        if ((pvp || cap >= 9) && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraPicker(u, ptr) }, "💎 Terastallize"));
+        if (can("z", pvp || cap >= 7)) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => fireGimmick(u, ptr, "z") }, "🌀 Z-Move"));
+        if (can("dyna", pvp || cap >= 8) && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => fireGimmick(u, ptr, "dyna") }, "🔴 Dynamax"));
+        if (can("tera", pvp || cap >= 9) && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraPicker(u, ptr) }, "💎 Terastallize"));
         if (gims.length) menu.appendChild(el("div", { class: "battle-menu-row mega-row" }, gims));
       }
       const row = [];
