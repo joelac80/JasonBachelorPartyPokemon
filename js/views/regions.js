@@ -129,13 +129,16 @@
         host.appendChild(journey);
       }
 
-      // 🎬 Movie Legends — each film mounts in its own era's tab.
-      if (window.MovieLegends && MovieLegends.forRegion) {
-        var films = MovieLegends.forRegion(t.name);
-        if (films.length) {
-          host.appendChild(el("h3", { class: "rg-sub" }, "🎬 Movie Legends"));
+      // ⚔ THE LEGEND CONTINUES — the region's story specials, sitting right
+      // where the credits would roll: beat the Champion, and the postgame
+      // sagas open on the very next card (Rainbow Rocket, the Frontier,
+      // the Darkest Day, the Orange League…).
+      if (window.LegendChallenge && LegendChallenge.specialsForRegion) {
+        var sps = LegendChallenge.specialsForRegion(t.name);
+        if (sps.length) {
+          host.appendChild(el("h3", { class: "rg-sub" }, "⚔ The Legend Continues"));
           host.appendChild(el("div", { class: "league-journey" },
-            films.map(function (b) { return MovieLegends.card(b, attId); })));
+            sps.map(function (sp) { return LegendChallenge.specialCard(sp, attId); })));
         }
       }
 
@@ -145,12 +148,18 @@
         var trials = LegendChallenge.forRegions(t.lg || []);
         if (trials.length) {
           host.appendChild(el("h3", { class: "rg-sub" }, "🌌 Legendary Challenge"));
-          var trialHost = el("div", { class: "league-journey" },
-            trials.map(function (lg) { return LegendChallenge.card(lg, attId); }));
-          // Region specials (Order of Kalos, the Ultra Rift, the Clash of Ages…)
-          if (LegendChallenge.specialsForRegion) LegendChallenge.specialsForRegion(t.name)
-            .forEach(function (sp) { trialHost.appendChild(LegendChallenge.specialCard(sp, attId)); });
-          host.appendChild(trialHost);
+          host.appendChild(el("div", { class: "league-journey" },
+            trials.map(function (lg) { return LegendChallenge.card(lg, attId); })));
+        }
+      }
+
+      // 🎬 Movie Legends — each film mounts in its own era's tab.
+      if (window.MovieLegends && MovieLegends.forRegion) {
+        var films = MovieLegends.forRegion(t.name);
+        if (films.length) {
+          host.appendChild(el("h3", { class: "rg-sub" }, "🎬 Movie Legends"));
+          host.appendChild(el("div", { class: "league-journey" },
+            films.map(function (b) { return MovieLegends.card(b, attId); })));
         }
       }
 
