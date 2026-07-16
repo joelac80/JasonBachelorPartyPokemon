@@ -134,8 +134,16 @@
     for (let i = 0; i < dmg.length && (kept.length < want || nDmg() < 2); i++) {
       if (kept.indexOf(dmg[i]) >= 0) continue;
       const lid = riskCapFor(dmg[i], cap);
-      // clone before clamping — move objects are shared across mons
-      kept.push(dmg[i].pow > lid ? Object.assign({}, dmg[i], { pow: Math.round(lid) }) : dmg[i]);
+      if (dmg[i].pow > lid) {
+        // 🧗 a move the level hasn't earned steps DOWN its type's ladder —
+        // Psychic fights as Psybeam, Surf as Bubble Beam — real moves at
+        // real powers, never a nuke with the digits filed off.
+        const rung = ladderMove(dmg[i].type, level);
+        if (rung && rung.pow <= dmg[i].pow && !kept.some((m) => m.name === rung.name)) kept.push(rung);
+        // same-type twin already claimed the rung → clamp only if the kit
+        // NEEDS the damage; otherwise skip and let the quiver refill it
+        else if (nDmg() < 2) kept.push(Object.assign({}, dmg[i], { pow: Math.round(lid) }));
+      } else kept.push(dmg[i]);
     }
     return kept;
   }
@@ -147,24 +155,24 @@
   // rung that level would really know — Ember through Lv 16, Flame Wheel
   // 17-41, Flamethrower itself once the curve allows 90 (Lv 42+).
   const STAB_LADDER = {
-    normal: ["Tackle", "Headbutt", "Hyper Voice"],
-    fire: ["Ember", "Flame Wheel", "Flamethrower"],
-    water: ["Water Gun", "Bubble Beam", "Surf"],
-    electric: ["Thunder Shock", "Spark", "Thunderbolt"],
-    grass: ["Absorb", "Razor Leaf", "Energy Ball"],
-    ice: ["Powder Snow", "Aurora Beam", "Ice Beam"],
-    fighting: ["Mach Punch", "Brick Break", "Sky Uppercut"],
-    poison: ["Poison Sting", "Sludge", "Sludge Bomb"],
-    ground: ["Mud-Slap", "Scorching Sands", "Earth Power"],
-    flying: ["Gust", "Wing Attack", "Drill Peck"],
-    psychic: ["Confusion", "Psybeam", "Psychic"],
-    bug: ["Leech Life", "Bug Bite", "Bug Buzz"],
-    rock: ["Rock Throw", "Ancient Power", "Power Gem"],
+    normal: ["Tackle", "Headbutt", "Body Slam", "Hyper Voice"],
+    fire: ["Ember", "Flame Wheel", "Fire Punch", "Flamethrower", "Fire Blast"],
+    water: ["Water Gun", "Bubble Beam", "Waterfall", "Surf", "Hydro Pump"],
+    electric: ["Thunder Shock", "Spark", "Discharge", "Thunderbolt", "Thunder"],
+    grass: ["Absorb", "Razor Leaf", "Seed Bomb", "Energy Ball", "Leaf Storm"],
+    ice: ["Powder Snow", "Aurora Beam", "Ice Punch", "Ice Beam", "Blizzard"],
+    fighting: ["Mach Punch", "Brick Break", "Sky Uppercut", "Close Combat"],
+    poison: ["Poison Sting", "Sludge", "Poison Jab", "Sludge Bomb"],
+    ground: ["Mud-Slap", "Scorching Sands", "Earth Power", "Earthquake"],
+    flying: ["Gust", "Wing Attack", "Drill Peck", "Brave Bird"],
+    psychic: ["Confusion", "Psybeam", "Extrasensory", "Psychic"],
+    bug: ["Leech Life", "Bug Bite", "X-Scissor", "Bug Buzz", "Megahorn"],
+    rock: ["Rock Throw", "Ancient Power", "Power Gem", "Stone Edge"],
     ghost: ["Shadow Sneak", "Hex", "Shadow Ball"],
-    dragon: ["Twister", "Dragon Breath", "Dragon Pulse"],
-    dark: ["Pursuit", "Bite", "Crunch"],
-    steel: ["Bullet Punch", "Steel Wing", "Flash Cannon"],
-    fairy: ["Fairy Wind", "Draining Kiss", "Moonblast"],
+    dragon: ["Twister", "Dragon Breath", "Dragon Pulse", "Outrage"],
+    dark: ["Pursuit", "Bite", "Crunch", "Foul Play"],
+    steel: ["Bullet Punch", "Steel Wing", "Flash Cannon", "Meteor Mash"],
+    fairy: ["Fairy Wind", "Draining Kiss", "Dazzling Gleam", "Moonblast"],
   };
   function ladderMove(t, level) {
     const rungs = STAB_LADDER[t] || [];
@@ -308,16 +316,58 @@
         foreign.sort((a, b) => b.pow - a.pow);
         const keep = foreign[0];
         moves = moves.filter((m) => !m.pow || types.indexOf(m.type) >= 0 || m === keep);
+        // ⛏ REFILL: the trim must never leave a thin kit (a mono-water
+        // Feraligatr — Surf/Crunch/Ice Punch/EQ — fell to TWO moves). The
+        // dropped coverage returns as the mid-tier rung of its type (Bite,
+        // Aurora Beam…), so the kit stays four deep but only the ONE kept
+        // surprise swings full capped power.
+        const want = level >= 24 ? 4 : level >= 12 ? 3 : 2;
+        for (let i = 1; i < foreign.length && moves.length < want; i++) {
+          const t = foreign[i].type;
+          if (moves.some((m) => m.pow && m.type === t)) continue;
+          const mid = ladderMove(t, Math.min(level, 29));
+          if (mid && !moves.some((m) => m.name === mid.name)) moves.push(mid);
+        }
       }
       if (level < 30) {
         const i = moves.findIndex((m) => m.pow && types.indexOf(m.type) < 0);
         if (i >= 0) {
           const down = ladderMove(moves[i].type, level);
-          if (down && down.name !== moves[i].name) {
+          // a true downgrade only — a 40-pow jab stays itself
+          if (down && down.name !== moves[i].name && down.pow < moves[i].pow) {
             if (moves.some((m) => m.name === down.name)) moves.splice(i, 1);
             else moves[i] = down;
           }
         }
+      }
+    }
+    // 🎯 FULL QUIVER — from Lv24 every kit draws FOUR moves (three in the
+    // early teens). Short learnsets and heavy trims refill from the mon's
+    // own ladder, a second STAB rung riding along the cartridge way
+    // (Waterfall beside Surf), then plain normal rungs top off the quiver.
+    if (level) {
+      const want = level >= 24 ? 4 : level >= 12 ? 3 : 2;
+      const cap = level < 58 ? 40 + level * 1.2 : Infinity;
+      const fill = types.concat(types.indexOf("normal") < 0 ? ["normal"] : []);
+      for (let ti = 0; ti < fill.length && moves.length < want; ti++) {
+        const rungs = STAB_LADDER[fill[ti]] || [];
+        for (let ri = rungs.length - 1; ri >= 0 && moves.length < want; ri--) {
+          const mv = moveObj(rungs[ri]);
+          if (!mv || mv.pow > cap) continue;
+          if (moves.some((m) => m.name === mv.name)) continue;
+          moves.push(mv);
+        }
+      }
+      // last resort at LOW levels: own rungs exhausted (a Lv14 Vulpix holds
+      // Ember + Tackle and the 60s are unearned) — plain physical filler
+      // jabs round out the slots, the cartridge way (every Vulpix digs)
+      const FILLER = ["ground", "dark", "rock", "flying", "fighting"];
+      for (let fi = 0; fi < FILLER.length && moves.length < want; fi++) {
+        if (types.indexOf(FILLER[fi]) >= 0) continue;
+        const mv = moveObj((STAB_LADDER[FILLER[fi]] || [])[0]);
+        if (!mv || mv.pow > cap) continue;
+        if (moves.some((m) => m.name === mv.name)) continue;
+        moves.push(mv);
       }
     }
     // 🩹 HP grows with the battle level, damage in lockstep via the move
@@ -2830,5 +2880,5 @@
   }
 
   window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead,
-    _capMoves: capMoves, _residualDiv: RESIDUAL_DIV, _effFor: effFor };   // test seams
+    _capMoves: capMoves, _moveObj: moveObj, _residualDiv: RESIDUAL_DIV, _effFor: effFor };   // test seams
 })();
