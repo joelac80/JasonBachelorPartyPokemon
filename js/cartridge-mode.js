@@ -45,6 +45,43 @@
     overrides: { cynthia: -2, alder: -2 },
   };
 
+  // 🎖 SIGNATURE MONS — the forms the story remembers. A leader's ACE never
+  // devolves past its iconic form (Falkner's bird is PIDGEOTTO at badge 1,
+  // Misty's star is STARMIE, Morty's shadow is GENGAR — level be damned),
+  // while un-pinned aces walk the era law as usual (Brock opens with ONIX;
+  // Steelix is Jasmine's story). `tank: true` exempts a famous single-stage
+  // terror from species normalization — Whitney's MILTANK fights at its full
+  // position edge with its full real bulk. The wall is the point.
+  const SIG = {
+    FALKNER: { minForm: 17 }, BUGSY: { minForm: 123 }, WHITNEY: { tank: true },
+    MORTY: { minForm: 94 }, JASMINE: { minForm: 208 }, PRYCE: { minForm: 221 }, CLAIR: { minForm: 230 },
+    MISTY: { minForm: 121 }, "LT. SURGE": { minForm: 26 }, ERIKA: { minForm: 45 },
+    SABRINA: { minForm: 65 }, BLAINE: { minForm: 59 },
+    MAYLENE: { minForm: 448 },
+    VIOLA: { minForm: 666 }, CLEMONT: { minForm: 695 }, VALERIE: { minForm: 700 },
+    NESSA: { minForm: 834 }, KABU: { minForm: 851 }, ALLISTER: { minForm: 94 }, OPAL: { minForm: 869 },
+    IONO: { minForm: 939 },
+  };
+  let PRE = null;
+  const preMap = () => {
+    if (PRE) return PRE;
+    PRE = {};
+    Object.keys(window.EVO_LEVELS || {}).forEach((f) =>
+      (window.EVO_LEVELS[f] || []).forEach((e) => { PRE[e.to] = +f; }));
+    return PRE;
+  };
+  // The form a foe's mon takes at its level — devolution with the iconic floor.
+  function formFor(opts, id, lvl, ace) {
+    const f = window.JourneyStyle ? JourneyStyle.formAt(id, lvl) : id;
+    const sig = ace && opts && opts.gym && SIG[opts.gym.leader];
+    if (!sig || !sig.minForm || f === sig.minForm) return f;
+    // if the devolve walked PAST the iconic form, stop AT the iconic form
+    const P = preMap();
+    let cur = sig.minForm, guard = 0;
+    while (cur && guard++ < 6) { if (cur === f) return sig.minForm; cur = P[cur] || 0; }
+    return f;
+  }
+
   const ST = () => window.DEX_STATS || {};
   const bstOf = (id) => { const s = ST()[id]; return s ? s[0] + s[1] + s[2] + s[3] + s[4] + s[5] : 360; };
   const statAt = (b, L) => Math.floor((2 * b + 31) * L / 100) + 5;
@@ -74,6 +111,10 @@
         return ids.map((id, i) => {
           const ace = i === last;
           const e = Math.round(lerp.apply(null, (ace ? CURVE.gymAceEdge : CURVE.gymFodderEdge).concat([frac])));
+          // 🎖 a signature TANK (Whitney's Miltank) skips normalization — the
+          // famous terror fights at its full edge with its full real bulk
+          const sig = ace && SIG[g.leader];
+          if (sig && sig.tank) return Math.max(5, Math.min(100, R + e));
           const ref = lerp.apply(null, (ace ? CURVE.gymAceRef : CURVE.gymFodderRef).concat([frac]));
           return edged(R, e, ref, id, false);
         });
@@ -125,6 +166,6 @@
     enable: function () { set(true); return true; },
     disable: function () { set(false); return false; },
     toggle: function () { set(!on()); return on(); },
-    plan: plan, statsAt: statsAt, CURVE: CURVE,
+    plan: plan, statsAt: statsAt, formFor: formFor, CURVE: CURVE, SIG: SIG,
   };
 })();

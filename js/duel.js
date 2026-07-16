@@ -616,8 +616,11 @@
         if (CART) {
           mLvl = cartPlan ? cartPlan[i] : (opts.level || 50);
           // era law at ITS OWN level: a story ace steps down to the form its
-          // (edged) level allows — the true-form one-shot at Lv 14 is gone
-          if (opts.level && u.ai && window.JourneyStyle) mid = JourneyStyle.formAt(id, mLvl);
+          // (edged) level allows — the true-form one-shot at Lv 14 is gone.
+          // 🎖 …but never past its ICONIC form (Misty's STARMIE stays).
+          if (opts.level && u.ai && window.JourneyStyle) {
+            mid = CartridgeMode.formFor(opts, id, mLvl, i === (u.monIds || []).length - 1);
+          }
         }
         const m = statsFor(mid, CART ? mLvl : opts.level); m.hp = m.hpMax;
         // ✨ shiny is a trainer's own catch — but an NPC boss can FORCE it via
