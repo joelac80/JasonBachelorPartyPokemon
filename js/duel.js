@@ -1339,7 +1339,14 @@
              || (m._teraBase && m._teraBase.indexOf(mv.type) >= 0)) ? 1.2 : 1;
         // ⚖️ the DEFENDER's lean: a special wall shrugs this if it's special,
         // a physical wall if it's physical (attacker's tilt is baked in base)
-        return Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult * defTilt(mon(target), mv)));
+        const out = Math.max(1, Math.round(o.base * teff * statMod * burnMod * stabMod * spreadMult * defTilt(mon(target), mv)));
+        // 🎛️ Cartridge shadow rides along, observation only — it records what
+        // the real games' formula would deal; the live number is untouched.
+        if (window.CartridgeShadow) try {
+          CartridgeShadow.onHit({ att: m, def: mon(target), mv: mv, eff: teff, crit: o.crit,
+            zed: o.zed, base: o.base, spread: spreadMult, dmg: out, level: opts.level || 0 });
+        } catch (_) {}
+        return out;
       };
       let dmg = 0;
       if (!miss && !immune && !isStatus && tm) dmg = dmgFor(tu, eff);
