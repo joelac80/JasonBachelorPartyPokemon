@@ -70,6 +70,66 @@
   // Champion (raw league win) — except the Clash of Ages, the capstone that
   // demands ALL NINE Legendary Challenges. Wins record to s.secrets[att].
   const SPECIALS = [
+    // ---- KANTO: the Orange League (the anime!) — the crew Ash actually
+    // beat first, ending with Supreme Leader DRAKE and his Dragonite.
+    { key: "orange", tab: "Kanto", name: "THE ORANGE LEAGUE", flair: "KANTO SPECIAL · The Orange Archipelago",
+      sub: "Kanto Special · Four island leaders (Luana fights DOUBLES) — then Supreme Leader DRAKE · one squad, 5 battles",
+      icon: "🍊", face: 149, boost: 1.4, pts: 30, needs: "blue", champ: "BLUE",
+      chain: [
+        { name: "CISSY", flair: "🌊 MIKAN ISLAND · Coral-Eye Badge", icon: "🌊", face: 9, boost: 1.2,
+          team: [117, 9],
+          quote: "On Mikan Island we don't just battle — we race the waves first. But your kind always skips to the fighting, so… Seadra! Blastoise! Water Gun on my mark!",
+          outro: { lose: "Clean run, straight shooting. The Coral-Eye Badge is yours, sailor.",
+            win: "Wiped out! Come back when you can ride a wave AND throw a ball." } },
+        { name: "DANNY", flair: "🧊 NAVEL ISLAND · Sea Ruby Badge", icon: "🧊", face: 31, boost: 1.25,
+          team: [87, 31],
+          quote: "You climbed the mountain without your Pokémon — good. Rule of Navel Island: the trainer carries themself, THEN the Pokémon carry the battle.",
+          outro: { lose: "Ha! You froze, you carved, you conquered. Sea Ruby Badge — you earned every degree of it.",
+            win: "The mountain decides who's ready. Today it said no." } },
+        { name: "RUDY", flair: "⚡ TROVITA ISLAND · Spike Shell Badge", icon: "⚡", face: 121, boost: 1.3,
+          team: [125, 121],
+          quote: "On Trovita, Pokémon don't just fight — they DANCE. Attacks on the beat, if you please. Electabuzz, Starmie: positions!",
+          outro: { lose: "…And THAT is how you dance. The Spike Shell Badge, with my respect.",
+            win: "No rhythm, no badge. Practice your footwork." } },
+        // 👥 Kumquat Island's house rule: Luana ONLY battles 2-on-2.
+        { name: "LUANA", flair: "👥 KUMQUAT ISLAND · Jade Star Badge — DOUBLES", icon: "👥", face: 105, boost: 1.32,
+          duoShared: true, team: [65, 105],
+          quote: "Kumquat Island rule, dear: two Pokémon each, side by side, and we see whose PAIR fights as one. Alakazam, Marowak — you know the drill.",
+          outro: { lose: "Beautiful teamwork! You'd make my son proud. The Jade Star Badge is yours.",
+            win: "Your two fought like strangers. Come back when they're family." } },
+      ],
+      finale: { npc: "DRAKE", name: "SUPREME LEADER DRAKE", flair: "🐉 PUMMELO STADIUM · The Winner's Trophy", icon: "🐉", face: 149,
+        quote: "Pummelo Stadium, full house. The undefeated head of the Orange Crew rolls his shoulders — 'No trainer has ever taken my Dragonite past its first yawn. Show me something new.'" },
+      team: [132, 95, 94, 125, 3, 149], reserve: 1,
+      speak: { 5: ["The crowd goes silent. Drake reaches for his LAST ball — 'You woke it up. Nobody wakes it up.'",
+                   "DRAGONITE descends onto the field."] },
+      outro: { lose: "Drake shakes your hand as the stadium erupts. 'Trophy's yours. Dragonite doesn't bow often — remember this.'",
+               win: "Dragonite yawns, stretches, and goes back to sleep. Drake grins: 'Told you.'" },
+      quote: "Across the archipelago the badges are earned sideways — wave runs, cliff climbs, dance-offs and double battles — and at the end of the water waits Pummelo Stadium, where the Supreme Leader's Dragonite has never been woken up by a challenger. The league Ash won first.",
+      winChron: "conquered the ORANGE LEAGUE — four islands fell, and Drake's DRAGONITE finally bowed!",
+      loseChron: "the archipelago kept its trophy",
+      lead: "🍊 Cissy's tides, Danny's ice, Rudy's rhythm, Luana's DOUBLE battle — then DRAKE, undefeated at Pummelo, with the Dragonite that never wakes up twice." },
+    // ---- JOHTO: Cipher's masterpiece (Orre / XD) — the door it never
+    // should have opened. A Pokémon whose heart was shut on purpose.
+    { key: "xd001", tab: "Johto", name: "XD001 · SHADOW LUGIA", flair: "JOHTO SPECIAL · Cipher's Masterpiece",
+      sub: "Johto Special · Miror B dances the door open — then the whale of the deep, painted wrong · 2 battles",
+      icon: "🌘", face: 249, boost: 1.5, pts: 34, needs: "lance", champ: "LANCE",
+      chain: [
+        { name: "MIROR B", flair: "🕺 THE FUNK OF ORRE", icon: "🕺", face: 272, boost: 1.3,
+          team: [272, 272, 272, 272],
+          quote: "Ohhh yeah baby — you found Miror B! Four Ludicolo, one groove, ZERO shame. Let the music play!",
+          outro: { lose: "The music… stopped?! Fine, FINE — the big fish is below deck. Don't say Miror B never gave you nothing.",
+            win: "That's the rhythm of defeat, baby! Cha-cha-cha!" } },
+      ],
+      finale: { npc: "XD001", name: "XD001 · SHADOW LUGIA", flair: "🌘 THE DOOR TO THE DARK", icon: "🌘", face: 249,
+        quote: "The cargo bay is cold. Something vast hangs in the dark — Lugia, but wrong: violet where there should be silver, eyes with nothing behind them. Cipher closed its heart on purpose. Opening it again goes through you." },
+      team: [249], shiny: true, hpBoost: 2.6,
+      outro: { lose: "The violet drains away like a tide going out. Silver again, Lugia looks at you once — grateful, unknowable — and dives.",
+               win: "The dark door closes with you on the wrong side of it." },
+      quote: "In Orre they built a Pokémon that couldn't feel. Fight past Cipher's dancing admiral and stand in front of XD001 — SHADOW LUGIA, the whale of the deep painted wrong — and hit it hard enough to remind it what it was.",
+      winChron: "opened the dark door — MIROR B danced, and XD001, SHADOW LUGIA, came home to silver!",
+      loseChron: "the shadow door stayed shut",
+      lead: "🌘 Miror B and his four-Ludicolo disco — then XD001 itself, a raid-sized SHADOW LUGIA in its wrong colors." },
     // ---- HOENN: the Delta Episode (ORAS) — Zinnia, then the meteor's rider.
     { key: "delta", tab: "Hoenn", name: "THE DELTA EPISODE", flair: "HOENN SPECIAL · Sky High, ORAS",
       sub: "Hoenn Special · Zinnia the Lorekeeper — then soar to the meteor, where something alien waits · 2 battles",
@@ -94,6 +154,52 @@
       lead: "☄️ Zinnia and her Salamence guard the old ways. Beyond her: the stratosphere, and DEOXYS — which refuses to stay one shape." },
     // ---- KALOS runs a little timeline of its own: XY's villain arc, the
     // order trio, AZ's peace — and then LEGENDS Z-A, Lumiose rebuilt.
+    // ---- HOENN: the BATTLE FRONTIER (Emerald) — seven Brains, one squad,
+    // and at the top of the Pyramid a man who commands the golems themselves.
+    { key: "frontier", tab: "Hoenn", name: "THE BATTLE FRONTIER", flair: "HOENN SPECIAL · Seven Facilities, Seven Brains",
+      sub: "Hoenn Special · Six Frontier Brains back-to-back — then BRANDON and the Regis atop the Pyramid · one squad, 7 battles",
+      icon: "🏛️", face: 377, boost: 1.5, pts: 40, needs: "steven", champ: "STEVEN",
+      chain: [
+        { name: "NOLAND", flair: "🏭 THE FACTORY HEAD", icon: "🏭", face: 376, boost: 1.3,
+          team: [65, 130, 376],
+          quote: "Factory rule is rentals, but for you? I'm bringing MY tools. Let's see what you're built from.",
+          outro: { lose: "Solid engineering, kid. The Knowledge Symbol's yours — six Brains to go.",
+            win: "Back to the assembly line with you." } },
+        { name: "GRETA", flair: "🥋 THE ARENA TYCOON", icon: "🥋", face: 214, boost: 1.34,
+          team: [214, 197, 68],
+          quote: "Three rounds, no stalling, ALL heart! The Arena only respects trainers who swing first!",
+          outro: { lose: "WOO! Now THAT'S fighting spirit! Take the Guts Symbol and keep swinging!",
+            win: "Judges' decision: knockout. Hit the showers." } },
+        { name: "TUCKER", flair: "🎪 THE DOME ACE", icon: "🎪", face: 6, boost: 1.38,
+          team: [6, 130, 272],
+          quote: "LADIES AND GENTLEMEN! The Dome Ace has entered the arena! Try to lose beautifully, darling — the crowd is watching!",
+          outro: { lose: "Magnifique! The Tactics Symbol — and the spotlight — are yours tonight!",
+            win: "The crowd came for a star and got a cautionary tale. Exit stage left!" } },
+        { name: "LUCY", flair: "🐍 THE PIKE QUEEN", icon: "🐍", face: 336, boost: 1.4,
+          team: [336, 213, 350],
+          quote: "…Three doors. You picked the one with me behind it. Unlucky.",
+          outro: { lose: "…Hm. The Luck Symbol. Don't make me smile again.",
+            win: "The Pike swallows another one. Next." } },
+        { name: "SPENSER", flair: "🗿 THE PALACE MAVEN", icon: "🗿", face: 289, boost: 1.42,
+          team: [169, 289, 131],
+          quote: "In the Palace, a Pokémon fights from its NATURE, not its orders. Show me yours trust you when you stop commanding them.",
+          outro: { lose: "Their spirit moved before your voice did. The Spirits Symbol, young one.",
+            win: "Your bond is still all leash. Come back when it's roots." } },
+        { name: "ANABEL", flair: "🗼 THE SALON MAIDEN", icon: "🗼", face: 196, boost: 1.46,
+          team: [143, 196, 243],
+          quote: "I feel what my Pokémon feel — every spark, every heartbeat. It makes us very hard to surprise. Shall we?",
+          outro: { lose: "…That, I did not feel coming. The Ability Symbol — Brandon waits at the Pyramid.",
+            win: "I felt your resolve waver before you did. Rest, then try again." } },
+      ],
+      finale: { npc: "BRANDON", name: "PYRAMID KING BRANDON", flair: "⛰️ THE PYRAMID KING", icon: "⛰️", face: 377,
+        quote: "Atop the Battle Pyramid the explorer turns, and behind him three ancient shapes grind out of the stone. 'I did not FIND the golems,' Brandon says. 'They found ME. GO — REGIROCK! REGICE! REGISTEEL!'" },
+      team: [377, 378, 379],
+      outro: { lose: "The three golems power down with a sound like closing tombs. Brandon nods once: 'Frontier conquered. All seven symbols. Remember the weight of them.'",
+               win: "The Pyramid keeps its gold. Train, return, ascend." },
+      quote: "Seven facilities, seven Brains, one squad of six carried through all of it — the Factory, the Arena, the Dome, the Pike, the Palace, the Tower… and at the Pyramid's peak, Brandon and the three legendary golems. Emerald's crown, rebuilt.",
+      winChron: "conquered the BATTLE FRONTIER — all seven Brains fell, and Brandon's REGIS crumbled at the Pyramid's peak!",
+      loseChron: "the Frontier kept its symbols",
+      lead: "🏛️ Noland, Greta, Tucker, Lucy, Spenser, Anabel — then PYRAMID KING BRANDON with Regirock, Regice and Registeel." },
     { key: "flare", tab: "Kalos", name: "THE ULTIMATE WEAPON", flair: "KALOS SPECIAL · Team Flare's Dawn",
       sub: "Kalos Special · Lysandre in the lab, then the weapon's core — life and death, unchained · 2 battles",
       icon: "🔥", face: 716, boost: 1.5, pts: 30, needs: "diantha", champ: "DIANTHA",
@@ -199,6 +305,20 @@
       loseChron: "time and space closed over another challenger",
       lead: "⏳ Origin Dialga bends the hours, Origin Palkia folds the miles. And the third ball on their belt… is not a ball." },
     // ---- UNOVA: N's Castle — the series' most famous story battle.
+    // ---- SINNOH: TOBIAS (the anime's most unfair legend) — the man who
+    // swept a whole league with a Darkrai nobody could touch.
+    { key: "tobias", tab: "Sinnoh", name: "TOBIAS", flair: "SINNOH SPECIAL · Lily of the Valley",
+      sub: "Sinnoh Special · The trainer who ended Ash's best run — Darkrai, Latios, and nobody has ever seen the rest · 6 v ???",
+      icon: "🌑", face: 491, boost: 1.55, hpBoost: 1.8, pts: 34, needs: "cynthia", champ: "CYNTHIA",
+      team: [491, 381], reserve: 1, playerSize: 6,
+      speak: { 1: ["Darkrai falls — and the stadium gasps. Nobody has EVER gotten this far.",
+                   "Tobias smiles for the first time. 'Then you've earned the second one.' LATIOS descends."] },
+      outro: { lose: "Tobias returns Latios and studies you for a long moment. 'Four more wait in my belt. May we never need them.' He walks off into legend.",
+               win: "Darkrai never even woke the second ball. The stadium files out in silence." },
+      quote: "He swept every gym with one Pokémon. He ended the best league run the anime ever saw. Six of yours against a Darkrai with a raid-sized nightmare pool — and if you somehow drop it, the Latios comes out. Nobody in history has seen his third.",
+      winChron: "beat TOBIAS — the Darkrai fell, the Latios followed, and the rest of his belt stays a mystery!",
+      loseChron: "the nightmare swept another challenger",
+      lead: "🌑 A raid-pool DARKRAI, then LATIOS — six of yours against the anime's most unfair trainer." },
     { key: "ncastle", tab: "Unova", name: "N'S CASTLE", flair: "UNOVA SPECIAL · Two Heroes, One Truth",
       sub: "Unova Special · The castle rises over the League — N and his dragon, then Ghetsis, enraged · 2 battles",
       icon: "🏰", face: 635, boost: 1.46, pts: 32, needs: "alder", champ: "ALDER",
@@ -229,6 +349,18 @@
       loseChron: "Unova's storms howled another challenger away",
       lead: "🎵 Tornadus and Thundurus tearing the sky, Keldeo and Meloetta holding the line — and LANDORUS to end it." },
     // ---- ALOLA: Aether Paradise — Lusamine and the Motherbeast.
+    // ---- UNOVA: the SUBWAY BOSSES — the twin conductors, and the series'
+    // one true double-battle duo. (All aboard. Ingo came home for this.)
+    { key: "subway", tab: "Unova", name: "INGO & EMMET", flair: "UNOVA SPECIAL · The Battle Subway",
+      sub: "Unova Special · The twin conductors fight as one — a true DOUBLE battle on the rails · 4v4 doubles",
+      icon: "🚇", face: 609, boost: 1.45, pts: 32, needs: "alder", champ: "ALDER",
+      duo: { names: ["INGO", "EMMET"], teams: [[530, 609], [632, 604]] },
+      team: [530, 609, 632, 604],
+      outro: { lose: "Emmet beams: 'I am Emmet. We lost. That is also a kind of arriving.' Ingo tips his cap, and for a heartbeat he looks somewhere very far away — 'Wherever the rails take us next… thank you for this stop.'" },
+      quote: "Two conductors, one uniform in white and one in black, finishing each other's battle plans since the day the Subway opened. They only fight DOUBLES, they never fight apart — and one of them once came back from somewhere very old with his cap full of snow. All aboard.",
+      winChron: "beat the SUBWAY BOSSES — Ingo & Emmet's double formation finally derailed!",
+      loseChron: "the Battle Subway rolled on without them",
+      lead: "🚇 Ingo's Excadrill & Chandelure beside Emmet's Durant & Eelektross — the twins fight as ONE, and so must your pair." },
     { key: "aether", tab: "Alola", name: "AETHER PARADISE", flair: "ALOLA SPECIAL · The Mother's Love",
       sub: "Alola Special · Lusamine in Ultra Space — where love means never letting go · 6v6…?",
       icon: "🧬", face: 793, boost: 1.44, pts: 30, needs: "kukui", champ: "PROF. KUKUI",
@@ -257,6 +389,49 @@
       winChron: "sealed the ULTRA RIFT — five Ultra Beasts down, and ULTRA NECROZMA's light returned!",
       loseChron: "the Rift swallowed another world's champion",
       lead: "☄️ Nihilego, Buzzwole, Xurkitree, Celesteela and Guzzlord — then ULTRA NECROZMA, blinding and absolute." },
+    // ---- ALOLA: TEAM RAINBOW ROCKET (USUM) — every villain boss from
+    // every era, assembled in Giovanni's stolen castle. The crossover.
+    { key: "rrocket", tab: "Alola", name: "TEAM RAINBOW ROCKET", flair: "ALOLA SPECIAL · The Castle of Every Villain",
+      sub: "Alola Special · Maxie, Archie, Cyrus, Ghetsis, Lysandre — then GIOVANNI and his Mega Mewtwo · one squad, 6 battles",
+      icon: "🌈", face: 150, boost: 1.5, pts: 42, needs: "kukui", champ: "KUKUI",
+      chain: [
+        { name: "MAXIE", flair: "🌋 TEAM MAGMA · the land's ambition", icon: "🌋", face: 383, boost: 1.4,
+          team: [262, 169, 323, 383],
+          quote: "In MY world, the Ultimate Weapon fired and the continents grew. I regret nothing — Groudon regrets less.",
+          outro: { lose: "Tch… even here, the land betrays me. Go. The others are worse.",
+            win: "The land expands, and you are not on it." } },
+        { name: "ARCHIE", flair: "🌊 TEAM AQUA · the sea's hunger", icon: "🌊", face: 382, boost: 1.42,
+          team: [262, 169, 319, 382],
+          quote: "Where I come from, the rains never stopped and the sea took everything back. BEST decision I ever made! KYOGRE!",
+          outro: { lose: "HAH! Sunk by a landlubber! Fine — the scary ones are upstairs.",
+            win: "Glub glub, kid. The sea keeps what it catches." } },
+        { name: "CYRUS", flair: "🌌 TEAM GALACTIC · the null world", icon: "🌌", face: 484, boost: 1.44,
+          team: [229, 430, 461, 483, 484],
+          quote: "I come from the world I succeeded in creating. There is no spirit there. No strife. Nothing. It is perfect — and I will have it again.",
+          outro: { lose: "Emotion… persists. A flaw in every world, it seems.",
+            win: "Deleted, like everything else that feels." } },
+        { name: "GHETSIS", flair: "🐉 TEAM PLASMA · the puppet king", icon: "🐉", face: 646, boost: 1.46,
+          team: [563, 625, 635, 646],
+          quote: "In my world the boy N never found his heroes, and Unova knelt. You are not even a footnote in the speech I am about to give.",
+          outro: { lose: "IMPOSSIBLE! I am PERFECTION! I am— get away from me!",
+            win: "Kneel. Everyone does, eventually." } },
+        { name: "LYSANDRE", flair: "🔥 TEAM FLARE · the chosen few", icon: "🔥", face: 717, boost: 1.48,
+          team: [620, 430, 668, 130, 717],
+          quote: "My weapon fired, and only the beautiful remained. Look at this castle — villains from five worlds, and every one of us WON. What does that tell you about yours?",
+          outro: { lose: "…Perhaps a world with trainers like you did not need cleansing. A troubling thought to lose to.",
+            win: "The unchosen fall. It is almost merciful." } },
+      ],
+      finale: { npc: "GIOVANNI", name: "GIOVANNI", flair: "🌈 THE MAN WHO NEVER LOSES TWICE", icon: "🌈", face: 150,
+        quote: "The throne room. The man who vanished from Viridian sits at the head of every villain who ever won, stroking a ball that hums with something furious. 'In every world, in every timeline, there is one constant,' Giovanni says, standing. 'ME.'" },
+      team: [51, 31, 34, 464, 150], gimmick: "mega", reserve: 1,
+      speak: { 4: ["Giovanni's last ball opens — and the fury inside it needs no introduction.",
+                   "MEWTWO. And Giovanni is already reaching for the Key Stone."] },
+      outro: { lose: "The castle lights gutter. Giovanni straightens his suit — 'A world where I lose. How novel.' — and is gone before the echo fades. The rainbow over the castle burns out.",
+               win: "Giovanni sits back down among the victors of five worlds. 'As I said. One constant.'" },
+      quote: "A castle drops out of a wormhole with a rainbow burning over it. Inside: Maxie and Archie from worlds where the weapon fired, Cyrus from his perfect nothing, Ghetsis from a kneeling Unova, Lysandre from the cleansed earth — and at the head of the table, the Rocket Boss himself, holding a Mega Stone and the world's angriest Pokémon.",
+      winChron: "toppled TEAM RAINBOW ROCKET — five victorious villains fell, and Giovanni's MEGA MEWTWO went down with the castle!",
+      loseChron: "the rainbow castle claimed another world",
+      lead: "🌈 Five bosses who WON their timelines — Groudon, Kyogre, Dialga & Palkia, Kyurem, Yveltal — then GIOVANNI, and the Mega Mewtwo he always promised himself." },
     // ---- GALAR: the Darkest Day — Rose, then ETERNAMAX Eternatus.
     { key: "darkest", tab: "Galar", name: "THE DARKEST DAY", flair: "GALAR SPECIAL · Rose's Tomorrow",
       sub: "Galar Special · Chairman Rose wakes the storm — then the sky itself descends · 2 battles",
@@ -282,6 +457,20 @@
       winChron: "ended THE DARKEST DAY — Rose fell, and ETERNAMAX ETERNATUS was brought down over Hammerlocke!",
       loseChron: "the Darkest Day kept rising",
       lead: "🌑 Rose fields Macro Cosmos steel. Then ETERNATUS — and what it becomes when the sky finishes opening is the biggest battle in Galar's history." },
+    // ---- GALAR: MUSTARD (Isle of Armor) — the champion before Leon,
+    // undefeated for eighteen years, still smiling like it's a picnic.
+    { key: "mustard", tab: "Galar", name: "MUSTARD", flair: "GALAR SPECIAL · The Master Dojo",
+      sub: "Galar Special · Leon's own master — champion for 18 years, and he never actually retired his edge · 6v6",
+      icon: "🍜", face: 892, boost: 1.5, pts: 34, needs: "leon", champ: "LEON",
+      team: [620, 405, 823, 9, 3, 892], reserve: 1,
+      speak: { 5: ["Mustard cracks his neck, and for one second the smile is gone.",
+                   "'My pupil holds the title. But the TOWER remembers who built it.' URSHIFU!"] },
+      outro: { lose: "Mustard is beaming again before Urshifu hits the mat. 'WONDERFUL! Best bowl of a battle I've had in years — stay for curry, I insist.'",
+               win: "'Almost!' he laughs, patting your shoulder like you didn't just lose. 'The dojo's door is always open.'" },
+      quote: "Before Leon, there was Mustard — eighteen years undefeated, the man who trained the unbeatable champion himself. He runs a dojo now, cooks curry, wears silly clothes… and keeps a fist of a Pokémon in his back room for guests who look strong enough to be worth it.",
+      winChron: "went a full round with MUSTARD — the 18-year champion's URSHIFU finally hit the mat!",
+      loseChron: "the old master is still the old master",
+      lead: "🍜 Mienshao, Luxray, Corviknight, both his old starters — then URSHIFU, the fist he built a whole island around." },
     { key: "monarchs", tab: "Galar", name: "MYTHS & MONARCHS", flair: "GALAR SPECIAL · The Uncrowned",
       sub: "Galar Special · The unseen myths and riderless monarchs of the Crown · 6v6",
       icon: "👊", face: 809, boost: 1.56, pts: 34, needs: "leon", champ: "LEON",
@@ -423,15 +612,24 @@
     specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs " + sp.name + " — pick EXACTLY " + size,
-        hint: sp.icon + " " + size + "v" + size + " — the lineup is hidden, and they hit like gods. Bring your very best.",
+        hint: sp.icon + " " + (sp.duo ? "⚔⚔ DOUBLE battle — your first two picks lead. " : size + "v" + size + " — ") +
+          "The lineup is hidden, and they hit like gods. Bring your very best.",
         onDone: (ids) => {
           Duel.start({ mode: "local", title: sp.name.toLowerCase(),
             secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
-            a: { units: [{ attId: attId, monIds: ids }] },
+            // 👥 a DUO special (the Subway Bosses!) is a double battle —
+            // two foes on the field, and you lead two of your own.
+            a: sp.duo
+              ? { shared: true, units: [{ attId: attId, monIds: ids }, { attId: attId, monIds: ids }] }
+              : { units: [{ attId: attId, monIds: ids }] },
             // reserve/speak/outro: hidden reveals, mid-battle lines and the
             // boss's closing quote (Volo's Giratina, Arceus's judgment…).
-            b: { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face,
-              reserve: sp.reserve || 0, speak: sp.speak || null, ace: sp.ace || null, outro: sp.outro || null }] },
+            b: sp.duo
+              ? { units: sp.duo.names.map((nm, k) => ({ npc: nm, ai: true, monIds: sp.duo.teams[k].slice(),
+                  boost: sp.boost, vsFace: k === 0 ? sp.face : null, outro: k === 0 ? (sp.outro || null) : null })) }
+              : { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face,
+                  hpBoost: sp.hpBoost || undefined, shiny: sp.shiny || undefined,
+                  reserve: sp.reserve || 0, speak: sp.speak || null, ace: sp.ace || null, outro: sp.outro || null }] },
             onResult: () => Router.render() });
         } });
     });
@@ -481,11 +679,24 @@
     if (i < (sp.chain || []).length) {
       const t = sp.chain[i];
       eraIntro(t, () => {
+        // 👥 a chain step can be a DOUBLE battle: t.duo = two named trainers
+        // (nobody expects the second voice), t.duoShared = one trainer
+        // fielding two at once (Luana's Kumquat Island rule).
+        const foeSide = t.duo
+          ? { units: t.duo.names.map((nm, k) => ({ npc: nm, ai: true, monIds: t.duo.teams[k].slice(),
+              boost: t.boost, vsFace: k === 0 ? t.face : null, outro: k === 0 ? (t.outro || null) : null })) }
+          : t.duoShared
+          ? { shared: true, units: [0, 1].map((k) => ({ npc: t.name, ai: true, monIds: t.team.slice(),
+              boost: t.boost, vsFace: k === 0 ? t.face : null, outro: k === 0 ? (t.outro || null) : null })) }
+          : { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: t.boost, vsFace: t.face,
+              hpBoost: t.hpBoost || undefined,   // 🩸 raid-pool bosses (the Loyal Three)
+              shiny: t.shiny || undefined, gimmick: t.gimmick || null,
+              reserve: t.reserve || 0, speak: t.speak || null, outro: t.outro || null }] };
         const go = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase() + " (" + (i + 1) + "/" + total + ")",
-          a: { units: [{ attId: attId, monIds: leadIds }] },
-          b: { units: [{ npc: t.name, ai: true, monIds: t.team.slice(), boost: t.boost, vsFace: t.face,
-            hpBoost: t.hpBoost || undefined,   // 🩸 raid-pool bosses (the Loyal Three)
-            reserve: t.reserve || 0, speak: t.speak || null, outro: t.outro || null }] },
+          a: (t.duo || t.duoShared)
+            ? { shared: true, units: [{ attId: attId, monIds: leadIds }, { attId: attId, monIds: leadIds }] }
+            : { units: [{ attId: attId, monIds: leadIds }] },
+          b: foeSide,
           onResult: (w) => { if (w === "a") runChainBattle(sp, attId, ids, i + 1); else fell(); } });
         if (i === 0) { go(ids); return; }
         Duel.pickLead({ attId: attId, ids: ids, title: "Battle " + (i + 1) + "/" + total + " — " + t.name,
@@ -503,7 +714,7 @@
                         { npc: sp.ally.name, ai: true, monIds: sp.ally.monIds.slice(), boost: sp.ally.boost || 1 }] }
             : { units: [{ attId: attId, monIds: leadIds }] },
           b: { units: [{ npc: fin.npc || sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: fin.face || sp.face,
-            hpBoost: sp.hpBoost || undefined,
+            hpBoost: sp.hpBoost || undefined, shiny: sp.shiny || undefined, gimmick: sp.gimmick || null,
             reserve: sp.reserve || 0, speak: sp.speak || null, outro: sp.outro || null }] },
           onResult: () => Router.render() });
         if (!(sp.chain || []).length) { start(ids); return; }
