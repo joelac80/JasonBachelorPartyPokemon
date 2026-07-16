@@ -293,23 +293,31 @@
         moves.push(mv);
       });
     }
-    // 🎓 ERA COVERAGE LAW: a badge-era kit fights with its OWN types.
-    // The level cap already shrinks move POWER, but a curated kit kept all
-    // four TYPES — so a Lv24 story Starmie nuked every starter super-
-    // effectively (Surf/Psychic/Ice Beam/Thunderbolt). Now: STAB always
-    // stays, status always stays, and off-type damaging moves trim to
-    // NONE below Lv30 and the strongest 1 below Lv45 — Ice Beam comes
-    // back when the badges say so. A kit with no STAB damage keeps its
-    // single strongest foreign move so nothing is left swinging air.
+    // 🎓 ERA COVERAGE LAW: a badge-era kit carries ONE foreign surprise,
+    // and below Lv30 even that one is the era's MID-TIER version. A curated
+    // kit kept all four full-power TYPES — so a Lv24 story Starmie nuked
+    // every starter super-effectively (Surf/Psychic/Ice Beam/Thunderbolt).
+    // Now: STAB always stays, status always stays, off-type damaging moves
+    // trim to the strongest 1 below Lv45 — and below Lv30 that survivor
+    // walks the STAB ladder like everything else: Ice Beam fights as
+    // AURORA BEAM, Psychic as PSYBEAM, until the badges say otherwise.
     // Applies to BOTH sides — era law.
     if (level && level < 45) {
-      const allowCov = level < 30 ? 0 : 1;
       const foreign = moves.filter((m) => m.pow && types.indexOf(m.type) < 0);
-      if (foreign.length > allowCov) {
+      if (foreign.length > 1) {
         foreign.sort((a, b) => b.pow - a.pow);
-        const hasStab = moves.some((m) => m.pow && types.indexOf(m.type) >= 0);
-        const keepCov = foreign.slice(0, Math.max(allowCov, hasStab ? 0 : 1));
-        moves = moves.filter((m) => !m.pow || types.indexOf(m.type) >= 0 || keepCov.indexOf(m) >= 0);
+        const keep = foreign[0];
+        moves = moves.filter((m) => !m.pow || types.indexOf(m.type) >= 0 || m === keep);
+      }
+      if (level < 30) {
+        const i = moves.findIndex((m) => m.pow && types.indexOf(m.type) < 0);
+        if (i >= 0) {
+          const down = ladderMove(moves[i].type, level);
+          if (down && down.name !== moves[i].name) {
+            if (moves.some((m) => m.name === down.name)) moves.splice(i, 1);
+            else moves[i] = down;
+          }
+        }
       }
     }
     // 🩹 HP grows with the battle level, damage in lockstep via the move
