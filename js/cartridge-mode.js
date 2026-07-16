@@ -52,16 +52,36 @@
   // Steelix is Jasmine's story). `tank: true` exempts a famous single-stage
   // terror from species normalization — Whitney's MILTANK fights at its full
   // position edge with its full real bulk. The wall is the point.
+  // `move` is the 🎵 SIGNATURE MOVE — the attack the story remembers,
+  // guaranteed on the ace even when the level curve trims its kit
+  // (Rollout isn't in the move DB, so Whitney menaces with Body Slam).
   const SIG = {
-    FALKNER: { minForm: 17 }, BUGSY: { minForm: 123 }, WHITNEY: { tank: true },
-    MORTY: { minForm: 94 }, JASMINE: { minForm: 208 }, PRYCE: { minForm: 221 }, CLAIR: { minForm: 230 },
-    MISTY: { minForm: 121 }, "LT. SURGE": { minForm: 26 }, ERIKA: { minForm: 45 },
-    SABRINA: { minForm: 65 }, BLAINE: { minForm: 59 },
-    MAYLENE: { minForm: 448 },
+    FALKNER: { minForm: 17 }, BUGSY: { minForm: 123, move: "Fury Cutter" },
+    WHITNEY: { tank: true, move: "Body Slam" }, CHUCK: { move: "Dynamic Punch" },
+    MORTY: { minForm: 94, move: "Shadow Ball" }, JASMINE: { minForm: 208, move: "Iron Tail" },
+    PRYCE: { minForm: 221, move: "Blizzard" }, CLAIR: { minForm: 230, move: "Hyper Beam" },
+    MISTY: { minForm: 121, move: "Bubble Beam" }, "LT. SURGE": { minForm: 26, move: "Thunderbolt" },
+    ERIKA: { minForm: 45, move: "Petal Dance" }, KOGA: { move: "Sludge Bomb" },
+    SABRINA: { minForm: 65, move: "Psychic" }, BLAINE: { minForm: 59, move: "Fire Blast" },
+    GIOVANNI: { move: "Earthquake" },
+    MAYLENE: { minForm: 448, move: "Aura Sphere" },
     VIOLA: { minForm: 666 }, CLEMONT: { minForm: 695 }, VALERIE: { minForm: 700 },
     NESSA: { minForm: 834 }, KABU: { minForm: 851 }, ALLISTER: { minForm: 94 }, OPAL: { minForm: 869 },
     IONO: { minForm: 939 },
   };
+  // 👑 league aces carry theirs too — keyed by stage key, famous ones only
+  const LEAGUE_SIG = {
+    lorelei: "Ice Beam", brunok: "Dynamic Punch", bruno: "Dynamic Punch", agatha: "Shadow Ball",
+    lance4: "Hyper Beam", lance: "Hyper Beam", karen: "Crunch", blue: "Hydro Pump",
+    cynthia: "Draco Meteor", steven: "Meteor Mash", red: "Volt Tackle",
+  };
+  // The move a foe's ACE is guaranteed to know, if the story pinned one.
+  function sigMove(opts, ace) {
+    if (!ace || !opts) return null;
+    if (opts.gym && SIG[opts.gym.leader]) return SIG[opts.gym.leader].move || null;
+    if (opts.league) return LEAGUE_SIG[opts.league.key] || null;
+    return null;
+  }
   let PRE = null;
   const preMap = () => {
     if (PRE) return PRE;
@@ -166,6 +186,7 @@
     enable: function () { set(true); return true; },
     disable: function () { set(false); return false; },
     toggle: function () { set(!on()); return on(); },
-    plan: plan, statsAt: statsAt, formFor: formFor, CURVE: CURVE, SIG: SIG,
+    plan: plan, statsAt: statsAt, formFor: formFor, sigMove: sigMove,
+    CURVE: CURVE, SIG: SIG, LEAGUE_SIG: LEAGUE_SIG,
   };
 })();

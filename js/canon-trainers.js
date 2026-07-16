@@ -91,12 +91,18 @@
       Galar:  [24, 110, 202, 52],                //  the Rocket Gacha classics
       Paldea: [336, 686, 778, 202, 52],          //  the greatest-hits farewell tour
     },
-    for(region) {
+    // `again` = this trainer has blasted them off before — they remember.
+    for(region, again) {
       return { name: "JESSIE & JAMES", title: "Team Rocket", type: "poison", tier: 1,
         team: (this.teams[region] || this.teams.Kanto).slice(),
-        quote: "Prepare for trouble — and make it double! To protect the world from devastation… TEAM ROCKET blasts off at the speed of light! Surrender now, or prepare to fight!",
-        outro: { lose: "WOBBUFFEEET— looks like Team Rocket's blasting off agaaaain! ✨",
-                 win: "Meowth, that's right! Da twerp actually LOST!" } };
+        quote: again
+          ? "YOU AGAIN?! Prepare for trouble — you KNOW that it's double! Team Rocket never forgets a twerp… this time it's PERSONAL!"
+          : "Prepare for trouble — and make it double! To protect the world from devastation… TEAM ROCKET blasts off at the speed of light! Surrender now, or prepare to fight!",
+        outro: again
+          ? { lose: "We trained for MONTHS for this rematch — and we're STILL blasting off agaaaain!! ✨",
+              win: "Meowth, that's right! Revenge is sweet like a bottle cap!" }
+          : { lose: "WOBBUFFEEET— looks like Team Rocket's blasting off agaaaain! ✨",
+              win: "Meowth, that's right! Da twerp actually LOST!" } };
     },
   };
 })();

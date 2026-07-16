@@ -92,7 +92,7 @@
     { leader: "KOFU",      badge: "Water",    type: "water",    region: "Paldea", team: [976, 961, 693, 740] , defeat: "WAHAHA! Fresh! You cooked this old chef in his own kitchen!" },
     { leader: "LARRY",     badge: "Normal",   type: "normal",   region: "Paldea", team: [775, 982, 765, 398] , defeat: "…It's just a job, and today I got outworked. Order whatever you like." },
     { leader: "RYME",      badge: "Ghost",    type: "ghost",    region: "Paldea", team: [354, 778, 426, 972] , defeat: "Yo — that beat DROPPED me! Mic's yours, champ!" },
-    { leader: "TULIP",     badge: "Psychic",  type: "psychic",  region: "Paldea", team: [981, 282, 956, 671] , defeat: "Flawless. Your technique needs no touch-up at all." },
+    { leader: "TULIP",     badge: "Psychic",  type: "psychic",  region: "Paldea", team: [981, 282, 956, 672] , defeat: "Flawless. Your technique needs no touch-up at all." },
     { leader: "GRUSHA",    badge: "Ice",      type: "ice",      region: "Paldea", team: [873, 614, 998, 975] , defeat: "…Cold. Precise. You'd do well on the mountain. Take it." },
   ];
   window.GYM_CIRCUIT = GYMS;   // profiles/tests can read the circuit
@@ -262,7 +262,10 @@
     if (Math.random() > 0.28) return;
     // 🎈 SECRET: Team Rocket tails the journey through EVERY region — Jessie,
     // James & Meowth jump out with the squad they ran in this era of the show.
-    if (window.TEAM_ROCKET && Math.random() < 0.22) { offerEncounter(attId, TEAM_ROCKET.for(region), false); return; }
+    if (window.TEAM_ROCKET && Math.random() < 0.22) {
+      // 🎈 they REMEMBER a trainer who's blasted them off before
+      offerEncounter(attId, TEAM_ROCKET.for(region, beaten.indexOf("JESSIE & JAMES") >= 0), false); return;
+    }
     const oak = pool.find((t) => t.name === "PROF. OAK");
     const local = pool.filter((t) => ((t.story && t.story.region) || t.region) === region && t !== oak);
     const t = (oak && Math.random() < 0.08) ? oak : local[Math.floor(Math.random() * local.length)];
@@ -346,7 +349,15 @@
         ico ? el("img", { class: "gymc-ico", src: ico, alt: g.type }) : null,
         el("div", { class: "gymc-names" }, [
           el("div", { class: "gymc-badge" }, g.badge + " Badge"),
-          el("div", { class: "gymc-leader" }, "Leader " + g.leader + " · team of " + g.team.length + " (hidden)"),
+          // 🕴 GIOVANNI vanishes wordlessly once YOU hold the Earth Badge —
+          // exactly like the cartridge. (Others can still find him there.)
+          el("div", { class: "gymc-leader" },
+            (g.leader === "GIOVANNI" && (function () {
+              const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
+              return me && holders.indexOf(me) >= 0;
+            })())
+              ? "…the room stands empty. He was gone by morning."
+              : "Leader " + g.leader + " · team of " + g.team.length + " (hidden)"),
         ]),
       ]),
       holders.length

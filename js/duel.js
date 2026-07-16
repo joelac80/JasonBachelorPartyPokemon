@@ -334,6 +334,11 @@
   // mon staring down a Ghost): typeless, always usable, never great.
   const STRUGGLE = { name: "Struggle", type: "none", cat: "phys", pow: 50, acc: 100, pri: 0, fx: null };
 
+  // 🔴 Species with a canon GIGANTAMAX form: their Dynamax changes SHAPE,
+  // not just size (Gengar, Machamp, Drednaw, Coalossal, Centiskorch,
+  // Alcremie, Duraludon) — pure spectacle, the mechanics are identical.
+  const GMAX_CANON = { 94: 1, 68: 1, 834: 1, 839: 1, 851: 1, 869: 1, 884: 1 };
+
   // ---- status helpers ----
   const STATUS_TAG = { par: "PAR", brn: "BRN", psn: "PSN", slp: "SLP", frz: "FRZ" };
   const STATUS_GOT = { par: " is paralyzed! It may not attack!", brn: " was burned!", psn: " was poisoned!",
@@ -623,6 +628,24 @@
           }
         }
         const m = statsFor(mid, CART ? mLvl : opts.level); m.hp = m.hpMax;
+        // 🎵 SIGNATURE MOVE: the attack the story remembers is guaranteed on
+        // the ace's kit, whatever the level curve trimmed (Whitney's Body
+        // Slam, Cynthia's Draco Meteor, RED's Volt Tackle…).
+        const sigM = CART && u.ai ? CartridgeMode.sigMove(opts, i === (u.monIds || []).length - 1) : null;
+        if (sigM && !m.moves.some((x) => x.name === sigM)) {
+          const smv = moveObj(sigM);
+          if (smv) {
+            if (m.moves.length >= 4) {
+              let worst = -1;
+              for (let k = 0; k < m.moves.length; k++) {
+                if (!m.moves[k].pow) continue;
+                if (worst < 0 || m.moves[k].pow < m.moves[worst].pow) worst = k;
+              }
+              m.moves.splice(worst >= 0 ? worst : m.moves.length - 1, 1);
+            }
+            m.moves.push(smv);
+          }
+        }
         // ✨ shiny is a trainer's own catch — but an NPC boss can FORCE it via
         // u.shiny (true = all, or an array of ids). Mewtwo uses this to field his
         // cloned army in their eerie shadow palette (shiny Charizard is jet-black).
@@ -1564,7 +1587,7 @@
         const gp = { side: act.side, unit: act.unit };
         if (act.g === "mega") megaEvolve(u, gp, act.megaId);
         else if (act.g === "z") zPower(u, gp);
-        else if (act.g === "dyna") dynamax(u, gp);
+        else if (act.g === "dyna") dynamax(u, gp, !!GMAX_CANON[mon(u).id]);
         else if (act.g === "tera") teraize(u, gp, act.teraType);
         done();
         return;
@@ -2479,7 +2502,7 @@
         megaEvolve(u, ptr, ids[0]); return true;
       }
       if (u.gimmick === "z") { zPower(u, ptr); return true; }
-      if (u.gimmick === "dyna") { dynamax(u, ptr); return true; }
+      if (u.gimmick === "dyna") { dynamax(u, ptr, !!GMAX_CANON[mon(u).id]); return true; }
       if (u.gimmick === "tera") { teraize(u, ptr, aiTeraType(u, ptr)); return true; }
       return false;
     }
