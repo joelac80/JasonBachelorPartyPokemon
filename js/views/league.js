@@ -406,19 +406,27 @@
       ctrl = Modal.open(opts.modalTitle || "🏰 Gauntlet", body, null, { noFooter: true });
     };
 
+    let fixedMeta = null;
     const runAt = (i) => {
       if (i >= total) { finishRun(total, true); return; }
       const o = opponents[i];
-      const go = (party) => {
+      const go = (party, meta) => {
         lastParty = party;
         // 📖 An opponent can carry a True Story level — both teams step down.
+        // ⚠ Illegal picks (never caught the earlier form) fight TRUE instead,
+        // taxed with disobedience — same law as the single chambers. The tax
+        // lifts on rounds high enough that the form is honestly earned.
         const JS = window.JourneyStyle;
-        const fielded = (o.level && JS) ? party.map((id) => JS.formAt(id, o.level)) : party;
+        const defy = {};
+        if (o.level && JS) Object.keys((meta && meta.defiant) || {}).forEach((k) => {
+          if (JS.formAt(+k, o.level) !== +k) defy[k] = meta.defiant[k];
+        });
+        const fielded = (o.level && JS) ? party.map((id) => defy[id] ? id : JS.formAt(id, o.level)) : party;
         const ml = (o.monIds || []);
         const foes = (o.level && JS) ? ml.map((id, i) => i === ml.length - 1 ? id : JS.formAt(id, o.level)) : ml.slice();
         Duel.start({ mode: "local", title: (opts.title || "Gauntlet") + " (" + (i + 1) + "/" + total + ")",
           gauntlet: true, level: o.level || undefined,
-          a: { units: [{ attId: attId, monIds: fielded }] },
+          a: { units: [{ attId: attId, defy: Object.keys(defy).length ? defy : null, monIds: fielded }] },
           b: { units: [{ npc: o.name, ai: true, monIds: foes, boost: o.boost || undefined,
             outro: o.outro || undefined }] },
           onResult: (winSide) => {
@@ -430,17 +438,24 @@
         // Between battles: same six, fully healed — but let them re-pick who
         // leads against the next foe.
         if (fixed) {
-          Duel.pickLead({ attId: attId, ids: fixed, title: "Next up: " + o.name + " (" + (i + 1) + "/" + total + ")",
+          Duel.pickLead({ attId: attId, ids: fixed, level: o.level || undefined,
+            title: "Next up: " + o.name + " (" + (i + 1) + "/" + total + ")",
             hint: "🛡 Same squad, fully healed. Choose who leads against " + o.name + " — the rest wait on the bench.",
-            onDone: (ids) => { fixed = ids; go(ids); } });
+            onDone: (ids) => { fixed = ids; go(ids, fixedMeta); } });
           return;
         }
-        Duel.pickParty({ attId: attId, min: size, max: size, title: "Your ONE gauntlet squad — pick 6",
-          hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile six! First up: " + o.name + ".",
-          onDone: (ids) => { fixed = ids; go(ids); } });
+        // the picker sees round 1's story level, so what it offers is what
+        // actually steps onto the field (no Tyranitar card, Pupitar battle)
+        Duel.pickParty({ attId: attId, min: size, max: size, level: o.level || undefined,
+          title: "Your ONE gauntlet squad — pick 6",
+          hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile six! First up: " + o.name + "." +
+            (o.level ? " 📖 True Story: fought at Lv " + o.level + "+." : ""),
+          onDone: (ids, meta) => { fixed = ids; fixedMeta = meta; go(ids, meta); } });
       } else {
-        Duel.pickParty({ attId: attId, min: size, max: size, title: "Round " + (i + 1) + "/" + total + " — vs " + o.name,
-          hint: "🔄 Fresh 6 for THIS battle. Win to advance to the next.",
+        Duel.pickParty({ attId: attId, min: size, max: size, level: o.level || undefined,
+          title: "Round " + (i + 1) + "/" + total + " — vs " + o.name,
+          hint: "🔄 Fresh 6 for THIS battle. Win to advance to the next." +
+            (o.level ? " 📖 True Story: fought at Lv " + o.level + "." : ""),
           onDone: go });
       }
     };
