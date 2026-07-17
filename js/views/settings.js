@@ -414,11 +414,28 @@
 
   function toast(msg) { U.toast(msg); }
 
+  // 🌓 Appearance — THIS phone's look outside battle (never synced).
+  function appearanceSection() {
+    const host = el("section", { class: "settings-block" });
+    function paint() {
+      host.innerHTML = "";
+      host.appendChild(el("h2", { class: "section-title" }, "🌓 Appearance"));
+      host.appendChild(el("p", { class: "hint" }, "This phone's look outside battle. Auto follows your phone's light/dark setting."));
+      host.appendChild(el("div", { class: "toolbar theme-row" },
+        [["auto", "🌗 Auto"], ["light", "☀️ Light"], ["dark", "🌙 Dark"]].map((o) =>
+          el("button", { class: "chip" + (window.Theme && Theme.get() === o[0] ? " on" : ""),
+            onClick: () => { if (window.Theme) Theme.set(o[0]); paint(); } }, o[1]))));
+    }
+    paint();
+    return host;
+  }
+
   function view(root) {
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "⚙️ Settings"),
       el("p", { class: "page-sub" }, "Your room, trainer and alerts up top; backups below — and the party-admin corner tucked under 🎉 Party Settings."),
     ]));
+    root.appendChild(appearanceSection());
     root.appendChild(syncSection());
     // 🎉 PARTY SETTINGS — everything about the PARTY rather than the app:
     // the title on the home hero, drinking-game teams, Victory Road events.
