@@ -114,6 +114,10 @@
       if (gymIdxs.length) {
         host.appendChild(el("h3", { class: "rg-sub" }, "🏟 Gyms — " + gymIdxs.length));
         host.appendChild(el("div", { class: "gymc-grid" }, gymIdxs.map(function (i) { return GC.card(i, attId); })));
+      } else if (!GC && (t.gym || []).length) {
+        // a flaky connection can drop ONE script mid-update — say so instead
+        // of silently hiding the whole circuit
+        host.appendChild(el("p", { class: "hint" }, "⚠️ The Gym Circuit didn't load — check your connection and refresh the app."));
       }
 
       // 👑 Elite Four + Champion (+ Victory Road gate for the first region)

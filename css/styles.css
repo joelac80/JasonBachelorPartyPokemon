@@ -50,6 +50,22 @@
   --line: #d5dbec;
   color: var(--ink);
 }
+/* 🌓 LIGHT ISLANDS — components with a FIXED light background (gold Hall
+   of Fame plaques, cream callouts, sticky-note cards, badge chips) keep
+   the light palette INSIDE, whatever the app theme — otherwise they'd
+   inherit near-white ink and go unreadable. */
+:root[data-theme="dark"] :is(.hof-row, .trn-now, .duel-belt, .gymc-holder,
+  .draft-member.captain, .gym-badge-row.power, .safari-board-row.lead,
+  .safari-board-row.master.lead, .brk-slot, .sl-vote-pick, .pool-chip,
+  .safari-controls, .safari-team-slot.filled, .safari-challenge,
+  .help-callout, .poster-champ, .mw-locked, .gym-lead.held, .pred-make,
+  .safari-dare.master, .safari-dex-cell.got, .tcg-frame, .ash-card,
+  .live-banner) {
+  --ink: #1f2330;
+  --ink-dim: #5a6072;
+  --line: #d5dbec;
+  color: #1f2330;
+}
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -319,7 +335,7 @@ body {
 .wheel-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: var(--pokered); font-size: 30px; z-index: 2; text-shadow: 0 2px 3px rgba(0,0,0,0.4); }
 .wheel-result { font-family: var(--pixel); font-size: 15px; min-height: 24px; text-align: center; }
 .picked-name { color: var(--pokered); font-size: 18px; }
-.spin-btn { background: var(--pokeyellow); color: var(--ink); box-shadow: 0 3px 0 var(--gold); font-family: var(--pixel); font-size: 15px; padding: 12px 30px; }
+.spin-btn { background: var(--pokeyellow); color: #1f2330; box-shadow: 0 3px 0 var(--gold); font-family: var(--pixel); font-size: 15px; padding: 12px 30px; }
 .assign-row { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; }
 .assign-label { color: var(--ink-dim); font-size: 13px; }
 .chip-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
