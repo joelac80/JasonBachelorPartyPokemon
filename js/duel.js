@@ -490,10 +490,12 @@
     reps.forEach((r) => {
       const g = groups[r];
       if (g.legal) { cards.push(r); return; }
-      // illegal family: keep the MAXIMAL owned forms — the latest of the
-      // line, with split finals (Poliwrath + Politoed) each their own card
+      // illegal family: show the CLOSEST-to-legal owned form — a Wartortle
+      // one badge early, never a free Blastoise at gym 1. Split finals at
+      // the same distance (Poliwrath + Politoed) each keep their own card.
+      const minSteps = Math.min.apply(null, g.owned.map((o) => o.steps));
       g.owned.forEach((o) => {
-        if (g.owned.some((x) => x.id !== o.id && isAncestorOf(o.id, x.id))) return;
+        if (o.steps !== minSteps) return;
         if (cards.indexOf(o.id) >= 0) return;
         cards.push(o.id); defiant[o.id] = o.steps;
       });
