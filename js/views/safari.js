@@ -583,9 +583,16 @@
       ]);
 
       // ---- controls (name/odds/etc. hidden until the silhouette focuses in) ----
+      // 🔢 forms wear their TRUE dex number — an Unown glyph is still No.201,
+      // a Hisuian form its species' — tagged "variant" instead of leaking
+      // internal ids like No.90021
+      const trueNo = current <= 1025 ? current
+        : isUnownEnc(current) ? 201
+        : (window.Duel && Duel.baseSpecies && Duel.baseSpecies(current)) || 0;
       const meta = el("div", { class: "safari-wild-meta" }, [
         el("span", { class: "safari-tier", style: { background: nfo.color } }, nfo.tier),
-        el("span", { class: "safari-wild-name" }, "No." + current + " " + nfo.name),
+        el("span", { class: "safari-wild-name" }, (trueNo ? "No." + trueNo + " " : "") + nfo.name),
+        current > 1025 ? el("span", { class: "safari-variant-chip" }, "variant") : null,
         shiny ? el("span", { class: "safari-shiny-chip" }, "✨ SHINY — double points!") : null,
         nfo.leg ? el("span", { class: "safari-oneof" }, "🌟 LEGENDARY") : null,
         (shiny && hasNorm) ? el("span", { class: "safari-owned" }, "✓ normal form in dex — this ✨ SHINY is NEW") : null,
@@ -759,16 +766,22 @@
       }
       if (outcome === "catch") {
         // 🔡 A wild Unown → the Unown Dex (append-only), NOT the Pokédex, and it
-        // still scores its points for the catcher's team.
+        // still scores its points for the catcher's team. The encounter ENDS
+        // here — a real result card, never live throw buttons under a
+        // "caught!" banner.
         if (isUnownEnc(id)) {
           const g = unownGlyphOf(id);
           const total = recordUnownCatch(tid, g, nfo);
           sfx("fanfare");
-          revealId = id;
-          status = "🔡 Caught Unown " + g + "! (" + total + "/28 decoded)";
-          busy = false; renderEncounter();
-          return;
-        }
+          enc.innerHTML = "";
+          enc.appendChild(el("div", { class: "safari-card result win" }, [
+            el("img", { class: "safari-wild pop", src: SP[id], alt: nfo.name }),
+            el("div", { class: "safari-result-msg" }, "Gotcha! " + attendeeName(tid) + " caught Unown " + g + "!"),
+            el("div", { class: "safari-payout" }, "🔡 " + total + "/28 decoded · +" + nfo.pts + " pts"),
+            el("div", { class: "safari-caught-ball" }, [ballIcon(ballByKey(ballUsed)), " Caught with a " + ballByKey(ballUsed).name + (viaMaster ? " (Master Ball!)" : "") + "!"]),
+            el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
+          ]));
+        } else {
         // 🏁 The roaming race is decided HERE, at the click: if someone else
         // claimed it during your wobble, the ball opens on nothing.
         if (roamGone()) { showRoamGone(nfo); return; }
@@ -781,6 +794,7 @@
         // retired — the Gen Ladder unlocks generations through BATTLES now.)
         showCaughtCard(tid, id, isShiny, ballUsed, viaMaster, nfo, res,
           wonStorm ? "🌩 STORM RACE WON — this one's yours alone!" : "");
+        }
       } else {
         sfx("error");
         enc.innerHTML = "";

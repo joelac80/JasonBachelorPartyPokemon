@@ -1756,6 +1756,9 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .safari-shiny-chip { font-family: var(--pixel); font-size: 10px; font-weight: 800; color: #6b4c00;
   background: linear-gradient(90deg, #ffe27a, #fff3bd); border: 1.5px solid #b8860b; border-radius: 8px;
   padding: 2px 8px; animation: shinyPulse 1.2s ease infinite; }
+/* 🔢 a form without its own National number wears its species' number + this tag */
+.safari-variant-chip { font-family: var(--pixel); font-size: 9px; font-weight: 800; color: #5a6072;
+  background: #eef1f8; border: 1.5px solid #d5dbec; border-radius: 8px; padding: 2px 7px; text-transform: uppercase; }
 @keyframes shinyPulse { 0%,100% { box-shadow: 0 0 2px rgba(230,184,0,.4); } 50% { box-shadow: 0 0 12px rgba(230,184,0,.95); } }
 .safari-sparkles span { position: absolute; font-size: 20px; animation: sparkleTwinkle 1.1s ease infinite; pointer-events: none; }
 .safari-sparkles .s0 { top: 22%; left: 34%; animation-delay: 0s; }
