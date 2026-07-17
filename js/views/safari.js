@@ -63,21 +63,33 @@
   };
   const AID_DECAY = 0.65, AID_FLEE_STEP = 0.05;
 
-  // Catch rates are DRASTICALLY tiered — commons are easy, legendaries are a
-  // 4%-base celebration (and boosts only work at half strength on them).
+  // 🎯 Catch odds ride the REAL games' capture rates (data/dex-catch.js,
+  // 3-255) mapped onto a party-tuned curve: Caterpie (255) ≈ 62%, a
+  // starter (45) ≈ 20%, Snorlax (25) ≈ 14%, Beldum/Mewtwo (3) ≈ 5% — the
+  // cartridge's ordering and spread, without the cartridge's 40-ball
+  // grind. Species without a rate row (battle forms) fall back to the old
+  // power tiers.
   const TIER_BASE = { Common: 0.55, Evolved: 0.40, Strong: 0.25, Elite: 0.15, Legendary: 0.04 };
+  function baseFromRate(rate) { return Math.round((0.04 + 0.58 * Math.pow(rate / 255, 0.78)) * 1000) / 1000; }
   function info(id) {
     if (isUnownEnc(id)) {   // 🔡 a wild Unown glyph — rare, ~mid catch rate, a big score
       const g = unownGlyphOf(id);
       return { name: "Unown " + g, x: 180, leg: false, base: 0.22, pts: 8, flee: 0.10, tier: "Unown", color: "#7a5aa0", unown: g };
     }
     const d = DEX[id] || { x: 60 }; const x = d.x, leg = !!d.leg;
-    const tier = leg ? "Legendary" : x >= 200 ? "Elite" : x >= 140 ? "Strong" : x >= 90 ? "Evolved" : "Common";
-    const base = TIER_BASE[tier];
+    const rate = (window.DEX_CATCH || {})[id];
+    let tier, base;
+    if (rate) {
+      tier = leg ? "Legendary" : rate >= 150 ? "Common" : rate >= 60 ? "Evolved" : rate >= 20 ? "Strong" : "Elite";
+      base = leg ? Math.min(0.05, baseFromRate(rate)) : baseFromRate(rate);
+    } else {
+      tier = leg ? "Legendary" : x >= 200 ? "Elite" : x >= 140 ? "Strong" : x >= 90 ? "Evolved" : "Common";
+      base = TIER_BASE[tier];
+    }
     let pts = 1 + Math.round(x / 70); pts = Math.min(7, Math.max(1, pts));
     if (leg) pts = 8;                        // a legendary catch is a big score
     const flee = leg ? 0.06 : 0.12;
-    return { name: d.n, x: x, leg: leg, base: base, pts: pts, flee: flee, tier: tier, color: TIER_COLOR[tier] };
+    return { name: d.n, x: x, leg: leg, base: base, pts: pts, flee: flee, tier: tier, color: TIER_COLOR[tier], rate: rate || 0 };
   }
 
   // Who (if anyone) has caught this species — used only for flavor now
