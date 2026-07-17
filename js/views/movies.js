@@ -65,7 +65,10 @@
       loseChron: "BUTLER's creation swallowed another wish",
       lead: "🌠 Gardevoir, Mightyena, Dusclops — then the grotesque FALSE GROUDON, and JIRACHI, wide awake and weaponized." },
     { key: "deoxys", name: "DEOXYS", title: "The DNA Pokémon", film: "Destiny Deoxys", tab: "Hoenn", needs: "steven", needsName: "STEVEN",
-      type: "psychic", team: [10001, 10002, 10003, 384, 386], pts: 12, boost: 1.44, icon: "🧬", face: 386, costar: 386,
+      // 🧬 the formes carry raw 600-weight stats (they're the Delta Episode's
+      // BOSS phases) — at film scale they ride at 0.55 so each lands like a
+      // boosted legend instead of three unbeatable gods in a row
+      type: "psychic", team: [10001, 10002, 10003, 384, 386], pts: 12, boost: [0.55, 0.55, 0.55, 1.3, 1.4], icon: "🧬", face: 386, costar: 386,
       quote: "It fell from the stars searching for its friend — and RAYQUAZA rose from the ozone to repel it. Attack. Defense. Speed. Every form, one storm over the city.",
       winChron: "calmed the duel of DEOXYS and RAYQUAZA — every form weathered!",
       loseChron: "DEOXYS shifted forms faster than another challenger could follow",
