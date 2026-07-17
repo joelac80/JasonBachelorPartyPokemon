@@ -512,6 +512,48 @@
 
   // Ordered party picker (modal) — used to challenge someone to a remote
   // duel and to accept one. onDone receives the picked mon ids, lead first.
+  // 👁 HOLD TO PEEK — press-and-hold a mon in a picker to see the exact
+  // moves it carries into THIS battle (level trims, ladder rungs and all).
+  // Release puts it away; the long-press never selects (the click that
+  // follows is eaten via the shared `state.held` flag).
+  let peekPop = null;
+  function peekShow(id, opts) {
+    peekHide();
+    const st = statsFor(id, opts.level);
+    const shiny = opts.attId ? isShinyFor(opts.attId, id) : false;
+    const src = frontSprite(id, shiny);
+    peekPop = el("div", { class: "duel-peek" }, [
+      el("div", { class: "duel-peek-card" }, [
+        src ? el("img", { class: "duel-peek-img", src: src, alt: st.name }) : null,
+        el("div", { class: "duel-peek-name" }, (shiny ? "✨ " : "") + st.name + (opts.level ? " · Lv " + opts.level : "")),
+        el("div", { class: "duel-peek-types" }, st.types.map((t) =>
+          el("span", { class: "duel-peek-type", style: { background: U.typeColor(t) } }, t))),
+        el("div", { class: "duel-peek-moves" }, st.moves.map((m) => el("div", { class: "duel-peek-move" }, [
+          el("span", { class: "duel-peek-dot", style: { background: U.typeColor(m.type) } }),
+          el("span", { class: "duel-peek-mv" }, m.name),
+          el("span", { class: "duel-peek-pow" }, m.pow ? "POW " + m.pow + (m.acc < 100 ? " · " + m.acc + "%" : "") : "status"),
+        ]))),
+      ]),
+    ]);
+    document.body.appendChild(peekPop);
+  }
+  function peekHide() { if (peekPop) { peekPop.remove(); peekPop = null; } }
+  function bindPeek(btn, id, opts, state) {
+    let t = null;
+    const clear = () => { if (t) { clearTimeout(t); t = null; } };
+    const release = () => {
+      clear(); peekHide();
+      // the click lands right after pointerup — leave a short window where
+      // it's consumed, then forget (so a peek never eats a LATER tap)
+      if (state.held) setTimeout(() => { state.held = false; }, 300);
+    };
+    btn.addEventListener("pointerdown", () => { clear(); t = setTimeout(() => { t = null; state.held = true; peekShow(id, opts); }, 350); });
+    btn.addEventListener("pointerup", release);
+    btn.addEventListener("pointerleave", release);
+    btn.addEventListener("pointercancel", release);
+    btn.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+
   function pickParty(opts) {
     // opts.pool restricts the choices (e.g. a locked tournament squad of 6);
     // otherwise the trainer's whole roster is fair game. opts.level trims the
@@ -525,6 +567,7 @@
     // Sort/filter the pool by dex number, generation and type.
     const filter = { gen: 0, type: "", desc: false };
     const grid = el("div", { class: "duel-party-grid" });
+    const peek = { held: false };   // set while a hold-preview is up — eats the release-click
     // ⚡ Last party used (per phone, per trainer) — powers "Use last team".
     const LAST_KEY = "jasonBachHub.lastParty.v1";
     function lastParties() { try { return JSON.parse(localStorage.getItem(LAST_KEY) || "{}") || {}; } catch (_) { return {}; } }
@@ -546,8 +589,9 @@
         const idx = picked.indexOf(id);
         const shiny = isShinyFor(opts.attId, id);
         const src = frontSprite(id, shiny);
-        grid.appendChild(el("button", { class: "duel-pick" + (idx >= 0 ? " on" : "") + (shiny ? " is-shiny" : "") + (defiant[id] ? " is-defiant" : ""),
+        const pickBtn = el("button", { class: "duel-pick" + (idx >= 0 ? " on" : "") + (shiny ? " is-shiny" : "") + (defiant[id] ? " is-defiant" : ""),
           title: st.name + (shiny ? " \u2728 SHINY" : "") + (defiant[id] ? " \u26a0 illegal at this cap \u2014 obeys only half the time!" : ""), onClick: () => {
+          if (peek.held) { peek.held = false; return; }   // that tap was a hold-preview
           const i = picked.indexOf(id);
           if (i >= 0) picked.splice(i, 1); else if (picked.length < max) picked.push(id);
           paint();
@@ -556,7 +600,9 @@
           shiny ? el("span", { class: "duel-pick-shiny" }, "\u2728") : null,
           defiant[id] ? el("span", { class: "duel-pick-defy" }, "\u26a0") : null,
           idx >= 0 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
-        ]));
+        ]);
+        bindPeek(pickBtn, id, opts, peek);
+        grid.appendChild(pickBtn);
       });
       cta.textContent = picked.length < min
         ? "⚔ Pick " + (min - picked.length) + " more"
@@ -577,7 +623,7 @@
     const filterBar = (pool.length > 8 && window.DexFilter) ? DexFilter.controls(filter, paint) : null;
     const body = el("div", { class: "modal-form" }, [
       opts.preview || null,
-      el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + "."),
+      el("p", { class: "hint" }, (opts.hint || "Tap Pokémon in order — the first is your lead.") + " Up to " + max + ". 👁 Hold one down to preview its moves for this battle."),
       filterBar,
       grid,
       Object.keys(defiant).length ? el("p", { class: "hint" },
@@ -595,17 +641,21 @@
     const ids = (opts.ids || []).slice();
     if (ids.length < 2) { opts.onDone(ids); return; }
     let ref;
+    const peek = { held: false };
     const grid = el("div", { class: "duel-lead-grid" }, ids.map((id) => {
       const st = statsFor(id);
       const shiny = isShinyFor(opts.attId, id);
       const src = frontSprite(id, shiny);
-      return el("button", { class: "duel-lead-pick" + (shiny ? " is-shiny" : ""), title: st.name, onClick: () => {
+      const btn = el("button", { class: "duel-lead-pick" + (shiny ? " is-shiny" : ""), title: st.name, onClick: () => {
+        if (peek.held) { peek.held = false; return; }
         if (ref) ref.close();
         opts.onDone([id].concat(ids.filter((x) => x !== id)));
       } }, [
         src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
         el("span", { class: "duel-lead-name" }, st.name),
       ]);
+      bindPeek(btn, id, opts, peek);
+      return btn;
     }));
     const body = el("div", { class: "modal-form" }, [
       el("p", { class: "hint" }, opts.hint || "Fully healed. Tap the Pokémon to send out first — the rest wait on the bench."),
