@@ -541,8 +541,16 @@
     ]);
     peekPop = el("div", { class: "duel-peek" }, [card]);
     // only a NEW touch off the card closes it — releasing the original hold
-    // is pointerup+click with no pointerdown, so it can never insta-close
-    peekPop.addEventListener("pointerdown", (e) => { if (!card.contains(e.target)) peekHide(); });
+    // is pointerup+click with no pointerdown, so it can never insta-close.
+    // And the dismissing tap still LANDS: the pick button under the finger
+    // gets it, so tapping the next mon closes the card AND selects it.
+    peekPop.addEventListener("pointerdown", (e) => {
+      if (card.contains(e.target)) return;
+      peekHide();
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const pick = under && under.closest ? under.closest(".duel-pick, .duel-lead-pick") : null;
+      if (pick) pick.click();
+    });
     document.body.appendChild(peekPop);
   }
   function peekHide() { if (peekPop) { peekPop.remove(); peekPop = null; } }
