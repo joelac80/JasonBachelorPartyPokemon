@@ -60,7 +60,10 @@
   .safari-controls, .safari-team-slot.filled, .safari-challenge,
   .help-callout, .poster-champ, .mw-locked, .gym-lead.held, .pred-make,
   .safari-dare.master, .safari-dex-cell.got, .tcg-frame, .ash-card,
-  .live-banner) {
+  .live-banner, .gymc-card.earned, .gp-item.wild, .trainer-card,
+  .dex-lock.open, .trophy.honor, .safari-card.result.shiny,
+  .safari-team-slot.shiny, .trn-match.live, .trn-scout,
+  .trk-dex-cell.caught, .ach-board-row.on) {
   --ink: #1f2330;
   --ink-dim: #5a6072;
   --line: #d5dbec;
