@@ -512,42 +512,50 @@
 
   // Ordered party picker (modal) — used to challenge someone to a remote
   // duel and to accept one. onDone receives the picked mon ids, lead first.
-  // 👁 HOLD TO PEEK — press-and-hold a mon in a picker to see the exact
-  // moves it carries into THIS battle (level trims, ladder rungs and all).
-  // Release puts it away; the long-press never selects (the click that
-  // follows is eaten via the shared `state.held` flag).
+  // 👁 HOLD TO PEEK — press-and-hold a mon in a picker and its exact battle
+  // kit (level trims, ladder rungs and all) pops up and STAYS — parked high
+  // so a thumb never covers it. From the card you can add/remove the mon or
+  // close it; a fresh tap anywhere off the card also puts it away. The
+  // long-press never selects (the follow-through click is eaten via the
+  // shared `state.held` flag).
   let peekPop = null;
-  function peekShow(id, opts) {
+  function peekShow(id, opts, act) {
     peekHide();
     const st = statsFor(id, opts.level);
     const shiny = opts.attId ? isShinyFor(opts.attId, id) : false;
     const src = frontSprite(id, shiny);
-    peekPop = el("div", { class: "duel-peek" }, [
-      el("div", { class: "duel-peek-card" }, [
-        src ? el("img", { class: "duel-peek-img", src: src, alt: st.name }) : null,
-        el("div", { class: "duel-peek-name" }, (shiny ? "✨ " : "") + st.name + (opts.level ? " · Lv " + opts.level : "")),
-        el("div", { class: "duel-peek-types" }, st.types.map((t) =>
-          el("span", { class: "duel-peek-type", style: { background: U.typeColor(t) } }, t))),
-        el("div", { class: "duel-peek-moves" }, st.moves.map((m) => el("div", { class: "duel-peek-move" }, [
-          el("span", { class: "duel-peek-dot", style: { background: U.typeColor(m.type) } }),
-          el("span", { class: "duel-peek-mv" }, m.name),
-          el("span", { class: "duel-peek-pow" }, m.pow ? "POW " + m.pow + (m.acc < 100 ? " · " + m.acc + "%" : "") : "status"),
-        ]))),
+    const card = el("div", { class: "duel-peek-card" }, [
+      src ? el("img", { class: "duel-peek-img", src: src, alt: st.name }) : null,
+      el("div", { class: "duel-peek-name" }, (shiny ? "✨ " : "") + st.name + (opts.level ? " · Lv " + opts.level : "")),
+      el("div", { class: "duel-peek-types" }, st.types.map((t) =>
+        el("span", { class: "duel-peek-type", style: { background: U.typeColor(t) } }, t))),
+      el("div", { class: "duel-peek-moves" }, st.moves.map((m) => el("div", { class: "duel-peek-move" }, [
+        el("span", { class: "duel-peek-dot", style: { background: U.typeColor(m.type) } }),
+        el("span", { class: "duel-peek-mv" }, m.name),
+        el("span", { class: "duel-peek-pow" }, m.pow ? "POW " + m.pow + (m.acc < 100 ? " · " + m.acc + "%" : "") : "status"),
+      ]))),
+      el("div", { class: "toolbar duel-peek-row" }, [
+        act ? el("button", { class: "btn primary sm duel-peek-act", onClick: () => { peekHide(); act.onAct(); } }, act.label) : null,
+        el("button", { class: "btn subtle sm duel-peek-close", onClick: peekHide }, "↩ Close"),
       ]),
     ]);
+    peekPop = el("div", { class: "duel-peek" }, [card]);
+    // only a NEW touch off the card closes it — releasing the original hold
+    // is pointerup+click with no pointerdown, so it can never insta-close
+    peekPop.addEventListener("pointerdown", (e) => { if (!card.contains(e.target)) peekHide(); });
     document.body.appendChild(peekPop);
   }
   function peekHide() { if (peekPop) { peekPop.remove(); peekPop = null; } }
-  function bindPeek(btn, id, opts, state) {
+  function bindPeek(btn, id, opts, state, actFor) {
     let t = null;
     const clear = () => { if (t) { clearTimeout(t); t = null; } };
     const release = () => {
-      clear(); peekHide();
+      clear();
       // the click lands right after pointerup — leave a short window where
       // it's consumed, then forget (so a peek never eats a LATER tap)
       if (state.held) setTimeout(() => { state.held = false; }, 300);
     };
-    btn.addEventListener("pointerdown", () => { clear(); t = setTimeout(() => { t = null; state.held = true; peekShow(id, opts); }, 350); });
+    btn.addEventListener("pointerdown", () => { clear(); t = setTimeout(() => { t = null; state.held = true; peekShow(id, opts, actFor ? actFor() : null); }, 350); });
     btn.addEventListener("pointerup", release);
     btn.addEventListener("pointerleave", release);
     btn.addEventListener("pointercancel", release);
@@ -601,7 +609,9 @@
           defiant[id] ? el("span", { class: "duel-pick-defy" }, "\u26a0") : null,
           idx >= 0 ? el("span", { class: "duel-pick-n" }, String(idx + 1)) : null,
         ]);
-        bindPeek(pickBtn, id, opts, peek);
+        bindPeek(pickBtn, id, opts, peek, () => picked.indexOf(id) >= 0
+          ? { label: "✖ Remove from team", onAct: () => { const i = picked.indexOf(id); if (i >= 0) picked.splice(i, 1); paint(); } }
+          : { label: "➕ Add to team", onAct: () => { if (picked.indexOf(id) < 0 && picked.length < max) picked.push(id); paint(); } });
         grid.appendChild(pickBtn);
       });
       cta.textContent = picked.length < min
@@ -654,7 +664,10 @@
         src ? el("img", { src: src, alt: st.name }) : el("span", { class: "draft-thumb-ball" }),
         el("span", { class: "duel-lead-name" }, st.name),
       ]);
-      bindPeek(btn, id, opts, peek);
+      bindPeek(btn, id, opts, peek, () => ({ label: "⚔ Send out first", onAct: () => {
+        if (ref) ref.close();
+        opts.onDone([id].concat(ids.filter((x) => x !== id)));
+      } }));
       return btn;
     }));
     const body = el("div", { class: "modal-form" }, [
