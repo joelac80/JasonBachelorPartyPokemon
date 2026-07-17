@@ -832,7 +832,8 @@
       (ids) => {
         Duel.start({ mode: "local",
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
-          b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
+          b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null,
+          reserve: b.reserve || 0, hpBoost: b.hpBoost || undefined, ace: b.ace || null, outro: b.outro || null, feral: b.feral }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
             Store.nuzDeaths(me, fainted || [], "movie");
             if (winSide === "a") { Store.nuzStage(me, b.key, "movie"); sfx("fanfare"); offerCostar(b); }

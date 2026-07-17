@@ -33,7 +33,13 @@
       loseChron: "THE COLLECTOR catalogued another trainer",
       lead: "🎐 The three caged titans — Articuno, Zapdos, Moltres — and Lugia, guardian of the sea, the prize itself." },
     { key: "entei", name: "ENTEI", title: "The Unown's Guardian", film: "Pokémon 3 · Spell of the Unown", tab: "Johto", needs: "lance", needsName: "LANCE",
-      type: "fire", team: [201, 201, 201, 201, 201, 244], glyphs: ["D", "R", "E", "A", "M"], pts: 12, boost: 1.4, icon: "🔥", face: 244, costar: 244,
+      type: "fire", team: [201, 201, 201, 201, 201, 244], glyphs: ["D", "R", "E", "A", "M"], pts: 12,
+      // 🔥 the Unown are the SPELL; ENTEI is the BOSS — hidden until the
+      // alphabet falls, then fielded at true boss weight
+      boost: [1.15, 1.15, 1.15, 1.15, 1.15, 2.3], reserve: 1, icon: "🔥", face: 244, costar: 244,
+      ace: { line: "The letters spin — and the dream REFUSES to end. Entei burns at full fury!" },
+      outro: { lose: "The flame beast slows… looks back once at the crystal tower… and dissolves into motes of light. Somewhere, a little girl wakes.",
+               win: "Entei stands over the broken spell, burning. This dream is not yours to end." },
       quote: "The Unown dreamed me into being, and I am bound to a lonely girl's every wish. You would wake her from this world? Then get past ME — and the living alphabet that conjured me.",
       winChron: "shattered the D-R-E-A-M — the Unown's spell broke and Molly woke at last!",
       loseChron: "ENTEI guarded the dream and turned another dreamer away",
@@ -41,13 +47,13 @@
       // Breaking the spell frees the Unown: they begin to roam the Safari Zone.
       unlockUnown: true },
     { key: "marauder", name: "THE IRON-MASKED MARAUDER", title: "Team Rocket's Hunter", film: "Pokémon 4Ever · Voice of the Forest", tab: "Johto", needs: "lance", needsName: "LANCE",
-      type: "dark", team: [215, 212, 248, 251], pts: 12, boost: 1.4, icon: "🌲", face: 251, costar: 251, shiny: [251], vsFace: 251,
+      type: "dark", team: [215, 212, 248, 251], pts: 12, boost: [1.3, 1.45, 1.5, 1.7], icon: "🌲", face: 251, costar: 251, shiny: [251], vsFace: 251,
       quote: "With my Dark Balls, any Pokémon becomes an obedient weapon — even the guardian of the forest. Time itself will serve Team Rocket!",
       winChron: "cracked the Dark Ball and freed CELEBI from the Iron-Masked Marauder!",
       loseChron: "the Iron-Masked Marauder caged another guardian",
       lead: "🌲 Sneasel and Scizor, an armored Tyranitar — and CELEBI, twisted into a Dark Ball shadow of itself." },
     { key: "heroes", name: "ANNIE & OAKLEY", title: "The Rogue Spies", film: "Pokémon Heroes · Latias & Latios", tab: "Hoenn", needs: "steven", needsName: "STEVEN",
-      type: "psychic", team: [196, 168, 380, 381], pts: 12, boost: 1.42, icon: "🛶", face: 381, costar: 380,
+      type: "psychic", team: [196, 168, 380, 381], pts: 12, boost: [1.45, 1.25, 1.65, 1.65], icon: "🛶", face: 381, costar: 380,
       quote: "The Soul Dew and the secret of Alto Mare will be ours. Espeon, Ariados — and once we cage the Eon Pokémon, the whole city drowns.",
       winChron: "saved Alto Mare — LATIAS and LATIOS fly free again!",
       loseChron: "Annie & Oakley made off with the Soul Dew",
@@ -77,7 +83,7 @@
       loseChron: "the nightmare of Alamos swallowed another dreamer",
       lead: "🌑 DIALGA and PALKIA, tearing spacetime open over Alamos Town — and DARKRAI, the nightmare that stands against them both." },
     { key: "skywarrior", name: "ZERO", title: "The Reverse World's Captain", film: "Giratina and the Sky Warrior", tab: "Sinnoh", needs: "cynthia", needsName: "CYNTHIA",
-      type: "ghost", team: [462, 462, 487, 492], pts: 12, boost: 1.44, icon: "🌫", face: 487, costar: 492,
+      type: "ghost", team: [462, 462, 487, 492], pts: 12, boost: [1.3, 1.3, 1.7, 1.55], icon: "🌫", face: 487, costar: 492,
       quote: "Giratina's power will be MINE, and the Reverse World my kingdom. The gratitude Pokémon can watch its flower field burn from the other side of the mirror.",
       winChron: "grounded ZERO's fleet — GIRATINA returned to the Reverse World and SHAYMIN bloomed!",
       loseChron: "ZERO sailed the Reverse World unchallenged",
@@ -182,7 +188,8 @@
       Duel.start({ mode: "local", title: b.name + " — " + b.film,
         movie: { key: b.key, name: b.name, pts: b.pts, icon: b.icon, winChron: b.winChron, loseChron: b.loseChron },
         a: { units: [{ attId: attId, monIds: ids }] },
-        b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null }] },
+        b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null,
+          reserve: b.reserve || 0, hpBoost: b.hpBoost || undefined, ace: b.ace || null, outro: b.outro || null, feral: b.feral }] },
         onResult: () => Router.render() });
     };
     // Bring-your-own path needs a full pool; the preset mirror squad does not.

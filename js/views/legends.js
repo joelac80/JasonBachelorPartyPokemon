@@ -18,47 +18,56 @@
       team: [144, 145, 146, 151, 149, 150], face: 150, boost: 1.42, pts: 20,
       quote: "The Genetic Pokémon awakens, and the winged titans of ice, storm and flame answer. Prove a bond can outmatch raw creation.",
       winChron: "tamed the Kanto titans — MEWTWO itself bowed!", loseChron: "the Kanto titans proved unmatched",
-      lead: "🔮 Articuno, Zapdos, Moltres, Mew and Dragonite — and MEWTWO, the perfect Pokémon." },
+      lead: "🔮 Articuno, Zapdos, Moltres, Mew and Dragonite — and MEWTWO, the perfect Pokémon.",
+      ace: "Enough. I was created the strongest — MEWTWO takes the field.", outroWin: "You fought with borrowed courage. Return when it is your own.", outroLose: "…A bond stronger than creation itself. Remember this day, trainer — I will." },
     { key: "gen2", gen: 2, name: "Johto Beasts", emoji: "🌈", needs: "lance", champ: "LANCE", regions: ["Johto"],
       team: [243, 244, 245, 250, 251, 249], face: 249, boost: 1.44, pts: 22,
       quote: "The three legendary beasts race the wind, the guardians of the towers spread their wings. Time itself sent Celebi to watch you fall.",
       winChron: "outran the Johto beasts and grounded LUGIA and HO-OH!", loseChron: "the Johto beasts vanished into legend",
-      lead: "🌈 Raikou, Entei, Suicune, Ho-Oh and Celebi — and LUGIA, the guardian of the sea." },
+      lead: "🌈 Raikou, Entei, Suicune, Ho-Oh and Celebi — and LUGIA, the guardian of the sea.",
+      ace: "The sea splits — LUGIA rises from the deep!", outroWin: "A beat of silver wings, and the storm swallows the whirlpool again.", outroLose: "The storm folds its wings. Lugia sinks back beneath the waves — and the sea keeps your name." },
     { key: "gen3", gen: 3, name: "Hoenn Weather Trio", emoji: "🌊", needs: "steven", champ: "STEVEN", regions: ["Hoenn"],
       team: [377, 378, 379, 382, 383, 384], face: 384, boost: 1.46, pts: 24,
       quote: "The land rises, the sea swells, and the sky splits open. Only the Delta Emerald can settle who rules the heavens.",
       winChron: "quelled the Hoenn superancients — RAYQUAZA yielded the sky!", loseChron: "the weather trio drowned another challenger",
-      lead: "🌊 Regirock, Regice, Registeel, Kyogre and Groudon — and RAYQUAZA, lord of the skies." },
+      lead: "🌊 Regirock, Regice, Registeel, Kyogre and Groudon — and RAYQUAZA, lord of the skies.",
+      ace: "The ozone tears open — RAYQUAZA descends!", outroWin: "Rayquaza climbs beyond the clouds, and the storm rages on.", outroLose: "The sky serpent coils upward and is gone — the heavens are yours to cross." },
     { key: "gen4", gen: 4, name: "Sinnoh Creation Trio", emoji: "🌌", needs: "cynthia", champ: "CYNTHIA", regions: ["Sinnoh"],
       team: [483, 484, 487, 485, 491, 493], face: 493, boost: 1.48, pts: 26,
       quote: "Time, Space, and Antimatter converge — and the Original One that shaped them all descends to judge you.",
       winChron: "unmade the Sinnoh creation trio — even ARCEUS knelt!", loseChron: "the creation trio erased another hope",
-      lead: "🌌 Dialga, Palkia, Giratina, Heatran and Darkrai — and ARCEUS, the Original One." },
+      lead: "🌌 Dialga, Palkia, Giratina, Heatran and Darkrai — and ARCEUS, the Original One.",
+      ace: "The air rings like a struck bell — the ORIGINAL ONE descends!", outroWin: "Arceus fades into the white. Judgment: not yet.", outroLose: "The Original One inclines its head — creation itself acknowledges you." },
     { key: "gen5", gen: 5, name: "Unova Tao Trio", emoji: "⚡", needs: "alder", champ: "ALDER", regions: ["Unova"],
       team: [638, 639, 640, 643, 644, 646], face: 646, boost: 1.50, pts: 28,
       quote: "Truth and Ideals burn and spark, the Swords of Justice stand guard — and the empty shell of Kyurem hungers for both.",
       winChron: "shattered the Unova tao dragons — KYUREM froze over!", loseChron: "the tao dragons judged another wanting",
-      lead: "⚡ Cobalion, Terrakion, Virizion, Reshiram and Zekrom — and KYUREM, the boundary." },
+      lead: "⚡ Cobalion, Terrakion, Virizion, Reshiram and Zekrom — and KYUREM, the boundary.",
+      ace: "The cold that predates truth and ideals — KYUREM unfolds!", outroWin: "Kyurem's frost seals the field — truth and ideals both freeze.", outroLose: "The empty shell steams, and stills. The boundary bows." },
     { key: "gen6", gen: 6, name: "Kalos Life & Death", emoji: "🦌", needs: "diantha", champ: "DIANTHA", regions: ["Kalos"],
       team: [719, 720, 721, 716, 717, 718], face: 718, boost: 1.52, pts: 30,
       quote: "Life eternal and destruction absolute, bound by the serpent of order. The jewel, the genie and the kettle attend.",
       winChron: "balanced the Kalos legends — ZYGARDE enforced no order here!", loseChron: "life and death reclaimed another",
-      lead: "🦌 Diancie, Hoopa, Volcanion, Xerneas and Yveltal — and ZYGARDE, the order between." },
+      lead: "🦌 Diancie, Hoopa, Volcanion, Xerneas and Yveltal — and ZYGARDE, the order between.",
+      ace: "The cells convene — ZYGARDE enforces the order!", outroWin: "Order is kept. The chamber's aura scatters you from the field.", outroLose: "The serpent of order dissolves into a hundred green motes — balance is satisfied." },
     { key: "gen7", gen: 7, name: "Alola Guardians", emoji: "🌞", needs: "kukui", champ: "KUKUI", regions: ["Alola"],
       team: [785, 791, 792, 801, 802, 800], face: 800, boost: 1.54, pts: 32,
       quote: "Sun and Moon blaze in the sky, the island guardian crackles, and the prism that devours light unfolds its blades.",
       winChron: "eclipsed the Alola cosmos — NECROZMA's light returned!", loseChron: "the blinding one swallowed another dawn",
-      lead: "🌞 Tapu Koko, Solgaleo, Lunala, Magearna and Marshadow — and NECROZMA, the light-eater." },
+      lead: "🌞 Tapu Koko, Solgaleo, Lunala, Magearna and Marshadow — and NECROZMA, the light-eater.",
+      ace: "The light bends INTO it — NECROZMA unfolds its prisms!", outroWin: "Necrozma drinks the light, and the islands go dark.", outroLose: "Light pours back into the world — the prism dims, at peace." },
     { key: "gen8", gen: 8, name: "Galar Heroes", emoji: "⚔️", needs: "leon", champ: "LEON", regions: ["Galar"],
       team: [888, 889, 890, 894, 895, 898], face: 898, boost: 1.56, pts: 34,
       quote: "The Fairy King's swords are drawn, the endless one coils in the crater, and the frozen monarch mounts his steed.",
       winChron: "dethroned the Galar monarchs — CALYREX lost its crown!", loseChron: "the crowned king unmade another reign",
-      lead: "⚔️ Zacian, Zamazenta, Eternatus, Regieleki and Regidrago — and CALYREX, the King of Bountiful Harvests." },
+      lead: "⚔️ Zacian, Zamazenta, Eternatus, Regieleki and Regidrago — and CALYREX, the King of Bountiful Harvests.",
+      ace: "The crown blazes — CALYREX and its steed take the field!", outroWin: "The King rides on. The crown was never in question.", outroLose: "The King bows from the saddle — the harvest is yours." },
     { key: "gen9", gen: 9, name: "Paldea Paradox", emoji: "🟣", needs: "geeta", champ: "GEETA", regions: ["Paldea"],
       team: [1001, 1002, 1003, 1004, 1007, 1008], face: 1008, boost: 1.58, pts: 36,
       quote: "The Treasures of Ruin break their seals, and the paradox of past and future thunders out of Area Zero. The final trial.",
       winChron: "conquered the Paldea paradox — the last legend fell!", loseChron: "the paradox devoured another future",
-      lead: "🟣 Wo-Chien, Chien-Pao, Ting-Lu, Chi-Yu and Koraidon — and MIRAIDON, the Iron Serpent." },
+      lead: "🟣 Wo-Chien, Chien-Pao, Ting-Lu, Chi-Yu and Koraidon — and MIRAIDON, the Iron Serpent.",
+      ace: "A roar from the future — MIRAIDON breaks from Area Zero!", outroWin: "The paradox accelerates beyond you — time keeps its secret.", outroLose: "Past and future power down, side by side. The paradox is tamed." },
   ];
   window.LEGEND_CHALLENGES = LEGENDS;
 
@@ -111,7 +120,7 @@
       lead: "🍊 Cissy's tides, Danny's ice, Rudy's rhythm, Luana's DOUBLE battle — then DRAKE, undefeated at Pummelo, with the Dragonite that never wakes up twice." },
     // ---- JOHTO: Cipher's masterpiece (Orre / XD) — the door it never
     // should have opened. A Pokémon whose heart was shut on purpose.
-    { key: "xd001", tab: "Johto", name: "XD001 · SHADOW LUGIA", flair: "JOHTO SPECIAL · Cipher's Masterpiece",
+    { key: "xd001", tab: "Johto", name: "XD001 · SHADOW LUGIA", flair: "JOHTO SPECIAL · Cipher's Masterpiece", feral: true,
       sub: "Johto Special · Miror B dances the door open — then the whale of the deep, painted wrong · 2 battles",
       icon: "🌘", face: 249, boost: 1.5, pts: 34, needs: "lance", champ: "LANCE",
       chain: [
@@ -200,7 +209,7 @@
       winChron: "conquered the BATTLE FRONTIER — all seven Brains fell, and Brandon's REGIS crumbled at the Pyramid's peak!",
       loseChron: "the Frontier kept its symbols",
       lead: "🏛️ Noland, Greta, Tucker, Lucy, Spenser, Anabel — then PYRAMID KING BRANDON with Regirock, Regice and Registeel." },
-    { key: "flare", tab: "Kalos", name: "THE ULTIMATE WEAPON", flair: "KALOS SPECIAL · Team Flare's Dawn",
+    { key: "flare", tab: "Kalos", name: "THE ULTIMATE WEAPON", flair: "KALOS SPECIAL · Team Flare's Dawn", feral: true,
       sub: "Kalos Special · Lysandre in the lab, then the weapon's core — life and death, unchained · 2 battles",
       icon: "🔥", face: 716, boost: 1.5, pts: 30, needs: "diantha", champ: "DIANTHA",
       chain: [
@@ -629,7 +638,7 @@
                   boost: sp.boost, vsFace: k === 0 ? sp.face : null, outro: k === 0 ? (sp.outro || null) : null })) }
               : { units: [{ npc: sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: sp.face,
                   hpBoost: sp.hpBoost || undefined, shiny: sp.shiny || undefined,
-                  reserve: sp.reserve || 0, speak: sp.speak || null, ace: sp.ace || null, outro: sp.outro || null }] },
+                  reserve: sp.reserve || 0, speak: sp.speak || null, ace: sp.ace || null, outro: sp.outro || null, feral: sp.feral }] },
             onResult: () => Router.render() });
         } });
     });
@@ -715,7 +724,7 @@
             : { units: [{ attId: attId, monIds: leadIds }] },
           b: { units: [{ npc: fin.npc || sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: fin.face || sp.face,
             hpBoost: sp.hpBoost || undefined, shiny: sp.shiny || undefined, gimmick: sp.gimmick || null,
-            reserve: sp.reserve || 0, speak: sp.speak || null, outro: sp.outro || null }] },
+            reserve: sp.reserve || 0, speak: sp.speak || null, outro: sp.outro || null, feral: sp.feral }] },
           onResult: () => Router.render() });
         if (!(sp.chain || []).length) { start(ids); return; }
         Duel.pickLead({ attId: attId, ids: ids, title: "The finale — " + (fin.npc || sp.name),
@@ -789,7 +798,10 @@
           Duel.start({ mode: "local", title: "the " + lg.name + " (Gen " + lg.gen + ")",
             legend: { key: lg.key, name: lg.name, pts: lg.pts, icon: lg.emoji, winChron: lg.winChron, loseChron: lg.loseChron },
             a: { units: [{ attId: attId, monIds: ids }] },
-            b: { units: [{ npc: "The " + lg.name, ai: true, monIds: lg.team.slice(), boost: lg.boost, vsFace: lg.face || null }] },
+            b: { units: [{ npc: "The " + lg.name, ai: true, monIds: lg.team.slice(), boost: lg.boost, vsFace: lg.face || null,
+              feral: true,   // 🐾 gods do not banter — narration + their own scripted words
+              ace: lg.ace ? { line: lg.ace } : null,
+              outro: { win: lg.outroWin || null, lose: lg.outroLose || null } }] },
             onResult: () => Router.render() });
         } });
     });

@@ -735,6 +735,40 @@
     "A fine effort — but this summit isn't for sale.",
     "Rest, heal, return. I'll be right here.",
   ];
+  // 🐾 FERAL pools — a legendary BEAST is not a chatty gym leader. When the
+  // "trainer" is the creature itself (Entei, Rayquaza, a titan team), the
+  // banter becomes narration: roars, pressure, ancient indifference. Units
+  // flag it with u.feral, or it's inferred when the npc name IS one of the
+  // party's own species (Mewtwo, Darkrai & other canon SPEAKERS excepted —
+  // telepaths keep their words).
+  const TAUNT_FERAL = [
+    "A roar splits the sky — it is NOT finished!",
+    "It rakes the ground. The air itself starts to shimmer.",
+    "Its eyes narrow to embers. NOW the real battle starts.",
+    "The pressure doubles — ancient power gathers around it.",
+  ];
+  const GLOAT_FERAL = [
+    "It looms over the fallen, silent and vast.",
+    "A low growl rolls out like distant thunder.",
+    "It has turned challengers away for a thousand years. It waits.",
+    "The wild power surges — it hungers for MORE.",
+  ];
+  const ACE_FERAL = [
+    "The legend gathers its last, terrible strength!",
+    "Cornered — and a cornered legend is a CALAMITY.",
+    "Everything it is pours into one final stand!",
+  ];
+  const OUTRO_LOSE_FERAL = [
+    "It holds your gaze a long moment… then bows its head, and is gone on the wind.",
+    "The legend yields. The land falls quiet in a way it hasn't for centuries.",
+    "It vanishes like heat-haze — leaving only awe, and the victory.",
+  ];
+  const OUTRO_WIN_FERAL = [
+    "It turns away, ancient and unmoved. You were not the one.",
+    "One final roar shakes the ground — the legend keeps its throne.",
+    "It watches you retreat, patient as the mountains.",
+  ];
+  const SPEAKING_LEGENDS = { 150: 1, 491: 1, 385: 1, 720: 1 };   // Mewtwo, Darkrai, Jirachi, Hoopa
   function bossLine(pool, seed) { return pool[Math.abs(seed || 0) % pool.length]; }
 
   // ---------------- the battle itself ----------------
@@ -841,8 +875,14 @@
       // 🍓 one Sitrus Berry per trainer per battle, if their bag has any
       // (snapshotted at setup so every phone agrees).
       const bag = ((Store.state.pokedex || {}).trainers || {})[u.attId];
+      // 🐾 a BEAST battle: explicit u.feral, or the npc is named after one of
+      // its own party species (and that species isn't a canon telepath)
+      const feral = u.feral != null ? !!u.feral
+        : !!(u.npc && party.some((m) => m.species &&
+            u.npc.toUpperCase().indexOf(String(m.species).split("-")[0].toUpperCase()) >= 0 &&
+            !SPEAKING_LEGENDS[m.id]));
       return { attId: u.attId, client: u.client || "", name: at.name, teamId: at.team || "",
-        ai: !!u.ai, boss: !!u.boss, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
+        ai: !!u.ai, boss: !!u.boss, feral: feral, hasBerry: !!(bag && bag.berries > 0), berryUsed: false,
         defy: u.defy || null,                          // ⚠ borrowed power: {monId: stagesOver}
         vsFace: u.vsFace || null,                      // 🎬 boss portrait for the VS intro
         // 🎭 A boss can hide its last N party mons (u.reserve) — off the ball
@@ -1713,7 +1753,7 @@
         const aceMon = mon(u);
         const isAce = u.ai && !opts.wild && u.party.length >= 3 && u.party.filter((x) => x.hp > 0).length === 1;
         // Custom ace lines always play; the GENERIC pool is featured-only.
-        if (isAce && !talk && ((u.ace && u.ace.line) || chatty)) { const aln = (u.ace && u.ace.line) || bossLine(ACE_LINES, aceMon.id); talkBeats.push(["🗣 " + u.name + ": “" + aln + "”", 2200, () => { sfx("select"); sayBubble(u, aln); }]); }
+        if (isAce && !talk && ((u.ace && u.ace.line) || chatty)) { const aln = (u.ace && u.ace.line) || bossLine(u.feral ? ACE_FERAL : ACE_LINES, aceMon.id); talkBeats.push(["🗣 " + u.name + ": “" + aln + "”", 2200, () => { sfx("select"); sayBubble(u, aln); }]); }
         beats(talkBeats, () => {
           renderSprites(act.side); renderHp(act.side);
           const sendBeats = [[u.name + " sent out " + mon(u).name + "!" + (surprise ? " …ANOTHER one?!" : ""), 1100, () => sfx(surprise ? "fanfare" : "blip")]];
@@ -1952,7 +1992,7 @@
         if (tm && !opts.wild && chatty) {
           if (tm.hp > 0 && tu.ai && !tu._tauntedOnce && tm.hp <= tm.hpMax / 2) {
             tu._tauntedOnce = true;
-            const tln = bossLine(TAUNT_HALF, tm.id + tm.hpMax);
+            const tln = bossLine(tu.feral ? TAUNT_FERAL : TAUNT_HALF, tm.id + tm.hpMax);
             koSteps.push(["🗣 " + tu.name + ": “" + tln + "”", 1600, () => { sfx("select"); sayBubble(tu, tln); }]);
           }
           // (The COMEBACK 25% heal for a boss's ace in deep red was cut by
@@ -1961,11 +2001,12 @@
           if (tm.hp > 0 && tu.ai && !tu._comebackDone
               && tu.party.filter((x) => x.hp > 0).length === 1 && tm.hp <= tm.hpMax * 0.3) {
             tu._comebackDone = true;
-            koSteps.push(["🗣 " + tu.name + ": “We are NOT done. ONE more stand!”", 1800, () => { sfx("select"); sayBubble(tu, "We are NOT done. ONE more stand!"); }]);
+            const lastStand = tu.feral ? "It plants its feet — the LAST STAND of a legend!" : "We are NOT done. ONE more stand!";
+            koSteps.push(["🗣 " + tu.name + ": “" + lastStand + "”", 1800, () => { sfx("select"); sayBubble(tu, lastStand); }]);
           }
           if (tm.hp <= 0 && u.ai && !tu.ai && !u._gloatedOnce) {
             u._gloatedOnce = true;
-            const gln = bossLine(GLOAT_KO, tm.id + m.id);
+            const gln = bossLine(u.feral ? GLOAT_FERAL : GLOAT_KO, tm.id + m.id);
             koSteps.push(["🗣 " + u.name + ": “" + gln + "”", 1600, () => { sfx("select"); sayBubble(u, gln); }]);
           }
         }
@@ -2082,8 +2123,8 @@
       let outroInfo = null;
       if (!opts.wild) {
         const wU = sides[winSide].units[0], lU = sides[other(winSide)].units[0];
-        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || (chatty ? bossLine(OUTRO_LOSE, lU.party[0].id) : null); if (oln) outroInfo = { u: lU, line: oln }; }
-        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || (chatty ? bossLine(OUTRO_WIN, wU.party[0].id) : null); if (oln) outroInfo = { u: wU, line: oln }; }
+        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || (chatty ? bossLine(lU.feral ? OUTRO_LOSE_FERAL : OUTRO_LOSE, lU.party[0].id) : null); if (oln) outroInfo = { u: lU, line: oln }; }
+        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || (chatty ? bossLine(wU.feral ? OUTRO_WIN_FERAL : OUTRO_WIN, wU.party[0].id) : null); if (oln) outroInfo = { u: wU, line: oln }; }
       }
       // 🎭 The boss's last word is a MOMENT now, not a passing line: a card
       // with their ace and their real quote, held until the player taps
