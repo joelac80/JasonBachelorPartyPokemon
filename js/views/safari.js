@@ -636,11 +636,19 @@
         challengeArea = el("div", { class: "safari-actions safari-boosts" }, btns);
       }
       const suspense = el("div", { class: "safari-suspense" });
-      const canBattle = window.Duel && Duel.poolFor && Duel.poolFor(active()).length > 0;
+      // ⚔ Battle-to-weaken needs the Duel engine AND a Pokémon to fight with.
+      // duelReady is FALSE only if duel.js didn't load (a partial SW cache) —
+      // in that case the button used to just SILENTLY vanish, which looked like
+      // a missing feature. Surface a reload hint instead. A trainer with an
+      // empty pool (no catches yet) correctly gets neither button nor hint.
+      const duelReady = !!(window.Duel && Duel.poolFor);
+      const canBattle = duelReady && Duel.poolFor(active()).length > 0;
       const throwRow = el("div", { class: "safari-actions safari-throw-row" }, [
         el("button", { class: "btn primary", onClick: () => throwBall(nfo) }, [ballIcon(ball), " Throw " + ball.name]),
         canBattle ? el("button", { class: "btn subtle", onClick: () => battleToWeaken(nfo) },
           nfo.leg && !isUnownEnc(current) ? "🩸 BOSS BATTLE — carve the bar, earn the catch (10% it bolts)" : "⚔ Battle to weaken (10% it bolts)") : null,
+        !duelReady ? el("button", { class: "btn subtle", onClick: () => { try { location.reload(); } catch (_) {} } },
+          "⚔ Battle unavailable — tap to reload") : null,
         el("button", { class: "btn subtle", onClick: () => { current = null; status = ""; clearBoosts(); renderEncounter(); } }, "Run"),
       ]);
       const post = el("div", { class: "safari-post" + (firstShow ? " hidden" : "") }, [
