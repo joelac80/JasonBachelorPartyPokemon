@@ -604,6 +604,30 @@ body {
 .dex-lock-sub { font-size: 12px; color: var(--ink-dim); margin-top: 3px; line-height: 1.4; }
 .dex-lock-bar { height: 8px; border-radius: 999px; background: rgba(0,0,0,.12); overflow: hidden; margin-top: 8px; }
 .dex-lock-fill { height: 100%; background: linear-gradient(90deg, #4fa3ff, #2e8b3d); border-radius: 999px; transition: width .4s; }
+/* 👑 Legendary Masters panel — summon a group's master once its court is caught */
+.master-intro { margin: 2px 0 10px; }
+.master-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.master-card { border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--paper);
+  display: flex; flex-direction: column; gap: 8px; }
+.master-card.ready { border-color: #e6b800; background: linear-gradient(180deg, rgba(255,203,0,.10), transparent); }
+.master-card.done { border-color: #5fbf6a; }
+.master-head { display: flex; align-items: center; gap: 10px; }
+.master-ace { width: 48px; height: 48px; image-rendering: pixelated; filter: brightness(0) opacity(.42); }
+.master-ace.lit { filter: none; }
+.master-mt { font-size: 34px; line-height: 1; }
+.master-name { font-family: var(--pixel, monospace); font-weight: 800; font-size: 14px; color: var(--ink); }
+.master-flair { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+.master-need-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.master-need-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700;
+  color: var(--ink-dim); border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 8px 2px 3px; }
+.master-need-chip.got { color: var(--ink); border-color: #5fbf6a; background: rgba(95,191,106,.12); }
+.master-need-img { width: 20px; height: 20px; image-rendering: pixelated; }
+.master-need-chip:not(.got) .master-need-img { filter: brightness(0) opacity(.4); }
+.master-need-note { font-size: 12px; font-weight: 700; color: var(--ink-dim); }
+.master-need-note.met { color: var(--ink); }
+.master-lock { font-size: 12px; color: var(--ink-dim); line-height: 1.4; }
+.master-done { font-size: 12px; font-weight: 800; color: #2e8b3d; }
+:root[data-theme="dark"] .master-done { color: #7ee08a; }
 /* 🎉 Gen 5-9 unlock celebration */
 .gen59-pop { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .gen59-pop-emoji { font-size: 46px; animation: onbPop .7s cubic-bezier(.2,1.5,.4,1); }

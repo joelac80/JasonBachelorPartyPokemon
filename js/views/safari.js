@@ -150,15 +150,44 @@
   // 🧭 The Gen Ladder: each trainer's wild pool runs up to THEIR unlocked
   // generation (start Gen 1; battles in The Journey open the rest).
   function maxIdFor(tid) { return (Store.genMaxIdFor && Store.genMaxIdFor(tid)) || GEN14_MAX; }
-  // 🗿 Regigigas (#486) is the master of the golems — it stays asleep in Snowpoint
-  // until this trainer has caught the original trio (Regirock / Regice / Registeel).
-  // Only then does it roam their grass (or answer a storm race for them).
-  const REGI_TRIO = [377, 378, 379], REGIGIGAS = 486;
-  function regiTrioDone(tid) { return REGI_TRIO.every((id) => ownsNormal(tid, id) || ownsShiny(tid, id)); }
-  function regigigasLocked(tid, id) { return id === REGIGIGAS && !regiTrioDone(tid); }
+  // 👑 LEGENDARY MASTERS — each sleeps until this trainer has caught the whole
+  // court it commands. Assemble the group and the master both ROAMS their wild
+  // AND can be SUMMONED as a raid boss from the Masters panel (an earned catch).
+  // `needs` = the prerequisite species; Arceus rides a full-dex `gate` instead.
+  const LEGEND_MASTERS = [
+    { id: 384, needs: [382, 383], grp: "Kyogre & Groudon", flair: "Lord of the Skies" },              // Rayquaza
+    { id: 249, needs: [144, 145, 146], grp: "the Legendary Birds", flair: "Guardian of the Seas" },   // Lugia
+    { id: 250, needs: [243, 244, 245], grp: "the Legendary Beasts", flair: "the Rainbow Phoenix" },   // Ho-Oh
+    { id: 486, needs: [377, 378, 379], grp: "the Regi golems", flair: "the Colossus" },               // Regigigas
+    { id: 487, needs: [483, 484], grp: "Dialga & Palkia", flair: "the Renegade" },                    // Giratina
+    { id: 646, needs: [643, 644], grp: "Reshiram & Zekrom", flair: "the Boundary" },                  // Kyurem
+    { id: 800, needs: [791, 792], grp: "Solgaleo & Lunala", flair: "the Light-Eater" },               // Necrozma
+    { id: 718, needs: [716, 717], grp: "Xerneas & Yveltal", flair: "the Order Between" },             // Zygarde
+    { id: 898, needs: [896, 897], grp: "Glastrier & Spectrier", flair: "the King of the Harvest" },   // Calyrex
+    { id: 905, needs: [641, 642, 645], grp: "the Forces of Nature", flair: "the Kami Matriarch" },    // Enamorus
+    { id: 493, gate: "dex", grp: "every Pokémon of Gens 1–4 & Hisui", flair: "the Original One" },     // Arceus
+  ];
+  const MASTER_BY_ID = {}; LEGEND_MASTERS.forEach((m) => { MASTER_BY_ID[m.id] = m; });
+  function ownsEither(tid, id) { return ownsNormal(tid, id) || ownsShiny(tid, id); }
+  // 🌌 Arceus's gate: the whole Gen 1-4 dex (bar Arceus itself) AND every
+  // roaming Hisuian form, all in this trainer's hands.
+  function arceusGateMet(tid) {
+    for (let id = 1; id <= GEN14_MAX; id++) { if (id === 493) continue; if (!ownsEither(tid, id)) return false; }
+    const hw = window.HISUI_WILD || [];
+    for (let i = 0; i < hw.length; i++) if (!ownsEither(tid, hw[i])) return false;
+    return true;
+  }
+  function masterReady(tid, m) {
+    if (!tid || !m) return false;
+    if (m.gate === "dex") return arceusGateMet(tid);
+    return m.needs.every((id) => ownsEither(tid, id));
+  }
+  // A master is LOCKED out of the wild (pool + storm roam) until its court is
+  // assembled — then it roams normally, like any other legendary.
+  function masterLocked(tid, id) { const m = MASTER_BY_ID[id]; return !!m && !masterReady(tid, m); }
   function poolIds(tid) {
     const cap = maxIdFor(tid);
-    const pool = IDS.filter((id) => id <= cap && !regigigasLocked(tid, id));
+    const pool = IDS.filter((id) => id <= cap && !masterLocked(tid, id));
     // 🏔 Hisui: once this trainer beats CYNTHIA, the temporal rift opens and
     // the ancient forms (ids 10229+, outside the National span) roam their
     // grass too — normal AND shiny, like any other species.
@@ -393,6 +422,9 @@
         res.berryDrop ? el("div", { class: "safari-combo-note" }, "🍓 It dropped a Sitrus Berry! (auto-heals your Pokémon in duels — 🍓×" + ((rec(tid).berries) || 1) + " in the bag)") : null,
         el("div", { class: "safari-actions" }, [el("button", { class: "btn spin-btn", onClick: findOne }, "🔍 Find another")]),
       ]));
+      // A fresh catch can complete a master's court (or BE the master) — refresh
+      // the side panels without disturbing this result card in `enc`.
+      renderStats(); renderMasters(); renderDex(); renderBoard();
     }
 
     // ⚔ Weaken-to-catch — the OPTIONAL battle path. Fight the wild one with up
@@ -400,7 +432,8 @@
     // (throw it mid-battle with the 🔴 button). But it's a gamble: KO it and
     // the catch is LOST, and if your whole side faints it bolts. Your earned
     // boosts still count — they set the odds floor the weakening builds on.
-    function battleToWeaken(nfo) {
+    function battleToWeaken(nfo, opts) {
+      opts = opts || {};
       if (busy || !current || !window.Duel) return;
       if (roamGone()) { showRoamGone(nfo); return; }
       const tid = active();
@@ -408,15 +441,16 @@
       // ⚔ Sending out a fighter is a commotion — 10% the wild one bolts before
       // the battle even starts. Your berries/rocks CARRY into the battle
       // (they set the odds floor the weakening builds on), so the aggressive
-      // path needed its own risk, same as the rock.
-      if (Math.random() < 0.10) {
+      // path needed its own risk, same as the rock. A 👑 SUMMON is earned — it
+      // never bolts.
+      if (!opts.summon && Math.random() < 0.10) {
         wildEscaped(current, nfo, nfo.name + " startled at the challenge and bolted!",
           "⚔ The commotion scared it off before the battle began!");
         return;
       }
       const ctx = { tid: tid, id: current, wasShiny: shiny, glyph: currentGlyph, nfo: nfo,
         helperId: helper && helper !== tid ? helper : "", viaMaster: masterArmed,
-        baseChance: chanceFor(nfo) };
+        baseChance: chanceFor(nfo), summon: !!opts.summon };
       // A wild Unown battles as the real #201 with its glyph; sentinels stay Safari-only.
       const wid = ctx.glyph ? 201 : ctx.id;
       const size = Math.min(3, Duel.poolFor(tid).length);
@@ -469,7 +503,8 @@
           const wonStorm = !!roamHunt;
           if (roamHunt) claimStorm(tid);
           showCaughtCard(tid, ctx.id, ctx.wasShiny, "poke", ctx.viaMaster, nfo, res,
-            (wonStorm ? "🌩 STORM RACE WON — this one's yours alone! " : "") + "⚔ Weakened in battle, then caught!");
+            (wonStorm ? "🌩 STORM RACE WON — this one's yours alone! " : "") +
+            (ctx.summon ? "👑 It answered your summons — and now it's yours!" : "⚔ Weakened in battle, then caught!"));
         }
       } else if (outcome === "ko") {
         sfx("error");
@@ -522,9 +557,10 @@
     const enc = el("div", { class: "safari-enc" });
     const boardHost = el("div", {});
     const teamHost = el("div", {});
+    const mastersHost = el("div", {});
     const dexHost = el("div", {});
     root.appendChild(stats); root.appendChild(enc); root.appendChild(boardHost);
-    root.appendChild(teamHost); root.appendChild(dexHost);
+    root.appendChild(teamHost); root.appendChild(mastersHost); root.appendChild(dexHost);
 
     function active() { return myCatcher; }
 
@@ -692,7 +728,7 @@
         // Roamers stay within what the WALKING trainer has unlocked, so the
         // room event never hands out a legendary from a locked generation.
         const roamCap = Math.min(maxIdFor(active()), GEN14_MAX);
-        const wild = IDS.filter((x) => x <= roamCap && DEX[x].leg && !regigigasLocked(active(), x));
+        const wild = IDS.filter((x) => x <= roamCap && DEX[x].leg && !masterLocked(active(), x));
         if (wild.length) {
           const pickId = wild[(Math.random() * wild.length) | 0];
           Sync.startRoam(pickId);
@@ -1004,7 +1040,70 @@
       dexHost.appendChild(el("div", { class: "toolbar" }, tools));
     }
 
-    function renderAll() { renderStats(); renderEncounter(); renderBoard(); renderTeam(); renderDex(); }
+    // ---- 👑 Legendary Masters panel ----
+    // A master answers once its whole court is caught. Summoning runs the same
+    // raid boss-catch as a wild legendary (no startle-bolt) — win it and the
+    // master joins the dex. It also roams the wild from that point on.
+    function summonMaster(tid, id) {
+      if (busy || !window.Duel) return;
+      if (Duel.poolFor(tid).length < 1) { alert("Catch at least one of your own first, then answer the summons."); return; }
+      current = id; shiny = false; currentGlyph = null; revealId = null; status = ""; clearBoosts();
+      battleToWeaken(info(id), { summon: true });
+    }
+    function masterCard(tid, m) {
+      const nm = (DEX[m.id] || {}).n || ("#" + m.id);
+      const owned = ownsEither(tid, m.id);
+      const ready = masterReady(tid, m);
+      let needRow;
+      if (m.gate === "dex") {
+        needRow = el("div", { class: "master-need-note" + (ready ? " met" : "") },
+          (ready ? "✓ " : "○ ") + "The entire Gen 1–4 & Hisui Pokédex");
+      } else {
+        needRow = el("div", { class: "master-need-row" }, m.needs.map((id) => {
+          const got = ownsEither(tid, id);
+          return el("span", { class: "master-need-chip" + (got ? " got" : "") }, [
+            SP[id] ? el("img", { class: "master-need-img", src: SP[id], alt: "" }) : null,
+            el("span", {}, (got ? "✓ " : "○ ") + ((DEX[id] || {}).n || ("#" + id))),
+          ]);
+        }));
+      }
+      const action = owned
+        ? el("div", { class: "master-done" }, "✅ " + nm + " answered your summons")
+        : ready
+        ? el("button", { class: "btn primary sm", onClick: () => summonMaster(tid, m.id) }, "⚡ SUMMON " + nm.toUpperCase())
+        : el("div", { class: "master-lock" }, "🔒 Catch " + m.grp + " to summon " + nm);
+      return el("div", { class: "master-card" + (owned ? " done" : ready ? " ready" : " locked") }, [
+        el("div", { class: "master-head" }, [
+          SP[m.id] ? el("img", { class: "master-ace" + (owned || ready ? " lit" : ""), src: SP[m.id], alt: "" }) : el("span", { class: "master-mt" }, "👑"),
+          el("div", { class: "master-title" }, [
+            el("div", { class: "master-name" }, "👑 " + nm),
+            el("div", { class: "master-flair" }, m.flair),
+          ]),
+        ]),
+        needRow,
+        action,
+      ]);
+    }
+    function renderMasters() {
+      mastersHost.innerHTML = "";
+      const tid = active();
+      if (!tid) return;
+      const cap = maxIdFor(tid);
+      // Only surface a master whose OWN species is within this trainer's world.
+      // Arceus waits until the rift is open (Hisui) — before that its gate can't
+      // even be approached.
+      const visible = LEGEND_MASTERS.filter((m) =>
+        m.gate === "dex" ? !!(Store.hisuiUnlocked && Store.hisuiUnlocked(tid)) : m.id <= cap);
+      if (!visible.length) return;
+      mastersHost.appendChild(el("h2", { class: "section-title" }, "👑 Legendary Masters"));
+      mastersHost.appendChild(el("p", { class: "hint master-intro" },
+        "Assemble a legend's whole court, and its master answers — a raid boss battle to catch the greatest of them. (They roam your wild from then on, too.)"));
+      const grid = el("div", { class: "master-grid" });
+      visible.forEach((m) => grid.appendChild(masterCard(tid, m)));
+      mastersHost.appendChild(grid);
+    }
+
+    function renderAll() { renderStats(); renderEncounter(); renderBoard(); renderTeam(); renderMasters(); renderDex(); }
     renderAll();
   }
 
@@ -1012,5 +1111,6 @@
   window.Views.safari = view;
   // Tuning/debug hook (used by tests; harmless in production).
   window.SafariDebug = { info: info, weightFor: weightFor, legendaryOwner: legendaryOwner,
-    randomEncounter: randomEncounter, ownsNormal: ownsNormal, ownsShiny: ownsShiny };
+    randomEncounter: randomEncounter, ownsNormal: ownsNormal, ownsShiny: ownsShiny,
+    LEGEND_MASTERS: LEGEND_MASTERS, masterReady: masterReady, masterLocked: masterLocked, poolIds: poolIds };
 })();
