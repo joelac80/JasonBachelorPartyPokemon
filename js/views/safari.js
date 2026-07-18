@@ -306,6 +306,7 @@
   let berryBonus = 0, rockBonus = 0;                    // accumulated % (diminishing)
   let throwMsg = "";                                    // last berry/rock feedback
   let dexMode = "normal";                               // dex grid: normal | shiny
+  let mastersOpen = false;                              // 👑 Masters panel starts collapsed (declutter)
 
   function view(root) {
     // While you're on the Safari, a remote sync (someone else walking/catching)
@@ -1095,7 +1096,19 @@
       const visible = LEGEND_MASTERS.filter((m) =>
         m.gate === "dex" ? !!(Store.hisuiUnlocked && Store.hisuiUnlocked(tid)) : m.id <= cap);
       if (!visible.length) return;
-      mastersHost.appendChild(el("h2", { class: "section-title" }, "👑 Legendary Masters"));
+      // 👑 Collapsible — the panel starts closed so it doesn't shove the dex
+      // down the page. The header carries a live count (ready to summon, and
+      // caught) so it's useful even while collapsed; tap to expand.
+      const readyN = visible.filter((m) => !ownsEither(tid, m.id) && masterReady(tid, m)).length;
+      const doneN = visible.filter((m) => ownsEither(tid, m.id)).length;
+      const badge = readyN ? " ⚡" + readyN + " ready" : doneN ? " ✅" + doneN + "/" + visible.length : "";
+      const header = el("button", { class: "master-toggle" + (readyN ? " has-ready" : ""),
+        onClick: () => { mastersOpen = !mastersOpen; renderMasters(); } }, [
+        el("span", { class: "master-toggle-lab" }, "👑 Legendary Masters" + badge),
+        el("span", { class: "master-toggle-chev" }, mastersOpen ? "▲" : "▼"),
+      ]);
+      mastersHost.appendChild(header);
+      if (!mastersOpen) return;
       mastersHost.appendChild(el("p", { class: "hint master-intro" },
         "Assemble a legend's whole court, and its master answers — a raid boss battle to catch the greatest of them. (They roam your wild from then on, too.)"));
       const grid = el("div", { class: "master-grid" });
