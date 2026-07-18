@@ -71,15 +71,35 @@
   // ---- presence + challenges (live multiplayer) ----
   let presRef = null, chalRef = null, myPresRef = null, liveRef = null, photosRef = null, duelRef = null, roamRef = null;
   let hbTimer = null, presUnsub = null, chalUnsub = null, liveUnsub = null, photosUnsub = null, duelUnsub = null, roamUnsub = null;
-  let presenceList = [], roamLast = null;
+  let presenceList = [], presenceRaw = [], roamLast = null;
   const battleMap = {}, duelMap = {};   // id → latest doc data (all live battles / duels)
   const presenceSubs = [], chIncSubs = [], chAccSubs = [], chDecSubs = [], liveSubs = [], duelSubs = [], roamSubs = [], stateSubs = [], photoSubs = [], photoReactSubs = [];
-  const handledInc = {}, handledAcc = {}, handledDec = {};   // challenge ids we've already surfaced
+  // Challenge ids this phone already surfaced — PERSISTED, because iOS reloads
+  // the PWA nearly every reopen while a trainer-addressed challenge doc waits
+  // up to a DAY for its answer: with only in-memory marks, every reopen
+  // re-blasted the same "You've been challenged!" ping + popup. Once per phone.
+  const CHAL_SEEN_KEY = "jasonBachHub.chalSeen.v1";
+  let chalSeenList = [];
+  try { chalSeenList = JSON.parse(localStorage.getItem(CHAL_SEEN_KEY) || "[]") || []; } catch (_) {}
+  const handledInc = {}, handledAcc = {}, handledDec = {};
+  chalSeenList.forEach((k) => {
+    const id = k.slice(2);
+    if (k.charAt(0) === "i") handledInc[id] = 1;
+    else if (k.charAt(0) === "a") handledAcc[id] = 1;
+    else if (k.charAt(0) === "d") handledDec[id] = 1;
+  });
+  function markChalSeen(kind, id) {
+    const k = kind + ":" + id;
+    if (chalSeenList.indexOf(k) >= 0) return;
+    chalSeenList.push(k);
+    if (chalSeenList.length > 90) chalSeenList = chalSeenList.slice(-90);
+    try { localStorage.setItem(CHAL_SEEN_KEY, JSON.stringify(chalSeenList)); } catch (_) {}
+  }
   let photoSeen = null;                       // ids known from the FIRST snapshot (no ping for the backlog)
   let photoReactKeys = null;                  // photoId -> { "reactorClient|emoji": 1 } already seen (new ones ping)
   let renderTimer = null;                     // pending coalesced re-render (debounces remote-update flicker)
-  // Generous TTL: phones suspend background tabs (heartbeats pause), so give
-  // people 3 minutes before they drop off the "here now" list.
+  // Heartbeats only fire while the tab is VISIBLE (a hidden tab is not "here"),
+  // so the TTL is exactly how long someone lingers after pocketing their phone.
   const PRESENCE_TTL = 180000, HEARTBEAT = 25000;
 
   const clientId = (function () {
@@ -163,13 +183,12 @@
     myPresRef = presRef.doc(clientId);
     writePresence();
     clearInterval(hbTimer);
-    hbTimer = setInterval(writePresence, HEARTBEAT);
+    hbTimer = setInterval(heartbeat, HEARTBEAT);
     if (presUnsub) presUnsub();
     presUnsub = presRef.onSnapshot((snap) => {
-      const now = nowMs(), list = [];
-      snap.forEach((d) => { const x = d.data(); if (x && x.t && (now - x.t) < PRESENCE_TTL) list.push(x); });
-      presenceList = list;
-      presenceSubs.forEach((f) => { try { f(list); } catch (_) {} });
+      presenceRaw = [];
+      snap.forEach((d) => { const x = d.data(); if (x && x.t) presenceRaw.push(x); });
+      refreshPresence(true);
     }, function () {});
     if (chalUnsub) chalUnsub();
     chalUnsub = chalRef.onSnapshot(handleChallenges, function () {});
@@ -239,6 +258,9 @@
       }
     }, function () {});
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
+    // iOS Safari never fires beforeunload — pagehide is the real goodbye there.
+    // (persisted = just parked in the back/forward cache; the TTL covers that.)
+    try { window.addEventListener("pagehide", (e) => { if (!e || !e.persisted) removePresence(); }); } catch (_) {}
     // When the app returns to the foreground (unlocked phone / switched back),
     // the socket may have slept — freshen the heartbeat AND force-pull the
     // room so nothing logged while away is missed. Also on window focus.
@@ -256,6 +278,23 @@
     if (!myPresRef) return;
     myPresRef.set({ clientId: clientId, attId: conf.me || "", name: conf.name || "", t: nowMs() }).catch(function () {});
   }
+  // A tab that's open but HIDDEN (backgrounded PWA, forgotten laptop tab) must
+  // not keep looking "here now" — its heartbeats stop and the TTL ages it out.
+  // The visibility wake() below writes the moment it's actually looked at again.
+  function heartbeat() {
+    try { if (document.visibilityState === "visible") writePresence(); } catch (_) { writePresence(); }
+    refreshPresence(false);   // age ghosts out of the UI even between snapshots
+  }
+  // Re-filter the raw docs by TTL and tell subscribers when someone aged out —
+  // snapshots only fire on WRITES, so a phone that went quiet used to linger
+  // on everyone's "here now" list until some other write happened to land.
+  function refreshPresence(force) {
+    const now = nowMs();
+    const list = presenceRaw.filter((x) => (now - x.t) < PRESENCE_TTL);
+    if (!force && list.length === presenceList.length) return;   // aging only removes
+    presenceList = list;
+    presenceSubs.forEach((f) => { try { f(list); } catch (_) {} });
+  }
   function removePresence() { if (myPresRef) myPresRef.delete().catch(function () {}); }
   function stopPresence() {
     clearInterval(hbTimer); hbTimer = null;
@@ -267,7 +306,7 @@
     if (duelUnsub) { duelUnsub(); duelUnsub = null; }
     if (roamUnsub) { roamUnsub(); roamUnsub = null; }
     removePresence();
-    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; roamLast = null;
+    presRef = chalRef = myPresRef = liveRef = photosRef = duelRef = roamRef = null; presenceList = []; presenceRaw = []; roamLast = null;
     Object.keys(battleMap).forEach((k) => delete battleMap[k]); Object.keys(duelMap).forEach((k) => delete duelMap[k]);
     presenceSubs.forEach((f) => { try { f([]); } catch (_) {} });
   }
@@ -285,11 +324,11 @@
       if (c.t && now - c.t > ttl) return;
       const forMe = c.toClient ? c.toClient === clientId : !!(c.toAtt && conf.me && c.toAtt === conf.me);
       if (c.state === "pending" && forMe && !handledInc[c.id]) {
-        handledInc[c.id] = 1;
+        handledInc[c.id] = 1; markChalSeen("i", c.id);
         chIncSubs.forEach((f) => { try { f(c); } catch (_) {} });
       }
       if (c.state === "accepted" && (c.fromClient === clientId || c.toClient === clientId) && !handledAcc[c.id]) {
-        handledAcc[c.id] = 1;
+        handledAcc[c.id] = 1; markChalSeen("a", c.id);
         chAccSubs.forEach((f) => { try { f(c); } catch (_) {} });
         // the challenger tidies up the doc a few seconds later
         if (c.fromClient === clientId && chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
@@ -297,7 +336,7 @@
       // 🚫 a DECLINE finally reaches the challenger (it used to vanish
       // silently — you'd just wait forever). Same tidy-up as accepts.
       if (c.state === "declined" && c.fromClient === clientId && !handledDec[c.id]) {
-        handledDec[c.id] = 1;
+        handledDec[c.id] = 1; markChalSeen("d", c.id);
         chDecSubs.forEach((f) => { try { f(c); } catch (_) {} });
         if (chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
       }
@@ -467,7 +506,7 @@
       try { window.dispatchEvent(new CustomEvent("sync-me")); } catch (_) {}
       return conf.name;
     },
-    presence() { return presenceList.slice(); },
+    presence() { const now = nowMs(); return presenceList.filter((x) => x && x.t && (now - x.t) < PRESENCE_TTL); },
     onPresence(fn) { presenceSubs.push(fn); fn(presenceList.slice()); return () => { const i = presenceSubs.indexOf(fn); if (i >= 0) presenceSubs.splice(i, 1); }; },
     isLive() { return statusState === "live" || statusState === "connecting"; },
     myClientId() { return clientId; },
