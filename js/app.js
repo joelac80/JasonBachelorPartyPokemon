@@ -532,15 +532,16 @@
     // 📬 Trade inbox pings: when a synced update brings a new open offer
     // addressed to me, ping once per offer — no need to be watching.
     const OSEEN_KEY = "jasonBachHub.offersSeen";
+    const oseenMem = {};   // session memory — a flaky storage read can't re-ping an offer
     function checkTradeInbox() {
       try {
         const me = Sync.getMe && Sync.getMe();
         if (!me || !Store.tradeOffers) return;
         let seen = [];
         try { seen = JSON.parse(localStorage.getItem(OSEEN_KEY) || "[]"); } catch (_) {}
-        const mine = Store.tradeOffers().filter((o) => o.to === me && seen.indexOf(o.id) < 0);
+        const mine = Store.tradeOffers().filter((o) => o.to === me && seen.indexOf(o.id) < 0 && !oseenMem[o.id]);
         if (!mine.length) return;
-        mine.forEach((o) => seen.push(o.id));
+        mine.forEach((o) => { seen.push(o.id); oseenMem[o.id] = 1; });
         try { localStorage.setItem(OSEEN_KEY, JSON.stringify(seen.slice(-60))); } catch (_) {}
         const o = mine[0];
         const fromN = (Store.attendee(o.from) || {}).name || "Someone";
@@ -564,16 +565,26 @@
 
     // 🧭 Gen Ladder unlock — celebrate when THIS device's signed-in trainer
     // climbs a rung (their battles opened a new generation in the wild).
+    // The guard is an OBSERVED-TRANSITION baseline held in MEMORY: the first
+    // check of the session primes silently (whatever cap you boot with is old
+    // news — the climb was celebrated live when the Champion fell), and only
+    // a climb witnessed after that celebrates. localStorage used to be the
+    // ONLY guard, and this runs on every store tick — an iOS storage layer
+    // handing back null reads mid-suspend re-blasted "GEN 4 UNLOCKED!"
+    // endlessly. Storage is now just the cross-session floor.
     const GENCAP_SEEN_KEY = "jasonBachHub.genCapSeen";
+    let genCapBase = null;   // primed by the first check that has a trainer
     function checkGenClimb() {
       try {
         const me = Sync.getMe && Sync.getMe();
         if (!me || !Store.genCapFor) return;
         const cap = Store.genCapFor(me);
-        const seen = parseInt(localStorage.getItem(GENCAP_SEEN_KEY) || "1", 10) || 1;
-        if (cap <= seen) return;
-        localStorage.setItem(GENCAP_SEEN_KEY, String(cap));
-        if (seen < 1 || cap === 1) return;
+        let stored = 1;
+        try { stored = parseInt(localStorage.getItem(GENCAP_SEEN_KEY) || "1", 10) || 1; } catch (_) {}
+        if (genCapBase === null) genCapBase = Math.max(cap, stored);
+        if (cap <= genCapBase) return;
+        genCapBase = cap;
+        try { localStorage.setItem(GENCAP_SEEN_KEY, String(cap)); } catch (_) {}
         const span = Store.GEN_SPANS[cap - 1];
         notify("🧭 GEN " + cap + " UNLOCKED!", "Your battles opened Gen " + cap + " — #" + span[0] + "–#" + span[1] + " now roam YOUR Safari!");
         if (window.SFX && SFX.fanfare) SFX.fanfare();
@@ -589,14 +600,26 @@
     // backward, and the voice of Arceus welcomes them to HISUI (the ancient
     // forms join their Safari + the Hisui specials open on the Sinnoh tab).
     const HISUI_SEEN_KEY = "jasonBachHub.hisuiSeen";
+    let hisuiKnown = null;   // same observed-transition guard as the Gen Ladder
     function checkHisuiRift() {
       try {
         const me = Sync.getMe && Sync.getMe();
-        if (!me || !Store.hisuiUnlocked || !Store.hisuiUnlocked(me)) return;
-        const seen = (localStorage.getItem(HISUI_SEEN_KEY) || "").split(",").filter(Boolean);
-        if (seen.indexOf(me) >= 0) return;
-        seen.push(me);
-        localStorage.setItem(HISUI_SEEN_KEY, seen.join(","));
+        if (!me || !Store.hisuiUnlocked) return;
+        const unlocked = Store.hisuiUnlocked(me);
+        let seen = [];
+        try { seen = (localStorage.getItem(HISUI_SEEN_KEY) || "").split(",").filter(Boolean); } catch (_) {}
+        if (hisuiKnown === null) {
+          hisuiKnown = {};
+          seen.forEach((id) => { hisuiKnown[id] = 1; });
+          if (unlocked) hisuiKnown[me] = 1;   // booted already-unlocked = old news
+          return;
+        }
+        if (!unlocked || hisuiKnown[me]) return;
+        hisuiKnown[me] = 1;
+        if (seen.indexOf(me) < 0) {
+          seen.push(me);
+          try { localStorage.setItem(HISUI_SEEN_KEY, seen.join(",")); } catch (_) {}
+        }
         if (document.querySelector(".hisui-rift")) return;
         const arc = Store.sprite(493);
         const lay = U.el("div", { class: "hisui-rift" }, [
@@ -645,12 +668,14 @@
     // (accepted/declined) — even if it happened while this phone was asleep.
     // Last-seen statuses live per phone so nothing is announced twice.
     const OFFER_SEEN_KEY = "jasonBachHub.offerSeen.v1";
+    const offerSeenMem = {};   // session memory backs up the persisted statuses
     function watchOffers() {
       try {
         const me = Sync.getMe && Sync.getMe();
         if (!me || !window.Inbox) return;
         let seen = {};
         try { seen = JSON.parse(localStorage.getItem(OFFER_SEEN_KEY) || "{}") || {}; } catch (_) {}
+        Object.keys(offerSeenMem).forEach((id) => { if (!(id in seen)) seen[id] = offerSeenMem[id]; });
         const offers = ((Store.state.pokedex || {}).offers || []);
         const nameOf = (id) => (Store.attendee(id) || {}).name || "Someone";
         const monN = (id) => ((window.DEX || {})[id] || {}).n || "?";
@@ -669,7 +694,7 @@
             notify(good ? "✅ Trade accepted!" : "🚫 Trade declined", nameOf(o.to) + " " + o.status + " your " + monN(o.give) + " ⇄ " + monN(o.want) + " offer.");
             if (window.U && U.toast) U.toast((good ? "✅ " : "🚫 ") + nameOf(o.to) + " " + o.status + " your trade offer.");
           }
-          seen[o.id] = o.status; changed = true;
+          seen[o.id] = o.status; offerSeenMem[o.id] = o.status; changed = true;
         });
         // prune ids that left the offers list so the map stays small
         const live = {}; offers.forEach((o) => { if (o && o.id) live[o.id] = 1; });
