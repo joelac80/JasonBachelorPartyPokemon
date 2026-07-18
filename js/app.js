@@ -636,10 +636,21 @@
             ]),
           ]),
         ]);
-        document.body.appendChild(lay);
-        if (window.SFX && SFX.fanfare) SFX.fanfare();
-        requestAnimationFrame(() => lay.classList.add("go"));
-        notify("🏔 HISUI UNLOCKED!", "Arceus has spoken — the ancient forms roam your Safari.");
+        // 🏔 The rift fires on the SAME Cynthia win that raises the "CYNTHIA HAS
+        // FALLEN" story beat — they used to stack, two full-screen curtains at
+        // once. Wait for that beat (and any battle/evo screen) to clear, then
+        // take the stage alone. hisuiKnown[me] is already set above, so no other
+        // checkHisuiRift call can queue a second rift while this one waits.
+        let tries = 0;
+        (function whenClear() {
+          if (++tries > 40) return;
+          if (document.querySelector(".hisui-rift")) return;   // already up (shouldn't happen)
+          if (document.querySelector(".battle, .evo-stage, .league-intro")) { setTimeout(whenClear, 700); return; }
+          document.body.appendChild(lay);
+          if (window.SFX && SFX.fanfare) SFX.fanfare();
+          requestAnimationFrame(() => lay.classList.add("go"));
+          notify("🏔 HISUI UNLOCKED!", "Arceus has spoken — the ancient forms roam your Safari.");
+        })();
       } catch (_) {}
     }
     Store.subscribe(checkHisuiRift);

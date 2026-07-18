@@ -150,9 +150,15 @@
   // 🧭 The Gen Ladder: each trainer's wild pool runs up to THEIR unlocked
   // generation (start Gen 1; battles in The Journey open the rest).
   function maxIdFor(tid) { return (Store.genMaxIdFor && Store.genMaxIdFor(tid)) || GEN14_MAX; }
+  // 🗿 Regigigas (#486) is the master of the golems — it stays asleep in Snowpoint
+  // until this trainer has caught the original trio (Regirock / Regice / Registeel).
+  // Only then does it roam their grass (or answer a storm race for them).
+  const REGI_TRIO = [377, 378, 379], REGIGIGAS = 486;
+  function regiTrioDone(tid) { return REGI_TRIO.every((id) => ownsNormal(tid, id) || ownsShiny(tid, id)); }
+  function regigigasLocked(tid, id) { return id === REGIGIGAS && !regiTrioDone(tid); }
   function poolIds(tid) {
     const cap = maxIdFor(tid);
-    const pool = IDS.filter((id) => id <= cap);
+    const pool = IDS.filter((id) => id <= cap && !regigigasLocked(tid, id));
     // 🏔 Hisui: once this trainer beats CYNTHIA, the temporal rift opens and
     // the ancient forms (ids 10229+, outside the National span) roam their
     // grass too — normal AND shiny, like any other species.
@@ -686,7 +692,7 @@
         // Roamers stay within what the WALKING trainer has unlocked, so the
         // room event never hands out a legendary from a locked generation.
         const roamCap = Math.min(maxIdFor(active()), GEN14_MAX);
-        const wild = IDS.filter((x) => x <= roamCap && DEX[x].leg);
+        const wild = IDS.filter((x) => x <= roamCap && DEX[x].leg && !regigigasLocked(active(), x));
         if (wild.length) {
           const pickId = wild[(Math.random() * wild.length) | 0];
           Sync.startRoam(pickId);

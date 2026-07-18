@@ -81,7 +81,9 @@
     let tries = 0;
     (function whenClear() {
       if (++tries > 40) return;
-      if (document.querySelector(".battle, .evo-stage, .league-intro:not(.story-beat)")) { setTimeout(whenClear, 700); return; }
+      // Also yield to the 🏔 Hisui rift — the Cynthia beat and the rift fire on
+      // the same win, and neither may bury the other (they used to stack).
+      if (document.querySelector(".battle, .evo-stage, .hisui-rift, .league-intro:not(.story-beat)")) { setTimeout(whenClear, 700); return; }
       document.body.appendChild(lay);
       if (window.SFX && SFX.fanfare) SFX.fanfare();
       requestAnimationFrame(() => lay.classList.add("go"));
@@ -136,11 +138,13 @@
         ]),
       ]),
     ]);
-    // Never bury the Hall of Fame flow — wait for battle screens to clear.
+    // Never bury the Hall of Fame flow — wait for battle screens to clear. And
+    // yield to the 🏔 Hisui rift if it won the race (this beat + the rift both
+    // fire on the Cynthia win) so the two curtains never stack.
     let tries = 0;
     (function whenClear() {
       if (++tries > 30) return;
-      if (document.querySelector(".battle, .evo-stage")) { setTimeout(whenClear, 700); return; }
+      if (document.querySelector(".battle, .evo-stage, .hisui-rift")) { setTimeout(whenClear, 700); return; }
       document.body.appendChild(lay);
       if (window.SFX && SFX.fanfare) SFX.fanfare();
       requestAnimationFrame(() => lay.classList.add("go"));
