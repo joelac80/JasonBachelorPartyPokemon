@@ -68,6 +68,8 @@
   --ink-dim: #5a6072;
   --line: #d5dbec;
   --panel: #ffffff;   /* buttons/inputs INSIDE a light island go light too */
+  --paper: #eef1f8;   /* paper-backed islands (trainer picker cards…) stay light —
+                         without this they kept the DARK paper under pinned dark ink */
   color: #1f2330;
 }
 /* 🌓 who's-that-Pokémon silhouettes: jet black vanishes on a dark page —
