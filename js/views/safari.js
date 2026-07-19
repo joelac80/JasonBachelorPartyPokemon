@@ -306,6 +306,7 @@
   let berryBonus = 0, rockBonus = 0;                    // accumulated % (diminishing)
   let throwMsg = "";                                    // last berry/rock feedback
   let dexMode = "normal";                               // dex grid: normal | shiny
+  let dexFilter = { gen: 0, type: "", desc: false };    // 🔎 gen/type/sort over the dex grid
   let mastersOpen = false;                              // 👑 Masters panel starts collapsed (declutter)
 
   function view(root) {
@@ -1000,6 +1001,9 @@
         el("button", { class: "btn sm" + (shinyMode ? " subtle" : " primary"), onClick: () => { dexMode = "normal"; renderDex(); } }, "Regular · " + nNorm),
         el("button", { class: "btn sm" + (shinyMode ? " primary" : " subtle"), onClick: () => { dexMode = "shiny"; renderDex(); } }, "✨ Shiny · " + nShiny),
       ]));
+      // 🔎 the same gen/type/sort bar the Tracker's browser has — this grid
+      // can run past a thousand cells once the later gens open.
+      if (window.DexFilter) dexHost.appendChild(DexFilter.controls(dexFilter, () => renderDex()));
       // 🧭 The Gen Ladder — this trainer's world so far, and what battle opens
       // the next generation. Battling (not dex completion) drives the climb.
       const cap = (Store.genCapFor && Store.genCapFor(tid)) || 1;
@@ -1015,7 +1019,9 @@
         goal ? el("div", { class: "dex-lock-bar" }, [el("div", { class: "dex-lock-fill", style: { width: Math.round(cap / 9 * 100) + "%" } })]) : null,
       ]));
       const grid = el("div", { class: "safari-dex" });
-      pool.forEach((id) => {
+      const shown = window.DexFilter ? DexFilter.apply(pool, dexFilter) : pool;
+      if (!shown.length) grid.appendChild(el("div", { class: "empty" }, "No Pokémon match — clear the filter."));
+      shown.forEach((id) => {
         const got = shinyMode ? ownsShiny(tid, id) : ownsNormal(tid, id);
         const rc = caught[id];
         const ballKey = got && rc && rc.ball;

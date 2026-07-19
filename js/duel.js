@@ -3011,6 +3011,7 @@
   }
 
   window.Duel = { start: start, statsFor: statsFor, poolFor: poolFor, pickParty: pickParty, pickTrainer: pickTrainer, pickLead: pickLead,
+    bindPeek: bindPeek,   // 👁 hold-to-peek for pickers OUTSIDE this module (Trade…)
     baseSpecies: baseOf,   // 🔢 form id → its National-dex species (0 = none)
     _capMoves: capMoves, _moveObj: moveObj, _residualDiv: RESIDUAL_DIV, _effFor: effFor };   // test seams
 })();

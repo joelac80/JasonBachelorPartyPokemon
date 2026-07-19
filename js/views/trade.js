@@ -74,6 +74,7 @@
 
   function view(root) {
     const pick = { a: { attId: "", mon: 0, shiny: false }, b: { attId: "", mon: 0, shiny: false } };
+    const peekHeld = { held: false };   // 👁 shared hold-to-peek state for the pick grids
 
     root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🔁 Trading Post"),
@@ -236,6 +237,7 @@
           const btn = el("button", { class: "duel-pick" + (on ? " on" : "") + (ok ? "" : " locked") + (shiny ? " is-shiny" : ""),
             title: nameOf(id) + (shiny ? " ✨ SHINY" : "") + (id === 10094 ? " — he chose YOU, untradeable ⚡" : locked ? " — partner, untradeable ❤" : ""),
             onClick: () => {
+              if (peekHeld.held) return;   // the long-press release must not also select
               if (!ok) { sfx("error"); return; }
               // Tapping the already-selected mon unpicks it.
               if (on) { d.mon = 0; d.shiny = false; } else { d.mon = id; d.shiny = shiny; }
@@ -246,6 +248,9 @@
             locked ? el("span", { class: "duel-pick-n lock" }, "🔒") : null,
             on ? el("span", { class: "duel-pick-n sel" }, "✓") : null,
           ]);
+          // 👁 hold-to-peek: the same press-and-hold battle-kit preview the duel
+          // pickers have — exactly where you want it before trading a mon away.
+          if (window.Duel && Duel.bindPeek) Duel.bindPeek(btn, id, { attId: d.attId }, peekHeld, null);
           // Label disambiguates when both forms are shown; still flags a lone shiny.
           const lab = bothVariants ? (shiny ? "✨ Shiny" : "Normal") : (shiny ? "✨ Shiny" : "");
           return el("div", { class: "trade-pick-cell" }, [
