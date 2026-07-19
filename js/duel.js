@@ -2087,7 +2087,11 @@
     // Battle Tower have their own flows and never nag.
     function offerRematch(wLabel, winSide) {
       if (mode !== "local" || !window.Modal) return;
-      if (opts.wild || opts.nuzlocke || opts.tower) return;
+      // 🛡 No rematch inside a RUN (gauntlets + story chains): the rerun kept
+      // the original onResult, so beating the redo RESUMED the run at the next
+      // round — unlimited per-round retries. A fall ends the run; the Full
+      // Restores/Revives are the in-run insurance now. Start over at the top.
+      if (opts.wild || opts.nuzlocke || opts.tower || opts.gauntlet) return;
       if (winSide) {
         const wAI = sides[winSide].units.some((x) => x.ai);
         const lAI = sides[other(winSide)].units.some((x) => x.ai);

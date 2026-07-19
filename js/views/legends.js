@@ -706,7 +706,7 @@
               hpBoost: t.hpBoost || undefined,   // 🩸 raid-pool bosses (the Loyal Three)
               shiny: t.shiny || undefined, gimmick: t.gimmick || null,
               reserve: t.reserve || 0, speak: t.speak || null, outro: t.outro || null }] };
-        const go = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase() + " (" + (i + 1) + "/" + total + ")",
+        const go = (leadIds) => Duel.start({ mode: "local", gauntlet: true, title: sp.name.toLowerCase() + " (" + (i + 1) + "/" + total + ")",
           a: (t.duo || t.duoShared)
             ? { shared: true, units: [{ attId: attId, monIds: leadIds }, { attId: attId, monIds: leadIds }] }
             : { units: [{ attId: attId, monIds: leadIds }] },
@@ -719,7 +719,7 @@
     } else {
       const fin = sp.finale || { npc: sp.name, name: sp.name, flair: sp.flair, face: sp.face, quote: sp.quote, icon: sp.icon };
       eraIntro(fin, () => {
-        const start = (leadIds) => Duel.start({ mode: "local", title: sp.name.toLowerCase(),
+        const start = (leadIds) => Duel.start({ mode: "local", gauntlet: true, title: sp.name.toLowerCase(),   // a chain finale is still mid-RUN — no rematch popup
           secret: { key: sp.key, name: sp.name, pts: sp.pts, icon: sp.icon, winChron: sp.winChron, loseChron: sp.loseChron },
           // 🐺 an ALLY (sp.ally) turns the finale into a 2-on-1 double battle —
           // the legendary wolves fight beside you against the Darkest Day.
