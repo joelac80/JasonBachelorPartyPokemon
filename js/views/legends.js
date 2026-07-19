@@ -622,7 +622,7 @@
 
   function challengeSpecial(sp, attId) {
     const size = sp.playerSize || sp.team.length;
-    if (Duel.poolFor(attId).length < size) { alert(sp.name + " fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
+    if (Duel.poolFor(attId).length < size) { U.toast(sp.name + " fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
     specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs " + sp.name + " — pick EXACTLY " + size,
@@ -676,7 +676,7 @@
   }
   function challengeChain(sp, attId) {
     const total = (sp.chain || []).length + 1;
-    if (Duel.poolFor(attId).length < 6) { alert(sp.name + " runs one squad of 6 through " + total + " battles — catch 6 of your own first (Safari Zone)."); return; }
+    if (Duel.poolFor(attId).length < 6) { U.toast(sp.name + " runs one squad of 6 through " + total + " battles — catch 6 of your own first (Safari Zone)."); return; }
     specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: 6, max: 6,
         title: sp.name + " — pick your ONE squad of 6",
@@ -792,7 +792,7 @@
   function challenge(lg, attId) {
     const size = lg.team.length;
     if (Duel.poolFor(attId).length < size) {
-      alert("The " + lg.name + " field " + size + " legends — catch " + size + " of your own first (Safari Zone).");
+      U.toast("The " + lg.name + " field " + size + " legends — catch " + size + " of your own first (Safari Zone).");
       return;
     }
     intro(lg, () => {

@@ -123,13 +123,17 @@
 
     // player wrapped
     root.appendChild(el("h2", { class: "section-title" }, "🎁 Player Wrapped"));
-    const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id, selected: a.id === me ? "true" : null }, a.name)));
-    const wrapHost = el("div", {});
-    function paintWrap() { wrapHost.innerHTML = ""; wrapHost.appendChild(wrappedCard(sel.value)); }
-    sel.addEventListener("change", paintWrap);
-    root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Whose recap:"), sel]));
-    root.appendChild(wrapHost);
-    paintWrap();
+    if (!Store.state.attendees.length) {
+      root.appendChild(el("p", { class: "empty" }, "No trainers yet — add the crew on the Squad page and the recaps light up here."));
+    } else {
+      const sel = el("select", { class: "in" }, Store.state.attendees.map((a) => el("option", { value: a.id, selected: a.id === me ? "true" : null }, a.name)));
+      const wrapHost = el("div", {});
+      function paintWrap() { wrapHost.innerHTML = ""; wrapHost.appendChild(wrappedCard(sel.value)); }
+      sel.addEventListener("change", paintWrap);
+      root.appendChild(el("div", { class: "safari-trainer" }, [el("span", { class: "safari-trainer-lbl" }, "Whose recap:"), sel]));
+      root.appendChild(wrapHost);
+      paintWrap();
+    }
 
     // daily digest
     const days = Store.activityByDay();

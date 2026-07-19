@@ -167,7 +167,7 @@
         Router.render();
         toast("Backup imported");
       } catch (err) {
-        alert("That file didn't look like a valid backup.");
+        U.toast("That file didn't look like a valid backup.");
       }
     };
     reader.readAsText(f);
@@ -225,7 +225,7 @@
     const noteBtns = el("div", { class: "toolbar" }, [
       el("button", { class: "btn subtle sm", onClick: () => { if (window.AppNotify) AppNotify.request(() => paintNote()); } }, "🔔 Enable notifications"),
       el("button", { class: "btn subtle sm", onClick: () => {
-        if (!window.AppNotify || AppNotify.permission() !== "granted") { alert("Enable notifications first."); return; }
+        if (!window.AppNotify || AppNotify.permission() !== "granted") { U.toast("Enable notifications first."); return; }
         AppNotify.test(); toast("Test fires in 4s — switch to another app to see it");
       } }, "Send a test"),
     ]);
@@ -279,8 +279,8 @@
       if (Sync.getConf().enabled) { Sync.disable(); }
       else {
         const r = Sync.save(cfgIn.value, roomIn.value, nameIn.value);
-        if (!r.ok) { alert(r.error); return; }
-        if (!roomIn.value.trim()) { alert("Pick a room code first (everyone joins the same one)."); return; }
+        if (!r.ok) { U.toast(r.error); return; }
+        if (!roomIn.value.trim()) { U.toast("Pick a room code first (everyone joins the same one)."); return; }
         // Ask for phone-notification permission on this user gesture.
         try { if (window.Notification && Notification.requestPermission) Notification.requestPermission(); } catch (_) {}
         Sync.enable();
@@ -291,7 +291,7 @@
 
     const saveBtn = el("button", { class: "btn subtle", onClick: () => {
       const r = Sync.save(cfgIn.value, roomIn.value, nameIn.value);
-      if (!r.ok) { alert(r.error); return; }
+      if (!r.ok) { U.toast(r.error); return; }
       toast("Sync settings saved");
     } }, "Save settings");
 
@@ -376,7 +376,7 @@
           const pinIn = el("input", { class: "in", type: "password", inputmode: "numeric", placeholder: "Choose a PIN (4+ digits)", autocomplete: "off", style: { maxWidth: "220px" } });
           const claim = () => {
             const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
-            if (!meId) { alert("Sign in as your trainer first (“You are” above)."); return; }
+            if (!meId) { U.toast("Sign in as your trainer first (“You are” above)."); return; }
             if (String(pinIn.value || "").trim().length < 4) { toast("PIN needs at least 4 characters"); try { pinIn.focus(); } catch (_) {} return; }
             if (Store.claimRoom(pinIn.value, meId)) { toast("👑 You own this room — guard that PIN!"); paint(); }
             else { toast("Someone claimed it first!"); paint(); }

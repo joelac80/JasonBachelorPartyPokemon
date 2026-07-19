@@ -54,8 +54,10 @@
           Store.update((s) => { delete s.challengeDone[ch.id]; }); redraw();
         } }, "Undo") : null,
         ch.custom ? el("button", { class: "btn danger sm", onClick: () => {
-          Store.update((s) => { s.challenges = s.challenges.filter((c) => c.id !== ch.id); delete s.challengeDone[ch.id]; });
-          redraw();
+          U.ask("Delete the challenge “" + ch.title + "”?", { icon: "🗑", danger: true }, () => {
+            Store.update((s) => { s.challenges = s.challenges.filter((c) => c.id !== ch.id); delete s.challengeDone[ch.id]; });
+            redraw();
+          });
         } }, "Delete") : null,
       ]),
     ]);

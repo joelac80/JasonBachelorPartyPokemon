@@ -85,8 +85,10 @@
           });
         } }, "Clear") : null,
         cat.custom ? el("button", { class: "btn danger sm", onClick: () => {
-          Store.update((s) => { s.superlatives = s.superlatives.filter((c) => c.id !== cat.id); delete s.superlativeVotes[cat.id]; });
-          redraw();
+          U.ask("Remove the award “" + cat.title + "” (and its votes)?", { icon: "🗑", danger: true }, () => {
+            Store.update((s) => { s.superlatives = s.superlatives.filter((c) => c.id !== cat.id); delete s.superlativeVotes[cat.id]; });
+            redraw();
+          });
         } }, "Remove") : null,
       ]),
     ]);

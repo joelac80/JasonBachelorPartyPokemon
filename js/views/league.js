@@ -311,8 +311,8 @@
     const isRed = st.key === "red";
     const isFinal = !!st.final;
     const why = leagueBlocked(attId, idx);
-    if (why) { alert(why); return; }
-    if (Duel.poolFor(attId).length < size) { alert(st.name + " runs " + size + " Pokémon — you need " + size + " of your own."); return; }
+    if (why) { U.toast(why); return; }
+    if (Duel.poolFor(attId).length < size) { U.toast(st.name + " runs " + size + " Pokémon — you need " + size + " of your own."); return; }
     const foeName = isRed ? "RED" : st.rank + " " + st.name;
     // 📖 True Story: the chamber fights at its story level (E4 50+, the
     // Champion 58, GEETA 60, the summit 62) — both teams walk down to
@@ -394,7 +394,7 @@
     const total = opponents.length;
     if (!total) return;
     const size = 6;
-    if (Duel.poolFor(attId).length < size) { alert("This gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
+    if (Duel.poolFor(attId).length < size) { U.toast("This gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
     let fixed = null, lastParty = null;
 
     const finishRun = (cleared, won) => {
@@ -591,7 +591,7 @@
     const champ = (a && a.name) || h.attId;
     const size = (h.party || []).length;
     if (!size) return;
-    if (Duel.poolFor(attId).length < size) { alert("This Hall of Fame team runs " + size + " — you need " + size + " of your own."); return; }
+    if (Duel.poolFor(attId).length < size) { U.toast("This Hall of Fame team runs " + size + " — you need " + size + " of your own."); return; }
     const lay = el("div", { class: "league-intro fame" }, [
       el("div", { class: "league-intro-inner" }, [
         el("div", { class: "league-intro-mt" }, "🏛"),

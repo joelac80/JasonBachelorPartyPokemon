@@ -71,7 +71,7 @@
           taps = 0;
           const on = CartridgeMode.toggle();
           dot.textContent = "• v" + (on ? " 🎛️" : "");
-          alert(on
+          U.toast(on
             ? "🎛️ CARTRIDGE MODE — ON (beta)\n\nReal base stats at real levels, the true damage formula, and bosses that outlevel you instead of out-multiplying you. Every region climbs 1 → Champion, then resets.\n\nTap 7 more times to switch back."
             : "🎛️ CARTRIDGE MODE — OFF\n\nBack to the classic engine.");
         }

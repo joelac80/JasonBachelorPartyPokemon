@@ -140,8 +140,10 @@
           el("img", { src: m.src, alt: m.caption || "hall", loading: "lazy" }),
           m.caption ? el("figcaption", {}, m.caption) : null,
           el("button", { class: "meme-del", title: "Remove", onClick: () => {
-            Store.update((s) => { s.hall = (s.hall || []).filter((x) => x.id !== m.id); });
-            renderGallery();
+            U.ask("Remove this piece from the Hall?", { icon: "🗑", danger: true }, () => {
+              Store.update((s) => { s.hall = (s.hall || []).filter((x) => x.id !== m.id); });
+              renderGallery();
+            });
           } }, "🗑"),
         ]));
       });
@@ -167,7 +169,7 @@
       const f = fileIn.files && fileIn.files[0];
       if (!f) return;
       if (f.size > 4 * 1024 * 1024) {
-        alert("That image is over 4MB — browser storage may fill up. Try a smaller one or use a URL.");
+        U.toast("That image is over 4MB — browser storage may fill up. Try a smaller one or use a URL.");
       }
       const reader = new FileReader();
       reader.onload = () => add(reader.result);

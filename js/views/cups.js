@@ -97,10 +97,10 @@
     root.appendChild(el("div", { class: "toolbar" }, [
       el("button", { class: "btn primary spin-btn", onClick: () => {
         const humans = Store.state.attendees.filter((a) => seats[a.id]);
-        if (!humans.length) { alert("Seat at least one trainer."); return; }
+        if (!humans.length) { U.toast("Seat at least one trainer."); return; }
         if (pickCup === "poke") {
           const short = humans.filter((a) => cupPool("poke", a.id).length < 3);
-          if (short.length) { alert("Poké Cup needs 3+ caught Pokémon each — " + short.map((a) => a.name).join(", ") + " must hit the Safari first (or run the Rental Cup)."); return; }
+          if (short.length) { U.toast("Poké Cup needs 3+ caught Pokémon each — " + short.map((a) => a.name).join(", ") + " must hit the Safari first (or run the Rental Cup)."); return; }
         }
         const seed = (Math.floor(Math.random() * 2147483647) || 1);
         const players = humans.map((a) => ({ key: a.id, name: a.name, ai: false }));

@@ -18,7 +18,7 @@
   // Modal picker of undrafted trainers. onPick(attendee) fires on click.
   function openPicker(title, onPick) {
     const und = undrafted();
-    if (!und.length) { alert("Everyone's already on a team 🎉"); return; }
+    if (!und.length) { U.toast("Everyone's already on a team 🎉"); return; }
     const grid = el("div", { class: "pick-grid" }, und.map((a) =>
       el("button", { class: "pick-item", onClick: () => { picked = a; ctrl.close(); onPick(a); } }, [
         thumb(a),

@@ -1444,14 +1444,24 @@
       // and a desynced act falls through to the restore below).
       const tgt = (o.revive != null) ? u.party[o.revive] : null;
       if (tgt && tgt.hp <= 0 && !opts.nuzlocke) {
-        tgt.hp = tgt.hpMax; tgt.status = null; tgt.slp = 0;
+        // A KO'd Dynamax never got its end-of-turn shrink (the residual tick
+        // skips corpses) — revert it here or the revive would restore to the
+        // inflated giant hpMax and bring the mon back still Dynamaxed.
+        if (tgt._dyna) { tgt.hpMax = tgt._dynaBase || tgt.hpMax; tgt._dyna = 0; tgt._dynaBase = 0; }
+        tgt.hp = tgt.hpMax; tgt.status = null; tgt.slp = 0; tgt._confN = 0;
         paintParty(u._side);
+        // Shared-party doubles: the revived index may be a FIELDED slot (a
+        // partner stuck on a benchless corpse) — repaint its sprite + bar so
+        // it doesn't keep fighting drawn as a fainted ghost with an empty bar.
+        sides[u._side].units.forEach((slot) => {
+          if (slot.party === u.party && slot.cur === o.revive) { renderSprites(u._side); paintHp(slot); }
+        });
         beats([["💫 " + u.name + " uses a Revive — " + tgt.name + " is back on its feet at FULL health!", 1300, () => sfx("coin")]], resolveNext);
         return;
       }
       // 🧪 FULL RESTORE: all the HP, status cured (was a flat +120).
       const m = mon(u); const gained = m.hpMax - m.hp;
-      m.hp = m.hpMax; m.status = null; m.slp = 0; paintHp(u);
+      m.hp = m.hpMax; m.status = null; m.slp = 0; m._confN = 0; paintHp(u);
       beats([["🧪 " + u.name + " uses a Full Restore — " + m.name + " is healthy again!" + (gained > 0 ? " (+" + gained + " HP)" : ""), 1200, () => sfx("coin")]], resolveNext);
     }
     // Status is checked HERE, at resolution — so a status just inflicted by a
@@ -2067,6 +2077,7 @@
       if (mode === "watch" || !window.Modal) { fin(); return; }
       const pend = [], seen = {};
       ["a", "b"].forEach((sd) => sides[sd].units.forEach((un) => {
+        if (un.ai || !un.attId) return;              // AI squads never evolve a real trainer's dex
         if (!(mode === "local" || isMine(un))) return;
         un.party.forEach((mn) => {
           const key = un.attId + ":" + mn.id;
@@ -2188,12 +2199,15 @@
       // stakes — a friendly duel or wild scrap earns no medal.
       const stakes = !!(opts.league || opts.gym || opts.movie || opts.legend || opts.secret || opts.gauntlet);
       const humansWon = winSide && sides[winSide].units.some((x) => !x.ai) && sides[other(winSide)].units.every((x) => x.ai);
-      const itemFree = record && stakes && humansWon && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
+      // The BEAT plays on every screen (spectators included); the BANK below
+      // is gated to the one recording phone so the medal counts exactly once.
+      const itemFreeShown = stakes && humansWon && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
+      const itemFree = record && itemFreeShown;
       const finishUp = () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); };
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
-        itemFree ? ["🏅 ITEM-FREE VICTORY — the bag stayed shut. Pure skill!", 1700, () => sfx("correct")] : null,
+        itemFreeShown ? ["🏅 ITEM-FREE VICTORY — the bag stayed shut. Pure skill!", 1700, () => sfx("correct")] : null,
       ].filter(Boolean), () => { if (outroInfo) outroPop(outroInfo, finishUp); else finishUp(); });
       if (!record) return;
       // 🏅 bank the medal (counter feeds The Purist achievement); marquee boss
@@ -2251,7 +2265,7 @@
               const fresh = w.indexOf(lg.key) < 0;
               if (fresh) w.push(lg.key);
               if (lg.style && Store.styleWin) Store.styleWin(s, player.attId, lg.key, lg.style);
-              Store.grantPoints(s, "battle", player.teamId, lg.pts || 6);
+              if (fresh) Store.grantPoints(s, "battle", player.teamId, lg.pts || 6);
               // 🏛 Hall of Fame: the champion AND the team that did it, forever.
               // Stamp WHICH league/region was won so the plaque can name it.
               const enshrine = () => { if (fresh) { s.hof = s.hof || []; s.hof.push({ attId: player.attId, ts: now(), party: player.party.map((x) => x.id), key: lg.key, champ: lg.name, rank: lg.rank, region: lg.region || "" }); } };
@@ -2292,7 +2306,7 @@
               const fresh = hs.indexOf(player.attId) < 0;
               if (fresh) hs.push(player.attId);
               if (opts.gym.style && Store.styleWin) Store.styleWin(s, player.attId, "gym:" + opts.gym.idx, opts.gym.style);
-              Store.grantPoints(s, "battle", player.teamId, 5);
+              if (fresh) Store.grantPoints(s, "battle", player.teamId, 5);
               Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (opts.gym.badge || "gym") + " Badge!" + (fresh ? "" : " (rematch flex)"));
               if (fresh && opts.gym.idx < 16 && Store.gymBadgesInRange(player.attId, 0, 16) >= 16)
                 Store.chron(s, "🏆", "ALL 16 BADGES — " + player.name + " has conquered Johto AND Kanto. CHAMPION!!");
@@ -2374,8 +2388,9 @@
             if (winSide === playerSide) {
               s.movies = s.movies || {};
               const w = s.movies[player.attId] = s.movies[player.attId] || [];
-              if (w.indexOf(mvb.key) < 0) w.push(mvb.key);
-              Store.grantPoints(s, "battle", player.teamId, mvb.pts || 10);
+              const fresh = w.indexOf(mvb.key) < 0;
+              if (fresh) w.push(mvb.key);
+              if (fresh) Store.grantPoints(s, "battle", player.teamId, mvb.pts || 10);
               Store.chron(s, mvb.icon || "🎬", player.name + " " + (mvb.winChron || ("defeated " + mvb.name + "!")));
             } else {
               Store.chron(s, mvb.icon || "🎬", (mvb.loseChron || (mvb.name + " proved too powerful")) + " — " + player.name + " retreats to train.");
@@ -2396,8 +2411,9 @@
             if (winSide === playerSide) {
               s.legends = s.legends || {};
               const w = s.legends[player.attId] = s.legends[player.attId] || [];
-              if (w.indexOf(lg.key) < 0) w.push(lg.key);
-              Store.grantPoints(s, "battle", player.teamId, lg.pts || 20);
+              const fresh = w.indexOf(lg.key) < 0;
+              if (fresh) w.push(lg.key);
+              if (fresh) Store.grantPoints(s, "battle", player.teamId, lg.pts || 20);
               Store.chron(s, lg.icon || "🌌", player.name + " " + (lg.winChron || ("conquered the " + lg.name + "!")));
             } else {
               Store.chron(s, lg.icon || "🌌", (lg.loseChron || (lg.name + " proved untamable")) + " — " + player.name + " retreats to train.");
@@ -2417,8 +2433,9 @@
             if (winSide === playerSide) {
               s.secrets = s.secrets || {};
               const w = s.secrets[player.attId] = s.secrets[player.attId] || [];
-              if (w.indexOf(sc.key) < 0) w.push(sc.key);
-              Store.grantPoints(s, "battle", player.teamId, sc.pts || 30);
+              const fresh = w.indexOf(sc.key) < 0;
+              if (fresh) w.push(sc.key);
+              if (fresh) Store.grantPoints(s, "battle", player.teamId, sc.pts || 30);
               Store.chron(s, sc.icon || "🌀", player.name + " " + (sc.winChron || ("defeated " + sc.name + "!")));
             } else {
               Store.chron(s, sc.icon || "🌀", (sc.loseChron || (sc.name + " proved beyond reach")) + " — " + player.name + " retreats to train.");
@@ -2440,13 +2457,16 @@
           const foe = opts.encounter.foe || "a mysterious challenger";
           Store.update((s) => {
             if (winSide === playerSide) {
-              Store.grantPoints(s, "battle", player.teamId, 5);
-              // 🎖 record the villain beaten (append-only) for Battle Honors.
+              // 🎖 record the villain beaten (append-only) for Battle Honors —
+              // points only on the FIRST win over each villain (no re-farming).
+              let fresh = true;
               if (opts.encounter.who) {
                 s.encounters = s.encounters || {};
                 const e = s.encounters[player.attId] = s.encounters[player.attId] || [];
-                if (e.indexOf(opts.encounter.who) < 0) e.push(opts.encounter.who);
+                fresh = e.indexOf(opts.encounter.who) < 0;
+                if (fresh) e.push(opts.encounter.who);
               }
+              if (fresh) Store.grantPoints(s, "battle", player.teamId, 5);
               Store.chron(s, "❗", player.name + " sent " + foe + " packing in a surprise showdown!");
             } else {
               Store.chron(s, "❗", foe + " ambushed " + player.name + " and won. Humbling.");

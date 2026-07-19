@@ -154,7 +154,19 @@
       try {
         localStorage.setItem(KEY, JSON.stringify(this.state));
       } catch (e) {
-        console.warn("Store: failed to persist (storage full or blocked).", e);
+        // Storage full — almost always the base64 photo blobs. Retry with the
+        // images stripped from all but the newest 40 photos (metadata and
+        // reactions stay; live rooms re-fill images from the photos channel).
+        // A silent no-op here would mean EVERY save fails from now on.
+        try {
+          const slim = Object.assign({}, this.state);
+          slim.photos = (this.state.photos || []).map((p, i) =>
+            (i < 40 || !p || !p.img) ? p : Object.assign({}, p, { img: "" }));
+          localStorage.setItem(KEY, JSON.stringify(slim));
+          console.warn("Store: storage full — persisted with older photo images stripped.");
+        } catch (e2) {
+          console.warn("Store: failed to persist (storage full or blocked).", e2);
+        }
       }
     },
 
@@ -675,13 +687,25 @@
       });
       return changed;
     },
+    // Distinct owned species over have ∪ haveShiny — the union maps that
+    // _mergeCumulative can only grow — with the legacy caught map folded in for
+    // pre-union saves. Same ownership source the dex grids paint from, so the
+    // counters and the grid can never disagree after a sync merge.
+    _ownedIds(t) {
+      const owned = {};
+      for (const k in (t.have || {})) if (t.have[k]) owned[k] = 1;
+      for (const k in (t.haveShiny || {})) if (t.haveShiny[k]) owned[k] = 1;
+      for (const k in (t.caught || {})) owned[k] = 1;
+      return owned;
+    },
     // Dex completion for the 251 race — the freebie partner doesn't count.
     dexCount(attId) {
       const a = this.attendee(attId);
       const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
       if (!t) return 0;
-      let n = Object.keys(t.caught || {}).length;
-      if (a && a.favoriteId && t.caught && t.caught[a.favoriteId]) n--;
+      const owned = this._ownedIds(t);
+      let n = Object.keys(owned).length;
+      if (a && a.favoriteId && owned[a.favoriteId]) n--;
       return Math.max(0, n);
     },
     // Gen 5-9 stay hidden in the wild until SOMEONE completes the Gen 1-4 NORMAL
@@ -782,9 +806,10 @@
     typeCaught(attId, type) {
       const a = this.attendee(attId);
       const t = (this.state.pokedex && this.state.pokedex.trainers || {})[attId];
-      if (!t || !t.caught || !window.DEX) return 0;
+      if (!t || !window.DEX) return 0;
       let n = 0;
-      for (const id in t.caught) {
+      const owned = this._ownedIds(t);
+      for (const id in owned) {
         if (a && a.favoriteId === +id) continue;
         const d = window.DEX[id];
         if (d && d.t && d.t.indexOf(type) >= 0) n++;
@@ -976,9 +1001,11 @@
     },
     shinyCount(attId) {
       const t = (this.state.pokedex.trainers || {})[attId];
-      if (!t || !t.caught) return 0;
-      let n = 0; for (const k in t.caught) if (t.caught[k].shiny) n++;
-      return n;
+      if (!t) return 0;
+      const owned = {};
+      for (const k in (t.haveShiny || {})) if (t.haveShiny[k]) owned[k] = 1;
+      for (const k in (t.caught || {})) if (t.caught[k] && t.caught[k].shiny) owned[k] = 1;
+      return Object.keys(owned).length;
     },
     tradeCount(attId) {
       return ((this.state.pokedex && this.state.pokedex.trades) || [])
@@ -1978,6 +2005,19 @@
         next.attendees = (next.attendees || []).filter((a) => !ntb[a.id]);
         if (next.pokedex && next.pokedex.trainers) Object.keys(ntb).forEach((id) => { delete next.pokedex.trainers[id]; });
       }
+      // 🛟 ATTENDEE LIFEBOAT: the synced doc is last-write-wins on `attendees`,
+      // so a trainer created seconds ago (welcome tour, ＋Add) vanishes if the
+      // room's snapshot lands before our debounced push does. Re-append any
+      // local attendee the remote list is missing — deliberate removals carry
+      // tombstones (enforced above), so this can only rescue, never resurrect.
+      next.attendees = next.attendees || [];
+      const attSeen = {};
+      next.attendees.forEach((a) => { if (a) attSeen[a.id] = 1; });
+      ((prev && prev.attendees) || []).forEach((a) => {
+        if (!a || attSeen[a.id] || ntb[a.id]) return;
+        next.attendees.push(JSON.parse(JSON.stringify(a)));
+        attSeen[a.id] = 1;
+      });
       // 👑 room owner: FIRST claim wins — the copy with the older timestamp
       // survives, so a latecomer can't overwrite the crown.
       const pown = prev && prev.roomOwner;
@@ -2170,7 +2210,12 @@
       next.pokedex.trainers = next.pokedex.trainers || {};
       Object.keys(pt).forEach((tid) => {
         const src = pt[tid]; if (!src) return;
-        const dst = next.pokedex.trainers[tid] = next.pokedex.trainers[tid] || { caught: {}, team: [], catches: 0 };
+        if (ntb[tid]) return;                        // tombstoned — stays gone
+        // Remote has no bucket for this trainer at all (brand-new signup the
+        // room hasn't seen yet) — carry the whole local bucket across so the
+        // partner catch/team survive alongside the lifeboated attendee.
+        if (!next.pokedex.trainers[tid]) { next.pokedex.trainers[tid] = JSON.parse(JSON.stringify(src)); return; }
+        const dst = next.pokedex.trainers[tid];
         ["have", "haveShiny", "seen"].forEach((k) => {
           if (!src[k]) return;
           dst[k] = dst[k] || {};
@@ -2181,6 +2226,10 @@
         // 🌩 Storm races won: monotonic too.
         if (src.roamWins) dst.roamWins = Math.max(dst.roamWins || 0, src.roamWins);
         if (src.pureWins) dst.pureWins = Math.max(dst.pureWins || 0, src.pureWins);
+        // Every other lifetime tally rides the same monotonic rule — a stale
+        // phone's snapshot can only raise a counter, never roll one back.
+        ["masterCatches", "helps", "koLife", "evolutions", "safariPts", "assistPts", "berries"]
+          .forEach((k) => { if (src[k]) dst[k] = Math.max(dst[k] || 0, src[k]); });
       });
       // 📬 trade offers: the inbox lives in the last-write-wins doc, so an offer
       // one phone just sent would be wiped by the next phone's push. Union by id

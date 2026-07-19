@@ -95,7 +95,7 @@
 
       const canLog = picks.length >= (g.mode === "order" ? 2 : 1);
       const logBtn = el("button", { class: "btn primary", disabled: canLog ? null : "true", onClick: () => {
-        if (!Store.logCardRound(game, picks, noteIn.value, byName)) { alert("Pick the players for this round first."); return; }
+        if (!Store.logCardRound(game, picks, noteIn.value, byName)) { U.toast("Pick the players for this round first."); return; }
         tableSet = picks.slice();   // remember who's at the table for the next hand
         picks = []; showAll = false; sfx("win"); renderAll();
       } }, "Log " + g.name + " round");

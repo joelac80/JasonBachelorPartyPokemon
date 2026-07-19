@@ -197,6 +197,13 @@
     try { history.replaceState(null, "", location.pathname + "#/home"); } catch (_) { location.hash = "#/home"; }
     const c = window.Sync && Sync.getConf ? Sync.getConf() : null;
     if (!c || (c.enabled && c.room === code)) return;
+    // First-run phones: the welcome tour opens in ~500ms with its OWN room
+    // slide — hand it the invite code instead of stacking a second ask on
+    // top of the tour (accepting there joins in place, no reload).
+    if (window.Onboard && Onboard.seen && !Onboard.seen() && !(window.Sync && Sync.getMe && Sync.getMe())) {
+      window.__inviteRoom = code;
+      return;
+    }
     U.ask("📨 You've been invited to room " + code + "! Join it? This phone will sync with that crew (the app reloads).", { icon: "❓" }, () => {
     Sync.switchRoom(code);
   });
@@ -319,10 +326,10 @@
             el("button", { class: "btn primary", onClick: () => {
               if (tctrl) tctrl.close();
               const me = Sync.getMe();
-              if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+              if (!me) { U.toast("Pick who you are first — Settings → “You are”."); return; }
               const aSh = TradeFX.shinyOf(ch.fromAtt, give), bSh = TradeFX.shinyOf(me, want);
               const result = Store.trade(ch.fromAtt, give, me, want);
-              if (!result) { alert("That trade isn't valid anymore (already traded away?)."); Sync.respondChallenge(ch, false); return; }
+              if (!result) { U.toast("That trade isn't valid anymore (already traded away?)."); Sync.respondChallenge(ch, false); return; }
               Sync.respondChallenge(ch, true);
               TradeFX.play(ch.fromName || "They", give, aSh, (Store.attendee(me) || {}).name || "You", want, bSh, result, function () {});
             } }, "🤝 Accept trade"),
@@ -378,7 +385,7 @@
         if (ctrl) ctrl.close();
         if (!isDuel) { Sync.respondChallenge(ch, true); return; }
         const me = Sync.getMe();
-        if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+        if (!me) { U.toast("Pick who you are first — Settings → “You are”."); return; }
         if (!isDouble) {
           Duel.pickParty({ attId: me, title: "Choose your party",
             hint: (ch.fromName || "They") + " brought " + ((ch.party || []).length || 1) + ". Tap Pokémon in order — the first is your lead.",

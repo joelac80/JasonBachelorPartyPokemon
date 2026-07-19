@@ -14,7 +14,7 @@
     const { el } = U;
     let sel = (window.Sync && Sync.getMe && Sync.getMe()) || "", idx = 0;
     const conf0 = (window.Sync && Sync.getConf && Sync.getConf()) || {};
-    const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. GARZA26)", value: conf0.room || "" });
+    const roomIn = el("input", { class: "in", placeholder: "Room code (e.g. GARZA26)", value: conf0.room || window.__inviteRoom || "" });
 
     // notifications (slide 4) — enable right in the tour; repaints in place
     const noteHost = el("div", { class: "onb-note" });
@@ -37,10 +37,14 @@
     // a friend tapped it and no trainer was ever created. The name is an
     // INLINE input now; nothing on the critical path uses a native dialog.
     const grid = el("div", { class: "sl-vote-grid onb-grid" });
-    let creating = false, gateMsg = "";
+    let creating = false, gateMsg = "", createBusy = false;
     function createTrainer(nm) {
+      // Enter + a queued ✓ tap can both fire before the repaint removes the
+      // form — the latch keeps a slow phone from minting two trainers.
+      if (createBusy) return;
       nm = (nm || "").trim();
       if (!nm) return;
+      createBusy = true;
       const id = "t" + Math.random().toString(36).slice(2, 8);
       Store.update((s) => s.attendees.push({
         id: id, name: nm, nickname: "", team: "", type: "normal",
@@ -81,7 +85,7 @@
         ]));
         setTimeout(() => { try { nameIn.focus(); } catch (_) {} }, 60);
       } else {
-        grid.appendChild(el("button", { class: "sl-vote-pick onb-new-trainer", onClick: () => { creating = true; paintGrid(); } }, [
+        grid.appendChild(el("button", { class: "sl-vote-pick onb-new-trainer", onClick: () => { creating = true; createBusy = false; paintGrid(); } }, [
           el("span", { class: "draft-thumb-ball" }),
           el("span", { class: "sl-vote-name" }, Store.state.attendees.length ? "➕ New trainer" : "➕ Create yourself"),
         ]));
@@ -150,7 +154,10 @@
     });
 
     function finish(apply) {
-      markSeen();
+      // A tour dismissed with NOBODY signed in must not brand the phone as
+      // onboarded — the next open re-offers the tour instead of leaving the
+      // phone identityless with no picker in sight.
+      if (sel || (window.Sync && Sync.getMe && Sync.getMe())) markSeen();
       try { unsubGrid && unsubGrid(); } catch (_) {}
       if (apply) {
         // Apply whatever was actually filled in — a typed room code must

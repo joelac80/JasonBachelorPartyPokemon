@@ -29,7 +29,7 @@
     [logRow, statHost, favesHost, boardHost, awardHost, recentHost].forEach((h) => root.appendChild(h));
 
     function logDrink(type) {
-      if (!active) { alert("Pick who you're logging for first."); return; }
+      if (!active) { U.toast("Pick who you're logging for first."); return; }
       const who = (Store.attendee(active) || {}).name || "them";
       const label = whichIn.value.trim();
       const before = ((Store.state.drinks || []).slice(-1)[0] || {}).id;

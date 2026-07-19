@@ -232,7 +232,7 @@
   }
 
   function challenge(b, attId) {
-    if (moviesLocked(b, attId)) { alert("🔒 The big screen waits — beat Champion " + (b.needsName || "LANCE") + " in The Journey first."); return; }
+    if (moviesLocked(b, attId)) { U.toast("🔒 The big screen waits — beat Champion " + (b.needsName || "LANCE") + " in The Journey first."); return; }
     const size = b.team.length;
     const startWith = (ids) => {
       Duel.start({ mode: "local", title: b.name + " — " + b.film,
@@ -245,7 +245,7 @@
     // Bring-your-own path needs a full pool; the preset mirror squad does not.
     const pickOwn = () => {
       if (Duel.poolFor(attId).length < size) {
-        alert(b.name + " fields " + size + " Pokémon — catch " + size + " of your own first (Safari Zone), or take the ready-made squad.");
+        U.toast(b.name + " fields " + size + " Pokémon — catch " + size + " of your own first (Safari Zone), or take the ready-made squad.");
         return;
       }
       Duel.pickParty({ attId: attId, min: size, max: size,

@@ -114,7 +114,7 @@
 
   function openPicker(title, onPick) {
     const people = Store.state.attendees;
-    if (!people.length) { alert("Add trainers first (Squad page)."); return; }
+    if (!people.length) { U.toast("Add trainers first (Squad page)."); return; }
     const grid = el("div", { class: "pick-grid" }, people.map((a) =>
       el("button", { class: "pick-item", onClick: () => { ctrl.close(); onPick(a); } }, [
         thumb(a),
@@ -327,14 +327,14 @@
       const JS0 = window.JourneyStyle;
       const size = (JS0 && JS0.isStory(attId) && JS0.gymSize) ? Math.min(gym.team.length, JS0.gymSize(idx)) : gym.team.length;
       const why = gymLockedWhy(idx, attId);
-      if (why) { alert("🔒 " + why); return; }
+      if (why) { U.toast("🔒 " + why); return; }
       // 👥 CANON DOUBLE BATTLES — Tate & Liza fight as TWO trainers on one
       // side; Raihan solo-doubles with a shared party. The player leads two
       // of their own at once (first two picks step out together).
       if (gym.duo || gym.duoShared) {
         const total = gym.duo ? gym.duo.teams[0].length + gym.duo.teams[1].length : gym.team.length;
         if (Duel.poolFor(attId).length < total) {
-          alert(gym.leader + " fights DOUBLES with " + total + " Pokémon — you need " + total + " of your own (catch more in the Safari!).");
+          U.toast(gym.leader + " fights DOUBLES with " + total + " Pokémon — you need " + total + " of your own (catch more in the Safari!).");
           return;
         }
         const lvl2 = (JS0 && JS0.isStory(attId)) ? JS0.gymLevel(idx) : 0;
@@ -362,7 +362,7 @@
         return;
       }
       if (Duel.poolFor(attId).length < size) {
-        alert("Leader " + gym.leader + " runs " + size + " Pokémon — you need " + size + " of your own to challenge (catch more in the Safari!).");
+        U.toast("Leader " + gym.leader + " runs " + size + " Pokémon — you need " + size + " of your own to challenge (catch more in the Safari!).");
         return;
       }
       // 📖 True Story: the gym fights at its badge's story level — BOTH teams

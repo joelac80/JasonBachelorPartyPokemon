@@ -42,7 +42,7 @@
 
   function challengeSecret(attId) {
     const size = SECRET.team.length;
-    if (Duel.poolFor(attId).length < size) { alert("The Judgment fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
+    if (Duel.poolFor(attId).length < size) { U.toast("The Judgment fields " + size + " — catch " + size + " of your own first (Safari Zone)."); return; }
     secretIntro(() => {
       Duel.pickParty({ attId: attId, min: size, max: size,
         title: "vs THE UNOWN'S JUDGMENT — pick EXACTLY " + size,

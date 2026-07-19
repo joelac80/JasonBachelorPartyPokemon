@@ -67,7 +67,7 @@
       input.remove();
       if (!f) return;
       downscale(f, function (dataUri) {
-        if (!dataUri) { alert("Couldn't read that image — try another."); return; }
+        if (!dataUri) { U.toast("Couldn't read that image — try another."); return; }
         openForm(dataUri, onAdded);
       });
     });
@@ -101,7 +101,7 @@
       const w = window.open();
       if (w) { w.document.write('<img src="' + p.img + '" style="max-width:100%">' +
         '<p style="font:14px sans-serif;text-align:center">Long-press the photo → “Save to Photos”.</p>'); }
-      else { alert("Long-press the photo to save it to your camera roll."); }
+      else { U.toast("Long-press the photo to save it to your camera roll."); }
       return;
     }
     const a = document.createElement("a");

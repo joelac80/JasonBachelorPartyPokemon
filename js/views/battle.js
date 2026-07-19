@@ -12,7 +12,7 @@
 
   // Modal to add a fighter (squad member, team, or custom) into a side.
   function pickInto(side, redraw) {
-    if (side.length >= 2) { alert("Two per side max (that's a 2v2)."); return; }
+    if (side.length >= 2) { U.toast("Two per side max (that's a 2v2)."); return; }
     const custom = el("input", { class: "in", placeholder: "Custom name…" });
     const add = (name) => { if (name && side.length < 2) { side.push(name); ref.close(); redraw(); } };
 
@@ -53,7 +53,7 @@
     const a = Store.attendee(p.attId);
     const nm = p.name || (a && a.name) || "Trainer";
     const me = window.Sync && Sync.getMe();
-    if (!me) { alert("Pick who you are first — Settings → “You are”."); return; }
+    if (!me) { U.toast("Pick who you are first — Settings → “You are”."); return; }
     // 🎪 the challenger sets the GIMMICK RULES — they ride the challenge and
     // bind BOTH phones (null = all four open, [] = a clean classic duel).
     let gimRule = null;
@@ -160,7 +160,7 @@
         if (maxParty > 1) kids.push(el("button", { class: "btn subtle sm", onClick: () => {
           const t = (Store.state.pokedex.trainers || {})[u.attId] || {};
           const team = (t.team || []).filter((id) => pool.indexOf(id) >= 0).slice(0, maxParty);
-          if (team.length) { u.party = team; renderDuel(); } else alert("No team set — build one on the Safari page.");
+          if (team.length) { u.party = team; renderDuel(); } else U.toast("No team set — build one on the Safari page.");
         } }, "⚡ Use my team"));
         if (u.party.length) {
           const lead = Duel.statsFor(u.party[0]);
@@ -202,7 +202,7 @@
         // zero prep, pure skill (leads first; non-legendary pool).
         el("button", { class: "btn subtle", onClick: () => {
           const all = duel.a.concat(duel.b);
-          if (all.some((u) => !u.attId)) { alert("Pick the trainers first — rentals replace the TEAMS, not the people."); return; }
+          if (all.some((u) => !u.attId)) { U.toast("Pick the trainers first — rentals replace the TEAMS, not the people."); return; }
           const DX = window.DEX || {};
           const pool = Object.keys(DX).map(Number).filter((id) => id >= 1 && id <= 1025 && !DX[id].leg);
           all.forEach((u) => {
@@ -216,9 +216,9 @@
         } }, "🎲 Deal rental teams"),
         el("button", { class: "btn spin-btn", onClick: () => {
           const ok = (us) => us.every((u) => u.attId && u.party.length);
-          if (!ok(duel.a) || !ok(duel.b)) { alert("Every trainer needs to be picked and have at least one Pokémon."); return; }
+          if (!ok(duel.a) || !ok(duel.b)) { U.toast("Every trainer needs to be picked and have at least one Pokémon."); return; }
           const dup = (us) => us.length === 2 && us[0].attId === us[1].attId && us[0].party.some((id) => us[1].party.indexOf(id) >= 0);
-          if (dup(duel.a) || dup(duel.b)) { alert("Same trainer twice is fine — but the two field slots must use DIFFERENT Pokémon."); return; }
+          if (dup(duel.a) || dup(duel.b)) { U.toast("Same trainer twice is fine — but the two field slots must use DIFFERENT Pokémon."); return; }
           // Same trainer in both slots = a SOLO double: merge both slots into ONE
           // shared party (leads first) so either slot can field any of them.
           const buildSide = (us) => {
@@ -304,7 +304,7 @@
     root.appendChild(result);
 
     function start() {
-      if (!sideA.length || !sideB.length) { alert("Add at least one fighter to each side."); return; }
+      if (!sideA.length || !sideB.length) { U.toast("Add at least one fighter to each side."); return; }
       Battle.start({
         title: (eventLabel || "").trim() || "Battle",
         a: { label: sideA.join(" & "), names: sideA.slice() },

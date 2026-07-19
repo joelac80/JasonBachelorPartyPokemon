@@ -49,7 +49,7 @@
         if (!ta.value.trim()) return;
         Store.addMessage(ta.value, fromSel.value);
         ta.value = ""; if (window.SFX) SFX.win();
-        Store.state.messages = Store.state.messages; render();
+        render();
       } }, "💌 Leave your message");
       root.appendChild(el("div", { class: "mw-form" }, [
         el("h2", { class: "section-title" }, "Leave a message" ),

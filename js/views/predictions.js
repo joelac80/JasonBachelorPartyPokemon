@@ -38,7 +38,7 @@
       } }, "+ option");
       const post = el("button", { class: "btn primary", onClick: () => {
         const ok = Store.addPrediction(q.value, opts.map((o) => o.value), nameOf(me), me);
-        if (!ok) { alert("Add a question and at least two options."); return; }
+        if (!ok) { U.toast("Add a question and at least two options."); return; }
         sfx("blip"); renderAll();
       } }, "🔮 Post prediction");
       makeHost.appendChild(el("h2", { class: "section-title" }, "Make a prediction"));

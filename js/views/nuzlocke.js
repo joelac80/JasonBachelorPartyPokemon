@@ -913,7 +913,7 @@
         grass.appendChild(el("div", { class: "safari-actions" }, [
           el("button", { class: "btn spin-btn", onClick: () => {
             const id = rollWild(run);
-            if (!id) { alert("The grass is quiet — every species on this road has already been met."); return; }
+            if (!id) { U.toast("The grass is quiet — every species on this road has already been met."); return; }
             Store.nuzEncounter(me, id, eraKey(run), slot);
             // ✨ the run rolls its OWN shinies — same 1-in-20 as the Safari.
             wildShiny = Math.random() < 1 / 20 ? 1 : 0;

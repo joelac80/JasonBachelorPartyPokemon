@@ -205,7 +205,7 @@
       team: [131, 6, 254, 448, 143, 25] },
   ];
   function battleAges(attId) {
-    if (Duel.poolFor(attId).length < 6) { alert("Bring SIX of your own — even old Ash fields a full team."); return; }
+    if (Duel.poolFor(attId).length < 6) { U.toast("Bring SIX of your own — even old Ash fields a full team."); return; }
     const e = ASH_ERAS[Math.floor(Math.random() * ASH_ERAS.length)];
     const nameOf = (id) => ((window.DEX || {})[id] || {}).n || ("#" + id);
     const lay = el("div", { class: "league-intro final" }, [
@@ -251,7 +251,7 @@
   // player still gets just one. Recorded on the league ledger (key "ash"),
   // enshrined in the Hall of Fame.
   function battleAsh(attId) {
-    if (Duel.poolFor(attId).length < 6) { alert("Bring SIX of your own for this one — the Master fields his full team."); return; }
+    if (Duel.poolFor(attId).length < 6) { U.toast("Bring SIX of your own for this one — the Master fields his full team."); return; }
     const lay = el("div", { class: "league-intro final" }, [
       el("div", { class: "league-intro-inner" }, [
         el("div", { class: "league-intro-mt" }, "🧢"),
@@ -352,7 +352,7 @@
     // Lock in the 6-mon tournament squad, then build the bracket.
     const enter = (att) => {
       if (Duel.poolFor(att).length < 6) {
-        alert("The Champions Cup asks for a squad of SIX — catch a few more in the Safari, then enter.");
+        U.toast("The Champions Cup asks for a squad of SIX — catch a few more in the Safari, then enter.");
         return;
       }
       Duel.pickParty({ attId: att, min: 6, max: 6,

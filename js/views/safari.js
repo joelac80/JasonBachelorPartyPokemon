@@ -957,7 +957,7 @@
         const i = t.team.indexOf(id);
         if (i >= 0) t.team.splice(i, 1);
         else if (t.team.length < 6) t.team.push(id);
-        else alert("Team is full (6). Remove one first.");
+        else U.toast("Team is full (6). Remove one first.");
       });
       renderTeam(); renderDex();
     }
@@ -1058,7 +1058,7 @@
     // master joins the dex. It also roams the wild from that point on.
     function summonMaster(tid, id) {
       if (busy || !window.Duel) return;
-      if (Duel.poolFor(tid).length < 1) { alert("Catch at least one of your own first, then answer the summons."); return; }
+      if (Duel.poolFor(tid).length < 1) { U.toast("Catch at least one of your own first, then answer the summons."); return; }
       current = id; shiny = false; currentGlyph = null; revealId = null; status = ""; clearBoosts();
       battleToWeaken(info(id), { summon: true });
     }

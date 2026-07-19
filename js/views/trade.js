@@ -100,7 +100,7 @@
           el("button", { class: "btn primary sm", onClick: () => {
             const gSh = !!o.giveShiny, wSh = !!o.wantShiny;
             const r = Store.resolveTradeOffer(o.id, true);
-            if (!r.ok) { alert(r.why); renderInbox(); renderRecent(); return; }
+            if (!r.ok) { U.toast(r.why); renderInbox(); renderRecent(); return; }
             sfx("win");
             playTrade(fromN, o.give, gSh, toN, o.want, wSh, r.result, () => { renderInbox(); render(); renderRecent(); });
           } }, "✅ Accept"),
@@ -323,15 +323,15 @@
       }
       host.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
         el("button", { class: "btn spin-btn" + (gate.kind === "blocked" ? " off" : ""), onClick: () => {
-          if (!ready) { alert(me ? "Pick the Pokémon you'll give, the trainer you want, and which of theirs you want." : "Pick both trainers and the Pokémon they're each giving up."); return; }
-          if (gate.kind === "blocked") { alert(gate.why); return; }
+          if (!ready) { U.toast(me ? "Pick the Pokémon you'll give, the trainer you want, and which of theirs you want." : "Pick both trainers and the Pokémon they're each giving up."); return; }
+          if (gate.kind === "blocked") { U.toast(gate.why); return; }
           const an = (Store.attendee(pick.a.attId) || {}).name, bn = (Store.attendee(pick.b.attId) || {}).name;
           if (gate.kind === "offer") {
             const my = gate.mine === "a" ? pick.a : pick.b;
             const o = Store.sendTradeOffer(me, my.mon, gate.them.attId, gate.them.mon, undefined, my.shiny, gate.them.shiny);
-            if (!o) { alert("That offer isn't allowed — partners stay home."); return; }
+            if (!o) { U.toast("That offer isn't allowed — partners stay home."); return; }
             sfx("coin");
-            alert("📬 Offer dropped in " + gate.themName + "'s inbox — they accept (or decline) on their phone, even if they open the app later.");
+            U.toast("📬 Offer dropped in " + gate.themName + "'s inbox — they accept (or decline) on their phone, even if they open the app later.");
             pick.a.mon = 0; pick.b.mon = 0; pick.a.shiny = false; pick.b.shiny = false;
             render(); renderInbox();
             return;
@@ -339,7 +339,7 @@
           U.ask("🔁 " + an + "'s " + nameOf(pick.a.mon) + (pick.a.shiny ? " ✨" : "") + " ⇄ " + bn + "'s " + nameOf(pick.b.mon) + (pick.b.shiny ? " ✨" : "") + " — deal?", { icon: "❓" }, () => {
           const aSh = !!pick.a.shiny, bSh = !!pick.b.shiny;
           const result = Store.trade(pick.a.attId, pick.a.mon, pick.b.attId, pick.b.mon, undefined, { aShiny: aSh, bShiny: bSh });
-          if (!result) { alert("That trade isn't allowed — partners stay home."); return; }
+          if (!result) { U.toast("That trade isn't allowed — partners stay home."); return; }
           const aM = pick.a.mon, bM = pick.b.mon;
           pick.a.mon = 0; pick.b.mon = 0; pick.a.shiny = false; pick.b.shiny = false;
           playTrade(an, aM, aSh, bn, bM, bSh, result, () => { render(); renderRecent(); });

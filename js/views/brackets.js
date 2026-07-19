@@ -98,7 +98,7 @@
     renderNames();
 
     Modal.open("New Bracket", body, () => {
-      if (names.length < 2) { alert("Add at least 2 entrants."); return; }
+      if (names.length < 2) { U.toast("Add at least 2 entrants."); return; }
       const b = buildBracket(titleIn.value.trim() || "Tournament", names);
       Store.update((s) => { s.brackets.push(b); });
       if (onDone) onDone();
@@ -127,6 +127,11 @@
     const aAtt = Store.state.attendees.find((x) => x.name === aName);
     const bAtt = Store.state.attendees.find((x) => x.name === bName);
     if (!aAtt || !bAtt || !window.Duel) { referee(); return; }
+    // A trainer with an empty pool would hit a blank picker — settle by call.
+    if (!Duel.poolFor(aAtt.id).length || !Duel.poolFor(bAtt.id).length) {
+      U.toast("Someone here has no Pokémon yet (Safari Zone first) — settle this one by call.");
+      referee(); return;
+    }
     let ctrl;
     const body = U.el("div", { class: "chal-modal" }, [
       U.el("div", { class: "chal-line" }, aName + " vs " + bName + " — how do we settle it?"),

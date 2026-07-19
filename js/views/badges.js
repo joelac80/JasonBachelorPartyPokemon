@@ -68,7 +68,7 @@
 
   function openPicker(title, onPick) {
     const people = Store.state.attendees;
-    if (!people.length) { alert("Add trainers first (Squad page)."); return; }
+    if (!people.length) { U.toast("Add trainers first (Squad page)."); return; }
     const grid = el("div", { class: "pick-grid" }, people.map((a) =>
       el("button", { class: "pick-item", onClick: () => { ctrl.close(); onPick(a); } }, [
         thumb(a),

@@ -117,7 +117,9 @@
     }
     t.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.classList.remove("show"); }, actionLabel ? 4000 : 1800);
+    // Long validation hints need reading time — scale with length (capped).
+    const dwell = actionLabel ? 4000 : Math.max(1800, Math.min(5500, 1200 + String(msg).length * 45));
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, dwell);
   }
 
   // 🎴 IDENTITY LOCK — when a trainer is signed in on this phone, ACTION
