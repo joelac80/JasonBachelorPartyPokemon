@@ -146,9 +146,9 @@
     // ---- HOENN: the Delta Episode (ORAS) — Zinnia, then the meteor's rider.
     { key: "delta", tab: "Hoenn", name: "THE DELTA EPISODE", flair: "HOENN SPECIAL · Sky High, ORAS",
       sub: "Hoenn Special · Zinnia the Lorekeeper — then soar to the meteor, where something alien waits · 2 battles",
-      icon: "☄️", face: 386, boost: [0.44, 0.44, 0.6], pts: 30, needs: "steven", champ: "STEVEN",
+      icon: "☄️", face: 386, boost: [0.62, 0.62, 0.78], pts: 30, needs: "steven", champ: "STEVEN",
       chain: [
-        { name: "ZINNIA", flair: "🐉 THE LOREKEEPER", icon: "🐉", face: 373, boost: 0.82,
+        { name: "ZINNIA", flair: "🐉 THE LOREKEEPER", icon: "🐉", face: 373, boost: 0.86,
           team: [715, 334, 697, 706, 373],
           quote: "You want to stop the meteor with a machine? How boring. The old ways say a dragon must rise. Show me your bond is worth more than draconid lore — or step aside!",
           outro: { lose: "…Aster. Did you see it? I lost — and somehow it made me smile. Go, hero. The sky is yours to save.",
