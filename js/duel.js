@@ -7,7 +7,9 @@
        units can be two trainers, or the same trainer running both slots).
    Everything fights at Lv50: HP/attack come from the species power stat,
    moves from its types. Trainer items (per trainer, each takes the turn):
-     🧪 Potion   — heal 120 HP (2 per battle)
+     🧪 Restore  — FULL RESTORE the active mon (all HP + status cured), or
+                   spend the charge as a REVIVE: a fainted teammate returns
+                   at full health (never in a Nuzlocke). 2 per battle.
      🎯 Dire Hit — unleash a can't-miss guaranteed CRIT this same turn (1 per battle)
                          and lands a guaranteed CRITICAL HIT (once)
    modes: "local" (hot-seat, pass the phone), "remote" (each trainer picks
@@ -1435,8 +1437,22 @@
     }
     function resolvePotion(o, u) {
       u.potions = Math.max(0, u.potions - 1); S.moved++;
-      const m = mon(u); m.hp = Math.min(m.hpMax, m.hp + 120); paintHp(u); menu.innerHTML = "";
-      beats([["🧪 " + u.name + " uses a Potion — " + m.name + " regained health! (+120 HP)", 1200, () => sfx("coin")]], resolveNext);
+      menu.innerHTML = "";
+      // 💫 A charge spent as a REVIVE: a fainted teammate returns at FULL
+      // health. Never in a Nuzlocke — a death there is forever, that's the
+      // whole covenant (the order simply can't carry `revive` from that UI,
+      // and a desynced act falls through to the restore below).
+      const tgt = (o.revive != null) ? u.party[o.revive] : null;
+      if (tgt && tgt.hp <= 0 && !opts.nuzlocke) {
+        tgt.hp = tgt.hpMax; tgt.status = null; tgt.slp = 0;
+        paintParty(u._side);
+        beats([["💫 " + u.name + " uses a Revive — " + tgt.name + " is back on its feet at FULL health!", 1300, () => sfx("coin")]], resolveNext);
+        return;
+      }
+      // 🧪 FULL RESTORE: all the HP, status cured (was a flat +120).
+      const m = mon(u); const gained = m.hpMax - m.hp;
+      m.hp = m.hpMax; m.status = null; m.slp = 0; paintHp(u);
+      beats([["🧪 " + u.name + " uses a Full Restore — " + m.name + " is healthy again!" + (gained > 0 ? " (+" + gained + " HP)" : ""), 1200, () => sfx("coin")]], resolveNext);
     }
     // Status is checked HERE, at resolution — so a status just inflicted by a
     // faster foe already stops this mon THIS turn (not just next turn). The
@@ -2511,6 +2527,31 @@
       ]));
     }
 
+    // 🧪 One charge, two uses: FULL RESTORE the fighter on the field, or (never
+    // in a Nuzlocke — deaths there are forever) spend it as a REVIVE and bring
+    // a fallen teammate back at full health.
+    function restorePanel(u, ptr) {
+      const m = mon(u);
+      const order = (rev) => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit,
+        order: rev == null ? { kind: "potion" } : { kind: "potion", revive: rev } });
+      const fainted = opts.nuzlocke ? [] : u.party.map((x, i) => ({ m: x, i: i })).filter((x) => x.m.hp <= 0);
+      if (!fainted.length) {
+        confirmPanel("🧪 Full Restore — " + m.name + " returns to FULL health, status cured. (Takes this turn; " + u.potions + " left this battle.)",
+          "🧪 Use Full Restore", () => order(null));
+        return;
+      }
+      menu.innerHTML = "";
+      menu.appendChild(el("div", { class: "duel-confirm" }, [
+        el("div", { class: "duel-confirm-txt" }, "🧪 One charge (" + u.potions + " left) — restore the fighter, or revive a fallen teammate?"),
+        el("div", { class: "battle-menu-row", style: { flexWrap: "wrap" } },
+          [el("button", { class: "btn primary sm", onClick: () => order(null) },
+            "🧪 Full Restore " + m.name + (m.hp < m.hpMax ? "" : " (already full)"))]
+          .concat(fainted.map((x) => el("button", { class: "btn primary sm", onClick: () => order(x.i) },
+            "💫 Revive " + x.m.name)))
+          .concat([el("button", { class: "btn subtle sm", onClick: renderMenu }, "↩ Back")])),
+      ]));
+    }
+
     function partyPanel(u, ptr, kind, allowBack) {
       // pick a replacement (kind "next") or a voluntary switch (kind "switch")
       menu.innerHTML = "";
@@ -2925,10 +2966,8 @@
         } }, "🔴 Throw Ball · " + pct + "%"));
       }
       row.push(
-        el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => {
-          confirmPanel("🧪 Potion — " + m.name + " heals 120 HP. (Takes this turn; " + u.potions + " left this battle.)",
-            "✅ Use Potion — heal!", () => sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "potion" } }));
-        } }, "🧪 Potion ×" + u.potions),
+        el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => restorePanel(u, ptr) },
+          "🧪 Restore ×" + u.potions),
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
           confirmPanel("🎯 Dire Hit — " + u.name + " UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT. (Once per battle.)",
             "🎯 Dire Hit — power up!", () => { S.zmove = true; sfx("correct"); renderMenu(); });
