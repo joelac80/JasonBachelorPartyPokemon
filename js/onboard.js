@@ -144,7 +144,9 @@
     // When the room's world arrives mid-tour, the trainer picker fills with
     // the crew that already lives there.
     const unsubGrid = Store.subscribe(function () {
-      if (document.body.contains(grid)) paintGrid();
+      // self-heal: if the tour layer is gone by ANY path, drop the subscription
+      if (!document.body.contains(grid)) { try { unsubGrid(); } catch (_) {} return; }
+      paintGrid();
     });
 
     function finish(apply) {

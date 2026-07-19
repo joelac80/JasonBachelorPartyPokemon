@@ -596,6 +596,7 @@
       // rolls DISOBEDIENCE on them; callers thread it into their unit.
       const defyPicked = {};
       picked.forEach((id) => { if (defiant[id]) defyPicked[id] = defiant[id]; });
+      peekHide();   // a held-open move preview must not outlive its picker
       ref.close(); opts.onDone(picked.slice(), { defiant: defyPicked });
     } }, "Ready");
     function paint() {
@@ -668,6 +669,7 @@
       const src = frontSprite(id, shiny);
       const btn = el("button", { class: "duel-lead-pick" + (shiny ? " is-shiny" : ""), title: st.name, onClick: () => {
         if (peek.held) { peek.held = false; return; }
+        peekHide();
         if (ref) ref.close();
         opts.onDone([id].concat(ids.filter((x) => x !== id)));
       } }, [
@@ -675,6 +677,7 @@
         el("span", { class: "duel-lead-name" }, st.name),
       ]);
       bindPeek(btn, id, opts, peek, () => ({ label: "⚔ Send out first", onAct: () => {
+        peekHide();
         if (ref) ref.close();
         opts.onDone([id].concat(ids.filter((x) => x !== id)));
       } }));
@@ -899,7 +902,7 @@
         // teraType, gmax} or null, aligned to monIds) — the ultimate boss
         // doesn't share the one-spectacle rule; each phase gets its moment.
         gimmicks: u.gimmicks || null,
-        party: party, cur: 0, potions: 2, courage: true, armed: false };
+        party: party, cur: 0, potions: 2, courage: true };
     }
     const sides = {
       a: { key: "a", units: ((opts.a || {}).units || []).slice(0, 2).map(makeUnit) },
@@ -1127,6 +1130,11 @@
       ]));
     }
     function close() {
+      // 🧟 Kill the battle FOR REAL — without S.done the pump kept processing
+      // queued acts against the removed DOM (sfx firing, timers ticking, and a
+      // late onResult could pollute the NEXT battle on this page).
+      try { S.done = true; if (S.queue) S.queue.length = 0; } catch (_) {}
+      if (castUnsub) { try { castUnsub(); } catch (_) {} castUnsub = null; }
       if (window.SFX && SFX.battleMusic) SFX.battleMusic(false);
       overlay.classList.add("out");
       setTimeout(() => overlay.remove(), 350);
@@ -1245,7 +1253,10 @@
         if (i >= steps.length) { if (fin) fin(); return; }
         const s = steps[i++];
         if (s[0] != null) msg.textContent = s[0];
-        if (s[2]) s[2]();
+        // A throwing step must not sever the chain — `next` was scheduled
+        // AFTER the callback, so one bad step froze the whole turn with
+        // S.busy stuck true and no error surfaced.
+        if (s[2]) { try { s[2](); } catch (_) {} }
         setTimeout(next, s[1]);
       })();
     }
@@ -1933,7 +1944,7 @@
         return;
       }
       // The blast connected — this mon must recharge next turn.
-      if (act.recharge) m._recharge = true;
+      if (act.recharge && m.hp > 0) m._recharge = true;
 
       // (The SIGNATURE call-out + screen shake for a boss's last mon was cut
       // by request — endgame fights are hard enough, and it read like a free
@@ -2013,13 +2024,17 @@
           }
         }
         if (act._exp) koSteps.push([act._exp, 1300, () => sfx("coin")]);
-        // A splashed foe that fainted from the spread hit.
+        // A splashed foe that fainted from the spread hit — and a surviving
+        // one whose Sitrus Berry triggers (the instant catch-up path already
+        // fed it; skipping it here made lagging phones diverge on HP).
         (act.spread || []).forEach((sp) => {
           const su = sides[dSide].units[sp.tUnit]; if (!su) return;
           const sm = mon(su);
           if (sm.hp <= 0) {
             koSteps.push([sm.name + " fainted!", 1100, () => { su._monEl.classList.add("fainted"); sfx("error"); }]);
             if (sp._exp) koSteps.push([sp._exp, 1300, () => sfx("coin")]);
+          } else if (berryReady(su)) {
+            koSteps.push(["🍓 " + su.name + "'s Sitrus Berry! " + sm.name + " recovered 45 HP!", 1250, () => { eatBerry(su); sfx("coin"); }]);
           }
         });
         if (m.hp <= 0) koSteps.push([m.name + " fainted from recoil!", 1150, () => { u._monEl.classList.add("fainted"); sfx("error"); }]);
@@ -2810,7 +2825,9 @@
       const u = sides[ptr.side].units[ptr.unit];
       // Only the hosting phone rolls the AI's dice — watchers replay its
       // acts from the stream like any other player's.
-      if (u.ai && mode !== "watch") {
+      // AI only ever acts on the HOSTING phone: in a remote duel both phones
+      // render the menu and each would roll its own dice for the same turn.
+      if (u.ai && mode === "local") {
         menu.appendChild(el("div", { class: "duel-wait" }, "🤖 " + u.name +
           (S.pending ? " sends out the next Pokémon…" : " is planning an attack…")));
         setTimeout(() => {

@@ -45,8 +45,13 @@
       el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render(), { source: "camera" }); } }, "📸 Take a photo"),
       el("button", { class: "btn spin-btn", onClick: () => { if (window.PhotoLog) PhotoLog.capture(() => Router.render(), { source: "library" }); } }, "🖼 Upload a photo"),
     ];
-    if (photos.length) tools.push(el("button", { class: "btn subtle", onClick: () => { selecting = !selecting; Router.render(); } },
-      selecting ? "✕ Done selecting" : "⬇️ Select & save"));
+    if (photos.length) tools.push(el("button", { class: "btn subtle", onClick: () => {
+      selecting = !selecting;
+      // leaving select mode drops the picks — coming back later shouldn't
+      // resume a stale half-selection from last visit
+      if (!selecting) Object.keys(picked).forEach((k) => delete picked[k]);
+      Router.render();
+    } }, selecting ? "✕ Done selecting" : "⬇️ Select & save"));
     root.appendChild(el("div", { class: "toolbar", style: { justifyContent: "center" } }, tools));
 
     if (!photos.length) {

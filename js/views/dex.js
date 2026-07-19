@@ -65,7 +65,9 @@
     const cap = me && Store.genCapFor ? Store.genCapFor(me) : 1;
     const bar = el("div", { class: "rg-tabs dex-tabbar" });
     TABS.forEach((t) => {
-      const locked = me && t.gen ? t.gen > cap : (t.key === "hisui" ? !(me && Store.hisuiUnlocked && Store.hisuiUnlocked(me)) : false);
+      // No trainer picked = everything gated (it used to show gens OPEN but
+      // Hisui locked — the tab row lied until you picked someone).
+      const locked = t.gen ? (!me || t.gen > cap) : (t.key === "hisui" ? !(me && Store.hisuiUnlocked && Store.hisuiUnlocked(me)) : false);
       bar.appendChild(el("button", { class: "rg-tab" + (tab === t.key ? " on" : "") + (locked ? " locked" : ""), onClick: () => { tab = t.key; Router.render(); } }, [
         el("span", { class: "rg-tab-emoji" }, locked ? "🔒" : t.emoji),
         el("span", { class: "rg-tab-name" }, t.name),
@@ -109,7 +111,11 @@
       return;
     }
     const span = SPANS[t.gen - 1];
-    const ids = []; for (let i = span[0]; i <= span[1]; i++) if (DEX[i]) ids.push(i);
+    // 👑 Same rule as the Safari's own dex: a Legendary Master whose court
+    // isn't assembled yet is hidden here too — the two Pokédex screens must
+    // list (and count) the same species for the same trainer.
+    const gated = (id) => window.SafariDebug && SafariDebug.masterLocked && SafariDebug.masterLocked(me, id);
+    const ids = []; for (let i = span[0]; i <= span[1]; i++) if (DEX[i] && !gated(i)) ids.push(i);
     renderGrid(host, ids, null);
   }
 

@@ -63,7 +63,7 @@
   .live-banner, .gymc-card.earned, .gp-item.wild, .trainer-card,
   .dex-lock.open, .trophy.honor, .safari-card.result.shiny,
   .safari-team-slot.shiny, .trn-match.live, .trn-scout,
-  .trk-dex-cell.caught, .ach-board-row.on) {
+  .trk-dex-cell.caught, .ach-board-row.on, .cotd-card.caught) {
   --ink: #1f2330;
   --ink-dim: #5a6072;
   --line: #d5dbec;
@@ -161,6 +161,10 @@ body {
   width: 0.34em; height: 0.34em; border-radius: 50%; background: #f7f7f7; border: 0.09em solid #1a1a1a; box-sizing: border-box; }
 .hq-t { font-family: var(--pixel, monospace); font-size: 11px; font-weight: 900; color: #2a2140; text-align: center; }
 .hq-d { font-size: 10px; color: #8a7fb0; text-align: center; }
+/* 🌙 the six quick tiles were bright-white slabs on the dark home page */
+:root[data-theme="dark"] .hq-tile { background: linear-gradient(160deg, var(--panel), #241f33); box-shadow: 0 3px 0 rgba(0,0,0,.35); }
+:root[data-theme="dark"] .hq-t { color: var(--ink); }
+:root[data-theme="dark"] .hq-d { color: var(--ink-dim); }
 @media (max-width: 560px) { .home-quick { grid-template-columns: repeat(2, 1fr); } }
 .nav a.active { color: var(--pokered); background: var(--pokeyellow); }
 .nav-toggle {
@@ -256,7 +260,6 @@ body {
 .cd-label { font-size: 11px; color: #c8cde0; text-transform: uppercase; letter-spacing: 1px; }
 .cd-loc { color: var(--ink-dim); margin-top: 6px; font-weight: 600; }
 .cd-live { font-family: var(--pixel); font-size: 18px; color: var(--pokered); }
-.cd-note { color: var(--ink-dim); }
 
 /* tiles */
 .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 22px; }
@@ -279,25 +282,13 @@ body {
 .ow-node text { pointer-events: none; }
 .ow-label { font-family: var(--pixel); font-weight: 700; fill: #1c3a1c; paint-order: stroke; stroke: rgba(255,255,255,0.85); stroke-width: 0.7; }
 
-/* fan badges */
-.badge-strip { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin: 8px 0; }
 .badge {
   display: flex; align-items: center; gap: 8px; background: var(--panel);
   border: 2px solid var(--ink); border-radius: 999px; padding: 6px 14px 6px 6px;
   font-weight: 800; box-shadow: var(--shadow);
 }
-.badge-dot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); flex: none; }
 .badge img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 
-/* Oak's tip */
-.oak-tip {
-  display: flex; gap: 14px; align-items: center; background: var(--panel);
-  border: 3px solid var(--ink); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
-}
-.oak-tip img { width: 120px; border-radius: 8px; flex: none; }
-.oak-quote { font-size: 17px; font-weight: 700; }
-.oak-attr { color: var(--ink-dim); font-size: 13px; font-style: italic; margin-top: 6px; }
-.oak-ball { font-size: 40px; flex: none; }
 
 /* ---------------- The Game Plan grid ---------------- */
 .gameplan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
@@ -341,7 +332,7 @@ body {
 .sc-val { min-width: 34px; text-align: center; font-family: var(--pixel); font-size: 17px; }
 .sc-val.flash { animation: pop .35s ease; }
 @keyframes pop { 0% { transform: scale(1); color: var(--pokered); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
-.sc-award { background: var(--pokeyellow); color: var(--ink); border: none; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 800; cursor: pointer; }
+.sc-award { background: var(--pokeyellow); color: #1f2330; border: none; border-radius: 8px; padding: 4px 8px; font-size: 12px; font-weight: 800; cursor: pointer; }
 
 /* ---------------- Draft + wheel ---------------- */
 .draft-layout { display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: start; }
@@ -353,7 +344,6 @@ body {
 .picked-name { color: var(--pokered); font-size: 18px; }
 .spin-btn { background: var(--pokeyellow); color: #1f2330; box-shadow: 0 3px 0 var(--gold); font-family: var(--pixel); font-size: 15px; padding: 12px 30px; }
 .assign-row { display: flex; flex-direction: column; gap: 8px; align-items: center; width: 100%; }
-.assign-label { color: var(--ink-dim); font-size: 13px; }
 .chip-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .chip { background: var(--panel); color: var(--ink); border: 2px solid var(--line); border-radius: 999px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 14px; }
 /* 🌓 the appearance picker chips (Settings) */
@@ -1087,7 +1077,6 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
   .nav .nav-head { display: block; grid-column: 1 / -1; font-family: var(--pixel); font-size: 10px;
     letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,.6); margin: 10px 6px 0; }
   .draft-layout { grid-template-columns: 1fr; }
-  .oak-tip { flex-direction: column; text-align: center; }
 }
 
 /* ---------------- Draft board (captains + sprites) ---------------- */
@@ -2295,12 +2284,6 @@ html, body { overscroll-behavior-y: contain; }
   width: 40px; height: 40px; image-rendering: pixelated; border-radius: 8px;
   background: rgba(0,0,0,.25); border: 1.5px solid var(--line); transition: filter .3s; }
 .duel-boss-face.low { filter: grayscale(.7) brightness(.7) sepia(.4) hue-rotate(-30deg); }
-@keyframes battle-shake {
-  0%,100% { transform: translate(0,0); } 15% { transform: translate(-7px,3px); }
-  30% { transform: translate(6px,-4px); } 45% { transform: translate(-5px,-3px); }
-  60% { transform: translate(5px,4px); } 75% { transform: translate(-3px,2px); } 90% { transform: translate(2px,-2px); }
-}
-.battle.shake { animation: battle-shake .7s ease-in-out; }
 
 /* 🗻 Nuzlocke Act II banner */
 .nuz-act2 { margin: 10px 0; padding: 12px 14px; border: 2.5px solid #b9c4d4;

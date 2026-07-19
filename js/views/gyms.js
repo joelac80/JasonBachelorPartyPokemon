@@ -438,7 +438,9 @@
               }
               // 📖 True Story shows the era-true roster size AND level up front
               const n = story && JourneyStyle.gymSize ? Math.min(g.team.length, JourneyStyle.gymSize(idx)) : g.team.length;
-              return "⚔ Challenge (" + n + "v" + n + (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
+              // 🔁 Badge already won → say so, like every other ladder card does.
+              const held = me && holders.indexOf(me) >= 0;
+              return (held ? "🔁 Rematch (badge kept · " : "⚔ Challenge (") + n + "v" + n + (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
             })()),
     ]);
   }

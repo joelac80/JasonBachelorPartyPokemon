@@ -825,7 +825,7 @@
     next.appendChild(el("p", { class: "hint" }, "Full power on both sides of the screen, every faint forever. Win with a fallen seat in the cast, and the film's legend may step off the screen…"));
   }
   function battleMovie(run, b) {
-    if (!battleMovie._skip) { battleMovie._skip = 1; climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie._skip = 0; battleMovie(run, b); }); return; }
+    if (!battleMovie._skip) { battleMovie._skip = 1; climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie._skip = 0; battleMovie(run, b); }, () => { battleMovie._skip = 0; }); return; }
     battleMovie._skip = 0;
     partyThen(run, 6, "🎬 " + b.film + " — vs " + b.name,
       "Full power, no caps — and every faint is permanent.",
@@ -933,7 +933,7 @@
         wSrc ? el("img", { class: "nuz-wild-img" + (wildShiny ? " is-shiny" : ""), src: wSrc, alt: monName(wildId) }) : null,
         el("div", { class: "nuz-wild-meta" }, [
           el("div", {}, "Base catch " + Math.round(catchBase(wildId) * 100) + "% — weakening it adds up to +65%."),
-          wildShiny ? el("div", { class: "hint" }, "✨ ONE in SIXTEEN — and in a nuzlocke it can still faint, or walk away forever. No pressure.") : null,
+          wildShiny ? el("div", { class: "hint" }, "✨ ONE in TWENTY — and in a nuzlocke it can still faint, or walk away forever. No pressure.") : null,
           el("div", { class: "hint" }, "⚠️ Bring up to 3. Anyone who faints in there is gone for good."),
         ]),
       ]));
@@ -1191,7 +1191,7 @@
   // Full-screen title card before a CLIMAX battle: the flair, the face out of
   // the dark, the canon line, and the choice to step in. Same stagecraft as
   // the Journey's league and the Movie Legends — now the runs get it too.
-  function climaxIntro(o, onGo) {
+  function climaxIntro(o, onGo, onCancel) {
     const src = o.face ? Store.sprite(o.face) : "";
     const lay = el("div", { class: "league-intro final movie-intro nuz-climax" }, [
       el("div", { class: "league-intro-inner" }, [
@@ -1203,7 +1203,7 @@
         o.quote ? el("div", { class: "league-intro-quote" }, "“" + o.quote + "”") : null,
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
           el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, (o.icon || "⚔") + " " + (o.cta || ("FACE " + (o.name || "THEM")))),
-          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+          el("button", { class: "btn subtle", onClick: () => { lay.remove(); if (onCancel) onCancel(); } }, "Not yet"),
         ]),
       ]),
     ]);
@@ -1513,7 +1513,7 @@
 
   function battleStage(run, st) {
     const cx = stageClimax(run, st);
-    if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage._skip = 0; battleStage(run, st); }); return; }
+    if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage._skip = 0; battleStage(run, st); }, () => { battleStage._skip = 0; }); return; }
     battleStage._skip = 0;
     partyThen(run, 6, "⚔ Nuzlocke league — " + st.rank + " " + st.name,
       "The endgame. Every faint is permanent — and a wipe ends the run.",

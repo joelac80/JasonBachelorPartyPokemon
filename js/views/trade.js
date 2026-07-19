@@ -171,9 +171,11 @@
         inboxHost.appendChild(el("p", { class: "hint" }, "No open trade offers right now — make one below and it lands in their inbox."));
       }
 
-      // 🕘 History: recently settled offers you were part of, so you can see
-      // what you sent / were offered even after it closes.
-      const settled = all.filter((o) => o.status !== "open" && (!me || o.from === me || o.to === me)).slice(0, 6);
+      // 🕘 History: recently DECLINED/CANCELLED offers you were part of — the
+      // ones that never became trades. Accepted offers land in the room's
+      // "Recent trades" chronicle below; listing them here too showed every
+      // successful trade twice on one screen.
+      const settled = all.filter((o) => o.status !== "open" && o.status !== "accepted" && (!me || o.from === me || o.to === me)).slice(0, 6);
       if (settled.length) {
         inboxHost.appendChild(el("details", { class: "trade-history" }, [
           el("summary", {}, "🕘 Recent offer history"),

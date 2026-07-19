@@ -72,7 +72,11 @@
   window.LEGEND_CHALLENGES = LEGENDS;
 
   // Unlocked once this trainer has toppled the gating Champion.
-  function unlocked(lg, attId) { return Store.leagueWins(attId).indexOf(lg.needs) >= 0; }
+  function champBeaten(attId, key) {
+    if (window.LeagueGate && LeagueGate.hasBeat) return LeagueGate.hasBeat(attId, key);   // self-healing (re-infers sync-clipped wins)
+    return Store.leagueWins(attId).indexOf(key) >= 0;
+  }
+  function unlocked(lg, attId) { return champBeaten(attId, lg.needs); }
 
   // 🐍 REGION SPECIALS — one-off legendary boss battles beyond the per-gen
   // challenges, each mounted on its era's Journey tab. Gated on that region's
@@ -294,6 +298,7 @@
       quote: "Lovely weather for a dig, isn't it? I've traded plates, pored over myths, smiled at every passing trainer… all for this moment. Show me everything you have — and I will show you what I've been keeping behind my smile.",
       outro: { lose: "…all of it. The plates, the myths, the smile — and it still wasn't enough. Keep your world, then. For now.",
         win: "Ah — don't look so crushed. Every relic I own was taken from someone who thought they'd win." },
+      winChron: "saw through VOLO's smile — Garchomp, Giratina, ORIGIN Giratina, all of it, beaten!",
       loseChron: "VOLO tucked his relics away, smiling — 'another time, perhaps'",
       lead: "⚱️ Spiritomb, Roserade, Togekiss, Hisuian Arcanine, Lucario… and a Garchomp to rival Cynthia's. Surely that's everything. Surely." },
     { key: "almighty", tab: "Sinnoh", name: "THE ALMIGHTY SINNOH", flair: "HISUI SPECIAL · Origins of Time & Space",
@@ -575,7 +580,7 @@
   function specialOpen(sp, attId) {
     if (!attId) return false;
     if (sp.gate === "legends9") return (Store.legendWins(attId) || []).length >= 9;
-    if (Store.leagueWins(attId).indexOf(sp.needs) < 0) return false;
+    if (!champBeaten(attId, sp.needs)) return false;
     // Chained specials: `after` names a secret that must fall first
     // (the Almighty Sinnoh only answers the keeper of the Nobles).
     if (sp.after && Store.secretWins(attId).indexOf(sp.after) < 0) return false;
@@ -832,7 +837,7 @@
         open
           ? el("button", { class: "btn " + (mineBeat ? "subtle" : "primary") + " sm", onClick: () => challenge(lg, attId) },
               (mineBeat ? "🔁 Rematch the " : lg.emoji + " Challenge the ") + lg.name + " (6v6)")
-          : el("div", { class: "legend-lock" }, "🔒 Beat Champion " + lg.champ + " to summon the " + lg.name + "."),
+          : el("div", { class: "legend-lock" }, "🔒 Beat " + (lg.needs === "geeta" ? "Top Champion " : "Champion ") + lg.champ + " to summon the " + lg.name + "."),
       ]),
     ]);
   }

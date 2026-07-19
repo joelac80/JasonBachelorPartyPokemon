@@ -259,7 +259,10 @@
     }
     return "";
   }
-  window.LeagueGate = { blocked: leagueBlocked, johtoBadges: johtoBadges };
+  // hasBeat is the SELF-HEALING check (re-infers wins clipped by last-write-
+  // wins sync) — movies/legends gate through it so a healed ladder opens
+  // their content too, not just the League's own cards.
+  window.LeagueGate = { blocked: leagueBlocked, johtoBadges: johtoBadges, hasBeat: hasBeat };
 
   // A stage's card is fogged for everyone until ANY trainer has beaten its
   // `reveal` key (keeps later regions — and the final trainer — a surprise).
@@ -428,6 +431,7 @@
           gauntlet: true, level: o.level || undefined,
           a: { units: [{ attId: attId, defy: Object.keys(defy).length ? defy : null, monIds: fielded }] },
           b: { units: [{ npc: o.name, ai: true, monIds: foes, boost: o.boost || undefined,
+            gimmick: o.gimmick || null,   // the ace's regional transform — single chambers had it, the gauntlet dropped it
             outro: o.outro || undefined }] },
           onResult: (winSide) => {
             if (winSide === "a") { try { if (opts.onAdvance) opts.onAdvance(i + 1); } catch (_) {} runAt(i + 1); }
@@ -549,6 +553,8 @@
     const story = window.JourneyStyle && JourneyStyle.isStory(attId);
     const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost,
       level: story ? JourneyStyle.stageLevel(i) : undefined,   // 📖 True Story climbs 50 → the throne
+      // 🎪 the ace's regional gimmick — same rule as the single-chamber fights
+      gimmick: ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[st.region] || null,
       outro: st.defeat ? { lose: st.defeat } : undefined }; });
     gauntletModePicker(attId,
       "Face the " + (label || "League") + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",

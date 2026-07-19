@@ -49,9 +49,7 @@
       quote: "The Unown dreamed me into being, and I am bound to a lonely girl's every wish. You would wake her from this world? Then get past ME — and the living alphabet that conjured me.",
       winChron: "shattered the D-R-E-A-M — the Unown's spell broke and Molly woke at last!",
       loseChron: "ENTEI guarded the dream and turned another dreamer away",
-      lead: "🔥 A swarm of Unown spelling D · R · E · A · M — and ENTEI, the beast their spell made real.",
-      // Breaking the spell frees the Unown: they begin to roam the Safari Zone.
-      unlockUnown: true },
+      lead: "🔥 A swarm of Unown spelling D · R · E · A · M — and ENTEI, the beast their spell made real." },
     { key: "marauder", name: "THE IRON-MASKED MARAUDER", title: "Team Rocket's Hunter", film: "Pokémon 4Ever · Voice of the Forest", tab: "Johto", needs: "lance", needsName: "LANCE",
       type: "dark", team: [215, 212, 248, 251], pts: 12, boost: [1.3, 1.45, 1.5, 1.7], icon: "🌲", face: 251, costar: 251, shiny: [251], vsFace: 251,
       quote: "With my Dark Balls, any Pokémon becomes an obedient weapon — even the guardian of the forest. Time itself will serve Team Rocket!",
@@ -226,7 +224,11 @@
   // Champion (per-boss `needs`, raw league win — same rule as the Legendary
   // Challenges).
   function moviesLocked(b, attId) {
-    return !attId || Store.leagueWins(attId).indexOf(b.needs || "lance") < 0;
+    if (!attId) return true;
+    const key = b.needs || "lance";
+    // Prefer the League's self-healing check (re-infers sync-clipped wins).
+    if (window.LeagueGate && LeagueGate.hasBeat) return !LeagueGate.hasBeat(attId, key);
+    return Store.leagueWins(attId).indexOf(key) < 0;
   }
 
   function challenge(b, attId) {

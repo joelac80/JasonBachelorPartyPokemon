@@ -172,6 +172,9 @@
   function disconnect() {
     stopPresence();
     if (unsub) { unsub(); unsub = null; }
+    // A pending debounced push must die with the connection — on a quick
+    // disable→enable it used to fire into the freshly-reconnected room.
+    clearTimeout(pushTimer); pushTimer = null;
     ref = null;
     setStatus("off", "");
   }
@@ -257,6 +260,16 @@
         });
       }
     }, function () {});
+    hookLifecycle();
+  }
+  // Window/document lifecycle listeners — attached ONCE for the module's life,
+  // never per-connect (every room switch used to stack four more copies, each
+  // stale `wake` firing an extra server pull per foreground). The handlers
+  // no-op while disconnected via their ref checks.
+  let lifecycleHooked = false;
+  function hookLifecycle() {
+    if (lifecycleHooked) return;
+    lifecycleHooked = true;
     try { window.addEventListener("beforeunload", removePresence); } catch (_) {}
     // iOS Safari never fires beforeunload — pagehide is the real goodbye there.
     // (persisted = just parked in the back/forward cache; the TTL covers that.)
@@ -291,7 +304,10 @@
   function refreshPresence(force) {
     const now = nowMs();
     const list = presenceRaw.filter((x) => (now - x.t) < PRESENCE_TTL);
-    if (!force && list.length === presenceList.length) return;   // aging only removes
+    // Roster diff by WHO, not by count — a simultaneous leave+join kept the
+    // stale face on screen until the next write when only lengths compared.
+    const who = (l) => l.map((x) => x.clientId).sort().join("|");
+    if (!force && who(list) === who(presenceList)) return;
     presenceList = list;
     presenceSubs.forEach((f) => { try { f(list); } catch (_) {} });
   }
@@ -330,15 +346,19 @@
       if (c.state === "accepted" && (c.fromClient === clientId || c.toClient === clientId) && !handledAcc[c.id]) {
         handledAcc[c.id] = 1; markChalSeen("a", c.id);
         chAccSubs.forEach((f) => { try { f(c); } catch (_) {} });
-        // the challenger tidies up the doc a few seconds later
-        if (c.fromClient === clientId && chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
+        // the challenger tidies up the doc a few seconds later. Capture the
+        // ref NOW — a disconnect nulls the module chalRef before the timer
+        // fires, which used to throw inside the timeout.
+        const crA = chalRef;
+        if (c.fromClient === clientId && crA) setTimeout(() => { if (crA) crA.doc(c.id).delete().catch(function () {}); }, 6000);
       }
       // 🚫 a DECLINE finally reaches the challenger (it used to vanish
       // silently — you'd just wait forever). Same tidy-up as accepts.
       if (c.state === "declined" && c.fromClient === clientId && !handledDec[c.id]) {
         handledDec[c.id] = 1; markChalSeen("d", c.id);
         chDecSubs.forEach((f) => { try { f(c); } catch (_) {} });
-        if (chalRef) setTimeout(() => { chalRef.doc(c.id).delete().catch(function () {}); }, 6000);
+        const crD = chalRef;
+        if (crD) setTimeout(() => { if (crD) crD.doc(c.id).delete().catch(function () {}); }, 6000);
       }
     });
   }

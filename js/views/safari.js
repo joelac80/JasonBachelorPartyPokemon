@@ -1033,7 +1033,12 @@
       const tools = [
         el("button", { class: "btn subtle sm", onClick: () => {
           U.ask("Reset the ENTIRE Safari (all trainers, catches, teams, log)?", { icon: "⚠️", danger: true }, () => {
-            Store.update((s) => { s.pokedex = { active: "", trainers: {}, log: [], given: 0, taken: 0 }; });
+            // Reset only what the prompt PROMISES — a wholesale replace was
+            // silently deleting unrelated pokedex keys (trade offers, unlock
+            // flags) that live on the same object.
+            Store.update((s) => {
+              s.pokedex = Object.assign({}, s.pokedex, { active: "", trainers: {}, log: [], given: 0, taken: 0 });
+            });
             location.reload();
           });
         } }, "Reset Safari"),

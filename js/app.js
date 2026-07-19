@@ -628,6 +628,7 @@
         U.toast("🧭 GEN " + cap + " UNLOCKED — #" + span[0] + "–#" + span[1] + " join your wild!", "🔴 Safari", () => { location.hash = "#/safari"; });
       } catch (_) {}
     }
+    absorbGenCap();   // eager baseline — a win landing before the first timer must still ring
     Store.subscribe(checkGenClimb);
     if (Sync.onStateApplied) Sync.onStateApplied(absorbGenCap);   // hydration re-baselines, never announces
     setTimeout(checkGenClimb, 1800);
@@ -705,6 +706,7 @@
         if (Store.hisuiUnlocked(me)) hisuiKnown[me] = 1;
       } catch (_) {}
     }
+    absorbHisui();   // eager baseline, same reason as the Gen Ladder
     Store.subscribe(checkHisuiRift);
     if (Sync.onStateApplied) Sync.onStateApplied(absorbHisui);
     setTimeout(checkHisuiRift, 2600);
@@ -742,6 +744,19 @@
         const offers = ((Store.state.pokedex || {}).offers || []);
         const nameOf = (id) => (Store.attendee(id) || {}).name || "Someone";
         const monN = (id) => ((window.DEX || {})[id] || {}).n || "?";
+        // 🌱 First sight of a NON-EMPTY offers list with no persisted history:
+        // this phone is meeting the room's whole offer backlog at once (fresh
+        // install / wiped storage). Bank it silently — replaying old offers as
+        // fresh pings was a blast. checkTradeInbox still greets OPEN offers
+        // addressed to me, once, via its own modal path.
+        if (!watchOffers._primed && offers.length) {
+          watchOffers._primed = true;
+          if (!Object.keys(seen).length) {
+            offers.forEach((o) => { if (o && o.id) { seen[o.id] = o.status; offerSeenMem[o.id] = o.status; } });
+            try { localStorage.setItem(OFFER_SEEN_KEY, JSON.stringify(seen)); } catch (_) {}
+            return;
+          }
+        }
         let changed = false;
         offers.forEach((o) => {
           if (!o || !o.id) return;
@@ -749,7 +764,6 @@
           if (prev === o.status) return;
           if (o.to === me && !prev && o.status === "open") {
             Inbox.log("📬", nameOf(o.from) + " sent you a trade offer: " + monN(o.give) + " for your " + monN(o.want) + ".", "#/trade");
-            notify("📬 Trade offer!", nameOf(o.from) + " offers " + monN(o.give) + " for your " + monN(o.want));
           }
           if (o.from === me && prev === "open" && (o.status === "accepted" || o.status === "declined")) {
             const good = o.status === "accepted";

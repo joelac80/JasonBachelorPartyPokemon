@@ -132,8 +132,9 @@
       const goal = Store.nextGenGoal && Store.nextGenGoal(me);
       const tw = Store.towerOf ? Store.towerOf(me) : { streak: 0, best: 0 };
       const run = Store.nuzRun ? Store.nuzRun(me) : null;
-      const t = ((Store.state.pokedex || {}).trainers || {})[me] || {};
-      const caught = Object.keys(t.caught || {}).length;
+      // Same counting rule as the Tracker/Squad/Safari: the freebie partner
+      // doesn't count (a raw key count read one higher here than everywhere else).
+      const caught = Store.dexCount ? Store.dexCount(me) : 0;
       const hisui = Store.hisuiUnlocked && Store.hisuiUnlocked(me);
       const chips = [
         { r: "regions", e: "🧭", t: "Gen " + cap + "/9" + (hisui ? " +⏳" : ""),
