@@ -651,6 +651,10 @@
     },
     // fires after a REMOTE state doc is applied (not on local edits)
     onStateApplied(fn) { stateSubs.push(fn); return () => { const i = stateSubs.indexOf(fn); if (i >= 0) stateSubs.splice(i, 1); }; },
+    // True WHILE a remote state doc is being merged in. Milestone pings check
+    // this to tell "a progress doc syncing in" (hydration) apart from a battle
+    // won on THIS phone — the former must never re-announce already-earned wins.
+    isApplying() { return applying; },
     // Fires with each NEW photo that lands from the room (backlog excluded).
     onPhotoAdded(fn) { photoSubs.push(fn); return () => { const i = photoSubs.indexOf(fn); if (i >= 0) photoSubs.splice(i, 1); }; },
     // Fires (photo, reaction) when a NEW reaction lands on any photo.

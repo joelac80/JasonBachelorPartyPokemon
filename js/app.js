@@ -565,15 +565,24 @@
 
     // 🧭 Gen Ladder unlock — celebrate when THIS device's signed-in trainer
     // climbs a rung (their battles opened a new generation in the wild).
-    // The guard is an OBSERVED-TRANSITION baseline held in MEMORY: the first
-    // check of the session primes silently (whatever cap you boot with is old
-    // news — the climb was celebrated live when the Champion fell), and only
-    // a climb witnessed after that celebrates. localStorage used to be the
-    // ONLY guard, and this runs on every store tick — an iOS storage layer
-    // handing back null reads mid-suspend re-blasted "GEN 4 UNLOCKED!"
-    // endlessly. Storage is now just the cross-session floor.
+    // The guard has to tell a REAL climb (a Champion beaten on THIS phone) from
+    // HYDRATION — already-earned league wins syncing in from the room. In a
+    // live room that hydration replays the whole ladder (cap 1 → 5) on every
+    // reopen, which iOS does constantly, so a memory/localStorage baseline
+    // alone re-blasted "GEN 5 UNLOCKED!" a dozen times. The real signal:
+    // a cap change that lands while Sync is APPLYING a remote doc is hydration
+    // — absorb it silently. Only a climb on a LOCAL update announces.
     const GENCAP_SEEN_KEY = "jasonBachHub.genCapSeen";
-    let genCapBase = null;   // primed by the first check that has a trainer
+    let genCapBase = null;   // highest cap this session has accounted for
+    function bankGenCap(cap) {
+      genCapBase = (genCapBase === null) ? cap : Math.max(genCapBase, cap);
+      try { localStorage.setItem(GENCAP_SEEN_KEY, String(genCapBase)); } catch (_) {}
+    }
+    // Silently re-baseline after a remote apply (hydration / a win synced from
+    // another device is never a THIS-phone announcement).
+    function absorbGenCap() {
+      try { const me = Sync.getMe && Sync.getMe(); if (me && Store.genCapFor) bankGenCap(Store.genCapFor(me)); } catch (_) {}
+    }
     function checkGenClimb() {
       try {
         const me = Sync.getMe && Sync.getMe();
@@ -583,8 +592,12 @@
         try { stored = parseInt(localStorage.getItem(GENCAP_SEEN_KEY) || "1", 10) || 1; } catch (_) {}
         if (genCapBase === null) genCapBase = Math.max(cap, stored);
         if (cap <= genCapBase) return;
-        genCapBase = cap;
-        try { localStorage.setItem(GENCAP_SEEN_KEY, String(cap)); } catch (_) {}
+        // A higher cap than we've banked. If a remote doc is being applied right
+        // now, that's the room hydrating already-earned progress — bank it, stay
+        // quiet. Only a climb on a local update (a Champion beaten here) rings.
+        const hydrating = !!(window.Sync && Sync.isApplying && Sync.isApplying());
+        bankGenCap(cap);
+        if (hydrating || cap === 1) return;
         const span = Store.GEN_SPANS[cap - 1];
         notify("🧭 GEN " + cap + " UNLOCKED!", "Your battles opened Gen " + cap + " — #" + span[0] + "–#" + span[1] + " now roam YOUR Safari!");
         if (window.SFX && SFX.fanfare) SFX.fanfare();
@@ -592,7 +605,7 @@
       } catch (_) {}
     }
     Store.subscribe(checkGenClimb);
-    if (Sync.onStateApplied) Sync.onStateApplied(checkGenClimb);
+    if (Sync.onStateApplied) Sync.onStateApplied(absorbGenCap);   // hydration re-baselines, never announces
     setTimeout(checkGenClimb, 1800);
 
     // 🏔 THE TEMPORAL RIFT — once per trainer, the first time this device sees
@@ -620,6 +633,10 @@
           seen.push(me);
           try { localStorage.setItem(HISUI_SEEN_KEY, seen.join(",")); } catch (_) {}
         }
+        // Same tell as the Gen Ladder: an unlock that lands while a remote doc
+        // is being applied is the room hydrating an already-earned CYNTHIA win,
+        // not one beaten on this phone — banked silently above, no rift.
+        if (window.Sync && Sync.isApplying && Sync.isApplying()) return;
         if (document.querySelector(".hisui-rift")) return;
         const arc = Store.sprite(493);
         const lay = U.el("div", { class: "hisui-rift" }, [
@@ -653,8 +670,19 @@
         })();
       } catch (_) {}
     }
+    // Silently mark Hisui as known after a remote apply — hydration of an
+    // already-earned CYNTHIA win must never re-raise the rift (covers the path
+    // where applyRemote doesn't tick Store subscribers during the merge).
+    function absorbHisui() {
+      try {
+        const me = Sync.getMe && Sync.getMe();
+        if (!me || !Store.hisuiUnlocked) return;
+        if (hisuiKnown === null) hisuiKnown = {};
+        if (Store.hisuiUnlocked(me)) hisuiKnown[me] = 1;
+      } catch (_) {}
+    }
     Store.subscribe(checkHisuiRift);
-    if (Sync.onStateApplied) Sync.onStateApplied(checkHisuiRift);
+    if (Sync.onStateApplied) Sync.onStateApplied(absorbHisui);
     setTimeout(checkHisuiRift, 2600);
 
     // 📬 topbar inbox badge: shows (with a count) while offers addressed to
