@@ -127,7 +127,11 @@
     try { navigator.serviceWorker.register("sw.js"); } catch (_) {}
   }
   function showNote(title, body) {
-    const opts = { body: body, icon: "assets/icon-192.png", badge: "assets/icon-192.png", tag: "bachhub" };
+    // Per-message tag: an identical banner REPLACES its twin instead of
+    // stacking (where iOS honors tags), while distinct messages coexist.
+    let h = 0; const s = title + "|" + (body || "");
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    const opts = { body: body, icon: "assets/icon-192.png", badge: "assets/icon-192.png", tag: "bachhub-" + (h >>> 0).toString(36) };
     const fallback = () => { try { new Notification(title, opts); } catch (_) {} };
     if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
       navigator.serviceWorker.getRegistration()
@@ -135,10 +139,29 @@
         .catch(fallback);
     } else fallback();
   }
+  // 🔕 THE BURST GUARD — the notifier's own last line of defense. The same
+  // title+body inside 15 minutes is a repeat (a sync burst, a reload loop, a
+  // bug upstream) and one banner is plenty. Memory catches same-session
+  // bursts; localStorage catches reload loops; either alone suffices, so a
+  // flaky storage layer can't defeat it. Returns true when the note may show.
+  const NOTE_SEEN_KEY = "jasonBachHub.noteSeen.v1";
+  const noteSeenMem = {};
+  function noteGate(title, body) {
+    const k = title + "|" + (body || ""), now = Date.now();
+    let seen = {};
+    try { seen = JSON.parse(localStorage.getItem(NOTE_SEEN_KEY) || "{}") || {}; } catch (_) {}
+    const last = Math.max(noteSeenMem[k] || 0, seen[k] || 0);
+    if (now - last < 900000) return false;
+    noteSeenMem[k] = now; seen[k] = now;
+    Object.keys(seen).forEach((x) => { if (now - seen[x] > 3600000) delete seen[x]; });
+    try { localStorage.setItem(NOTE_SEEN_KEY, JSON.stringify(seen)); } catch (_) {}
+    return true;
+  }
   function notify(title, body) {
     try {
       if (!("Notification" in window) || Notification.permission !== "granted") return;
       if (document.visibilityState === "visible") return;   // in-app modal covers foreground
+      if (!noteGate(title, body)) return;
       showNote(title, body);
     } catch (_) {}
   }
@@ -156,6 +179,7 @@
     test() { setTimeout(() => { try { showNote("🔔 It works!", "Notifications are live — see you at the lake."); } catch (_) {} }, 4000); },
     // Visibility-guarded ping for app code (e.g. "your move" in remote duels).
     ping(title, body) { notify(title, body); },
+    _noteGate: noteGate,   // test seam for the burst guard
     // Opt-in: ping this phone every time a new photo lands in the room feed.
     photoAlerts() { try { return localStorage.getItem("jasonBachHub.notifyPhotos") === "1"; } catch (_) { return false; } },
     setPhotoAlerts(on) { try { localStorage.setItem("jasonBachHub.notifyPhotos", on ? "1" : "0"); } catch (_) {} },

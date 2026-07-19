@@ -10,7 +10,7 @@
    Live sync (Firestore) is the one thing that needs a signal — the app
    already degrades to local play + localStorage, and the append-only
    merge folds everything back together when the connection returns. */
-const VERSION = "bachhub-v156";
+const VERSION = "bachhub-v157";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
@@ -31,10 +31,15 @@ self.addEventListener("install", (e) => {
       const u = m[1];
       if (u && !/^(https?:|\/\/|#|data:|mailto:)/.test(u)) urls.add(u);
     }
-    // Small batches; a single miss must never sink the install.
+    // Code files are ALL-OR-NOTHING: a partially-downloaded cache serves a mix
+    // of app versions on the next flaky-network load, resurrecting long-fixed
+    // bugs from stale JS (repeat notifications, vanished views). If any js/css
+    // fails, the whole install throws — the previous COMPLETE cache keeps
+    // serving until a full download succeeds. Icons/images stay tolerant.
     const list = [...urls];
     for (let i = 0; i < list.length; i += 8) {
-      await Promise.all(list.slice(i, i + 8).map((u) => c.add(u).catch(() => {})));
+      await Promise.all(list.slice(i, i + 8).map((u) =>
+        /\.(js|css|html)(\?|$)/.test(u) ? c.add(u) : c.add(u).catch(() => {})));
     }
   })());
 });
