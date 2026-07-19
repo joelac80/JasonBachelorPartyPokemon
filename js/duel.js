@@ -2182,12 +2182,33 @@
       };
       // Nuzlocke runs level-gate their OWN evolutions (the box, not the real
       // dex) — the 3-KO prompt here would evolve the wrong Squirtle.
+      // 🏅 ITEM-FREE: every human unit on the winning side kept BOTH Restore
+      // charges and the Dire Hit unspent (auto-eaten berries don't count —
+      // they were never a choice). Only vs the AI, only in battles with
+      // stakes — a friendly duel or wild scrap earns no medal.
+      const stakes = !!(opts.league || opts.gym || opts.movie || opts.legend || opts.secret || opts.gauntlet);
+      const humansWon = winSide && sides[winSide].units.some((x) => !x.ai) && sides[other(winSide)].units.every((x) => x.ai);
+      const itemFree = record && stakes && humansWon && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
       const finishUp = () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); };
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
+        itemFree ? ["🏅 ITEM-FREE VICTORY — the bag stayed shut. Pure skill!", 1700, () => sfx("correct")] : null,
       ].filter(Boolean), () => { if (outroInfo) outroPop(outroInfo, finishUp); else finishUp(); });
       if (!record) return;
+      // 🏅 bank the medal (counter feeds The Purist achievement); marquee boss
+      // wins get a chronicle line too — gyms would flood it, so they just count.
+      if (itemFree) {
+        try {
+          const pu = sides[winSide].units.find((x) => !x.ai);
+          Store.update((s) => {
+            const t = s.pokedex.trainers[pu.attId] = s.pokedex.trainers[pu.attId] || { caught: {}, team: [], catches: 0 };
+            t.pureWins = (t.pureWins || 0) + 1;
+            const marquee = (opts.movie && opts.movie.name) || (opts.legend && opts.legend.name) || (opts.secret && opts.secret.name) || "";
+            if (marquee) Store.chron(s, "🏅", pu.name + " beat " + marquee + " WITHOUT A SINGLE ITEM — the bag stayed shut. Pure skill!");
+          });
+        } catch (_) {}
+      }
       // End the room broadcast no matter which branch records below —
       // watchers' screens resolve and the LIVE banner clears.
       try {
