@@ -145,7 +145,7 @@
       lead: "🌘 Miror B and his four-Ludicolo disco — then XD001 itself, a raid-sized SHADOW LUGIA in its wrong colors." },
     // ---- HOENN: the Delta Episode (ORAS) — Zinnia, then the meteor's rider.
     { key: "delta", tab: "Hoenn", name: "THE DELTA EPISODE", flair: "HOENN SPECIAL · Sky High, ORAS",
-      sub: "Hoenn Special · Zinnia the Lorekeeper — then soar to the meteor, where something alien waits · 2 battles",
+      sub: "Hoenn Special · Zinnia the Lorekeeper, the sky dragon itself — then soar to the meteor, where something alien waits · 3 battles",
       icon: "☄️", face: 386, boost: [0.6, 0.6, 0.66, 0.78], pts: 30, needs: "steven", champ: "STEVEN",
       chain: [
         { name: "ZINNIA", flair: "🐉 THE LOREKEEPER", icon: "🐉", face: 373, boost: 0.86,
@@ -153,6 +153,14 @@
           quote: "You want to stop the meteor with a machine? How boring. The old ways say a dragon must rise. Show me your bond is worth more than draconid lore — or step aside!",
           outro: { lose: "…Aster. Did you see it? I lost — and somehow it made me smile. Go, hero. The sky is yours to save.",
             win: "Lorekeeper's verdict: not yet. The sky would swallow you whole." } },
+        // 🐉 Sky Pillar: Zinnia's song calls the sky dragon down — it answers
+        // to no trainer, and mid-battle it remembers what IT invented first.
+        { name: "RAYQUAZA", flair: "🐉 LORD OF THE SKY", icon: "🌪", face: 384,
+          team: [384, 10079], boost: [1.0, 0.52], reserve: 1,
+          speak: { 1: ["The sky ignites — RAYQUAZA remembers the power it discovered a thousand years before any trainer's stone. MEGA RAYQUAZA descends!"] },
+          quote: "Atop the Sky Pillar, Zinnia sings the old song. The clouds split — and the Lord of the Sky coils down to judge whether you're worthy to ride it beyond the atmosphere.",
+          outro: { lose: "Rayquaza levels out beneath you and offers its back. The stratosphere is no longer the ceiling.",
+            win: "The great dragon banks away into the jet stream. The song ended; you were not the answer." } },
       ],
       finale: { npc: "DEOXYS", name: "DEOXYS", flair: "🌌 THE METEOR'S RIDER", icon: "🌌", face: 386,
         quote: "You soar past the clouds on a dragon's back. The meteor cracks open — and the thing inside unfolds blade-first, watching you with a single crystal eye." },
@@ -166,7 +174,7 @@
       quote: "A meteor is coming for Hoenn, and the Draconids say a machine won't save you. Beat the Lorekeeper for the right to ride the sky — and face what rides the meteor down.",
       winChron: "cleared THE DELTA EPISODE — Zinnia bowed, and DEOXYS ran out of formes at the edge of space!",
       loseChron: "the meteor kept its rider",
-      lead: "☄️ Zinnia and her Salamence guard the old ways. Beyond her: the stratosphere, and DEOXYS — four formes deep, ending in the one that rode the meteor." },
+      lead: "☄️ Zinnia guards the old ways, RAYQUAZA judges you at the Sky Pillar (and it remembers Mega Evolution mid-fight) — then the stratosphere, and DEOXYS, four formes deep." },
     // ---- KALOS runs a little timeline of its own: XY's villain arc, the
     // order trio, AZ's peace — and then LEGENDS Z-A, Lumiose rebuilt.
     // ---- HOENN: the BATTLE FRONTIER (Emerald) — seven Brains, one squad,
