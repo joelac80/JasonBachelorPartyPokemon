@@ -146,7 +146,7 @@
     // ---- HOENN: the Delta Episode (ORAS) — Zinnia, then the meteor's rider.
     { key: "delta", tab: "Hoenn", name: "THE DELTA EPISODE", flair: "HOENN SPECIAL · Sky High, ORAS",
       sub: "Hoenn Special · Zinnia the Lorekeeper — then soar to the meteor, where something alien waits · 2 battles",
-      icon: "☄️", face: 386, boost: [0.62, 0.62, 0.78], pts: 30, needs: "steven", champ: "STEVEN",
+      icon: "☄️", face: 386, boost: [0.6, 0.6, 0.66, 0.78], pts: 30, needs: "steven", champ: "STEVEN",
       chain: [
         { name: "ZINNIA", flair: "🐉 THE LOREKEEPER", icon: "🐉", face: 373, boost: 0.86,
           team: [715, 334, 697, 706, 373],
@@ -155,16 +155,18 @@
             win: "Lorekeeper's verdict: not yet. The sky would swallow you whole." } },
       ],
       finale: { npc: "DEOXYS", name: "DEOXYS", flair: "🌌 THE METEOR'S RIDER", icon: "🌌", face: 386,
-        quote: "You soar past the clouds on a dragon's back. The meteor cracks open — and the thing inside unfolds, watching you with a single crystal eye." },
-      team: [386, 10001, 10003], reserve: 2,
-      speak: { 1: ["The DNA Pokémon twists and re-knits itself — ATTACK FORME!"],
-               2: ["It will not fall — the visitor reshapes once more. SPEED FORME!"] },
+        quote: "You soar past the clouds on a dragon's back. The meteor cracks open — and the thing inside unfolds blade-first, watching you with a single crystal eye." },
+      // ☄️ Four phases, one alien: Attack → Defense → Speed → the true forme.
+      team: [10001, 10002, 10003, 386], reserve: 3,
+      speak: { 1: ["The DNA Pokémon twists and re-knits itself into a living shield — DEFENSE FORME!"],
+               2: ["It will not fall — the visitor sharpens into pure velocity. SPEED FORME!"],
+               3: ["The alien lets every disguise fall away. This is the shape that rode the meteor — the TRUE DEOXYS, at the edge of space!"] },
       outro: { lose: "The visitor folds itself small, hangs in orbit a moment… and drifts back into the dark, satisfied.",
                win: "The crystal eye dims you out of the sky. Hoenn's fate rides on the next attempt." },
       quote: "A meteor is coming for Hoenn, and the Draconids say a machine won't save you. Beat the Lorekeeper for the right to ride the sky — and face what rides the meteor down.",
-      winChron: "cleared THE DELTA EPISODE — Zinnia bowed, and DEOXYS fell at the edge of space!",
+      winChron: "cleared THE DELTA EPISODE — Zinnia bowed, and DEOXYS ran out of formes at the edge of space!",
       loseChron: "the meteor kept its rider",
-      lead: "☄️ Zinnia and her Salamence guard the old ways. Beyond her: the stratosphere, and DEOXYS — which refuses to stay one shape." },
+      lead: "☄️ Zinnia and her Salamence guard the old ways. Beyond her: the stratosphere, and DEOXYS — four formes deep, ending in the one that rode the meteor." },
     // ---- KALOS runs a little timeline of its own: XY's villain arc, the
     // order trio, AZ's peace — and then LEGENDS Z-A, Lumiose rebuilt.
     // ---- HOENN: the BATTLE FRONTIER (Emerald) — seven Brains, one squad,
