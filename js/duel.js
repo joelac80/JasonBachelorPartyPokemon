@@ -858,7 +858,8 @@
           m.lvl = mLvl; m.cart = cs; m.spe = cs.spe;
           m.vetMul = 1 + Math.min(0.1, 0.01 * m.kos0);
           m.hpMax = cs.hp;
-          if (u.hpBoost && u.hpBoost !== 1) m.hpMax = Math.round(m.hpMax * u.hpBoost);
+          const hpbC = Array.isArray(u.hpBoost) ? (u.hpBoost[i] || 1) : u.hpBoost;
+          if (hpbC && hpbC !== 1) m.hpMax = Math.round(m.hpMax * hpbC);
           m.hp = m.hpMax;
         } else {
         // League-calibre foes (Elite Four/Champion/RED) hit and endure
@@ -868,8 +869,12 @@
         const bst = Array.isArray(u.boost) ? (u.boost[i] || 1) : u.boost;
         if (bst && bst !== 1) { m.atk *= bst; m.hpMax = Math.round(m.hpMax * bst); m.hp = m.hpMax; }
         // 🩸 BOSS: a raid-style extended HP pool (Safari legendary bosses) —
-        // HP only, so the fight is long rather than one-shot lethal.
-        if (u.hpBoost && u.hpBoost !== 1) { m.hpMax = Math.round(m.hpMax * u.hpBoost); m.hp = m.hpMax; }
+        // HP only, so the fight is long rather than one-shot lethal. Accepts a
+        // scalar (whole team) OR an array aligned to monIds, so a two-forme
+        // boss (Rayquaza → Mega) can give each shape its own wall regardless of
+        // their very different base stats.
+        const hpb = Array.isArray(u.hpBoost) ? (u.hpBoost[i] || 1) : u.hpBoost;
+        if (hpb && hpb !== 1) { m.hpMax = Math.round(m.hpMax * hpb); m.hp = m.hpMax; }
         }
         m.species = m.name;
         // 🔡 A boss can field lettered Unown (u.glyphs, aligned to monIds) so a

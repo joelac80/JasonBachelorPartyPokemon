@@ -156,7 +156,7 @@
         // 🐉 Sky Pillar: Zinnia's song calls the sky dragon down — it answers
         // to no trainer, and mid-battle it remembers what IT invented first.
         { name: "RAYQUAZA", flair: "🐉 LORD OF THE SKY", icon: "🌪", face: 384,
-          team: [384, 10079], boost: [1.0, 0.52], reserve: 1,
+          team: [384, 10079], boost: [0.66, 0.4], hpBoost: [2.6, 1.3], reserve: 1,
           speak: { 1: ["The sky ignites — RAYQUAZA remembers the power it discovered a thousand years before any trainer's stone. MEGA RAYQUAZA descends!"] },
           quote: "Atop the Sky Pillar, Zinnia sings the old song. The clouds split — and the Lord of the Sky coils down to judge whether you're worthy to ride it beyond the atmosphere.",
           outro: { lose: "Rayquaza levels out beneath you and offers its back. The stratosphere is no longer the ceiling.",
