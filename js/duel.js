@@ -467,6 +467,10 @@
     const PRE = {};
     const EV = window.EVO_LEVELS || {};
     Object.keys(EV).forEach((f) => (EV[f] || []).forEach((e) => { PRE[e.to] = +f; }));
+    // 🏔 Hisuian pre-evolutions live in their own map (out of EVO_LEVELS) — fold
+    // them in so evolved Hisuian forms answer to the cap law like everyone else.
+    const HP = window.HISUI_PREVO || {};
+    Object.keys(HP).forEach((to) => { PRE[+to] = HP[to].from; });
     // Group the roster by what each mon IS at this cap. A group with a
     // cap-legal catch shows that one honest card (the Venusaur folds into
     // your real Bulbasaur). A group with NO legal catch shows the owned mon

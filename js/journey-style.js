@@ -22,6 +22,11 @@
   Object.keys(window.EVO_LEVELS || {}).forEach((from) => {
     (window.EVO_LEVELS[from] || []).forEach((e) => { PRE[e.to] = { from: +from, lvl: e.lvl }; });
   });
+  // 🏔 Hisuian lines aren't in EVO_LEVELS (they don't level-up-evolve here), but
+  // the cap law still needs to walk an evolved Hisuian form down to its base.
+  Object.keys(window.HISUI_PREVO || {}).forEach((to) => {
+    const p = window.HISUI_PREVO[to]; PRE[+to] = { from: p.from, lvl: p.lvl };
+  });
   function formAt(id, cap) {
     let guard = 0;
     while (PRE[id] && PRE[id].lvl > cap && (window.DEX || {})[PRE[id].from] && guard++ < 6) id = PRE[id].from;
