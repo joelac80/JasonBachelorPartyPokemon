@@ -233,14 +233,14 @@
       document.body.appendChild(lay);
       if (window.SFX && SFX.fanfare) SFX.fanfare();
       setTimeout(closePop, 4600);
-      // 🌅/🏆 Key-moment curtains bracket the badge-pop: the FIRST badge in a
-      // region welcomes you to it; the LAST swings the League gate open. Both
-      // queue AFTER this pop clears (StoryBeats.curtain waits on .league-intro).
+      // 🏆 The LAST badge of a region swings the League gate open, queued AFTER
+      // this pop clears (StoryBeats.curtain waits on .league-intro). The region
+      // WELCOME isn't here — you don't "arrive" somewhere you've already won a
+      // badge; it greets you when the region first opens (see view()).
       if (window.StoryBeats) {
         const held = regionBadges(attId, g.region);
         const total = GYMS.filter((x) => x.region === g.region).length;
-        if (held === 1) StoryBeats.arriveRegion(g.region);
-        else if (held >= total) StoryBeats.conquerRegion(g.region);
+        if (held >= total) StoryBeats.conquerRegion(g.region);
       }
     })();
   }
@@ -483,6 +483,20 @@
       root.appendChild(el("p", { class: "hint", style: { marginTop: "-6px" } }, r.note));
       root.appendChild(el("div", { class: "gymc-grid" }, idxs.map((i) => circuitCard(i))));
     });
+
+    // 🌅 WELCOME on ARRIVAL — the gen cap opens one region at a time (beat the
+    // previous Champion), and REGIONS is in that same gen order, so the highest
+    // one the cap has unlocked is the frontier the trainer just reached. Greet
+    // it the first time they open the circuit here — BEFORE its first gym, not
+    // after. arriveRegion is guarded once-per-region-per-phone, so prior regions
+    // (already welcomed on the way up) never re-fire.
+    (function welcomeFrontier() {
+      const me = (window.Sync && Sync.getMe && Sync.getMe()) || "";
+      if (!me || !window.StoryBeats) return;
+      const cap = Store.genCapFor ? Store.genCapFor(me) : 1;
+      const top = REGIONS[Math.max(0, Math.min(REGIONS.length - 1, cap - 1))];
+      if (top) StoryBeats.arriveRegion(top.name);
+    })();
 
     // The League continues where the circuit ends.
     root.appendChild(el("div", { class: "duel-belt", onClick: () => { location.hash = "#/league"; } },
