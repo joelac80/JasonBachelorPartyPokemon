@@ -77,7 +77,7 @@
    just a visible one). Battle/evolution silhouettes are untouched. */
 :root[data-theme="dark"] .trk-dex-cell.unseen img { filter: brightness(0) invert(0.62); opacity: 0.55; }
 :root[data-theme="dark"] .safari-dex-cell:not(.got) img { filter: brightness(0) invert(0.62) opacity(0.5); }
-:root[data-theme="dark"] .tdex-ace,
+:root[data-theme="dark"] .tdex-ace:not(.lit),
 :root[data-theme="dark"] .tdexm-img.dark { filter: brightness(0) invert(0.62) opacity(0.55); }
 :root[data-theme="dark"] .league-ace:not(.lit) { filter: brightness(0) invert(0.62) opacity(0.5); }
 :root[data-theme="dark"] .legend-stage.locked .league-ace { filter: brightness(0) invert(0.62) saturate(0) opacity(0.45); }
