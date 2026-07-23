@@ -2818,12 +2818,28 @@
       const meg = statsFor(megaId, CART ? (m.lvl || 50) : opts.level);
       const ratio = m.hpMax ? (m.hp / m.hpMax) : 1;
       const was = m.name;
+      const baseAtk = m.atk, baseHpMax = m.hpMax;   // pre-mega power (carries boost + KO bonus)
       m.megaId = megaId;
-      m.hpMax = meg.hpMax;
       m.x = meg.x; m.types = meg.types; m.spe = meg.spe;
       m.lean = meg.lean;   // ⚖️ a stat-flipped mega (Mewtwo X!) changes its identity
-      m.atk = meg.atk * (1 + Math.min(0.1, 0.01 * (m.kos0 || 0)));
-      // 🎛️ cartridge: the mega's REAL stats at the same level (HP ratio kept)
+      // ⚖️ THE MEGA IS A BOUNDED UPGRADE, not a new stat tier. The mega DEX
+      // carries raw BST as its `x` (600-780) while every base mon rides the
+      // compressed 0.45×BST scale (~240-270) — adopting the mega's raw stats
+      // whole made a player's mega ~+80% atk / +80% HP, a legendary-and-a-half.
+      // For a PLAYER (and PvP, both human) a mega now lifts the mon they
+      // actually brought: +30% attack, +20% HP, plus the mega's typing, lean
+      // and moveset — strong and worth it, not oppressive. AI bosses keep their
+      // tuned raw-mega power (Kalos leaders, the World Champion, the Mega
+      // raid battles field megas statically, untouched by this path).
+      if (u.ai) {
+        m.hpMax = meg.hpMax;
+        m.atk = meg.atk * (1 + Math.min(0.1, 0.01 * (m.kos0 || 0)));
+      } else {
+        m.atk = baseAtk * 1.30;
+        m.hpMax = Math.round(baseHpMax * 1.20);
+      }
+      // 🎛️ cartridge: the mega's REAL stats at the same level (HP ratio kept) —
+      // that engine is already balanced, so it overrides the scaling above.
       if (CART) { m.cart = CartridgeMode.statsAt(megaId, m.lvl || 50); m.hpMax = m.cart.hp; m.spe = m.cart.spe; }
       m.hp = Math.max(1, Math.round(m.hpMax * ratio));
       m.name = meg.name;
