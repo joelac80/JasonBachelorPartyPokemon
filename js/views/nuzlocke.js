@@ -187,7 +187,7 @@
   // WEAKENING it, so the floor is the raw base and damage is worth up to +65%.
   function catchBase(id) {
     const d = DEX[id] || { x: 60 };
-    return d.x >= 200 ? 0.15 : d.x >= 140 ? 0.25 : d.x >= 90 ? 0.40 : 0.55;
+    return d.x >= 200 ? 0.25 : d.x >= 140 ? 0.35 : d.x >= 90 ? 0.48 : 0.62;
   }
   // 👣 The roads between badges hold only so many wild encounters — no
   // re-rolling the dice. Each roll burns a slot (running away included).
@@ -1246,9 +1246,13 @@
         const shiny = wildShiny;
         Duel.start({ mode: "local", broadcast: false, level: runLevel(run),
           a: { units: [{ attId: me, monIds: ids, shiny: ownShiny(run, ids), shinyExact: true }] },
-          b: { units: [{ npc: (shiny ? "✨ Shiny wild " : "Wild ") + monName(id), ai: true, monIds: [id], shiny: shiny ? [id] : false }] },
+          b: { units: [{ npc: (shiny ? "✨ Shiny wild " : "Wild ") + monName(id), ai: true, monIds: [id], shiny: shiny ? [id] : false, boost: 0.85 }] },
           wild: {
-            chanceFn: (frac) => Math.min(1, base + (1 - frac) * 0.65),
+            // Weakening pays off sooner — a catch at a SAFE ~30-40% HP is a
+            // real shot now (was: chip it to near-death, risk the KO that loses
+            // it). The wild also hits a shade softer (boost 0.85) so a catch
+            // attempt doesn't cost you the catcher in a permadeath run.
+            chanceFn: (frac) => Math.min(1, base + (1 - frac) * 0.80),
             onOutcome: (outcome, fainted) => {
               Store.nuzDeaths(me, fainted || [], slot);
               if (outcome === "caught") { Store.nuzCatch(me, id, shiny, slot); sfx("fanfare"); }
@@ -1264,8 +1268,8 @@
   // their full squad at full power by the last badge.
   // Gym scaling, SPLIT since devolution took over the stat curve:
   //  - size: matches the encounter economy (a badge-1 box is 2-4 mons).
-  //  - support ×0.9 flat: the devolved fodder is already Squirtle-tier —
-  //    let it actually land hits instead of double-discounting it.
+  //  - support ×0.8 flat: the devolved fodder lands real hits without turning
+  //    a permadeath run into a meat grinder (was 0.9 — too punishing with no items).
   //  - ace on the 0.72→1.0 curve: the leader's REAL, undevolved ace is
   //    the boss moment, and this is what keeps a cap-14 Steelix beatable.
   // Region runs ride the SAME proven curve (Alola's four kahunas stride it
@@ -1290,18 +1294,18 @@
       const R = curRegion(run) || REGIONS[0];
       const g = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
       const step = Math.min(7, g * (R.gymN === 4 ? 2 : 1));
-      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.9 };
+      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.8 };
     }
     if (run.region) {
       const R = regionByKey(run.region);
       const step = Math.min(7, run.badges.length * (R && R.gymN === 4 ? 2 : 1));
-      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.9 };
+      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.8 };
     }
     const act = run.act === 2 ? 2 : 1;
     const step = act === 1
       ? run.badges.filter((i) => i >= KANTO_GYM0).length
       : run.badges.filter((i) => i < KANTO_GYM0).length;      // 0..7
-    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.9 };
+    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.8 };
     const b2 = 0.95 + step * 0.02;                             // act II: uniform (no devolution overlap)
     return { size: 6, boost: b2, support: b2 };
   }
