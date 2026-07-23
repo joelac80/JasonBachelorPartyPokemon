@@ -1317,8 +1317,20 @@
   // retry faces the same monster. Straight structures stay era-true.
   function nuzGimmick(run, key) {
     if (!run || run.mode !== "random") return undefined;
+    // ⚖️ FAIR PLAY: the AI ace may only roll a gimmick YOU'VE already unlocked —
+    // the same Gen-Ladder gate that lights your own transform buttons (mega ≥
+    // Kalos, Z ≥ Alola, Dynamax ≥ Galar, Tera ≥ Paldea). No anachronistic Kanto
+    // Z-move, and never a spectacle you can't answer in kind. Unlock nothing →
+    // the aces fight straight, exactly like you.
+    const cap = (window.Store && Store.genCapFor && me) ? Store.genCapFor(me) : 0;
+    const pool = [];
+    if (cap >= 6) pool.push("mega");
+    if (cap >= 7) pool.push("z");
+    if (cap >= 8) pool.push("dyna");
+    if (cap >= 9) pool.push("tera");
+    if (!pool.length) return undefined;
     const rnd = mulberry32(((run.seed || 1) ^ strHash("gim-" + key)) >>> 0);
-    return ["mega", "z", "dyna", "tera"][(rnd() * 4) | 0];
+    return pool[(rnd() * pool.length) | 0];
   }
   window.NuzGimmick = nuzGimmick;   // probe: tests + any future "next boss" preview
   // League-stage strength for region-aware runs: the canon Kanto ramp
