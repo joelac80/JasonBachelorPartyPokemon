@@ -1270,8 +1270,11 @@
   //  - size: matches the encounter economy (a badge-1 box is 2-4 mons).
   //  - support ×0.8 flat: the devolved fodder lands real hits without turning
   //    a permadeath run into a meat grinder (was 0.9 — too punishing with no items).
-  //  - ace on the 0.72→1.0 curve: the leader's REAL, undevolved ace is
-  //    the boss moment, and this is what keeps a cap-14 Steelix beatable.
+  //  - ace on the 0.92→1.16 curve: the leader's REAL, undevolved ace is
+  //    the BOSS moment, so it never dips below its own fodder (was 0.72, which
+  //    left a badge-1 ace frailer than its support — a super-effective hit
+  //    one-shot it). The floor keeps the ace a wall you must work through;
+  //    the ramp keeps a cap-14 Steelix a genuine threat by the last badge.
   // Region runs ride the SAME proven curve (Alola's four kahunas stride it
   // double); the master gauntlet ramps on OVERALL progress instead — full
   // size by the Kanto league, full strength by mid-Johto, then a hair past.
@@ -1279,13 +1282,13 @@
     if (run.region === "master") {
       const done = doneCount(run);
       return { size: Math.min(6, 3 + Math.floor(done / 3)),
-        boost: Math.min(1.1, 0.72 + done * 0.02),
+        boost: Math.min(1.25, 0.92 + done * 0.02),
         support: Math.min(1.1, 0.9 + done * 0.01) };
     }
     if (run.region === "blitz") {
       const done = doneCount(run);
       return { size: Math.min(6, 3 + Math.floor(done / 4)),
-        boost: Math.min(1.05, 0.72 + done * 0.025),
+        boost: Math.min(1.2, 0.92 + done * 0.025),
         support: Math.min(1.0, 0.9 + done * 0.01) };
     }
     if (regionReset(run)) {
@@ -1294,19 +1297,19 @@
       const R = curRegion(run) || REGIONS[0];
       const g = run.badges.filter((i) => i >= R.gym0 && i < R.gym0 + R.gymN).length;
       const step = Math.min(7, g * (R.gymN === 4 ? 2 : 1));
-      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.8 };
+      return { size: 3 + Math.floor(step / 2), boost: 0.92 + step * 0.035, support: 0.8 };
     }
     if (run.region) {
       const R = regionByKey(run.region);
       const step = Math.min(7, run.badges.length * (R && R.gymN === 4 ? 2 : 1));
-      return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.8 };
+      return { size: 3 + Math.floor(step / 2), boost: 0.92 + step * 0.035, support: 0.8 };
     }
     const act = run.act === 2 ? 2 : 1;
     const step = act === 1
       ? run.badges.filter((i) => i >= KANTO_GYM0).length
       : run.badges.filter((i) => i < KANTO_GYM0).length;      // 0..7
-    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.72 + step * 0.04, support: 0.8 };
-    const b2 = 0.95 + step * 0.02;                             // act II: uniform (no devolution overlap)
+    if (act === 1) return { size: 3 + Math.floor(step / 2), boost: 0.92 + step * 0.035, support: 0.8 };
+    const b2 = 1.0 + step * 0.02;                             // act II: uniform (no devolution overlap)
     return { size: 6, boost: b2, support: b2 };
   }
   // Per-mon boost array: everyone at the support rate, the ace (always last)
