@@ -61,7 +61,7 @@
   .help-callout, .poster-champ, .mw-locked, .gym-lead.held, .pred-make,
   .safari-dare.master, .safari-dex-cell.got, .tcg-frame, .ash-card,
   .live-banner, .gymc-card.earned, .gp-item.wild, .trainer-card,
-  .dex-lock.open, .trophy.honor, .safari-card.result.shiny,
+  .dex-lock.open, .trophy.honor, .safari-card:not(.nuz-act2),
   .safari-team-slot.shiny, .trn-match.live, .trn-scout,
   .trk-dex-cell.caught, .ach-board-row.on, .cotd-card.caught) {
   --ink: #1f2330;

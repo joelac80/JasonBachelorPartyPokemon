@@ -212,7 +212,7 @@
     img.addEventListener("error", () => { if (++at < chain.length) img.src = chain[at]; });
     return img;
   }
-  function badgePop(idx, attId) {
+  function badgePop(idx, attId, opts) {
     const g = GYMS[idx]; if (!g) return;
     let tries = 0;
     (function when() {   // wait for the battle screen's own outro to clear
@@ -237,7 +237,11 @@
       // this pop clears (StoryBeats.curtain waits on .league-intro). The region
       // WELCOME isn't here — you don't "arrive" somewhere you've already won a
       // badge; it greets you when the region first opens (see view()).
-      if (window.StoryBeats) {
+      // opts.noBeats: a NUZLOCKE borrows this pop for its own badge animation —
+      // its badges are run-local, so it must NOT fire the MAIN journey's region
+      // beats off the player's real badge count (a Johto gym in a blitz would
+      // scream "JOHTO CONQUERED" for a main game long since finished).
+      if (window.StoryBeats && !(opts && opts.noBeats)) {
         const held = regionBadges(attId, g.region);
         const total = GYMS.filter((x) => x.region === g.region).length;
         if (held >= total) StoryBeats.conquerRegion(g.region);

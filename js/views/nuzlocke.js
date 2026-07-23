@@ -1368,7 +1368,9 @@
             Store.nuzDeaths(me, fainted || [], slot);
             if (winSide === "a") {
               Store.nuzBadge(me, idx, slot); sfx("fanfare");
-              if (window.GymCircuit && GymCircuit.badgePop) GymCircuit.badgePop(idx, me);
+              // 🪦 the badge animation only — a nuzlocke's badges are run-local,
+              // so never fire the MAIN journey's region-conquered curtain here.
+              if (window.GymCircuit && GymCircuit.badgePop) GymCircuit.badgePop(idx, me, { noBeats: true });
               maybeAmbush();
             }
             renderKeepScroll();
