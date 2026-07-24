@@ -81,7 +81,7 @@
       // 🧬 the formes carry raw 600-weight stats (they're the Delta Episode's
       // BOSS phases) — at film scale they ride at 0.45 so each lands like a
       // boosted legend instead of three unbeatable gods in a row
-      type: "psychic", team: [10001, 10002, 10003, 384, 386], pts: 20, boost: [0.45, 0.45, 0.45, 1.05, 1.2], icon: "🧬", face: 386, costar: 386,
+      type: "psychic", team: [10001, 10002, 10003, 384, 386], pts: 20, boost: [0.72, 0.72, 0.72, 1.05, 1.2], icon: "🧬", face: 386, costar: 386,
       quote: "It fell from the stars searching for its friend — and RAYQUAZA rose from the ozone to repel it. Attack. Defense. Speed. Every form, one storm over the city.",
       ace: { line: "The battle formes fall away — the DNA Pokémon takes its true shape, and the city holds its breath." },
       outro: { lose: "The aurora over the city softens. Its crystal pulses once — its friend is answered at last, from somewhere out past the stars — and DEOXYS rises skyward, searching no more.",
@@ -135,10 +135,7 @@
       loseChron: "DAMON's kingdom rolled on, VICTINI still caged",
       lead: "🔥 Damon's Darmanitan, RESHIRAM and ZEKROM both answering his call — and VICTINI, the caged Victory Pokémon." },
     { key: "genesect", name: "THE GENESECT ARMY", title: "Red Genesect's Swarm", film: "Genesect and the Legend Awakened", tab: "Unova", needs: "alder", needsName: "ALDER",
-      type: "bug", team: [649, 649, 649, 649, 649, 10044], pts: 22,
-      // ⚖️ MEGA MEWTWO Y rides RAW BST (x 780 vs a normal ~270), so a flat 1.48
-      // let it ONE-SHOT a healthy team. Tame its ATK, keep the wall via hpBoost.
-      boost: [1.48, 1.48, 1.48, 1.48, 1.48, 0.40], hpBoost: [1, 1, 1, 1, 1, 2.94], icon: "🤖", face: 10044, costar: 649,
+      type: "bug", team: [649, 649, 649, 649, 649, 10044], pts: 22, boost: 1.48, icon: "🤖", face: 10044, costar: 649,
       quote: "Three hundred million years out of time, the swarm builds its nest in the city's heart — and the strongest Pokémon ever engineered has AWAKENED to meet it.",
       ace: { line: "The swarm has met its match — the strongest Pokémon ever awakened descends. MEGA MEWTWO Y." },
       outro: { lose: "The Red Genesect's cannon goes dark; the swarm powers down, three hundred million years of fury finally spent. And the Awakened One inclines its head, once — and is gone.",
