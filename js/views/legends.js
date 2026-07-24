@@ -227,7 +227,12 @@
       sub: "Kalos Special · Lysandre in the lab, then the weapon's core — life and death, unchained · 2 battles",
       icon: "🔥", face: 716, boost: 1.5, pts: 30, needs: "diantha", champ: "DIANTHA",
       chain: [
-        { name: "LYSANDRE", flair: "🔥 THE FLARE BOSS", icon: "🔥", face: 10041, boost: 1.4,
+        // ⚖️ MEGA Gyarados carries RAW BST (x 640) against the compressed
+        // ~270 a normal final stage gets, so a flat 1.4 let it ONE-SHOT a full-
+        // health team. Tame its ATK, restore the wall with hpBoost — same
+        // pattern as the Delta Rayquaza fight.
+        { name: "LYSANDRE", flair: "🔥 THE FLARE BOSS", icon: "🔥", face: 10041,
+          boost: [1.4, 1.4, 1.4, 0.46], hpBoost: [1, 1, 1, 3.0],
           team: [620, 430, 668, 10041],   // Mienshao, Honchkrow, Pyroar, MEGA Gyarados
           quote: "I wanted a beautiful world. Humanity keeps soiling it — so the ultimate weapon will prune the garden. You would stop me? Then you carry the ugliness too.",
           outro: { lose: "…So my beauty was a delusion after all. Do what you will with this filthy, wonderful world.",
@@ -245,7 +250,11 @@
       lead: "🔥 Lysandre and his MEGA Gyarados hold the lab. In the core: Xerneas, radiant — and one hidden ball that is not a ball." },
     { key: "zygarde", tab: "Kalos", name: "THE ORDER OF KALOS", flair: "KALOS SPECIAL · Forms of Zygarde",
       sub: "Kalos Special · Zygarde's forms + Xerneas & Yveltal · 5v5",
-      icon: "🐍", face: 10120, boost: 1.52, pts: 30, needs: "diantha", champ: "DIANTHA", after: "flare",
+      // ⚖️ RAW-BST forms (x 500-1125 vs a normal final stage's ~270) were
+      // ONE-SHOTTING a full-health team at a flat boost. Tame their ATK per slot,
+      // keep the HP wall via hpBoost — same pattern as the Delta Rayquaza fight.
+      icon: "🐍", face: 10120, boost: [1.52, 1.52, 0.56, 1.52, 0.43], hpBoost: [1, 1, 2.95, 1, 2.95],
+      pts: 30, needs: "diantha", champ: "DIANTHA", after: "flare",
       team: [716, 717, 10118, 718, 10120],
       quote: "Life blooms. Destruction circles. And beneath Kalos the cells stir — ten percent, fifty… until the ecosystem's guardian stands COMPLETE. Disturb the balance, and answer to ORDER itself.",
       winChron: "restored the ORDER OF KALOS — Xerneas, Yveltal and every form of ZYGARDE, felled in one stand!",
@@ -267,7 +276,11 @@
     // Lumiose rebuilt — and Mega Evolution running wild in the streets.
     { key: "rogues", tab: "Kalos", name: "THE ROGUE MEGAS", flair: "LUMIOSE SPECIAL · Legends Z-A",
       sub: "Legends Z-A · Lumiose rebuilt — and rogue Mega Evolutions rampaging through the boulevards · 6v6",
-      icon: "🏙", face: 10058, boost: 1.54, pts: 34, needs: "diantha", champ: "DIANTHA", after: "az",
+      // ⚖️ RAW-BST forms (x 500-1125 vs a normal final stage's ~270) were
+      // ONE-SHOTTING a full-health team at a flat boost. Tame their ATK per slot,
+      // keep the HP wall via hpBoost — same pattern as the Delta Rayquaza fight.
+      icon: "🏙", face: 10058, boost: [0.49, 0.49, 0.50, 0.47, 0.44, 0.44], hpBoost: 2.92,
+      pts: 34, needs: "diantha", champ: "DIANTHA", after: "az",
       team: [10039, 10046, 10057, 10059, 10089, 10058],   // M-Kangaskhan → M-Garchomp
       quote: "Lumiose is being reborn — tower by tower, quarter by quarter. But something in the new city drives Mega Evolution feral: rogue Megas rampage down the boulevards, glowing wrong. Someone has to stand in the street and calm them all.",
       winChron: "calmed the ROGUE MEGAS of Lumiose — six feral Mega Evolutions, soothed one by one!",
@@ -293,7 +306,12 @@
       lead: "🏔 Lord Kleavor, Lady Lilligant, Lord Arcanine, Lord Electrode and Lord Avalugg — all five, golden-eyed and frenzied." },
     { key: "volo", tab: "Sinnoh", name: "VOLO", flair: "SINNOH SPECIAL · The Ginkgo Guild Merchant",
       sub: "Sinnoh Special · The friendly antique dealer finally shows his hand · 6v6…?",
-      icon: "⚱️", face: 445, boost: 1.42, pts: 34, needs: "cynthia", champ: "CYNTHIA", after: "nobles",
+      // ⚖️ RAW-BST forms (x 500-1125 vs a normal final stage's ~270) were
+      // ONE-SHOTTING a full-health team at a flat boost. Tame their ATK per slot,
+      // keep the HP wall via hpBoost — same pattern as the Delta Rayquaza fight.
+      icon: "⚱️", face: 445, boost: [1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 1.42, 0.45],
+      hpBoost: [1, 1, 1, 1, 1, 1, 1, 2.9],
+      pts: 34, needs: "cynthia", champ: "CYNTHIA", after: "nobles",
       // What the card admits to: six. What he's hiding behind his back: the
       // Renegade — twice. Party order IS the script: Garchomp 6th ("that's his
       // ace, it's over"), then Giratina Altered, then… Origin.
@@ -407,7 +425,11 @@
       lead: "🗿 Tapu Koko, Lele, Bulu and Fini — with Silvally, the type-shifting chimera, and ZERAORA, the thunderclap." },
     { key: "ultra", tab: "Alola", name: "THE ULTRA RIFT", flair: "ALOLA SPECIAL · Beasts from Beyond",
       sub: "Alola Special · Ultra Beasts pour through the wormhole — and the light-eater ascends · 6v6",
-      icon: "☄️", face: 10157, boost: 1.56, pts: 34, needs: "kukui", champ: "PROF. KUKUI", after: "aether",
+      // ⚖️ RAW-BST forms (x 500-1125 vs a normal final stage's ~270) were
+      // ONE-SHOTTING a full-health team at a flat boost. Tame their ATK per slot,
+      // keep the HP wall via hpBoost — same pattern as the Delta Rayquaza fight.
+      icon: "☄️", face: 10157, boost: [1.56, 1.56, 1.56, 1.56, 1.56, 0.41], hpBoost: [1, 1, 1, 1, 1, 2.94],
+      pts: 34, needs: "kukui", champ: "PROF. KUKUI", after: "aether",
       team: [793, 794, 796, 797, 799, 10157],
       quote: "The sky tears open and the beasts of Ultra Space pour through — parasite, swollen fist, living wire, rocket hull, glutton. And behind them all, drowned in stolen light… ULTRA NECROZMA.",
       winChron: "sealed the ULTRA RIFT — five Ultra Beasts down, and ULTRA NECROZMA's light returned!",
@@ -472,6 +494,10 @@
       // 🐺 the wolves don't just watch anymore — the finale is a 2-on-1
       // DOUBLE battle with ZACIAN & ZAMAZENTA fighting at your side.
       ally: { name: "ZACIAN & ZAMAZENTA", monIds: [888, 889], boost: 1.2 },
+      // ⚖️ RAW-BST forms (x 500-1125 vs a normal final stage's ~270) were
+      // ONE-SHOTTING a full-health team at a flat boost. Tame their ATK per slot,
+      // keep the HP wall via hpBoost — same pattern as the Delta Rayquaza fight.
+      boost: [0.69, 0.30], hpBoost: [2.97, 2.93],
       team: [890, 10190], reserve: 1,
       speak: { 1: ["The sky tears — ETERNATUS surges into its ETERNAMAX form, a storm with a heartbeat!",
                    "Two howls answer from the hills… Zacian and Zamazenta stand with you. NOW — BRING IT DOWN!"] },
@@ -579,13 +605,18 @@
       lead: "⏰ Professor SADA commands the ancient beasts. Professor TURO fields the iron future. And beneath it all waits TERAPAGOS — small, patient, and hiding two more forms." },
     { key: "hoopa", tab: "Paldea", name: "THE CLASH OF AGES", flair: "CAPSTONE · Hoopa & the Clash of Ages",
       sub: "Capstone · Hoopa Unbound tears open its rings and summons the ages · 6v6",
-      icon: "🌀", face: 10086, boost: 1.60, pts: 40, gate: "legends9",
+      // ⚖️ RAW-BST forms (x 500-1125 vs a normal final stage's ~270) were
+      // ONE-SHOTTING a full-health team at a flat boost. Tame their ATK per slot,
+      // keep the HP wall via hpBoost — same pattern as the Delta Rayquaza fight.
+      icon: "🌀", face: 10086, boost: [1.6, 1.6, 0.41, 0.41, 1.6, 0.45], hpBoost: [1, 1, 2.9, 2.9, 1, 2.9],
+      pts: 40, gate: "legends9",
       team: [381, 249, 10078, 10077, 384, 10086],
       quote: "A hundred years in a bottle, and the djinn remembers everything. The rings open — Latios, Lugia, the primal land and sea, the sky serpent — every age you ever conquered, summoned back at once. UNBOUND.",
       winChron: "won the CLASH OF AGES — Hoopa Unbound's every summons fell, and the rings closed for good!",
       loseChron: "the rings of HOOPA UNBOUND swallowed another age",
       lead: "🌀 Latios, Lugia, PRIMAL Groudon and Kyogre, Mega Rayquaza's wild ancestor sky-lord Rayquaza — and HOOPA UNBOUND itself." },
   ];
+  window.LEGEND_SPECIALS = SPECIALS;   // probe: balance audits + tests (read-only)
 
   function specialOpen(sp, attId) {
     if (!attId) return false;

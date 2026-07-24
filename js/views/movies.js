@@ -135,7 +135,10 @@
       loseChron: "DAMON's kingdom rolled on, VICTINI still caged",
       lead: "🔥 Damon's Darmanitan, RESHIRAM and ZEKROM both answering his call — and VICTINI, the caged Victory Pokémon." },
     { key: "genesect", name: "THE GENESECT ARMY", title: "Red Genesect's Swarm", film: "Genesect and the Legend Awakened", tab: "Unova", needs: "alder", needsName: "ALDER",
-      type: "bug", team: [649, 649, 649, 649, 649, 10044], pts: 22, boost: 1.48, icon: "🤖", face: 10044, costar: 649,
+      type: "bug", team: [649, 649, 649, 649, 649, 10044], pts: 22,
+      // ⚖️ MEGA MEWTWO Y rides RAW BST (x 780 vs a normal ~270), so a flat 1.48
+      // let it ONE-SHOT a healthy team. Tame its ATK, keep the wall via hpBoost.
+      boost: [1.48, 1.48, 1.48, 1.48, 1.48, 0.40], hpBoost: [1, 1, 1, 1, 1, 2.94], icon: "🤖", face: 10044, costar: 649,
       quote: "Three hundred million years out of time, the swarm builds its nest in the city's heart — and the strongest Pokémon ever engineered has AWAKENED to meet it.",
       ace: { line: "The swarm has met its match — the strongest Pokémon ever awakened descends. MEGA MEWTWO Y." },
       outro: { lose: "The Red Genesect's cannon goes dark; the swarm powers down, three hundred million years of fury finally spent. And the Awakened One inclines its head, once — and is gone.",
