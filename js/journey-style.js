@@ -80,12 +80,12 @@
     ]);
     return el("div", { class: "jstyle" }, [
       el("div", { class: "jstyle-row" }, [
-        mk("challenge", "⚔", "Challenge", "Full-power rematch squads — the canon best"),
-        mk("story", "📖", "True Story", "Levels scale like the games — Lv 14 → the throne"),
+        mk("challenge", "⚔", "Challenge", "Full-power rematch squads — an even fight"),
+        mk("story", "📖", "True Story", "The classic curve — but the ace never bows"),
       ]),
       el("p", { class: "hint jstyle-note" }, cur === "story"
-        ? "📖 TRUE STORY: every badge and chamber fights at its story level — both teams step down to era-true forms (a Lv 14 Brock opens with Geodude, and so does your Golem), and movesets shrink to what that level would know. Same badges, same ladder — only the fight changes."
-        : "⚔ CHALLENGE: every leader and Champion fields their grown-up rematch squad at FULL power. The hardest wall in the app — switch to 📖 True Story any time for the classic level curve."),
+        ? "📖 TRUE STORY: every badge and chamber fights at its story level — your whole squad steps down to era-true forms (your Golem opens as a Geodude), and movesets shrink to what that level would know. But the leader's ACE never devolves: a Lv 14 gym still closes with its real signature Pokémon, towering over the field. That makes this the STEEPER climb of the two — the boss moment is the whole fight."
+        : "⚔ CHALLENGE: every leader and Champion fields their grown-up rematch squad at FULL power — but so do you, at full evolution. Squad against squad, no level handicap on either side: the more even of the two ladders, and the better place to learn a matchup."),
     ]);
   }
 
