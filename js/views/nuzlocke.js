@@ -1344,7 +1344,13 @@
   // (1.1 → 1.18 at the Champion, RED at 1.25) instead of the real ladder's
   // late-gen 1.5s — a nuzlocke box earns its stats the hard way. The master
   // gauntlet adds a shade per region crossed (its box has grown too).
-  const E4_RAMP = [1.1, 1.1, 1.12, 1.14, 1.18];
+  // 🪜 A RAMP, NOT A CLIFF. The gym road hands you size-capped squads and lands
+  // around a comfortable 1.5 power ratio; the league then drops the handicap and
+  // fields FULL six-mon teams, so a flat 1.1 opening chamber slammed the run
+  // from ~1.5 straight to ~0.8 in a single battle — and in permadeath that
+  // wipes a box that just walked eight badges. Open softer and climb, so the
+  // Champion still closes at full strength but the door isn't the wall.
+  const E4_RAMP = [0.94, 0.98, 1.02, 1.08, 1.18];
   function stageBoost(run, st) {
     if (!run.region) return st.boost || 1.1;
     const R = REGIONS.find((x) => x.league.indexOf(st.key) >= 0 || x.peak === st.key);
