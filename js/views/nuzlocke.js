@@ -825,7 +825,7 @@
     next.appendChild(el("p", { class: "hint" }, "Full power on both sides of the screen, every faint forever. Win with a fallen seat in the cast, and the film's legend may step off the screen…"));
   }
   function battleMovie(run, b) {
-    if (!battleMovie._skip) { battleMovie._skip = 1; climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie._skip = 0; battleMovie(run, b); }, () => { battleMovie._skip = 0; }); return; }
+    if (!battleMovie._skip) { battleMovie._skip = 1; climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie(run, b); }, () => { battleMovie._skip = 0; }); return; }
     battleMovie._skip = 0;
     partyThen(run, 6, "🎬 " + b.film + " — vs " + b.name,
       "Full power, no caps — and every faint is permanent.",
@@ -1534,7 +1534,10 @@
 
   function battleStage(run, st) {
     const cx = stageClimax(run, st);
-    if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage._skip = 0; battleStage(run, st); }, () => { battleStage._skip = 0; }); return; }
+    // FACE re-calls battleStage with _skip STILL 1 so the guard falls through
+    // to the battle; the fall-through below clears it. (Resetting _skip here
+    // re-armed the guard and just re-showed this same card — a dead button.)
+    if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage(run, st); }, () => { battleStage._skip = 0; }); return; }
     battleStage._skip = 0;
     partyThen(run, 6, "⚔ Nuzlocke league — " + st.rank + " " + st.name,
       "The endgame. Every faint is permanent — and a wipe ends the run.",
