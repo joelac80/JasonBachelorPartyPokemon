@@ -29,8 +29,15 @@
 (function () {
   "use strict";
   const KEY = "jasonBachHub.cartridge.v1";
-  const on = () => { try { return localStorage.getItem(KEY) === "1"; } catch (_) { return false; } };
-  const set = (v) => { try { v ? localStorage.setItem(KEY, "1") : localStorage.removeItem(KEY); } catch (_) {} };
+  // 🎛️ DEFAULT ON. This is the engine now: a Snorlax should shrug off a hit a
+  // Magikarp dies to, and only real base stats give you that. The old
+  // compressed model drove bulk AND offence off one number, so Blissey was the
+  // tankiest thing in the game *and* one of the hardest hitters, while Shuckle
+  // died in the same two hits as a Caterpie. Opt-OUT is still honoured for
+  // anyone who explicitly turned it off (stored "0"), so a phone that chose
+  // classic keeps classic.
+  const on = () => { try { return localStorage.getItem(KEY) !== "0"; } catch (_) { return true; } };
+  const set = (v) => { try { localStorage.setItem(KEY, v ? "1" : "0"); } catch (_) {} };
 
   const CURVE = {
     gymFodderEdge: [-2, 3], gymAceEdge: [0, 5],       // badge 1 → badge 8 (lerp)
@@ -119,6 +126,12 @@
   // Player units always fight at the battle reference (story level, or 50).
   function plan(opts, u) {
     const R = opts.level || 50;
+    // ⚔ CHALLENGE (no story level): species normalization may bend a foe BELOW
+    // the reference, which left leaders fighting at L43 against your L50 — the
+    // ladder was free. In Challenge nobody drops under the reference: it is an
+    // honest even-level fight against a full six, with your bag sealed.
+    const floorR = !opts.level;
+    const atLeastR = (L) => (floorR ? Math.max(R, L) : L);
     const ids = u.monIds || [];
     const last = ids.length - 1;
     // 🏟 gym battle: position inside its region drives the arc
@@ -136,7 +149,7 @@
           const sig = ace && SIG[g.leader];
           if (sig && sig.tank) return Math.max(5, Math.min(100, R + e));
           const ref = lerp.apply(null, (ace ? CURVE.gymAceRef : CURVE.gymFodderRef).concat([frac]));
-          return edged(R, e, ref, id, false);
+          return atLeastR(edged(R, e, ref, id, false));
         });
       }
     }
@@ -160,7 +173,7 @@
           : isChamp ? (ace ? CURVE.champEdge.a : CURVE.champEdge.f)
           : (ace ? CURVE.lgAceEdge[0] + q * CURVE.lgAceEdge[1] : CURVE.lgFodderEdge[0] + q * CURVE.lgFodderEdge[1])) + over;
         const ref = ace ? ((isRed || isChamp || isAsh) ? CURVE.bossAceRef : CURVE.lgAceRef) : CURVE.lgFodderRef;
-        return edged(R, e, ref, id, isRed || isChamp || isAsh);
+        return atLeastR(edged(R, e, ref, id, isRed || isChamp || isAsh));
       });
     }
     // 🎲 everything else (nuzlocke curve, encounters, tower, movies, legends):

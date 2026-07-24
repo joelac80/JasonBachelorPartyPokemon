@@ -913,7 +913,12 @@
         // teraType, gmax} or null, aligned to monIds) — the ultimate boss
         // doesn't share the one-spectacle rule; each phase gets its moment.
         gimmicks: u.gimmicks || null,
-        party: party, cur: 0, potions: 2, courage: true };
+        // ⚔ CHALLENGE RULES (opts.noItems): the leaders bring their full
+        // grown-up six and your bag is sealed — no Full Restores, no Dire Hit.
+        // Pure attrition and matchup skill, which is what makes this ladder
+        // hard for a DIFFERENT reason than True Story's towering aces.
+        party: party, cur: 0,
+        potions: opts.noItems ? 0 : 2, courage: !opts.noItems };
     }
     const sides = {
       a: { key: "a", units: ((opts.a || {}).units || []).slice(0, 2).map(makeUnit) },
@@ -2210,7 +2215,10 @@
       const humansWon = winSide && sides[winSide].units.some((x) => !x.ai) && sides[other(winSide)].units.every((x) => x.ai);
       // The BEAT plays on every screen (spectators included); the BANK below
       // is gated to the one recording phone so the medal counts exactly once.
-      const itemFreeShown = stakes && humansWon && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
+      // (⚔ Challenge seals the bag outright — there is no restraint to reward,
+      // so the medal simply doesn't apply in a no-items battle.)
+      const itemFreeShown = stakes && humansWon && !opts.noItems
+        && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
       const itemFree = record && itemFreeShown;
       const finishUp = () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); };
       beats([

@@ -356,10 +356,12 @@
         hint: (isRed ? "The silent trainer. " + size + " vs " + size + "."
           : isFinal ? "The final battle. " + size + " vs " + size + " — the lineup is hidden."
           : "Even match: " + size + " vs " + size + ". The lineup is hidden.") +
-          (lvl ? " 📖 True Story: fought at Lv " + lvl + "." : ""),
+          (lvl ? " 📖 True Story: fought at Lv " + lvl + "."
+               : " ⚔ CHALLENGE: your bag is SEALED — no Full Restores, no Dire Hit."),
         onDone: (ids, meta) => {
           Duel.start({ mode: "local",
             title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
+            noItems: !lvl,                 // ⚔ Challenge seals the bag here too
             level: lvl || undefined,
             // 🌍 RED's fight lives on the snowbound summit; everyone else wears
             // their region's arena.

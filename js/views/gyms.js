@@ -329,7 +329,18 @@
       // 📖 True Story rosters grow like the games — badge 1 is a 3v3, the
       // region's last badges 6v6; ⚔ Challenge keeps the full rematch squad.
       const JS0 = window.JourneyStyle;
-      const size = (JS0 && JS0.isStory(attId) && JS0.gymSize) ? Math.min(gym.team.length, JS0.gymSize(idx)) : gym.team.length;
+      const story0 = !!(JS0 && JS0.isStory(attId));
+      // ⚔ CHALLENGE RULES: the leader brings a FULL SIX (short canon rosters
+      // are filled out by doubling up, the way a real gym pads its bench) and
+      // your bag is sealed — no Full Restores, no Dire Hit. You still bring as
+      // many as you own, so nobody is locked out; the pressure is attrition,
+      // not a stat wall. 📖 True Story is untouched: era-true levels, trimmed
+      // rosters, items in hand, and the ace towering over the field.
+      const CHAL_SIZE = 6;
+      const padTo6 = (t) => { const o = t.slice(); let i = 0;
+        while (o.length < CHAL_SIZE && t.length) { o.splice(o.length - 1, 0, t[i % t.length]); i++; }
+        return o.slice(0, CHAL_SIZE); };
+      const size = story0 && JS0.gymSize ? Math.min(gym.team.length, JS0.gymSize(idx)) : Math.min(6, Duel.poolFor(attId).length);
       const why = gymLockedWhy(idx, attId);
       if (why) { U.toast("🔒 " + why); return; }
       // 👥 CANON DOUBLE BATTLES — Tate & Liza fight as TWO trainers on one
@@ -377,13 +388,18 @@
       // the story cut keeps the front of the squad plus the ACE (last slot)
       const squad = size < gym.team.length ? gym.team.slice(0, size - 1).concat([gym.team[gym.team.length - 1]]) : gym.team.slice();
       // 📖 devolve the squad, but the leader's ACE (last slot) stays TRUE
-      const foes = lvl ? squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl)) : squad;
-      Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
-        title: "vs Leader " + gym.leader + " — pick EXACTLY " + size,
-        hint: "Even match: " + size + " vs " + size + ". The leader's team is HIDDEN until it comes out of the ball." +
-          (lvl ? " 📖 True Story: fought at Lv " + lvl + " — both teams step down to era-true forms." : ""),
+      const foes = lvl ? squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl)) : padTo6(gym.team);
+      // 📖 story is an even N-vs-N; ⚔ challenge lets you bring everything you own
+      Duel.pickParty({ attId: attId, min: lvl ? size : 1, max: size, level: lvl || undefined,
+        title: "vs Leader " + gym.leader + " — pick " + (lvl ? "EXACTLY " : "up to ") + size,
+        hint: (lvl
+          ? "Even match: " + size + " vs " + size + ". 📖 True Story: fought at Lv " + lvl +
+            " — both teams step down to era-true forms, but the leader's ACE stays true."
+          : "⚔ CHALLENGE: the leader brings a FULL SIX at full power, and your bag is SEALED — no Full Restores, no Dire Hit. Outlast them.") +
+          " The leader's team is HIDDEN until it comes out of the ball.",
         onDone: (ids, meta) => {
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym",
+            noItems: !lvl,                                // ⚔ Challenge seals the bag
             gym: { idx: idx, leader: gym.leader, badge: gym.badge, style: lvl ? "story" : "challenge" },
             env: gym.type,                                // 🌍 each gym wears its own element (Blaine→volcano, Misty→sea…)
             level: lvl || undefined,
