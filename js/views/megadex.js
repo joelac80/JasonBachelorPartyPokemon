@@ -159,6 +159,7 @@
     rebuild();
   }
 
+  window.MEGA_JUDGMENT = JUDGMENT;   // probe: balance audits + tests (read-only)
   window.Views = window.Views || {};
   window.Views.megadex = view;
 })();
