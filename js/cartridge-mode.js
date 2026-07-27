@@ -98,10 +98,21 @@
     return PRE;
   };
   // The form a foe's mon takes at its level — devolution with the iconic floor.
+  // 👑 THE ACE KEEPS ITS TRUE FORM. That is the contract everywhere else in the
+  // app (the classic path exempts the last slot outright), it is what makes a
+  // leader's signature Pokémon the boss moment, and without it a leader who
+  // isn't hand-listed in SIG fielded an UNEVOLVED ace — a Lv 29 Skiddo closing
+  // RAMOS's gym instead of his Gogoat, ONIX for Brock, RIOLU for Korrina.
+  // SIG.minForm is the opposite lever: a curated SOFTENING for the few early
+  // leaders whose full final form would be brutal at badge-1 levels (FALKNER
+  // closes with PIDGEOTTO, not a full Pidgeot at Lv 11). Listed → step down to
+  // that floor; unlisted → the ace stands at full power.
   function formFor(opts, id, lvl, ace) {
     const f = window.JourneyStyle ? JourneyStyle.formAt(id, lvl) : id;
-    const sig = ace && opts && opts.gym && SIG[opts.gym.leader];
-    if (!sig || !sig.minForm || f === sig.minForm) return f;
+    if (!ace) return f;                                   // fodder walks the era law
+    const sig = opts && opts.gym && SIG[opts.gym.leader];
+    if (!sig || !sig.minForm) return id;                  // 👑 true form, always
+    if (f === sig.minForm) return f;
     // if the devolve walked PAST the iconic form, stop AT the iconic form
     const P = preMap();
     let cur = sig.minForm, guard = 0;
