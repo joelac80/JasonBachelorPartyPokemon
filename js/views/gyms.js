@@ -400,6 +400,12 @@
         onDone: (ids, meta) => {
           Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym",
             noItems: !lvl,                                // ⚔ Challenge seals the bag
+            // ⚔ the SAGA CURVE: both sides climb 50 → 72 across the nine
+            // regions and the leader's edge widens 0 → +8 on top. Passed as
+            // refLevel, NOT level, so nothing devolves — Challenge stays
+            // full-power teams, it just stops being the same fight 68 times.
+            refLevel: lvl ? undefined : (JS && JS.chalGymLevel ? JS.chalGymLevel(idx) : undefined),
+            foeEdge: lvl ? undefined : (JS && JS.chalGymEdge ? JS.chalGymEdge(idx) : undefined),
             gym: { idx: idx, leader: gym.leader, badge: gym.badge, style: lvl ? "story" : "challenge" },
             env: gym.type,                                // 🌍 each gym wears its own element (Blaine→volcano, Misty→sea…)
             level: lvl || undefined,

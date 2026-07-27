@@ -362,6 +362,9 @@
           Duel.start({ mode: "local",
             title: isRed ? "Mt. Silver" : isFinal ? "the Final Battle" : "the Pokémon League",
             noItems: !lvl,                 // ⚔ Challenge seals the bag here too
+            // ⚔ the SAGA CURVE — a region's chambers sit above its own last badge
+            refLevel: lvl ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(idx) : undefined),
+            foeEdge: lvl ? undefined : (JS && JS.chalStageEdge ? JS.chalStageEdge(idx) : undefined),
             level: lvl || undefined,
             // 🌍 RED's fight lives on the snowbound summit; everyone else wears
             // their region's arena.

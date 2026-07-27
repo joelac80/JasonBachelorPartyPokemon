@@ -160,7 +160,10 @@
   // The level plan for one AI trainer's party (aligned to monIds).
   // Player units always fight at the battle reference (story level, or 50).
   function plan(opts, u) {
-    const R = opts.level || 50;
+    // 📖 story passes `level` (which also devolves); ⚔ challenge passes
+    // `refLevel` — same reference, NO era devolution, plus a widening foeEdge.
+    const R = opts.level || opts.refLevel || 50;
+    const SAGA = opts.level ? 0 : (opts.foeEdge || 0);
     // ⚔ CHALLENGE (no story level): species normalization may bend a foe BELOW
     // the reference, which left leaders fighting at L43 against your L50 — the
     // ladder was free. In Challenge nobody drops under the reference: it is an
@@ -182,9 +185,9 @@
           // 🎖 a signature TANK (Whitney's Miltank) skips normalization — the
           // famous terror fights at its full edge with its full real bulk
           const sig = ace && SIG[g.leader];
-          if (sig && sig.tank) return Math.max(5, Math.min(100, R + e));
+          if (sig && sig.tank) return Math.max(5, Math.min(100, R + e + SAGA));
           const ref = lerp.apply(null, (ace ? CURVE.gymAceRef : CURVE.gymFodderRef).concat([frac]));
-          return atLeastR(edged(R, e, ref, id, false));
+          return atLeastR(edged(R, e + SAGA, ref, id, false));
         });
       }
     }
@@ -208,7 +211,7 @@
           : isChamp ? (ace ? CURVE.champEdge.a : CURVE.champEdge.f)
           : (ace ? CURVE.lgAceEdge[0] + q * CURVE.lgAceEdge[1] : CURVE.lgFodderEdge[0] + q * CURVE.lgFodderEdge[1])) + over;
         const ref = ace ? ((isRed || isChamp || isAsh) ? CURVE.bossAceRef : CURVE.lgAceRef) : CURVE.lgFodderRef;
-        return atLeastR(edged(R, e, ref, id, isRed || isChamp || isAsh));
+        return atLeastR(edged(R, e + SAGA, ref, id, isRed || isChamp || isAsh));
       });
     }
     // 🎲 everything else (nuzlocke curve, encounters, tower, movies, legends):

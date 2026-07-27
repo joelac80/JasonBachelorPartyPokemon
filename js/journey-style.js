@@ -80,13 +80,55 @@
     ]);
     return el("div", { class: "jstyle" }, [
       el("div", { class: "jstyle-row" }, [
-        mk("challenge", "⚔", "Challenge", "Full-power rematch squads — an even fight"),
+        mk("challenge", "⚔", "Challenge", "Their best team — and it climbs all saga"),
         mk("story", "📖", "True Story", "The classic curve — but the ace never bows"),
       ]),
       el("p", { class: "hint jstyle-note" }, cur === "story"
         ? "📖 TRUE STORY: every badge and chamber fights at its story level — your whole squad steps down to era-true forms (your Golem opens as a Geodude), and movesets shrink to what that level would know. But the leader's ACE never devolves: a Lv 14 gym still closes with its real signature Pokémon, towering over the field. That makes this the STEEPER climb of the two — the boss moment is the whole fight."
-        : "⚔ CHALLENGE: every leader and Champion fields their grown-up rematch squad at FULL power — but so do you, at full evolution. Squad against squad, no level handicap on either side: the more even of the two ladders, and the better place to learn a matchup."),
+        : "⚔ CHALLENGE: every leader and Champion brings the BEST team they possibly can — full evolution, a full six, no era rules — and so do you. Your bag is SEALED (no Full Restores, no Dire Hit), and the ladder climbs the whole saga: Johto opens around Lv 50 and Paldea closes near Lv 72, with the leader pulling further ahead of you every region. Falkner is an even fight; GRUSHA and GEETA are not."),
     ]);
+  }
+
+  // ⚔ CHALLENGE — THE SAGA CURVE.
+  // Challenge used to pin every battle to a flat reference of 50: Katy, sixty
+  // gyms deep, was the same fight as Falkner, because the arc rose inside a
+  // region and then RESET nine times. Against a box that keeps growing that
+  // makes the ladder get easier as you walk it.
+  // Now it climbs across the whole saga. Two separate dials, because Challenge's
+  // identity is FULL-POWER teams — the reference must never be passed as
+  // `level`, which is what triggers era devolution:
+  //   refLevel — what BOTH sides fight at, 50 in early Johto → 72 by Paldea, so
+  //     your squad's numbers grow with the journey.
+  //   foeEdge  — levels the LEADER gets ON TOP, widening 0 → +8, so the gap
+  //     itself opens up as you go. The per-region ace edge still rides above
+  //     this, keeping each region's own badge-1→badge-8 arc intact.
+  const CHAL_LO = 50, CHAL_HI = 72, CHAL_EDGE = 8;
+  function sagaFrac(idx) {
+    const n = Math.max(1, (window.GYM_CIRCUIT || []).length - 1);
+    return Math.max(0, Math.min(1, (idx || 0) / n));
+  }
+  function chalGymLevel(idx) { return Math.round(CHAL_LO + (CHAL_HI - CHAL_LO) * sagaFrac(idx)); }
+  function chalGymEdge(idx) { return Math.round(CHAL_EDGE * sagaFrac(idx)); }
+  // The league sits ABOVE the gyms of its own era: a region's chambers start
+  // where its last badge left off and climb through the Champion.
+  function chalStageLevel(idx) {
+    const L = window.LEAGUE_STAGES || [], st = L[idx];
+    if (!st) return CHAL_HI;
+    if (st.key === "red") return CHAL_HI + 8;
+    const G = window.GYM_CIRCUIT || [];
+    const last = G.map((g, i) => i).filter((i) => G[i].region === st.region).pop();
+    const base = last == null ? CHAL_HI : chalGymLevel(last);
+    const run = L.map((s, i) => i).filter((i) => L[i].region === st.region && L[i].key !== "red");
+    const q = Math.max(0, run.indexOf(idx));
+    return Math.min(95, base + 3 + q * 2);
+  }
+  function chalStageEdge(idx) {
+    const L = window.LEAGUE_STAGES || [], st = L[idx];
+    if (!st) return 4;
+    if (st.key === "red") return 12;
+    const G = window.GYM_CIRCUIT || [];
+    const last = G.map((g, i) => i).filter((i) => G[i].region === st.region).pop();
+    return Math.round(4 + CHAL_EDGE * sagaFrac(last == null ? 67 : last) * 0.5);
   }
 
   // 📖 True Story ROSTER curve — early leaders run small teams like the
@@ -108,5 +150,7 @@
     of: styleOf, set: setStyle, isStory: isStory, formAt: formAt,
     gymLevel: gymLevel, stageLevel: stageLevel, encounterLevel: encounterLevel, row: row,
     gymSize: gymSize, stageSize: stageSize,
+    chalGymLevel: chalGymLevel, chalGymEdge: chalGymEdge,
+    chalStageLevel: chalStageLevel, chalStageEdge: chalStageEdge,
   };
 })();

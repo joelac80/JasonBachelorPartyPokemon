@@ -812,7 +812,7 @@
         if (!id) return null;
         let mid = id, mLvl = 0;
         if (CART) {
-          mLvl = cartPlan ? cartPlan[i] : (opts.level || 50);
+          mLvl = cartPlan ? cartPlan[i] : (opts.level || opts.refLevel || 50);
           // era law at ITS OWN level: a story ace steps down to the form its
           // (edged) level allows — the true-form one-shot at Lv 14 is gone.
           // 🎖 …but never past its ICONIC form (Misty's STARMIE stays).
