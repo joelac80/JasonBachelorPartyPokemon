@@ -97,6 +97,30 @@
       (window.EVO_LEVELS[f] || []).forEach((e) => { PRE[e.to] = +f; }));
     return PRE;
   };
+  // 💪 THE FODDER POWER FLOOR. The era law devolves a leader's supporting mons
+  // to whatever their level allows, with nothing stopping the walk — so a
+  // BADGE-4 gym fielded a Feebas (BST 200), a Slugma (250) and a Tynamo (275).
+  // A gym leader four badges deep should not be handing you free switches.
+  // Devolve as the era law says, then step back UP the line until the form
+  // clears a floor that rises with the badge (BST 280 at Lv 14 → 450 at Lv 48).
+  // A genuinely weak LINE (Farfetch'd, Dunsparce) has nowhere to climb and
+  // simply keeps its true form — weak species stay weak, which is the point.
+  const fodderFloor = (opts) => {
+    const L = opts && opts.level;
+    if (!L) return 0;                                     // ⚔ Challenge never devolves
+    return Math.round(280 + Math.max(0, Math.min(1, (L - 14) / 34)) * 170);
+  };
+  function fodderFloored(opts, trueId, devolved) {
+    if (devolved === trueId) return devolved;
+    const floor = fodderFloor(opts);
+    if (!floor || bstOf(devolved) >= floor) return devolved;
+    // walk trueId → … → devolved, then take the MOST devolved form that clears
+    const P = preMap(), path = [trueId];
+    let x = trueId, guard = 0;
+    while (P[x] && x !== devolved && guard++ < 6) { x = P[x]; path.push(x); }
+    for (let i = path.length - 1; i >= 0; i--) if (bstOf(path[i]) >= floor) return path[i];
+    return trueId;                                        // the whole line is under it
+  }
   // The form a foe's mon takes at its level — devolution with the iconic floor.
   // 👑 THE ACE KEEPS ITS TRUE FORM. That is the contract everywhere else in the
   // app (the classic path exempts the last slot outright), it is what makes a
@@ -109,7 +133,7 @@
   // that floor; unlisted → the ace stands at full power.
   function formFor(opts, id, lvl, ace) {
     const f = window.JourneyStyle ? JourneyStyle.formAt(id, lvl) : id;
-    if (!ace) return f;                                   // fodder walks the era law
+    if (!ace) return fodderFloored(opts, id, f);          // era law, with a power floor
     const sig = opts && opts.gym && SIG[opts.gym.leader];
     if (!sig || !sig.minForm) return id;                  // 👑 true form, always
     if (f === sig.minForm) return f;
