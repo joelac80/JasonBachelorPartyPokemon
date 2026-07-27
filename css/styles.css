@@ -1421,7 +1421,7 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 /* message + menu */
 .battle-msg { background: #f6f4df; border-top: 4px solid #2c2c2c; padding: 16px 18px; min-height: 58px;
   font-family: var(--pixel); font-size: 15px; color: #262626; display: flex; align-items: center; }
-.battle-menu { background: #2c2c2c; padding: 12px; display: flex; flex-direction: column; gap: 9px; align-items: center;
+.battle-menu { background: #2c2c2c; padding: 12px 12px 18px; display: flex; flex-direction: column; gap: 9px; align-items: center;
   flex: 1 1 auto; min-height: 0; overflow-y: auto; justify-content: safe center; }
 .battle-menu-q { color: #fff; font-family: var(--pixel); font-size: 12px; }
 .battle-menu-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -1649,7 +1649,12 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .duel-status.st-psn { background: #9a4bad; }
 .duel-status.st-slp { background: #7a7a88; }
 .duel-status.st-frz { background: #4aa8c8; }
-.duel-items { width: 100%; }
+/* 🏳️ The item row carries Restore / Dire Hit / Switch / FORFEIT. On a phone
+   those four wrapped to a second line inside a scrolling menu, which left
+   Forfeit half-clipped at the bottom edge with no hint it was there. Tighten
+   the row so all four sit on one line, and let it shrink rather than wrap. */
+.duel-items { width: 100%; gap: 6px; flex-wrap: nowrap; }
+.duel-items .btn { padding-left: 9px; padding-right: 9px; font-size: 12px; min-width: 0; flex: 0 1 auto; white-space: nowrap; }
 .duel-confirm { display: flex; flex-direction: column; gap: 10px; align-items: center; max-width: 460px; }
 .duel-confirm-txt { color: #fff; font-size: 13px; line-height: 1.45; text-align: center; }
 /* duel setup on the Battle Arena page */
