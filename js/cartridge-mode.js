@@ -40,7 +40,11 @@
   const set = (v) => { try { localStorage.setItem(KEY, v ? "1" : "0"); } catch (_) {} };
 
   const CURVE = {
-    gymFodderEdge: [-2, 3], gymAceEdge: [0, 5],       // badge 1 → badge 8 (lerp)
+    // 🪜 SMOOTHED + STEEPER. The old ramp (fodder -2→3, ace 0→5) left badges 1-6
+    // at almost no edge and then spiked on badge 8 — a measured sweep read 100%
+    // for six straight gyms, then a cliff. Start the region with real pressure
+    // and climb to a higher ceiling, so the whole run bites instead of the tail.
+    gymFodderEdge: [0, 4], gymAceEdge: [2, 6],        // badge 1 → badge 8 (lerp)
     gymFodderRef: [340, 500], gymAceRef: [380, 560],
     lgFodderEdge: [2, 1], lgAceEdge: [4, 1],          // E4 chamber q: base + q·step
     lgFodderRef: 500, lgAceRef: 580, bossAceRef: 600,

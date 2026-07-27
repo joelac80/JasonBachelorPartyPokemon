@@ -102,7 +102,7 @@
   //   foeEdge  — levels the LEADER gets ON TOP, widening 0 → +8, so the gap
   //     itself opens up as you go. The per-region ace edge still rides above
   //     this, keeping each region's own badge-1→badge-8 arc intact.
-  const CHAL_LO = 50, CHAL_HI = 72, CHAL_EDGE = 8;
+  const CHAL_LO = 50, CHAL_HI = 74, CHAL_EDGE = 12;
   function sagaFrac(idx) {
     const n = Math.max(1, (window.GYM_CIRCUIT || []).length - 1);
     return Math.max(0, Math.min(1, (idx || 0) / n));
@@ -128,7 +128,10 @@
     if (st.key === "red") return 12;
     const G = window.GYM_CIRCUIT || [];
     const last = G.map((g, i) => i).filter((i) => G[i].region === st.region).pop();
-    return Math.round(4 + CHAL_EDGE * sagaFrac(last == null ? 67 : last) * 0.5);
+    // ramp WITH the chamber: the first Elite Four seat is a step, not a wall
+    const run = L.map((s, i) => i).filter((i) => L[i].region === st.region && L[i].key !== "red");
+    const q = Math.max(0, run.indexOf(idx));
+    return Math.round(1 + q * 1.5 + CHAL_EDGE * sagaFrac(last == null ? 67 : last) * 0.35);
   }
 
   // 📖 True Story ROSTER curve — early leaders run small teams like the
