@@ -794,7 +794,10 @@
     // bosses, legendary and secret fights. Everyday gyms, nuzlocke trainers
     // and the tower stay quiet — unless a unit brings its own scripted lines
     // (speak/ace/outro), which always play. Repetition is the enemy of cool.
-    const chatty = !!(opts.league || opts.movie || opts.legend || opts.secret);
+    // 🗻 …except RED. The silent trainer is silent: his own quote is "……" and
+    // generic league banter was putting words in his mouth.
+    const chatty = !!(opts.movie || opts.legend || opts.secret
+      || (opts.league && opts.league.key !== "red"));
 
     // 🎛️ CARTRIDGE MODE — the real games' stats and damage math, hidden
     // behind a per-phone switch (cartridge-mode.js). A remote setup pins the
@@ -1096,7 +1099,7 @@
           u._faceEl,
           // opts.level: a battle-wide display level (the Nuzlocke's run cap) \u2014
           // purely cosmetic, so a fresh run reads Lv14 instead of Lv50.
-          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv" + (opts.level || 50)),
+          el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv" + (m.lvl || opts.level || opts.refLevel || 50)),
             u.boss ? el("span", { class: "duel-boss-tag" }, "\ud83e\ude78 BOSS") : null, u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
