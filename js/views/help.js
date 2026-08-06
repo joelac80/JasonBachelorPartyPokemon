@@ -3,8 +3,15 @@
 (function () {
   const { el } = U;
 
+  // 🎭 The guide explains the whole app — including corners the League is still
+  // holding at "???". A mystery Champion's NAME is the reveal, so any line that
+  // would name one before the ROOM has beaten them speaks around it instead.
+  // (Lines that only exist AFTER the win are earned reveals — left alone.)
+  const named = (key, real, sealed) => (U.champSealed(key) ? sealed : real);
+
   // Grouped tour of the app. Items with a route render as links; items with
-  // r:null are info-only cards (concepts, not destinations).
+  // r:null are info-only cards (concepts, not destinations). `d` may be a
+  // function when the copy has to be recomputed per render (spoiler masks).
   const GROUPS = [
     {
       title: "🚀 Set up (before the party)",
@@ -30,9 +37,9 @@
         { r: "tracker", e: "🔬", t: "Pokédex Tracker", d: "Every trainer's team of 6 and dex progress on one page — plus the Type Masters: catch the most of a type to claim its crown (partners don't count). Not to be confused with the Gym Leaders, who you battle in The Journey." },
         { r: "drinks", e: "🍺", t: "Drink Tracker", d: "Log every round by trainer, type, and day. First Sip, Thirstiest, and a champion for each drink kind all earn badges." },
         { r: "cards", e: "🃏", t: "Card Table", d: "Track President/Asshole (finishing order → Best & Worst President), Euchre, King's Cup and Ride the Bus. Winners score team points; the awards land on the poster." },
-        { r: "battle", e: "⚔️", t: "Battle Arena", d: "🎮 Pokémon Duel: real turn-based battles at Lv50. Singles bring a party of up to 6 (switch on faint or spend a turn to switch); Doubles put 2 Pokémon a side on the field at once — team up with a partner, or one trainer runs both. 🧪 Potion = heal 120 (2 per battle) · 🎯 Dire Hit = UNLEASH a can’t-miss guaranteed crit that same turn (once per battle). Singles wins claim the 🥇 Champion’s Belt — beat the holder to take it. And battle EXP is real: a Pokémon that lands 3 KOs ITSELF evolves after the battle (Eevee gets to choose) — except Kadabra, Machoke, Graveler and Haunter, who ONLY evolve by trade. 📣 Quick Call: tap who won a real-world event. Winners’ teams score either way. 📈 Singles duels move your Elo rating; veterans hit harder (+1% ATK per KO, up to +10%); 🍓 a Sitrus Berry auto-heals when a mon drops low; hot-seat duels offer an instant 🔁 rematch." },
+        { r: "battle", e: "⚔️", t: "Battle Arena", d: "🎮 Pokémon Duel: real turn-based battles at Lv50. Singles bring a party of up to 6 (switch on faint or spend a turn to switch); Doubles put 2 Pokémon a side on the field at once — team up with a partner, or one trainer runs both. 🧪 Full Restore = full heal + status cure — or spend the charge as a 💫 Revive to bring a fallen teammate back at FULL health (2 charges per battle) · 🎯 Dire Hit = UNLEASH a can’t-miss guaranteed crit that same turn (once per battle). Singles wins claim the 🥇 Champion’s Belt — beat the holder to take it. And battle EXP is real: a Pokémon that lands 3 KOs ITSELF evolves after the battle (Eevee gets to choose) — except Kadabra, Machoke, Graveler and Haunter, who ONLY evolve by trade. 📣 Quick Call: tap who won a real-world event. Winners’ teams score either way. 📈 Singles duels move your Elo rating; veterans hit harder (+1% ATK per KO, up to +10%); 🍓 a Sitrus Berry auto-heals when a mon drops low; hot-seat duels offer an instant 🔁 rematch." },
         { r: "brackets", e: "🥊", t: "Party Brackets", d: "Run a tournament bracket — each matchup can launch the battle screen." },
-        { r: "regions", e: "🗺", t: "The Journey", d: "The whole saga in one place, region by region (Kanto first, then Johto's 16-badge era, on to Paldea): each region's GYMS → its ELITE FOUR → its CHAMPION, with that era's 🎬 films and 🌌 legends folded into its tab. 68 canon leaders in EVEN matches — you bring exactly as many Pokémon as the leader runs, lineups hidden until each ball opens. TWO STYLES, switchable any time: ⚔ CHALLENGE (full-power rematch squads — the default wall) or 📖 TRUE STORY (levels scale like the games, Lv 14 at badge 1 → 58 at the Champion, both teams stepping down to era-true forms). Beyond the regions: the silent trainer RED on Mt. Silver and the 🏆 CHAMPIONS CUP, a 16-legend bracket of every Elite Four & Champion. A Champion win enshrines your team in the 🏛 Hall of Fame — challenge any enshrined team, or run a region's whole GAUNTLET in one go." },
+        { r: "regions", e: "🗺", t: "The Journey", d: () => "The whole saga in one place, region by region (Kanto first, then Johto's 16-badge era, on to Paldea): each region's GYMS → its ELITE FOUR → its CHAMPION, with that era's 🎬 films and 🌌 legends folded into its tab. 68 canon leaders in EVEN matches — you bring exactly as many Pokémon as the leader runs, lineups hidden until each ball opens. TWO STYLES, switchable any time: ⚔ CHALLENGE (full-power rematch squads — the default wall) or 📖 TRUE STORY (levels scale like the games, Lv 14 at badge 1 → 58 at the Champion, both teams stepping down to era-true forms). Beyond the regions: " + named("red", "the silent trainer RED on Mt. Silver", "whatever waits at the top of Mt. Silver") + " and the 🏆 CHAMPIONS CUP, a 16-legend bracket of every Elite Four & Champion. A Champion win enshrines your team in the 🏛 Hall of Fame — challenge any enshrined team, or run a region's whole GAUNTLET in one go." },
         { r: null, e: "🧭", t: "The full ladder", d: "Per region it's the same shape: ① the 8 gym badges → ② the Elite Four fall IN ORDER → ③ the Champion. Kanto opens the saga (the original Elite Four and a Champion someone will recognize); Johto adds 8 more badges, LANCE, then whatever waits at the top of Mt. Silver; every later region (Hoenn → Paldea) brings its own 8 gyms, Elite Four and Champion, ending with a Top Champion. Beating a region's Champion opens the NEXT region — and spills its generation of Pokémon into the Safari (the Gen Ladder)." },
         { r: "tower", e: "🗼", t: "Battle Tower", d: "THE 1→100 GAUNTLET: 4v4 doubles where every floor IS a level — everyone enters devolved to the form they'd really be at that level and evolves as you climb (full movesets from Lv58). Bring your own catches, run the RENTAL floor with dealt teams, or flip to the 💯 LEVEL 100 ladder — every floor flat Lv100, everything fully evolved. PALMER waits every 7th floor, a LEGENDS floor looms every 14th, and floor 100 is a Lv100 war. Your best streak feeds the achievement wall." },
         { r: "cups", e: "🏟", t: "Stadium Cups", d: "Round-robin into finals with the whole room (AI fills empty seats): 🍼 BABY CUP at Lv 5 (basics only), 🔴 POKÉ CUP with your own catches, 👑 PRIME CUP at Lv 100 with everything legal, and 🎲 RENTAL CUP on dealt random sixes — everyone equal, pure play. Humans battle for real; AI-vs-AI seats simulate. Top four seed the semifinals; a champion gets crowned." },
@@ -80,7 +87,7 @@
         { r: null, e: "⚔️", t: "Battle Champ", d: "Most Battle Arena wins." },
         { r: null, e: "✨", t: "Shiny Hunter", d: "Most shiny Pokémon caught in the Safari (1-in-20 encounters)." },
         { r: null, e: "🏟", t: "Gym Crusher", d: "Most gym badges across every region's gyms in The Journey — sweep all 16 Johto & Kanto and the trophy becomes CHAMPION." },
-        { r: null, e: "👑", t: "League Contender", d: "Most Pokémon League battles won — and whoever fells RED on Mt. Silver holds 🗻 Conquered Mt. Silver instead." },
+        { r: null, e: "👑", t: "League Contender", d: () => "Most Pokémon League battles won — and whoever fells " + named("red", "RED on Mt. Silver", "the silent figure at the top of Mt. Silver") + " holds 🗻 Conquered Mt. Silver instead." },
         { r: null, e: "🥇", t: "Champion's Belt", d: "Held by the last trainer to win or defend a singles duel — beat the holder to take it. Streaks are counted." },
         { r: null, e: "🔮", t: "Oracle", d: "Most correct predictions on the Oracle board." },
         { r: null, e: "👑💩", t: "Best & Worst President", d: "Most times President — and most times stuck as the Asshole — at the Card Table." },
@@ -97,7 +104,7 @@
       el("span", { class: "help-card-e" }, it.e),
       el("div", { class: "help-card-txt" }, [
         el("div", { class: "help-card-t" }, it.t),
-        el("div", { class: "help-card-d" }, it.d),
+        el("div", { class: "help-card-d" }, typeof it.d === "function" ? it.d() : it.d),
       ]),
     ];
     return it.r

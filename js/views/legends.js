@@ -617,6 +617,20 @@
     return "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
   }
 
+  // 🎬 ONE curtain at a time. Every intro here is appended to <body>, so a
+  // double-tapped card used to raise two — and the stale one outlived the
+  // whole seven-battle run, still offering "▶ Continue" into a chain that was
+  // already won. Each builder now sweeps the stage before it raises its own.
+  // (Router does the same sweep on genuine navigation, which is a different
+  // moment and can't fight this one; story-beat curtains are somebody else's
+  // show — they wait for us to clear, so we leave them standing.)
+  function raise(lay) {
+    document.querySelectorAll("body > .league-intro:not(.story-beat)").forEach((n) => { try { n.remove(); } catch (_) {} });
+    document.body.appendChild(lay);
+    sfx("fanfare");
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
+
   function specialIntro(sp, onGo) {
     const src = SP[sp.face] || Store.sprite(sp.face);
     const n = sp.playerSize || sp.team.length;   // hidden reserves don't advertise
@@ -633,9 +647,7 @@
         ]),
       ]),
     ]);
-    document.body.appendChild(lay);
-    sfx("fanfare");
-    requestAnimationFrame(() => lay.classList.add("go"));
+    raise(lay);
   }
 
   function challengeSpecial(sp, attId) {
@@ -684,13 +696,15 @@
         el("div", { class: "league-intro-quote" }, "“" + t.quote + "”"),
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
           el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } }, (t.icon || "⚔") + " STEP THROUGH"),
-          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+          // 💾 Walking away mid-chain leaves a live save behind, so the card
+          // underneath has to be repainted or it keeps saying "Face … (7
+          // battles)" over a run that is already three Brains deep — an invite
+          // to start over, worded as if nothing happened.
+          el("button", { class: "btn subtle", onClick: () => { lay.remove(); Router.render({ keepScroll: true }); } }, "Not yet"),
         ]),
       ]),
     ]);
-    document.body.appendChild(lay);
-    sfx("fanfare");
-    requestAnimationFrame(() => lay.classList.add("go"));
+    raise(lay);
   }
   // 💾 CHAIN RUN SAVES — a marathon six Frontier Brains deep is far too much
   // progress to trust to closure state: one reload, one stray nav, one
@@ -699,20 +713,50 @@
   // (device-local, like the last-party memory); the card offers "▶ Continue"
   // while a run lives, and the save burns only on defeat or the finale.
   const RUN_KEY = "jasonBachHub.chainRun.v1";
-  function runsAll() { try { return JSON.parse(localStorage.getItem(RUN_KEY)) || {}; } catch (_) { return {}; } }
   function runsPut(m) { try { localStorage.setItem(RUN_KEY, JSON.stringify(m)); } catch (_) {} }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  // The store is a plain map of "trainer|chain" → run, and NOTHING else will do.
+  // A scalar or an array parses truthy, and every checkpoint written onto it
+  // vanishes on the way to disk — the exact silent progress loss this whole
+  // feature exists to prevent, made permanent. So junk is bulldozed on sight.
+  function runsAll() {
+    let m = null;
+    try {
+      const raw = localStorage.getItem(RUN_KEY);
+      if (raw == null) return {};
+      m = JSON.parse(raw);
+    } catch (_) { m = null; }
+    if (m && typeof m === "object" && !Array.isArray(m)) return m;
+    runsPut({});
+    return {};
+  }
   function runSave(attId, key, step, ids) { const m = runsAll(); m[attId + "|" + key] = { step: step, ids: ids.slice(), upd: Date.now() }; runsPut(m); }
-  function runClear(attId, key) { const m = runsAll(); if (m[attId + "|" + key]) { delete m[attId + "|" + key]; runsPut(m); } }
+  function runClear(attId, key) { const m = runsAll(), k = attId + "|" + key; if (has(m, k)) { delete m[k]; runsPut(m); } }
   // A save is only live if it points mid-run AND the squad is still real
-  // (six ids the trainer can actually field) — anything stale melts away.
+  // (six ids the trainer can actually field). Everything else — a bent step, a
+  // squad of five, a mon that isn't caught anymore — is not progress, it's
+  // damage, and it BURNS on sight: a save we refuse to honor must never lie
+  // there waiting to resurrect a run the trainer already walked away from.
+  // Note the asymmetry: an id is an identity, so a numeric string coerces and
+  // then has to prove itself against the pool anyway; a step is PROGRESS, and
+  // we never guess at progress — a wrong step skips Brains and hands out the
+  // secret for battles nobody fought.
   function runLoad(sp, attId) {
-    const r = runsAll()[attId + "|" + sp.key];
-    if (!r || !Array.isArray(r.ids) || r.ids.length !== 6) return null;
+    const all = runsAll(), k = attId + "|" + sp.key;
+    if (!has(all, k)) return null;
+    const r = all[k];
+    const burn = () => { runClear(attId, sp.key); return null; };
+    if (!r || typeof r !== "object" || Array.isArray(r)) return burn();
     const total = (sp.chain || []).length + 1;
-    if (!(r.step >= 1 && r.step < total)) return null;
+    const step = r.step;
+    if (typeof step !== "number" || !isFinite(step) || step % 1 !== 0 || step < 1 || step >= total) return burn();
+    if (!Array.isArray(r.ids) || r.ids.length !== 6) return burn();
+    const ids = r.ids.map((id) => (typeof id === "string" && id.trim() !== "" ? Number(id) : id));
+    if (ids.some((id) => typeof id !== "number" || !isFinite(id) || id % 1 !== 0)) return burn();
+    if (ids.some((id, n) => ids.indexOf(id) !== n)) return burn();   // six mons, not one mon six times
     const pool = Duel.poolFor(attId);
-    if (r.ids.some((id) => pool.indexOf(id) < 0)) return null;
-    return r;
+    if (ids.some((id) => pool.indexOf(id) < 0)) return burn();
+    return { step: step, ids: ids, upd: r.upd };
   }
   // 💾 A live save turns the card into a crossroads: pick the run back up
   // exactly where it stood, or torch it and start clean — and torching asks
@@ -731,21 +775,36 @@
         el("div", { class: "toolbar", style: { justifyContent: "center", flexWrap: "wrap" } }, [
           el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); runChainBattle(sp, attId, run.ids, run.step); } },
             "▶ Continue — battle " + (run.step + 1) + " of " + total),
+          // ⚠ Two taps to torch a run — and the second one has to be a DECISION.
+          // Arming and confirming inside the same gesture (mobile's double-tap
+          // zoom, an impatient thumb) is exactly the mis-tap that must never
+          // eat six Frontier Brains, so the confirm is deaf for 400ms and the
+          // whole thing disarms itself after five seconds of second thoughts.
           (function () {
-            let armed = false;
+            const REST = "Start over";
+            let armedAt = 0, timer = 0;
+            const disarm = () => { armedAt = 0; clearTimeout(timer); b.textContent = REST; };
             const b = el("button", { class: "btn subtle", onClick: () => {
-              if (!armed) { armed = true; b.textContent = "⚠ Toss " + run.step + (run.step === 1 ? " win" : " wins") + "? Tap again"; return; }
-              runClear(attId, sp.key); lay.remove(); freshChain(sp, attId);
-            } }, "Start over");
+              const now = Date.now();
+              if (!armedAt) {
+                armedAt = now;
+                b.textContent = "⚠ Toss " + run.step + (run.step === 1 ? " win" : " wins") + "? Tap again";
+                clearTimeout(timer); timer = setTimeout(disarm, 5000);
+                return;
+              }
+              if (now - armedAt < 400) return;   // that was one gesture, not two answers
+              clearTimeout(timer);
+              // the run is ash — repaint the card before the fresh intro goes
+              // up, or backing out of it leaves "▶ Continue" over nothing
+              runClear(attId, sp.key); lay.remove(); Router.render({ keepScroll: true }); freshChain(sp, attId);
+            } }, REST);
             return b;
           })(),
           el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
         ]),
       ]),
     ]);
-    document.body.appendChild(lay);
-    sfx("fanfare");
-    requestAnimationFrame(() => lay.classList.add("go"));
+    raise(lay);
   }
   function challengeChain(sp, attId) {
     const total = (sp.chain || []).length + 1;
@@ -866,9 +925,7 @@
         ]),
       ]),
     ]);
-    document.body.appendChild(lay);
-    sfx("fanfare");
-    requestAnimationFrame(() => lay.classList.add("go"));
+    raise(lay);
   }
 
   function challenge(lg, attId) {

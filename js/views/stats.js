@@ -54,7 +54,8 @@
       (w.master || w.euchre || w.photosIn) ? el("div", { class: "wrap-note" }, [
         w.master ? "🟣 " + w.master + " master catch" + (w.master > 1 ? "es" : "") + "  " : "",
         w.euchre ? "♠️ " + w.euchre + " euchre  " : "",
-        w.photosIn ? "🌟 in " + w.photosIn + " photos" : "",
+        // 🔢 one photo is a photo — same singular guard the auto-superlatives use
+        w.photosIn ? "🌟 in " + w.photosIn + (w.photosIn === 1 ? " photo" : " photos") : "",
       ].join("")) : null,
     ]);
   }

@@ -34,10 +34,12 @@
   // gets a "you've set foot here" sting the first time you take a badge in it,
   // and a "the League doors open" sting the moment its final badge is won.
   const REGION_META = {
-    Kanto:  { emoji: "🗾", gate: "the Kanto Elite Four & Champion BLUE",
+    Kanto:  { emoji: "🗾", gate: "the Kanto Elite Four & Champion BLUE", champs: ["blue"],
+      gateSealed: "the Kanto Elite Four & a Champion this region won't name yet",
       arrive: "Pallet Town shrinks behind you. Route 1's tall grass whispers with your very first wild encounters — the whole saga starts on this road.",
       conquer: "Eight badges gleam in your case. Victory Road climbs ahead — and at its summit, the Indigo Plateau and your rival's stolen crown." },
-    Johto:  { emoji: "🌸", gate: "the Johto Elite Four (and silent RED, for the full sweep)",
+    Johto:  { emoji: "🌸", gate: "the Johto Elite Four (and silent RED, for the full sweep)", champs: ["red"],
+      gateSealed: "the Johto Elite Four (and whoever stands on Mt. Silver, for the full sweep)",
       arrive: "New Bark Town smells of morning dew. Bell-chimes drift from Ecruteak; somewhere a rainbow-winged legend is watching the road you've chosen.",
       conquer: "The Johto eight are yours. Past the Dragon's Den the Elite Four wait — and beyond even them, a silent boy stands alone on Mt. Silver." },
     Hoenn:  { emoji: "🌊", gate: "the Hoenn Elite Four",
@@ -58,10 +60,19 @@
     Galar:  { emoji: "⚽", gate: "the Galar Champion Cup and unbeatable LEON",
       arrive: "The stadium roars your name before you've even said it. Under the pitch-lights of Galar the crowd came for giants — so give them one.",
       conquer: "Eight Galar badges! The Champion Cup finals are set. Best the field and only the undefeated LEON stands between you and the trophy." },
-    Paldea: { emoji: "🍊", gate: "the Paldea Elite Four & Top Champion GEETA",
+    Paldea: { emoji: "🍊", gate: "the Paldea Elite Four & Top Champion GEETA", champs: ["geeta"],
+      gateSealed: "the Paldea Elite Four & whoever sits in the top seat",
       arrive: "An open horizon in every direction — mountain, city, sea, all yours to cross. Paldea's treasure is the road itself, and it runs to the crater's heart.",
-      conquer: "Paldea's eight are won. The Elite Four and Top Champion GEETA hold the final gate of the final region — the last climb of the whole journey." },
+      conquer: "Paldea's eight are won. The Elite Four and Top Champion GEETA hold the final gate of the final region — the last climb of the whole journey.",
+      conquerSealed: "Paldea's eight are won. The Elite Four and whoever holds the top seat guard the final gate of the final region — the last climb of the whole journey." },
   };
+
+  // 🎭 A region's road runs toward a Champion the League may still be holding
+  // at "???" — while the ROOM hasn't beaten them, these beats speak around the
+  // name (same rule as the League card, regions.js and the gym tabs).
+  function sealedish(m) { return (m.champs || []).some(U.champSealed); }
+  function gateOf(m) { return (m.gateSealed && sealedish(m)) ? m.gateSealed : m.gate; }
+  function conquerOf(m) { return (m.conquerSealed && sealedish(m)) ? m.conquerSealed : m.conquer; }
 
   // Shared full-screen curtain, styled like the world-grows beat. Waits for any
   // battle / evolution / other curtain to clear so it never buries a flow.
@@ -78,9 +89,16 @@
         ]),
       ]),
     ]);
+    // 🎬 A queued curtain belongs to the PAGE that earned it. The wait below can
+    // run for half a minute (a duel has to finish first) and the player is free
+    // to wander off mid-fight — so remember where this beat was born and hold it
+    // until they're back. Land it anywhere else and "WELCOME TO KALOS" drops on
+    // the drink tracker. If they never come back, it lapses quietly.
+    const bornAt = location.hash || "#/home";
     let tries = 0;
     (function whenClear() {
       if (++tries > 40) return;
+      if ((location.hash || "#/home") !== bornAt) { setTimeout(whenClear, 700); return; }
       // Also yield to the 🏔 Hisui rift — the Cynthia beat and the rift fire on
       // the same win, and neither may bury the other (they used to stack).
       if (document.querySelector(".battle, .evo-stage, .hisui-rift, .league-intro:not(.story-beat)")) { setTimeout(whenClear, 700); return; }
@@ -102,7 +120,7 @@
     const m = REGION_META[region]; if (!m) return;
     if (seen()["conq:" + region]) return; mark("conq:" + region);
     curtain({ mt: m.emoji, flair: region.toUpperCase() + " CONQUERED", name: "EVERY BADGE WON",
-      quote: m.conquer, rows: [el("div", { class: "beat-row" }, "🚪 " + region + "'s road now runs to " + m.gate + ".")],
+      quote: conquerOf(m), rows: [el("div", { class: "beat-row" }, "🚪 " + region + "'s road now runs to " + gateOf(m) + ".")],
       cta: "🏆 TO THE LEAGUE" });
   }
 
@@ -141,9 +159,13 @@
     // Never bury the Hall of Fame flow — wait for battle screens to clear. And
     // yield to the 🏔 Hisui rift if it won the race (this beat + the rift both
     // fire on the Cynthia win) so the two curtains never stack.
+    // …and, like every queued curtain, it only drops on the page it was earned
+    // on — never on whatever the player wandered to while the duel finished.
+    const bornAt = location.hash || "#/home";
     let tries = 0;
     (function whenClear() {
       if (++tries > 30) return;
+      if ((location.hash || "#/home") !== bornAt) { setTimeout(whenClear, 700); return; }
       if (document.querySelector(".battle, .evo-stage, .hisui-rift")) { setTimeout(whenClear, 700); return; }
       document.body.appendChild(lay);
       if (window.SFX && SFX.fanfare) SFX.fanfare();

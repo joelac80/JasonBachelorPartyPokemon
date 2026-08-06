@@ -677,10 +677,16 @@
         // once. Wait for that beat (and any battle/evo screen) to clear, then
         // take the stage alone. hisuiKnown[me] is already set above, so no other
         // checkHisuiRift call can queue a second rift while this one waits.
+        // 📍 …and it must land on the page that EARNED it. The wait can outlive
+        // a hash change (win, wander off mid-fight, close the duel), and a rift
+        // that opens over the Drink Tracker is just a stray overlay — so hold
+        // for the room we were in and let it lapse quietly if you never return.
+        const bornAt = location.hash || "#/home";
         let tries = 0;
         (function whenClear() {
           if (++tries > 40) return;
           if (document.querySelector(".hisui-rift")) return;   // already up (shouldn't happen)
+          if ((location.hash || "#/home") !== bornAt) { setTimeout(whenClear, 700); return; }
           if (document.querySelector(".battle, .evo-stage, .league-intro")) { setTimeout(whenClear, 700); return; }
           document.body.appendChild(lay);
           if (window.SFX && SFX.fanfare) SFX.fanfare();

@@ -229,6 +229,42 @@
     });
   }
 
+  // 🎚 THE LEVEL BELONGS TO THE MON THAT ACTUALLY FIGHTS. plan() budgets a
+  // level from a species' BST — but 📖 True Story then DEVOLVES the slot, so a
+  // fat true id normalized its level DOWN (clamped E−5) and the little form
+  // took the field at that discount: Falkner opened with a Lv 11 Hoothoot
+  // against a Lv 14 challenger, and 48 of 68 story gyms were quietly softened.
+  // Fix: resolve the FORM first, re-budget on the form, repeat until the pair
+  // stops moving. `lvls` is ALWAYS the plan for the ids we hand back, so the
+  // level matches the mon on the field by construction.
+  // 🔁 A handful of slots can never settle — a Misdreavus whose budget level
+  // is high enough to BE a Mismagius, whose fatter budget drops it back below
+  // the evolution again (10 of 264 story-gym slots). Six passes bound the
+  // spin, and a slot still flipping takes the SMALLER of its two forms: at the
+  // (higher) level its own budget then hands it, an under-evolved mon is legal
+  // where an over-evolved one is not, and it still clears the fodder floor
+  // (both candidates came out of formFor, which applies the floor).
+  // The fodder power floor and the era law are untouched: this only changes
+  // WHICH id the budget is computed from.
+  function planned(opts, u) {
+    const trueIds = u.monIds || [];
+    let ids = trueIds.slice();
+    let lvls = plan(opts, u);
+    if (!(opts && opts.level) || !window.JourneyStyle) return { ids: ids, lvls: lvls };
+    const last = trueIds.length - 1;
+    const rePlan = () => plan(opts, { monIds: ids, boost: u.boost });
+    let prev = ids.slice();
+    for (let pass = 0; pass < 6; pass++) {
+      const forms = trueIds.map((id, i) => (id ? formFor(opts, id, lvls[i], i === last) : id));
+      const settled = forms.every((f, i) => f === ids[i]);
+      prev = ids; ids = forms; lvls = rePlan();
+      if (settled) break;
+    }
+    const calmed = ids.map((id, i) => (!id || id === prev[i]) ? id : (bstOf(id) <= bstOf(prev[i]) ? id : prev[i]));
+    if (calmed.some((f, i) => f !== ids[i])) { ids = calmed; lvls = rePlan(); }
+    return { ids: ids, lvls: lvls };
+  }
+
   // one mon's cartridge battle stats at a level (IV 31, EV 0, neutral)
   function statsAt(id, L) {
     const s = ST()[id] || [60, 60, 60, 60, 60, 60];
@@ -241,7 +277,7 @@
     enable: function () { set(true); return true; },
     disable: function () { set(false); return false; },
     toggle: function () { set(!on()); return on(); },
-    plan: plan, statsAt: statsAt, formFor: formFor, sigMove: sigMove,
+    plan: plan, planned: planned, statsAt: statsAt, formFor: formFor, sigMove: sigMove,
     CURVE: CURVE, SIG: SIG, LEAGUE_SIG: LEAGUE_SIG,
   };
 })();

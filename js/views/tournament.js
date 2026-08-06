@@ -26,6 +26,12 @@
     return pool;
   }
 
+  // 🎭 The Cup's own blurb is drawn from the same ladder the League keeps at
+  // "???" — so while RED or BLUE are still unbeaten by the ROOM, this page has
+  // to stay coy too (same wording The Journey's Cup tab already uses). Once
+  // somebody topples them the names come back: that reveal is earned.
+  function poolSealed() { return ["red", "blue"].some((k) => U.champSealed(k)); }
+
   // ---- tournament state (in-memory; each run is a fresh draw) ----
   let T = null;
 
@@ -296,7 +302,9 @@
     // When embedded inside The Journey (region area) we skip our own page title.
     if (!opts.embed) root.appendChild(el("div", { class: "page-head" }, [
       el("h1", {}, "🏆 Champions Tournament"),
-      el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, RED and BLUE — drawn fresh each time into one single-elimination bracket. Lock in a squad of SIX for the whole run, then bring 4 of them to each 2v2 double battle once you've scouted your opponent. The rest of the field battles itself; last trainer standing takes the crown." ),
+      el("p", { class: "page-sub" }, "Sixteen legends — every Elite Four, every Champion, " +
+        (poolSealed() ? "and the ones who don't announce themselves" : "RED and BLUE") +
+        " — drawn fresh each time into one single-elimination bracket. Lock in a squad of SIX for the whole run, then bring 4 of them to each 2v2 double battle once you've scouted your opponent. The rest of the field battles itself; last trainer standing takes the crown." ),
     ]));
 
     let attId = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
@@ -373,7 +381,9 @@
     root.appendChild(host);
 
     if (!T) {
-      host.appendChild(el("p", { class: "hint" }, "🎲 Pick your challenger, lock in a squad of six, and the bracket of 16 legends is drawn — a new set every time. RED and BLUE are always in the pool."));
+      host.appendChild(el("p", { class: "hint" }, "🎲 Pick your challenger, lock in a squad of six, and the bracket of 16 legends is drawn — a new set every time. " +
+        (poolSealed() ? "The ones who don't announce themselves are always in the pool."
+                      : "RED and BLUE are always in the pool.")));
       return;
     }
     // Show the locked squad above the bracket.

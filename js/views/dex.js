@@ -95,7 +95,9 @@
       if (!(Store.hisuiUnlocked && Store.hisuiUnlocked(me))) {
         host.appendChild(el("div", { class: "dex-lock" }, [
           el("div", { class: "dex-lock-title" }, "🔒 The rift is sealed"),
-          el("div", { class: "dex-lock-sub" }, "Beat Champion CYNTHIA in The Journey — the sky tears, Arceus speaks, and the 16 ancient Hisuian forms roam " + name(me) + "'s Safari."),
+          // 🎭 The rift's gatekeeper is a mystery Champion — the League card still
+          // reads "???", so this lock names the region, not the woman.
+          el("div", { class: "dex-lock-sub" }, "Beat " + (U.champSealed("cynthia") ? "Sinnoh's Champion" : "Champion CYNTHIA") + " in The Journey — the sky tears, Arceus speaks, and the 16 ancient Hisuian forms roam " + name(me) + "'s Safari."),
         ]));
         return;
       }
@@ -106,7 +108,11 @@
       const rung = (Store.GEN_LADDER || []).find((r) => r.gen === t.gen);
       host.appendChild(el("div", { class: "dex-lock" }, [
         el("div", { class: "dex-lock-title" }, "🔒 Gen " + t.gen + " — " + t.name + " is locked"),
-        el("div", { class: "dex-lock-sub" }, (rung ? "Beat Champion " + rung.champName : "Climb the ladder") + " in The Journey to open it for " + name(me) + "."),
+        // 🎭 Same secret as the League ladder: the rung's Champion keeps their
+        // name until the room has beaten them (BLUE opens Gen 2, CYNTHIA Gen 5).
+        el("div", { class: "dex-lock-sub" }, (rung
+          ? "Beat " + (U.champSealed(rung.champ) ? "the Champion who guards it" : "Champion " + rung.champName)
+          : "Climb the ladder") + " in The Journey to open it for " + name(me) + "."),
       ]));
       return;
     }

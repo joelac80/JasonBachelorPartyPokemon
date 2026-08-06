@@ -791,9 +791,14 @@
       const cap = this.genCapFor(attId);
       if (cap >= 9) return null;
       const step = this.GEN_LADDER[cap - 1];
+      // 🎭 This banner is the FIRST place a fresh phone reads about the next
+      // rung — and for BLUE and CYNTHIA that name is still the League's
+      // "???" reveal. Speak around them until the room has actually won.
+      const sealed = window.U && U.champSealed && U.champSealed(step.champ);
+      const who = sealed ? "the Champion who guards it" : "Champion " + step.champName;
       return { gen: step.gen,
         text: step.badges ? (step.goal + " in " + step.where)
-          : ("beat Champion " + step.champName + " in The Journey" + (step.opens ? " — " + step.opens + " opens too" : "")) };
+          : ("beat " + who + " in The Journey" + (step.opens ? " — " + step.opens + " opens too" : "")) };
     },
     // How many species this trainer's dex is measured against (their gen cap).
     // Mega/Primal forms (ids 10000+) are battle-only and never counted. With no
@@ -1307,6 +1312,34 @@
           r.over = "wiped";
           Store.chron(s, "💀", this._nuzName(attId) + "'s Nuzlocke run is OVER — the whole box is gone. " + r.badges.length + " badge" + (r.badges.length === 1 ? "" : "s") + ", " + r.catches + " caught, " + r.deaths + " lost.");
         }
+      }, slot);
+    },
+    // 🪦 THE FUNERAL THAT IS OWED — a death is reported the instant the last
+    // HP bar empties, while the battle screen, the 🏆 recap card and the boss
+    // 🗣 outro are all still holding the stage waiting for a human tap. The
+    // tombstone therefore can't be raised yet, so the run LATCHES it here:
+    // `r.pendRip` is the list of fallen who haven't been laid to rest. It
+    // outlives a slow reader, a walk to another page and a reload — the view
+    // raises the card the moment the screen is clear. Cleared only by the
+    // card itself (tap anywhere / carve the eulogy). Old saves have no
+    // pendRip and simply never owe a funeral.
+    nuzPendRip(attId, ids, slot) {
+      if (!ids || !ids.length) return;
+      this._nuzEdit(attId, (r) => {
+        const have = {};
+        (r.pendRip || []).forEach((id) => { have[id] = 1; });
+        r.pendRip = (r.pendRip || []).concat(ids.filter((id) => !have[id]));
+      }, slot);
+    },
+    // They're at rest — clear the debt (no ids = the whole pending list).
+    nuzRipDone(attId, ids, slot) {
+      this._nuzEdit(attId, (r) => {
+        if (!r.pendRip || !r.pendRip.length) return;
+        if (ids && ids.length) {
+          const gone = {}; ids.forEach((id) => { gone[id] = 1; });
+          r.pendRip = r.pendRip.filter((id) => !gone[id]);
+        } else r.pendRip = [];
+        if (!r.pendRip.length) delete r.pendRip;
       }, slot);
     },
     // 🎉 Level-gated evolution: the run's level cap crossed this mon's real

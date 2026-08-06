@@ -378,6 +378,33 @@
   // deserve a mid-page refresh (the router's live-sync mode does exactly this).
   function renderKeepScroll() { Router.render({ keepScroll: true }); }
 
+  // ── 🎬 THE STAGE QUEUE — one act at a time, and NOTHING is ever dropped ───
+  // Tombstones, road ambushes and co-star offers all need a CLEAR screen: no
+  // battle, no 🏆 BATTLE RECAP, no 🗣 boss outro, no badge pop, no other card.
+  // The old pollers gave each act a ~15-18 second budget and then BINNED it,
+  // so anyone who actually reads the post-battle screens (8 seconds on the
+  // recap, 8 on the outro is a normal pace) lost the funeral — in exactly the
+  // moment the card exists for. Nothing expires here: acts wait in a FIFO
+  // queue and the pump raises them the instant the stage is free, IN THE
+  // ORDER THEY WERE QUEUED — the tombstone always ahead of the ambush that
+  // followed it, never racing it. Walk off the page and the queue simply
+  // PARKS; view() wakes it up on the way back.
+  const cineQ = [];
+  let cineTick = 0;
+  function cineStep() {
+    cineTick = 0;
+    if (!cineQ.length) return;
+    if (!/^#\/nuzlocke/.test(location.hash)) return;      // parked, not lost
+    if (document.querySelector(".battle, .modal-overlay, .league-intro, .evo-stage")) {
+      cineTick = setTimeout(cineStep, 400); return;       // the stage is busy — wait it out
+    }
+    const act = cineQ.shift();
+    try { act(); } catch (e) { console.warn("nuzlocke: stage act failed", e); }
+    cineTick = setTimeout(cineStep, 300);                 // …then the next one
+  }
+  function cinePump() { if (!cineTick && cineQ.length) cineTick = setTimeout(cineStep, 60); }
+  function cineQueue(act) { cineQ.push(act); cinePump(); }
+
   // ── Per-phone session (NOT synced): who's running, current grass encounter ──
   let me = "";
   let wildId = 0;
@@ -387,10 +414,13 @@
   let newRegion = "kanto";   // starter-lab region (classic/random structures)
 
   function view(root) {
-    // 🎬 A climax intro abandoned via back/nav leaves _skip stuck at 1 (only
-    // the two card buttons reset it) — which would silently skip the NEXT
-    // title card. Fresh render, fresh curtain.
-    battleMovie._skip = 0; battleStage._skip = 0;
+    // 🎬 No curtain flag to reset here any more: the climax cards carry their
+    // "already shown" state in the FACE button's own call (battleStage(run,
+    // st, 1)), so a re-render landing after the card is raised — a pull-to-
+    // refresh on the full-screen title card, a teammate's synced write —
+    // can't re-arm the guard and make FACE re-show the card instead of
+    // starting the battle. Leaving via back/nav still shows the next card,
+    // because there is no flag left to go stale.
     const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
     if (!me && meId && Store.attendee(meId)) me = meId;
 
@@ -414,6 +444,11 @@
     if (!slot) slot = defaultSlot();
     slotStrip(body);
     const run = Store.nuzRun(me, slot);
+    // 🪦 A funeral still owed (the card was pending when the player walked
+    // off the page, or the phone was closed entirely) — re-queue it. Runs
+    // that ended in a WIPE owe one too, so this sits above every branch.
+    if (run && (run.pendRip || []).length) queueRip(slot);
+    cinePump();                        // …and any parked ambush resumes too
     if (slot === "legacy" && (!run || run.over)) {
       if (run) renderStartScreen(body, run, true);
       body.appendChild(el("p", { class: "hint" }, "🗻 The original Kanto→Johto structure has retired — start fresh runs in the six slots above."));
@@ -472,16 +507,25 @@
   // between their six lines. One tagline of flavor, then the facts.
   function modeSpec(newKind, R, filmN) {
     const row = (k, txt) => el("div", { class: "nuz-spec-row" }, [el("b", {}, k), " — " + txt]);
+    // 🎭 SPOILER SEAL — four Champions are REVEALS (BLUE, RED, CYNTHIA,
+    // GEETA: the League holds them at "???" until somebody topples them), and
+    // these briefs sit THREE TAPS from home on a brand-new save. So every
+    // named champion goes through the same gate the gym notes use: sealed →
+    // a description that still reads like a sentence, un-sealed (the ROOM has
+    // beaten them) → the real name comes back. Every other champion — LANCE,
+    // STEVEN, ALDER… — was never a secret and names itself as always.
+    const seal = (key, name, veiled) => (U.champSealed(key) ? veiled : name);
+    const theChamp = seal(R.champKey, "Champion " + R.champ, "the Champion of " + R.name);
     const S = {
       classic: {
         tag: "🎯 The classic. One region, played straight — the structure every other run bends.",
         rows: [
-          row("🗺 The road", (R.gymN === 4 ? "the four island kahunas" : R.name + "'s " + R.gymN + " gyms") + " in canon order → its Elite Four in canon order → Champion " + R.champ + (R.peak ? " (then RED on Mt. Silver, if you dare)" : "") + "."),
+          row("🗺 The road", (R.gymN === 4 ? "the four island kahunas" : R.name + "'s " + R.gymN + " gyms") + " in canon order → its Elite Four in canon order → " + theChamp + (R.peak ? " (then " + seal(R.peak, "RED", "the silent one") + " on Mt. Silver, if you dare)" : "") + "."),
           row("🎭 The cast", "the real leaders in their real order, each fielding their REAL squad, true ace closing."),
           row("📈 The levels", "the proven curve: Lv 14 at gym 1, ~58 at the Champion" + (R.peak ? ", 62 on the peak" : "") + ". Your box evolves as the cap climbs."),
           row("📦 The box", "one box, one region — the wild grass grows this region's generation of Pokémon."),
           row("❗ The villains", "this era's rogues ambush on the roads between badges."),
-          row("🏆 The crown", "beat Champion " + R.champ + (R.peak ? " — and RED past the crown upgrades it to LEGEND" : "") + "."),
+          row("🏆 The crown", "beat " + theChamp + (R.peak ? " — and " + seal(R.peak, "RED", "the climb up Mt. Silver") + " past the crown upgrades it to LEGEND" : "") + "."),
         ],
       },
       random: {
@@ -492,14 +536,14 @@
           row("📈 The levels", "the same proven Lv 14 → ~58 curve as the Region Run."),
           row("📦 The box", "same as the Region Run — one box, this region's grass."),
           row("❗ The villains", "region-locked — only this region's own rogues walk its roads — but WHEN they strike is shuffled: any moment from your first badge to the Champion's doorstep."),
-          row("🏆 The crown", "beat Champion " + R.champ + " at the end of the shuffled gauntlet."),
+          row("🏆 The crown", "beat " + theChamp + " at the end of the shuffled gauntlet."),
         ],
       },
       master: {
         tag: "🌍 Every battle in the whole saga, shuffled completely flat. The deepest deck, the highest stakes.",
         rows: [
-          row("🗺 The road", "ALL of it: 68 gyms, nine Elite Fours, nine Champions, RED — 114 battles in one run."),
-          row("🎭 The cast", "one giant shuffled deck — any card can come first, so you might open against CYNTHIA. Everyone fields their real squad — and every boss's ACE is dealt a random era gimmick (Mega, Z-Move, Dynamax or Tera), so Brock might Dynamax and Lance might terastallize."),
+          row("🗺 The road", "ALL of it: 68 gyms, nine Elite Fours, nine Champions, " + seal("red", "RED", "the summit of Mt. Silver") + " — 114 battles in one run."),
+          row("🎭 The cast", "one giant shuffled deck — any card can come first, so you might open against " + seal("cynthia", "CYNTHIA", "a region's CHAMPION") + ". Everyone fields their real squad — and every boss's ACE is dealt a random era gimmick (Mega, Z-Move, Dynamax or Tera), so Brock might Dynamax and Lance might terastallize."),
           row("📈 The levels", "there is NO curve. Everything is Lv 100 from battle one — your starter steps out in FINAL form."),
           row("📦 The box", "one box for all 114 battles; the grass grows from whichever region your NEXT battle calls home."),
           row("❗ The villains", "any villain from any era prowls between the cards."),
@@ -520,12 +564,12 @@
       trek: {
         tag: "🎒 Nine Region Runs back to back with ONE box the whole way. Nothing retires — but every border hurts.",
         rows: [
-          row("🗺 The road", "all nine regions in canon order, RED on the road out of Johto, GEETA at the very end."),
+          row("🗺 The road", "all nine regions in canon order, " + seal("red", "RED", "the silent one") + " on the road out of Johto, " + seal("geeta", "GEETA", "Paldea's Top Champion") + " at the very end."),
           row("🎭 The cast", "canon everything: real leaders, real order, real squads."),
           row("📈 The levels", "the region curve, restarted — Lv 14 → ~58 in EVERY region."),
           row("📦 The box", "NEVER resets — but every border pulls the survivors back DOWN to the fresh Lv 14 cap. Your Charizard walks into the next region as a Charmander and grows it all back. Every catch and every scar carries."),
           row("❗ The villains", "era-true ambushes, region by region."),
-          row("🏆 The crown", "beat GEETA at the end of the ninth region to finish THE LONG WALK."),
+          row("🏆 The crown", "beat " + seal("geeta", "GEETA", "Paldea's Top Champion") + " at the end of the ninth region to finish THE LONG WALK."),
         ],
       },
       blitz: {
@@ -589,7 +633,9 @@
         el("div", { class: "nuz-box-grid" }, (era.box || []).map((m) => boxMon(m))),
       ])))));
     }
-    const R = regionByKey(newRegion) || REGIONS[0] || { name: "Kanto", prof: "Oak", gymN: 8, champ: "BLUE", starters: [1, 4, 7, 25], league: [] };
+    // (champKey rides the fallback too — the spoiler seal gates on the KEY,
+    // so a missing nuz-regions.js must not un-seal the brief.)
+    const R = regionByKey(newRegion) || REGIONS[0] || { name: "Kanto", prof: "Oak", gymN: 8, champ: "BLUE", champKey: "blue", starters: [1, 4, 7, 25], league: [] };
     const first = REGIONS[0] || R;
     const movie = newKind === "movie";
     const filmN = (window.MOVIE_BOSSES || []).length || 16;
@@ -829,9 +875,10 @@
     ]));
     next.appendChild(el("p", { class: "hint" }, "Full power on both sides of the screen, every faint forever. Win with a fallen seat in the cast, and the film's legend may step off the screen…"));
   }
-  function battleMovie(run, b) {
-    if (!battleMovie._skip) { battleMovie._skip = 1; climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie(run, b); }, () => { battleMovie._skip = 0; }); return; }
-    battleMovie._skip = 0;
+  // `shown` (the FACE button's own re-entry) is the ONLY thing that skips the
+  // title card — never a module flag a stray re-render could reset.
+  function battleMovie(run, b, shown) {
+    if (!shown) { climaxIntro({ flair: "🎬 " + b.film, rank: b.title, name: b.name, face: b.face, icon: b.icon, quote: b.quote }, () => { battleMovie(run, b, 1); }); return; }
     partyThen(run, 6, "🎬 " + b.film + " — vs " + b.name,
       "Full power, no caps — and every faint is permanent.",
       (ids) => {
@@ -846,15 +893,13 @@
           } } });
       });
   }
-  // 🌟 The co-star rule — fired after a film falls. Waits for the battle
-  // screen to clear, then offers the film's legend IF a seat is open.
+  // 🌟 The co-star rule — fired after a film falls. Rides the stage queue, so
+  // it lands AFTER the tombstone that opened the seat it's offering to fill
+  // (and can't be dropped by a slow reader on the recap card).
   function offerCostar(b) {
     const id = b.costar;
     if (!id) return;
-    let tries = 0;
-    (function whenClear() {
-      if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
-      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
+    cineQueue(() => {
       const run = Store.nuzRun(me, "movie");
       if (!run || run.over || run.region !== "movie") return;
       if (run.box.some((m) => m.id === id) || run.box.filter((m) => !m.dead).length >= 6) return;
@@ -869,7 +914,7 @@
         ]),
       ]);
       ctrl = Modal.open("🌟 A co-star steps forward!", body, null, { noFooter: true });
-    })();
+    });
   }
 
   // 🕰 The generation border — the emotional center of the ages walk. The
@@ -1270,59 +1315,72 @@
   let ripVeil = null;
   function closeRip() { if (ripVeil) { ripVeil.remove(); ripVeil = null; } }
   // The veil must NEVER survive a route change — leaving the page buries it.
+  // (It does NOT settle the debt: an un-mourned tombstone is still owed, and
+  // the next #/nuzlocke render raises it again. The moment is never lost.)
   window.addEventListener("hashchange", closeRip);
+  const ripQueued = {};                          // slot → an act is already queued
+  // 🪦 The death is LATCHED into the run first (Store.nuzPendRip), then an act
+  // joins the stage queue. Nothing here expires: the card waits out an 8-second
+  // read of the recap, an 8-second boss outro, the badge pop, a walk to the Dex
+  // and back — even a reload — and rises the moment the screen is clear.
   function ripCard(ids, sl) {
-    let tries = 0;
-    (function whenClear() {
-      if (++tries > 30 || !/^#\/nuzlocke/.test(location.hash)) return;
-      // Wait out the battle screen, badge pops and title cards — a funeral
-      // doesn't share the stage.
-      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
-      const run = Store.nuzRun(me, sl);
-      if (!run) return;
-      const fallen = ids.map((id) => run.box.find((m) => m.id === id && m.dead)).filter(Boolean);
-      if (!fallen.length) return;
-      closeRip();
-      const rows = fallen.map((m) => {
-        const src = Store.sprite(m.id);
-        const era = fellEra(m.fell);
-        const by = m.fell && m.fell.by ? "fell to " + m.fell.by : "fell in battle";
-        return el("div", { class: "nuz-rip-row" }, [
-          src ? el("img", { src: src, alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
-          el("div", { class: "nuz-rip-line" }, [
-            monName(m.id) + (m.shiny ? " ✨" : ""),
-            el("span", { class: "nuz-rip-sub" }, by + (era ? ", " + era : "")),
-          ]),
-        ]);
-      });
-      const input = el("input", { class: "in", type: "text", maxlength: "120",
-        placeholder: "One line for the stone… (optional)" });
-      const names = fallen.map((m) => monName(m.id)).join(", ");
-      const carve = () => {
-        const txt = (input.value || "").trim();
-        if (txt) {
-          Store.update((s) => Store.chron(s, "🪦", "RIP " + names + " — “" + txt + "”"));
-          if (window.U && U.toast) U.toast("🪦 The eulogy is carved into the chronicle.");
-        }
-        closeRip();
-      };
-      input.addEventListener("keydown", (e) => { if (e.key === "Enter") carve(); });
-      ripVeil = el("div", { class: "modal-overlay nuz-rip-veil", onClick: closeRip }, [
-        // tap ANYWHERE lays them to rest — only the eulogy row holds the tap
-        // (typing a line must never bury the card mid-word).
-        el("div", { class: "nuz-rip-card" }, [
-          el("div", { class: "nuz-rip-stone" }, "🪦"),
-          el("div", { class: "nuz-rip-title" }, fallen.length > 1 ? "THE FALLEN" : "GONE FOR THE RUN"),
-          el("div", { class: "nuz-rip-rows" }, rows),
-          el("div", { class: "nuz-rip-eulogy", onClick: (e) => e.stopPropagation() }, [input,
-            el("button", { class: "btn subtle sm", onClick: carve }, "🪦 Carve it")]),
-          el("div", { class: "nuz-rip-hint" }, "tap anywhere to lay them to rest"),
+    Store.nuzPendRip(me, ids, sl);
+    queueRip(sl);
+  }
+  function queueRip(sl) {
+    if (ripQueued[sl]) return;                   // already waiting its turn
+    ripQueued[sl] = 1;
+    const who = me;
+    cineQueue(() => { ripQueued[sl] = 0; if (who === me) raiseRip(sl); });
+  }
+  function raiseRip(sl) {
+    const run = Store.nuzRun(me, sl);
+    if (!run) return;
+    const ids = (run.pendRip || []).slice();
+    if (!ids.length) return;
+    const fallen = ids.map((id) => run.box.find((m) => m.id === id && m.dead)).filter(Boolean);
+    if (!fallen.length) { Store.nuzRipDone(me, null, sl); return; }
+    closeRip();
+    const rest = () => { Store.nuzRipDone(me, null, sl); closeRip(); };
+    const rows = fallen.map((m) => {
+      const src = Store.sprite(m.id);
+      const era = fellEra(m.fell);
+      const by = m.fell && m.fell.by ? "fell to " + m.fell.by : "fell in battle";
+      return el("div", { class: "nuz-rip-row" }, [
+        src ? el("img", { src: src, alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
+        el("div", { class: "nuz-rip-line" }, [
+          monName(m.id) + (m.shiny ? " ✨" : ""),
+          el("span", { class: "nuz-rip-sub" }, by + (era ? ", " + era : "")),
         ]),
       ]);
-      document.body.appendChild(ripVeil);
-      sfx("error");
-      requestAnimationFrame(() => { if (ripVeil) ripVeil.classList.add("go"); });
-    })();
+    });
+    const input = el("input", { class: "in", type: "text", maxlength: "120",
+      placeholder: "One line for the stone… (optional)" });
+    const names = fallen.map((m) => monName(m.id)).join(", ");
+    const carve = () => {
+      const txt = (input.value || "").trim();
+      if (txt) {
+        Store.update((s) => Store.chron(s, "🪦", "RIP " + names + " — “" + txt + "”"));
+        if (window.U && U.toast) U.toast("🪦 The eulogy is carved into the chronicle.");
+      }
+      rest();
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") carve(); });
+    ripVeil = el("div", { class: "modal-overlay nuz-rip-veil", onClick: rest }, [
+      // tap ANYWHERE lays them to rest — only the eulogy row holds the tap
+      // (typing a line must never bury the card mid-word).
+      el("div", { class: "nuz-rip-card" }, [
+        el("div", { class: "nuz-rip-stone" }, "🪦"),
+        el("div", { class: "nuz-rip-title" }, fallen.length > 1 ? "THE FALLEN" : "GONE FOR THE RUN"),
+        el("div", { class: "nuz-rip-rows" }, rows),
+        el("div", { class: "nuz-rip-eulogy", onClick: (e) => e.stopPropagation() }, [input,
+          el("button", { class: "btn subtle sm", onClick: carve }, "🪦 Carve it")]),
+        el("div", { class: "nuz-rip-hint" }, "tap anywhere to lay them to rest"),
+      ]),
+    ]);
+    document.body.appendChild(ripVeil);
+    sfx("error");
+    requestAnimationFrame(() => { if (ripVeil) ripVeil.classList.add("go"); });
   }
   // ⚰️ The graveyard strip — every tombstone in one compact roll call: name,
   // era, killer. Rides the active-run view AND the finished-run summary.
@@ -1566,50 +1624,60 @@
       return !g || g <= gen;
     });
   }
+  const ambQueued = {};                          // slot → one ambush waits at a time
   function maybeAmbush(forceStoryOnly) {
     const probe = Store.nuzRun(me, slot);
     // ⚡ Blitz keeps its road clean: the ONE villain is battle 27 itself.
     if (!probe || probe.over || probe.region === "movie" || probe.region === "blitz") return;
     const story0 = storyDue(probe);
     if (!story0 && (forceStoryOnly || Math.random() > 0.28)) return;
-    let tries = 0;
-    (function whenClear() {
-      if (++tries > 25 || !/^#\/nuzlocke/.test(location.hash)) return;
-      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
-      const run = Store.nuzRun(me, slot);
-      if (!run || run.over || !Store.nuzAlive(me, slot).length) return;
-      const story = storyDue(run);
-      let t = story;
-      if (!t) {
-        if (forceStoryOnly) return;
-        // 🎈 SECRET: sometimes the ambush isn't a villain at all — Team
-        // Rocket stalks every region's roads with their era-true squad.
-        if (window.TEAM_ROCKET && Math.random() < 0.25) {
-          t = TEAM_ROCKET.for((legacyRegionOf(run) || {}).name || "Kanto");
-        } else {
-          const pool = ambushPool(run);
-          if (!pool.length) return;
-          t = pool[(Math.random() * pool.length) | 0];
-        }
+    const sl = slot, who = me;
+    if (ambQueued[sl]) return;                   // no stacking behind itself
+    ambQueued[sl] = 1;
+    // 🪦 → ❗ The ambush joins the SAME stage queue as the tombstone, always
+    // BEHIND it (recordDeaths queues first in every onEnd), so a eulogy that
+    // takes a minute to write can't drop the villain waiting on the road —
+    // and the two never race for the screen.
+    cineQueue(() => {
+      ambQueued[sl] = 0;
+      if (who !== me || sl !== slot) return;     // the phone moved on
+      raiseAmbush(forceStoryOnly);
+    });
+  }
+  function raiseAmbush(forceStoryOnly) {
+    const run = Store.nuzRun(me, slot);
+    if (!run || run.over || !Store.nuzAlive(me, slot).length) return;
+    const story = storyDue(run);
+    let t = story;
+    if (!t) {
+      if (forceStoryOnly) return;
+      // 🎈 SECRET: sometimes the ambush isn't a villain at all — Team
+      // Rocket stalks every region's roads with their era-true squad.
+      if (window.TEAM_ROCKET && Math.random() < 0.25) {
+        t = TEAM_ROCKET.for((legacyRegionOf(run) || {}).name || "Kanto");
+      } else {
+        const pool = ambushPool(run);
+        if (!pool.length) return;
+        t = pool[(Math.random() * pool.length) | 0];
       }
-      let ctrl;
-      const body = el("div", { class: "modal-form" }, [
-        el("p", { class: "hint" }, story
-          ? "📖 THE STORY FINDS YOU. " + (t.story.intro || "A chapter of the saga steps onto your road — and in a NUZLOCKE, every faint is FOREVER.")
-          : "❗ On the road out of the battle, a villain blocks the path — and in a NUZLOCKE, every faint is FOREVER."),
-        el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
-        el("div", { class: "toolbar" }, [
-          el("button", { class: "btn primary", onClick: () => { ctrl.close(); ambushBattle(run, t, !!story); } }, "⚔ Stand and fight"),
-          el("button", { class: "btn subtle", onClick: () => {
-            ctrl.close();
-            if (story) storySnooze[t.name] = eraKey(run);   // they'll be back next road
-            Store.update((s) => { Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — " + (story ? "but the story isn't done with them." : "the grass remembers.")); });
-          } }, story ? "🏃 Slip away (they'll be back)" : "🏃 Slip away"),
-        ]),
-      ]);
-      ctrl = Modal.open(story ? "📖 " + t.title + " " + t.name + " — the story finds you!" : "❗ " + t.title + " " + t.name + " ambushes the run!", body, null, { noFooter: true });
-      if (window.SFX && story && SFX.fanfare) SFX.fanfare();
-    })();
+    }
+    let ctrl;
+    const body = el("div", { class: "modal-form" }, [
+      el("p", { class: "hint" }, story
+        ? "📖 THE STORY FINDS YOU. " + (t.story.intro || "A chapter of the saga steps onto your road — and in a NUZLOCKE, every faint is FOREVER.")
+        : "❗ On the road out of the battle, a villain blocks the path — and in a NUZLOCKE, every faint is FOREVER."),
+      el("div", { class: "enc-quote" }, "“" + t.quote + "”"),
+      el("div", { class: "toolbar" }, [
+        el("button", { class: "btn primary", onClick: () => { ctrl.close(); ambushBattle(run, t, !!story); } }, "⚔ Stand and fight"),
+        el("button", { class: "btn subtle", onClick: () => {
+          ctrl.close();
+          if (story) storySnooze[t.name] = eraKey(run);   // they'll be back next road
+          Store.update((s) => { Store.chron(s, "🏃", aName(me) + " slipped away from " + t.title + " " + t.name + " mid-Nuzlocke — " + (story ? "but the story isn't done with them." : "the grass remembers.")); });
+        } }, story ? "🏃 Slip away (they'll be back)" : "🏃 Slip away"),
+      ]),
+    ]);
+    ctrl = Modal.open(story ? "📖 " + t.title + " " + t.name + " — the story finds you!" : "❗ " + t.title + " " + t.name + " ambushes the run!", body, null, { noFooter: true });
+    if (window.SFX && story && SFX.fanfare) SFX.fanfare();
   }
   function ambushBattle(run, t, isStory) {
     const hc = gymHandicap(run);   // villains scale with the run, like the gyms
@@ -1655,13 +1723,16 @@
       });
   }
 
-  function battleStage(run, st) {
+  // 🎬 The curtain is keyed to the TAP, not to a module flag: FACE re-enters
+  // with shown=1 and the battle starts. A Router.render() landing while the
+  // card is up (pull-to-refresh on the full-screen card, a teammate's synced
+  // write) used to reset that flag from view() and re-show a FRESH card —
+  // FACE read as "did nothing". There is no flag left to reset; and leaving
+  // via back/nav still shows the card again on the way back in, because the
+  // button that opens it never passes `shown`.
+  function battleStage(run, st, shown) {
     const cx = stageClimax(run, st);
-    // FACE re-calls battleStage with _skip STILL 1 so the guard falls through
-    // to the battle; the fall-through below clears it. (Resetting _skip here
-    // re-armed the guard and just re-showed this same card — a dead button.)
-    if (cx && !battleStage._skip) { battleStage._skip = 1; climaxIntro(cx, () => { battleStage(run, st); }, () => { battleStage._skip = 0; }); return; }
-    battleStage._skip = 0;
+    if (cx && !shown) { climaxIntro(cx, () => { battleStage(run, st, 1); }); return; }
     partyThen(run, 6, "⚔ Nuzlocke league — " + st.rank + " " + st.name,
       "The endgame. Every faint is permanent — and a wipe ends the run.",
       (ids) => {

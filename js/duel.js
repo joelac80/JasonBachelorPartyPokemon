@@ -417,6 +417,20 @@
   // desperate Struggle can absolutely KO its own user.
   const STRUGGLE = { name: "Struggle", type: "none", cat: "phys", pow: 50, acc: 100, pri: 0, fx: { recoil: 0.25 } };
 
+  // ☠️☠️ BADLY POISONING moves. Everything else in the engine dispatches on
+  // `fx` flags; the escalating n/16 ratchet is the one effect the move DB has
+  // no flag for, so the engine keeps its own list. `fx.badly` wins the moment
+  // data/moves.js grows one — until then a name lookup, normalized (trimmed,
+  // case-folded) so a stray space in the DB can't silently downgrade Toxic to
+  // ordinary flat poison. Add a move here and it ratchets; leave it out and
+  // its poison stays the flat 1/10 bite (Sludge Bomb procs, Poison Sting).
+  const BADLY_POISON = { toxic: 1 };
+  const badlyPoisons = (mv) => {
+    if (!mv) return false;
+    if (mv.fx && mv.fx.badly) return true;
+    return !!BADLY_POISON[String(mv.name || "").trim().toLowerCase()];
+  };
+
   // 🔴 Species with a canon GIGANTAMAX form: their Dynamax changes SHAPE,
   // not just size (Gengar, Machamp, Drednaw, Coalossal, Centiskorch,
   // Alcremie, Duraludon) — pure spectacle, the mechanics are identical.
@@ -530,13 +544,23 @@
   // close it; a fresh tap anywhere off the card also puts it away. The
   // long-press never selects (the follow-through click is eaten via the
   // shared `state.held` flag).
+  // 🎛️ ONE reading of the Cartridge Mode switch, shared by everything that
+  // has to agree with the battle (the peek card, the engine itself). A remote
+  // setup pins the flag for BOTH phones via opts.cartridge so the engines
+  // never disagree; everyone else asks the per-phone switch.
+  function cartOn(opts) {
+    return !!((opts && opts.cartridge != null) ? opts.cartridge
+      : (window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS));
+  }
   let peekPop = null;
   function peekShow(id, opts, act) {
     peekHide();
-    // 👁 the peek must promise the kit the battle will USE: the same
-    // effective knowledge level (a story `level` OR a ⚔ Challenge
-    // `refLevel`) — never a full-power mirage over a capped fight.
-    const kLvl = opts.level || opts.refLevel || 0;
+    // 👁 the peek must promise the kit the battle will USE — never a
+    // full-power mirage over a capped fight, and never a capped mirage over a
+    // full-power one. ⚔ Challenge's `refLevel` only trims the kit under
+    // Cartridge Mode (the legacy engine ignores it and fights at full
+    // knowledge), so the peek reads the SAME switch the battle will.
+    const kLvl = (cartOn(opts) ? (opts.level || opts.refLevel) : opts.level) || 0;
     const st = statsFor(id, kLvl || undefined);
     const shiny = opts.attId ? isShinyFor(opts.attId, id) : false;
     const src = frontSprite(id, shiny);
@@ -810,38 +834,50 @@
     // 🎛️ CARTRIDGE MODE — the real games' stats and damage math, hidden
     // behind a per-phone switch (cartridge-mode.js). A remote setup pins the
     // flag for BOTH phones (opts.cartridge) so the engines never disagree.
-    const CART = !!(opts.cartridge != null ? opts.cartridge
-      : (window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS));
+    const CART = cartOn(opts);
 
-    // 🎒 KIT PARITY — the move-kit knowledge level for a mon standing at
-    // battle level `lvl`. A FREE arena duel (no story `level`, no ⚔ Challenge
-    // `refLevel`, and no curve plan bending this mon off the default 50)
-    // fights at Lv50 STATS but KNOWS its full moveset: the hold-to-peek
-    // preview promises Hyper Beam, so the battle must deliver it. Every
-    // leveled path (story, challenge, nuzlocke, tower floors, cups) — and
-    // any planned foe whose curve actually moved its level — caps as before.
-    function kitLevel(lvl) {
-      return (opts.level || opts.refLevel || lvl !== 50) ? lvl : 0;
-    }
+    // 🎪 FREE_LVL — the level an unleveled battle fights at: no story `level`,
+    // no ⚔ Challenge `refLevel`, no curve plan. The arena default.
+    const FREE_LVL = 50;
     function makeUnit(u) {
       // NPC units (gym leaders) have no attendee — just a name and an AI flag.
       const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
       // 🎛️ Cartridge Mode: every AI mon fights at its CURVE level (the level
-      // plan replaces boost multipliers entirely — see cartridge-mode.js).
-      const cartPlan = CART && u.ai ? CartridgeMode.plan(opts, u) : null;
+      // plan replaces boost multipliers entirely — see cartridge-mode.js), in
+      // the FORM the era law leaves it in. planned() settles the two together:
+      // the level is budgeted from the mon that actually takes the field, not
+      // from a true form that got devolved away afterwards.
+      const cartPlan = CART && u.ai ? CartridgeMode.planned(opts, u) : null;
+      // the battle's reference level — what an unplanned mon stands at
+      const baseLvl = opts.level || opts.refLevel || FREE_LVL;
       const party = (u.monIds || []).map((id, i) => {
         if (!id) return null;
         let mid = id, mLvl = 0;
+        // 🎒 KIT PARITY — does this mon KNOW its full moveset, or only what its
+        // level has taught it? Decided HERE, where the level is chosen, instead
+        // of inferred later from the number (a bare `lvl !== 50` test made a
+        // unit that landed on exactly Lv 50 stronger than the same unit at 51,
+        // and one curve tweak away from silently nerfing a foe).
+        // ⚠️ BLAST RADIUS, plainly: a battle that sets NEITHER `level` nor
+        // `refLevel` — movies, legends, secrets, tournaments, encounters, HOF,
+        // Safari wild AND free arena duels — plans out at a flat Lv 50, so
+        // BOTH sides fight uncapped: 210 of 1155 species (18%) bring a
+        // different kit than they would at a capped 50, bosses included
+        // (Hyper Beam, Solar Beam, Sky Attack). That is deliberate — this
+        // house leans challenge, and the hold-to-peek card promises those
+        // moves, so the battle must deliver them. Every LEVELED path (story,
+        // ⚔ challenge, nuzlocke, tower floors, cups) — and any planned foe
+        // whose curve actually moved it off the reference — stays capped.
+        let uncappedKit = false;
         if (CART) {
-          mLvl = cartPlan ? cartPlan[i] : (opts.level || opts.refLevel || 50);
+          mLvl = cartPlan ? cartPlan.lvls[i] : baseLvl;
+          uncappedKit = !opts.level && !opts.refLevel && mLvl === baseLvl;
           // era law at ITS OWN level: a story ace steps down to the form its
           // (edged) level allows — the true-form one-shot at Lv 14 is gone.
           // 🎖 …but never past its ICONIC form (Misty's STARMIE stays).
-          if (opts.level && u.ai && window.JourneyStyle) {
-            mid = CartridgeMode.formFor(opts, id, mLvl, i === (u.monIds || []).length - 1);
-          }
+          if (cartPlan && opts.level && window.JourneyStyle) mid = cartPlan.ids[i] || id;
         }
-        const m = statsFor(mid, CART ? kitLevel(mLvl) : opts.level); m.hp = m.hpMax;
+        const m = statsFor(mid, CART ? (uncappedKit ? 0 : mLvl) : opts.level); m.hp = m.hpMax;
         // 🎵 SIGNATURE MOVE: the attack the story remembers is guaranteed on
         // the ace's kit, whatever the level curve trimmed (Whitney's Body
         // Slam, Cynthia's Draco Meteor, RED's Volt Tackle…).
@@ -1011,8 +1047,10 @@
       // (sending out fainted slots at end of turn).
       phase: "select", orders: {}, sel: [], res: [], repl: [], turnDone: null,
       // 🏆 the MVP ledger — the humans' highlight reel for the victory recap:
-      // hardest single hit, KO counts per player mon, and the turn count.
-      stats: { big: null, kos: {}, turns: 0 },
+      // hardest single hit and KO counts per mon, kept PER SIDE (a hot-seat
+      // human-vs-human duel is two highlight reels, and the card belongs to
+      // the winner), plus the shared turn count.
+      stats: { side: { a: { big: null, kos: {} }, b: { big: null, kos: {} } }, turns: 0 },
       megaSide: { a: false, b: false } };   // ✨ one Mega Evolution per side per battle
     if (!S.first) {
       // The faster lead goes first (real Gen-2 base Speed). Deterministic
@@ -1899,10 +1937,15 @@
     }
 
     // 🏆 Feed the MVP ledger — only HUMAN hits make the highlight reel (the
-    // recap celebrates the winning trainer, not the boss's best haymaker).
+    // recap celebrates a trainer, not the boss's best haymaker), filed under
+    // the trainer's own side so the card can credit the WINNER's team.
+    // 💥 `dmg` is the HP the target ACTUALLY lost, not the rolled number — an
+    // overkill finishing blow reported "334 dmg" against a mon that had 40 HP
+    // left. (Recoil and drain already cap the same way.)
     function trackHit(u, m, mv, dmg, ko) {
       if (u.ai) return;
-      const st = S.stats;
+      const st = S.stats.side[u._side];
+      if (!st) return;
       if (dmg > 0 && (!st.big || dmg > st.big.dmg)) st.big = { who: m.name, mv: mv.name, dmg: dmg };
       if (ko) st.kos[m.name] = (st.kos[m.name] || 0) + 1;
     }
@@ -1985,7 +2028,7 @@
           // ☠️☠️ TOXIC poisons BADLY: the residual tick starts at 1/16 max HP
           // and climbs every turn (see endResidual). Ordinary poison — Sludge
           // Bomb procs, Poison Sting — keeps its flat 1/10 bite.
-          if (fx.status.id === "psn" && mv.name === "Toxic") {
+          if (fx.status.id === "psn" && badlyPoisons(mv)) {
             tm._tox = 1;
             push("☠️ " + tm.name + " was BADLY poisoned!", 1050, "error");
           } else push("💤 " + tm.name + STATUS_GOT[fx.status.id], 1050, "error");
@@ -2024,8 +2067,9 @@
         const su = sides[dSide].units[sp.tUnit]; if (!su) return;
         const sm = mon(su);
         if (sp.eff === 0 || sm.hp <= 0) return;
+        const sbefore = sm.hp;
         sm.hp = Math.max(0, sm.hp - sp.dmg);
-        trackHit(u, m, mv, sp.dmg, sm.hp <= 0);
+        trackHit(u, m, mv, sbefore - sm.hp, sm.hp <= 0);
         if (sm.hp <= 0) creditKO(u, m); else if (berryReady(su)) eatBerry(su);
       });
 
@@ -2035,7 +2079,7 @@
           // drain/recoil key off the HP the target ACTUALLY lost — overkill
           // damage doesn't heal (50 HP left + a 100 hit drains from 50).
           const hpLost = (!isStatus && tm) ? Math.min(act.dmg, tm.hp) : 0;
-          if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); trackHit(u, m, mv, act.dmg, tm.hp <= 0); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
+          if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); trackHit(u, m, mv, hpLost, tm.hp <= 0); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
           applySpread();
           applyEffects(isStatus ? 0 : hpLost, function () {});
           if (act.recharge && m.hp > 0) m._recharge = true;
@@ -2069,7 +2113,7 @@
         steps.push([null, 500, () => {
           const before = tm.hp;
           tm.hp = Math.max(0, tm.hp - act.dmg);
-          trackHit(u, m, mv, act.dmg, tm.hp <= 0);
+          trackHit(u, m, mv, before - tm.hp, tm.hp <= 0);
           if (tm.hp <= 0) act._exp = creditKO(u, m);
           // A crit gets ONLY the red flash — stacking it with the hurt blink
           // (opacity dip) made the whole scene look like it went transparent.
@@ -2097,7 +2141,7 @@
         steps.push([null, 450, () => {
           const sbefore = sm.hp;
           sm.hp = Math.max(0, sm.hp - sp.dmg);
-          trackHit(u, m, mv, sp.dmg, sm.hp <= 0);
+          trackHit(u, m, mv, sbefore - sm.hp, sm.hp <= 0);
           if (sm.hp <= 0) sp._exp = creditKO(u, m);
           su._monEl.classList.add("hurt");
           setTimeout(() => su._monEl.classList.remove("hurt"), 600);
@@ -2258,11 +2302,17 @@
       // (unit.outro.{win,lose} — real canon lines where we have them) always
       // plays; the generic pool only seasons featured battles. Wild mons
       // don't monologue.
+      // 🧭 Both sides come from the SAME non-AI helper the result handlers use
+      // (playerInfo) — never `units[0]`, which quietly swallowed the boss's
+      // closing quote the moment an AI ally sat in slot 0 beside the human.
       let outroInfo = null;
       if (!opts.wild) {
-        const wU = sides[winSide].units[0], lU = sides[other(winSide)].units[0];
-        if (lU.ai && !wU.ai) { const oln = (lU.outro && lU.outro.lose) || (chatty ? bossLine(lU.feral ? OUTRO_LOSE_FERAL : OUTRO_LOSE, lU.party[0].id) : null); if (oln) outroInfo = { u: lU, line: oln }; }
-        else if (wU.ai && !lU.ai) { const oln = (wU.outro && wU.outro.win) || (chatty ? bossLine(wU.feral ? OUTRO_WIN_FERAL : OUTRO_WIN, wU.party[0].id) : null); if (oln) outroInfo = { u: wU, line: oln }; }
+        const pv = playerInfo();
+        const human = pv.unit, boss = (sides[other(pv.side)].units || []).find((x) => x.ai);
+        if (boss && human && !human.ai) {
+          if (winSide === pv.side) { const oln = (boss.outro && boss.outro.lose) || (chatty ? bossLine(boss.feral ? OUTRO_LOSE_FERAL : OUTRO_LOSE, boss.party[0].id) : null); if (oln) outroInfo = { u: boss, line: oln }; }
+          else { const oln = (boss.outro && boss.outro.win) || (chatty ? bossLine(boss.feral ? OUTRO_WIN_FERAL : OUTRO_WIN, boss.party[0].id) : null); if (oln) outroInfo = { u: boss, line: oln }; }
+        }
       }
       // 🎭 The boss's last word is a MOMENT now, not a passing line: a card
       // with their ace and their real quote, held until the player taps
@@ -2288,7 +2338,8 @@
       // they were never a choice). Only vs the AI, only in battles with
       // stakes — a friendly duel or wild scrap earns no medal.
       const stakes = !!(opts.league || opts.gym || opts.movie || opts.legend || opts.secret || opts.gauntlet);
-      const humansWon = winSide && sides[winSide].units.some((x) => !x.ai) && sides[other(winSide)].units.every((x) => x.ai);
+      const winnerHuman = !!winSide && sides[winSide].units.some((x) => !x.ai);
+      const humansWon = winnerHuman && sides[other(winSide)].units.every((x) => x.ai);
       // The BEAT plays on every screen (spectators included); the BANK below
       // is gated to the one recording phone so the medal counts exactly once.
       // (⚔ Challenge seals the bag outright — there is no restraint to reward,
@@ -2297,17 +2348,23 @@
         && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
       const itemFree = record && itemFreeShown;
       const finishUp = () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); };
-      // 🏆 THE VICTORY RECAP — the humans beat the AI outright (no card on a
-      // loss, and none for a forfeit): a compact highlight card — hardest hit,
-      // the MVP by KOs, and how many turns it took — held until Continue.
+      // 🏆 THE VICTORY RECAP — a compact highlight card (hardest hit, the MVP
+      // by KOs, how many turns it took), held until Continue. It plays for any
+      // human win: beating the AI, and — the party's most-repeated battle —
+      // one friend beating another hot-seat, where the card credits the
+      // WINNER's team from that side's own ledger. No card on a loss, and none
+      // for a forfeit.
       const recapPop = (next) => {
-        const st = S.stats || { big: null, kos: {}, turns: 0 };
+        const all = S.stats || { side: {}, turns: 0 };
+        const st = (all.side || {})[winSide] || { big: null, kos: {} };
         const mvp = Object.keys(st.kos).sort((x, y) => st.kos[y] - st.kos[x])[0] || null;
         if (!st.big && !mvp) { next(); return; }
         const rows = [];
-        if (st.big) rows.push(["💥 Biggest hit", st.big.who + "'s " + st.big.mv + " — " + st.big.dmg + " dmg"]);
-        if (mvp) rows.push(["🏆 MVP", mvp + " — " + st.kos[mvp] + " KO" + (st.kos[mvp] === 1 ? "" : "s")]);
-        rows.push(["⏱ Turns", String(st.turns)]);
+        // NBSP glues each number to its unit — "— 118 dmg" never orphans the
+        // "dmg" onto its own line on a narrow phone.
+        if (st.big) rows.push(["💥 Biggest hit", st.big.who + "'s " + st.big.mv + " — " + st.big.dmg + "\u00A0dmg"]);
+        if (mvp) rows.push(["🏆 MVP", mvp + " — " + st.kos[mvp] + "\u00A0KO" + (st.kos[mvp] === 1 ? "" : "s")]);
+        rows.push(["⏱ Turns", String(all.turns)]);
         const lay = el("div", { class: "modal-overlay duel-outro-pop" }, [
           el("div", { class: "modal duel-recap" }, [
             el("div", { class: "duel-recap-title" }, "🏆 BATTLE RECAP"),
@@ -2321,14 +2378,16 @@
         document.body.appendChild(lay);
         sfx("correct");
       };
-      const showRecap = humansWon && how === "faint";
+      const showRecap = winnerHuman && how === "faint";
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         itemFreeShown ? ["🏅 ITEM-FREE VICTORY — the bag stayed shut. Pure skill!", 1700, () => sfx("correct")] : null,
       ].filter(Boolean), () => {
-        const afterRecap = () => { if (outroInfo) outroPop(outroInfo, finishUp); else finishUp(); };
-        if (showRecap) recapPop(afterRecap); else afterRecap();
+        // 🎭 THE BOSS SPEAKS FIRST. A Champion's concession deserves a beat of
+        // silence — the recap card used to cut them off mid-sentence.
+        const afterOutro = () => { if (showRecap) recapPop(finishUp); else finishUp(); };
+        if (outroInfo) outroPop(outroInfo, afterOutro); else afterOutro();
       });
       if (!record) return;
       // 🏅 bank the medal (counter feeds The Purist achievement); marquee boss

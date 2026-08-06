@@ -220,10 +220,20 @@
   }
   function badgePop(idx, attId, opts) {
     const g = GYMS[idx]; if (!g) return;
-    let tries = 0;
-    (function when() {   // wait for the battle screen's own outro to clear
-      if (++tries > 20) return;
-      if (document.querySelector(".battle")) { setTimeout(when, 500); return; }
+    // 🏅 THE AWARD QUEUES BEHIND EVERY OTHER CURTAIN. This pop is a
+    // `.league-intro` at z-260 — the nuzlocke's 🪦 RIP veil is a
+    // `.modal-overlay` at z-320. Waiting only on `.battle` meant a badge won on
+    // the same turn a Pokémon died raised UNDERNEATH the tombstone and
+    // self-destructed there, unseen: the player earned a badge and never saw
+    // it. So wait on the same set every other cinematic queues behind. We are
+    // not in the DOM yet, so we can never deadlock on ourselves.
+    const t0 = Date.now();
+    (function when() {   // wait for the battle, tombstones, modals and title cards
+      // 🔒 LATCH, don't expire: a badge is earned, so it gets its moment even a
+      // long eulogy later. Patience, not eternity — after 10 minutes of a stuck
+      // curtain the timer lets go instead of haunting the phone.
+      if (Date.now() - t0 > 600000) return;
+      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(when, 400); return; }
       const nm = (Store.attendee(attId) || {}).name || "The challenger";
       let lay;
       const closePop = () => { try { lay.remove(); } catch (_) {} };
@@ -255,12 +265,16 @@
     })();
   }
   function offerEncounter(attId, t, isStory) {
-    let tries = 0;
-    // Wait until the gym battle's own end screens (evolution / rematch) clear.
+    const t0 = Date.now();
+    // Wait until the gym battle's own end screens (evolution / rematch / the
+    // 🏅 badge pop) clear. LEAVING THE PAGE is the only real give-up: a hard
+    // tick limit dropped scripted story ambushes on the floor whenever the
+    // badge moment ahead of us took its time (a tombstone + a badge pop can
+    // easily outlast 15 seconds of polling).
     (function whenClear() {
       // the circuit lives on BOTH pages: the 🗺 Journey (#/regions) and the
       // legacy #/gyms route — an ambush must fire from either
-      if (++tries > 25 || !/^#\/(gyms|regions)/.test(location.hash)) return;   // give up / left the page
+      if (Date.now() - t0 > 600000 || !/^#\/(gyms|regions)/.test(location.hash)) return;   // give up / left the page
       if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
       const ico = U.energyIcon(t.type);
       // 🎭 SURPRISES arrive MASKED: you get the VOICE (their quote) and the
@@ -329,6 +343,55 @@
       : "The road to " + GYMS[idx].region + " opens when you beat Champion " + need.name + " (The Journey).";
   }
 
+  // ⚔ CHALLENGE RULES: the leader brings a FULL SIX (short canon rosters are
+  // filled out by doubling up, the way a real gym pads its bench). The bench
+  // pads from the SUPPORTING cast only — the ACE (last slot) is the leader's
+  // one signature mon, never photocopied (no twin Alakazam).
+  const CHAL_SIZE = 6;
+  function padTo6(t) {
+    const o = t.slice(), bench = t.length > 1 ? t.slice(0, -1) : t; let i = 0;
+    while (o.length < CHAL_SIZE && bench.length) { o.splice(o.length - 1, 0, bench[i % bench.length]); i++; }
+    return o.slice(0, CHAL_SIZE);
+  }
+  // 🎯 ONE SOURCE OF TRUTH for "who the leader actually sends out" in Challenge.
+  // The card and the battle must build the foe list from the SAME function or
+  // the card's advertised level starts describing a fight that never happens.
+  // 👥 a duoShared leader (Raihan) runs one shared party twice — one list is
+  // enough for the level plan, both units get identical numbers.
+  function chalFoeUnits(g) {
+    if (g.duo) return g.duo.teams.map((t) => t.slice());
+    if (g.duoShared) return [g.team.slice()];
+    return [padTo6(g.team)];
+  }
+  // 📣 THE HONEST FOE LEVEL. `chalGymLevel + chalGymEdge` is NOT what the HP
+  // bars show: CartridgeMode.plan lays a positional edge on top (fodder → ace)
+  // and then bends every species toward its position's power budget (−5…+2), a
+  // swing that had 26 of 68 gyms fielding EVERY foe BELOW the advertised number
+  // and 6 fielding every foe above it. So ask the real planner — the same call
+  // duel.js makes — and quote the range it returns.
+  function chalFoeLevels(idx) {
+    const g = GYMS[idx], JSx = window.JourneyStyle;
+    if (!g || !JSx || !JSx.chalGymLevel) return null;
+    const opts = { gym: { idx: idx, leader: g.leader, badge: g.badge, style: "challenge" },
+      refLevel: JSx.chalGymLevel(idx), foeEdge: JSx.chalGymEdge ? JSx.chalGymEdge(idx) : 0 };
+    // 🎛️ Cartridge OFF = the legacy engine, which never reads refLevel/foeEdge
+    // for stats and prints refLevel on BOTH HP bars — the leader's edge simply
+    // doesn't exist there. Quote the level that phone will really see.
+    const cart = !!(window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS && CartridgeMode.plan);
+    if (!cart) return [opts.refLevel, opts.refLevel];
+    let lo = Infinity, hi = 0;
+    chalFoeUnits(g).forEach((ids) => {
+      const plan = CartridgeMode.plan(opts, { monIds: ids, ai: true }) || [];
+      plan.forEach((L) => { if (L) { lo = Math.min(lo, L); hi = Math.max(hi, L); } });
+    });
+    return hi ? [lo, hi] : null;
+  }
+  // " · foes Lv 61–66" — a range, because a leader's six are not one number.
+  function chalFoeTag(idx) {
+    const r = chalFoeLevels(idx);
+    return r ? " · foes Lv " + (r[0] === r[1] ? r[0] : r[0] + "–" + r[1]) : "";
+  }
+
   function challengeGym(idx) {
     const gym = GYMS[idx];
     const go = (attId) => {
@@ -341,18 +404,12 @@
       // level, and its fodder power floor can only walk back up from the true
       // id. Legacy engine (cartridge off) keeps the pre-devolve below.
       const cart = !!(window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS);
-      // ⚔ CHALLENGE RULES: the leader brings a FULL SIX (short canon rosters
-      // are filled out by doubling up, the way a real gym pads its bench) and
-      // your bag is sealed — no Full Restores, no Dire Hit. You still bring as
-      // many as you own, so nobody is locked out; the pressure is attrition,
-      // not a stat wall. 📖 True Story is untouched: era-true levels, trimmed
-      // rosters, items in hand, and the ace towering over the field.
-      const CHAL_SIZE = 6;
-      // the bench pads from the SUPPORTING cast only — the ACE (last slot) is
-      // the leader's one signature mon, never photocopied (no twin Alakazam)
-      const padTo6 = (t) => { const o = t.slice(), bench = t.length > 1 ? t.slice(0, -1) : t; let i = 0;
-        while (o.length < CHAL_SIZE && bench.length) { o.splice(o.length - 1, 0, bench[i % bench.length]); i++; }
-        return o.slice(0, CHAL_SIZE); };
+      // ⚔ CHALLENGE RULES (padTo6 lives up top now — the CARD quotes the same
+      // roster): the leader brings a FULL SIX and your bag is sealed — no Full
+      // Restores, no Dire Hit. You still bring as many as you own, so nobody is
+      // locked out; the pressure is attrition, not a stat wall. 📖 True Story is
+      // untouched: era-true levels, trimmed rosters, items in hand, and the ace
+      // towering over the field.
       const size = story0 && JS0.gymSize ? Math.min(gym.team.length, JS0.gymSize(idx)) : Math.min(6, Duel.poolFor(attId).length);
       const why = gymLockedWhy(idx, attId);
       if (why) { U.toast("🔒 " + why); return; }
@@ -448,6 +505,16 @@
     if (me) go(me); else openPicker("Who challenges Leader " + gym.leader + "?", (a) => go(a.id));
   }
 
+  // 👁 WHOSE PAGE IS THIS? A signed-in phone is its trainer; a phone with no
+  // identity yet still renders the ⚔/📖 style switch and the closing hint for
+  // attendee #0 — so the CARDS have to read that same trainer, or one screen
+  // says "📖 True Story · even match" while every card underneath advertises
+  // "⚔ Challenge (6v6)". One fallback, one story. (Ownership — badges, locks,
+  // GIOVANNI's empty room — stays keyed to the REAL identity below: nobody
+  // else's trophies belong on an unclaimed phone.)
+  function viewerId() {
+    return (window.Sync && Sync.getMe && Sync.getMe()) || ((Store.state.attendees || [])[0] || {}).id || "";
+  }
   // attId (optional) locks the card for THAT trainer's Gen Ladder progress;
   // without it the lock is enforced at challenge time instead.
   function circuitCard(idx, attId) {
@@ -455,7 +522,8 @@
     const holders = Store.gymHolders(idx);
     const ico = U.energyIcon(g.type);
     const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
-    const story = !!(window.JourneyStyle && me && JourneyStyle.isStory(me));
+    const you = attId || viewerId();          // style + box size follow the page's viewer
+    const story = !!(window.JourneyStyle && you && JourneyStyle.isStory(you));
     const why = gymLockedWhy(idx, me);
     return el("div", { class: "gymc-card" + (holders.length ? " earned" : "") + (why ? " locked" : "") }, [
       el("div", { class: "gymc-head" }, [
@@ -482,21 +550,30 @@
       why ? el("div", { class: "gymc-lock" }, "🔒 " + why)
           : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, (function () {
               const JSx = window.JourneyStyle;
-              // ⚔ Challenge is honest up front: the target level is the saga
-              // ref PLUS the leader's edge — the number the HP bars will show.
-              const tgt = (!story && JSx && JSx.chalGymLevel)
-                ? " · foes ~Lv " + (JSx.chalGymLevel(idx) + (JSx.chalGymEdge ? JSx.chalGymEdge(idx) : 0)) : "";
+              // ⚔ Challenge is honest up front — and honest means asking the
+              // planner that runs the fight (chalFoeTag), not adding two dials
+              // together and hoping. Cartridge off, it quotes that engine's
+              // flat reference instead, because there is no leader edge there.
+              const tgt = story ? "" : chalFoeTag(idx);
               // 👥 canon double gyms announce their TRUE doubles shape up front
+              // (an even N-vs-N: you must bring EXACTLY as many as they field)
               if (g.duo || g.duoShared) {
                 return "⚔⚔ Double Battle (" + g.team.length + "v" + g.team.length +
                   (story ? " · Lv " + JSx.gymLevel(idx) : tgt) + ")";
               }
               // 📖 True Story shows the era-true roster size AND level up front;
               // ⚔ Challenge pads every bench to a full six and says so.
-              const n = story && JSx.gymSize ? Math.min(g.team.length, JSx.gymSize(idx)) : 6;
+              const theirs = story && JSx.gymSize ? Math.min(g.team.length, JSx.gymSize(idx)) : 6;
+              // 🥊 YOUR side of that "6v6" is your BOX, not a wish: Challenge
+              // lets you bring up to six but never lends you any, so a trainer
+              // who owns two mons is walking into a 2v6 — the card said 6v6 and
+              // then the picker said "pick up to 2". 📖 True Story is an even
+              // match by law, so there both numbers really are the same.
+              const mine = story ? theirs
+                : Math.min(6, (you && window.Duel && Duel.poolFor) ? Duel.poolFor(you).length : 6);
               // 🔁 Badge already won → say so, like every other ladder card does.
               const held = me && holders.indexOf(me) >= 0;
-              return (held ? "🔁 Rematch (badge kept · " : "⚔ Challenge (") + n + "v" + n +
+              return (held ? "🔁 Rematch (badge kept · " : "⚔ Challenge (") + mine + "v" + theirs +
                 (story ? " · Lv " + JSx.gymLevel(idx) : tgt) + ")";
             })()),
     ]);
@@ -509,8 +586,10 @@
     ]));
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
-    // the closing line matches YOUR style — "even match" is only True Story's law
-    const meHint = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
+    // the closing line matches YOUR style — "even match" is only True Story's
+    // law. Same viewerId() the cards read, so the hint and the 68 buttons under
+    // it can never describe two different games.
+    const meHint = viewerId();
     const storyHint = !!(window.JourneyStyle && meHint && JourneyStyle.isStory(meHint));
     root.appendChild(el("p", { class: "hint" },
       "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat " +
@@ -522,7 +601,7 @@
 
     // ⚔/📖 The style switch — how the whole circuit (and the League) fights you.
     (function styleRow() {
-      const me = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
+      const me = viewerId();   // the switch, the hint and the cards all mean the same trainer
       if (me && window.JourneyStyle) root.appendChild(JourneyStyle.row(me));
     })();
 

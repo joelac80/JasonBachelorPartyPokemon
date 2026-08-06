@@ -243,7 +243,12 @@
     // (Per-region badge gates ride each block's first stage via gymGate —
     // Kanto's Elite Four wants the 8 Kanto badges, Johto's the 8 Johto ones.)
     // RED, the Mt. Silver summit, additionally demands all 16 Johto+Kanto badges.
-    if (st.key === "red" && Store.gymBadgesInRange(attId, 0, 16) < 16) return "RED faces only trainers holding ALL 16 Johto & Kanto badges (" + Store.gymBadgesInRange(attId, 0, 16) + "/16).";
+    // 🎭 …and while the card above still reads "🗻 ???", this line must not rat
+    // him out either — the same seal every other page keeps (U.champSealed).
+    if (st.key === "red" && Store.gymBadgesInRange(attId, 0, 16) < 16) {
+      const climber = (window.U && U.champSealed && U.champSealed("red")) ? "The summit admits" : "RED faces";
+      return climber + " only trainers holding ALL 16 Johto & Kanto badges (" + Store.gymBadgesInRange(attId, 0, 16) + "/16).";
+    }
     // A new region's Elite Four demands that region's 8 gym badges first.
     if (st.gymGate) {
       const g = st.gymGate, have = Store.gymBadgesInRange(attId, g.start, g.count);
@@ -435,8 +440,17 @@
     opts = opts || {};
     const total = opponents.length;
     if (!total) return;
-    const size = 6;
-    if (Duel.poolFor(attId).length < size) { U.toast("This gauntlet is 6-on-6 — catch six of your own first (Safari Zone)."); return; }
+    // 📖 A round is the SAME fight its single chamber is — including how many
+    // step in. True Story's Elite Four run the canon FIVE, Champions their six,
+    // so the size rides each opponent (`o.size`) instead of a hard-coded 6.
+    // The ONE-squad run still picks the biggest round's worth up front; smaller
+    // chambers field the front of that order and bench the tail.
+    const sizeOf = (o) => Math.max(1, Math.min(6, (o && o.size) || 6));
+    const maxSize = opponents.reduce((m, o) => Math.max(m, sizeOf(o)), 1);
+    if (Duel.poolFor(attId).length < maxSize) {
+      U.toast("This gauntlet fields " + maxSize + " — catch " + maxSize + " of your own first (Safari Zone).");
+      return;
+    }
     let fixed = null, lastParty = null;
 
     const finishRun = (cleared, won) => {
@@ -457,8 +471,12 @@
     const runAt = (i) => {
       if (i >= total) { finishRun(total, true); return; }
       const o = opponents[i];
+      const sz = sizeOf(o);
       const go = (party, meta) => {
         lastParty = party;
+        // 🪑 the bench: a 5v5 chamber takes the front five of the standing
+        // order (the lead picker decides who fronts it), the sixth sits out.
+        party = party.length > sz ? party.slice(0, sz) : party;
         // 📖 An opponent can carry a True Story level — both teams step down.
         // ⚠ Illegal picks (never caught the earlier form) fight TRUE instead,
         // taxed with disobedience — same law as the single chambers. The tax
@@ -489,8 +507,12 @@
           onResult: (winSide) => {
             if (winSide === "a") {
               // 💾 round won → the save advances to the next foe
+              // ⚔/📖 the save remembers WHICH STYLE the run is being fought in —
+              // a resume in the other style must never launder credit onto
+              // stages that were only ever fought in the first one.
               if (opts.persist && i + 1 < total) gsavePut(attId, opts.persist, mode,
-                { round: i + 2, squad: (fixed || lastParty || []).slice(), beaten: opponents.slice(0, i + 1).map((x) => x.name), upd: nowTs() });
+                { round: i + 2, squad: (fixed || lastParty || []).slice(), style: opts.style || undefined,
+                  beaten: opponents.slice(0, i + 1).map((x) => x.name), upd: nowTs() });
               try { if (opts.onAdvance) opts.onAdvance(i + 1); } catch (_) {}
               runAt(i + 1);
             }
@@ -501,34 +523,52 @@
         // Between battles: same six, fully healed — but let them re-pick who
         // leads against the next foe.
         if (fixed) {
+          // 🔍 refLevel rides along so the peek card shows the kit the round
+          // uses — the same promise the single chambers make.
           Duel.pickLead({ attId: attId, ids: fixed, level: o.level || undefined,
+            refLevel: o.level ? undefined : (o.refLevel || undefined),
             title: "Next up: " + o.name + " (" + (i + 1) + "/" + total + ")",
-            hint: "🛡 Same squad, fully healed. Choose who leads against " + o.name + " — the rest wait on the bench.",
+            hint: "🛡 Same squad, fully healed. Choose who leads against " + o.name + " — the rest wait on the bench." +
+              (fixed.length > sz ? " This chamber is " + sz + "v" + sz + ": your lead plus the next " + (sz - 1) +
+                " step in, and the tail of the order sits it out." : ""),
             onDone: (ids) => { fixed = ids; go(ids, fixedMeta); } });
           return;
         }
         // the picker sees round 1's story level, so what it offers is what
         // actually steps onto the field (no Tyranitar card, Pupitar battle)
-        Duel.pickParty({ attId: attId, min: size, max: size, level: o.level || undefined,
-          title: "Your ONE gauntlet squad — pick 6",
-          hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile six! First up: " + o.name + "." +
+        Duel.pickParty({ attId: attId, min: maxSize, max: maxSize, level: o.level || undefined,
+          refLevel: o.level ? undefined : (o.refLevel || undefined),
+          title: "Your ONE gauntlet squad — pick " + maxSize,
+          hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile " + maxSize + "! First up: " + o.name +
+            (sz < maxSize ? " (a " + sz + "v" + sz + " chamber — your first " + sz + " step in, the rest wait)" : "") + "." +
             (o.level ? " 📖 True Story: fought at Lv " + o.level + "+."
                      : (o.noItems ? " ⚔ CHALLENGE: your bag is SEALED — no Full Restores, no Dire Hit." : "")),
           onDone: (ids, meta) => { fixed = ids; fixedMeta = meta; go(ids, meta); } });
       } else {
-        Duel.pickParty({ attId: attId, min: size, max: size, level: o.level || undefined,
+        Duel.pickParty({ attId: attId, min: sz, max: sz, level: o.level || undefined,
+          refLevel: o.level ? undefined : (o.refLevel || undefined),
           title: "Round " + (i + 1) + "/" + total + " — vs " + o.name,
-          hint: "🔄 Fresh 6 for THIS battle. Win to advance to the next." +
+          hint: "🔄 Fresh " + sz + " for THIS battle. Win to advance to the next." +
             (o.level ? " 📖 True Story: fought at Lv " + o.level + "."
                      : (o.noItems ? " ⚔ CHALLENGE: your bag is SEALED — no Full Restores, no Dire Hit." : "")),
           onDone: go });
       }
     };
-    // 💾 a live save re-arms the same squad and drops you at its round
+    // 💾 a live save re-arms the same squad and drops you at its round —
+    // 🧳 but the BOX MOVES ON. A mon can be traded away between the nap and the
+    // resume, and every other party path enforces ownership through poolFor.
+    // Re-validate here too: what's still yours comes back, and if that no
+    // longer fills the squad we fall back to a fresh pick for the round
+    // instead of fielding Pokémon this trainer doesn't have.
     const rz = opts.resume;
     if (rz && rz.round >= 2 && rz.round <= total) {
-      if (mode === "fixed" && rz.squad && rz.squad.length >= size) fixed = rz.squad.slice(0, size);
-      lastParty = rz.squad ? rz.squad.slice() : null;
+      const own = Duel.poolFor(attId);
+      const kept = (rz.squad || []).filter((id) => own.indexOf(id) >= 0);
+      const lost = (rz.squad || []).length - kept.length;
+      if (mode === "fixed" && kept.length >= maxSize) fixed = kept.slice(0, maxSize);
+      else if (mode === "fixed" && lost) U.toast("💾 " + lost + " of your saved squad " + (lost > 1 ? "aren't" : "isn't") +
+        " yours any more — pick a fresh squad for the rest of the run.");
+      lastParty = kept.length ? kept.slice() : null;
       runAt(rz.round - 1);
       return;
     }
@@ -578,33 +618,36 @@
   function leagueStagesForRun(stageIdxs) {
     return (stageIdxs || []).filter((i) => LEAGUE[i] && LEAGUE[i].key !== "red");
   }
-  function recordLeagueRun(attId, runIdxs, mode, label, championParty, style) {
+  // `champFresh` is decided by the CALLER, before a single round is fought —
+  // by the time we land here the champion round has already put its key on the
+  // ladder through duel.js, so asking "is this new?" in here always says no.
+  function recordLeagueRun(attId, runIdxs, mode, label, style, champFresh) {
     try { Store.update((s) => {
       s.league = s.league || {};
       const w = s.league[attId] = s.league[attId] || [];
       const teamId = (Store.attendee(attId) || {}).team || "";
       const stages = runIdxs.map((i) => LEAGUE[i]);
       const champStage = stages[stages.length - 1];
-      let champFresh = false;
       stages.forEach((st) => {
-        if (w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); if (st === champStage) champFresh = true; }
+        if (w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); }
         // ⚔/📖 the crown remembers HOW it was won — the same per-style ledger
         // the single chambers write (feeds Conqueror/Storyteller + region
-        // style crowns; append-only, so double credit is a no-op).
+        // style crowns; append-only, so double credit is a no-op). The run's
+        // OWN style is passed in, never the phone's current switch position.
         if (style && Store.styleWin) Store.styleWin(s, attId, st.key, style);
       });
-      if (champFresh && champStage && championParty && championParty.length) {
-        s.hof = s.hof || [];
-        s.hof.push({ attId: attId, ts: nowTs(), party: championParty.slice(), key: champStage.key, champ: champStage.name, rank: champStage.rank, region: champStage.region || "", viaGauntlet: mode });
-      }
+      // 🏛 no enshrining here: the champion ROUND already put the winning team
+      // on its plaque (duel.js), so a second push would double the entry.
       s.leagueRuns = s.leagueRuns || {}; const g = s.leagueRuns[attId] = s.leagueRuns[attId] || {};
       const key = label || "League";
       if (g[key] !== "fixed") g[key] = mode;
       Store.chron(s, "⚔", ((Store.attendee(attId) || {}).name || attId) + " conquered the entire " + (label || "League") +
         " Elite Four & Champion in ONE gauntlet run" + (mode === "fixed" ? " — with a single squad!" : "!"));
-      // (afterChampion self-guards — once per crown per phone, wins only — so
-      // it fires even when the round itself already put the key on the ladder)
-      if (champStage && window.StoryBeats) setTimeout(() => StoryBeats.afterChampion(attId, champStage), 400);
+      // 🌏 THE WORLD GROWS fires for a crown that was actually WON here.
+      // StoryBeats' own `seen()` mark is per phone, so on a fresh device (win
+      // arrived by sync, empty beats ledger) a REMATCH run would otherwise
+      // replay the curtain for a champion beaten weeks ago.
+      if (champFresh && champStage && window.StoryBeats) setTimeout(() => StoryBeats.afterChampion(attId, champStage), 400);
     }); } catch (_) {}
   }
   // Partial gauntlet credit: reaching the Champion PROVES the Elite Four fell
@@ -625,56 +668,87 @@
         " swept the Elite Four in a gauntlet run — " + fresh + " ladder win" + (fresh > 1 ? "s" : "") + " recorded. Only the Champion remains…");
     }); } catch (_) {}
   }
+  const STYLE_LABEL = { story: "📖 True Story", challenge: "⚔ Challenge" };
   function leagueGauntlet(attId, stageIdxs, label) {
     const runIdxs = leagueStagesForRun(stageIdxs);
     if (!runIdxs.length) return;
     const JS = window.JourneyStyle;
-    const story = JS && JS.isStory(attId);
-    const style = story ? "story" : "challenge";
+    const nowStyle = (JS && JS.isStory(attId)) ? "story" : "challenge";
     const regKey = label || "League";
-    const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost,
-      level: story ? JS.stageLevel(i) : undefined,   // 📖 True Story climbs 50 → the throne
-      // ⚔ Challenge rounds fight by CHAMBER law — the saga-curve reference,
-      // the leader's widening edge, the bag SEALED. No more ~Lv50 open-bag
-      // freebies wearing a full crown.
-      refLevel: story ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(i) : undefined),
-      foeEdge: story ? undefined : (JS && JS.chalStageEdge ? JS.chalStageEdge(i) : undefined),
-      noItems: !story,
-      env: st.region || "",
-      // 👑 the chamber's league ctx — cartridge planning reads the stage's own
-      // curve from it, so a gauntlet round plans exactly like its chamber.
-      league: { idx: i, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: !!st.final, style: style },
-      // 🎪 the ace's regional gimmick — same rule as the single-chamber fights
-      gimmick: ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[st.region] || null,
-      outro: st.defeat ? { lose: st.defeat } : undefined }; });
-    const startRun = (mode, resume) => gauntletRun(attId, mode, opponents, {
-      title: regKey + " Gauntlet", modalTitle: "⚔ " + regKey + " Gauntlet",
-      wonTitle: "LEAGUE CONQUERED!", wonMsg: "You ran the whole " + regKey + " — all " + opponents.length + " — in one go!",
-      persist: regKey, resume: resume || null,   // 💾 phones sleep at parties
-      // Reaching the final stage = the whole Elite Four fell → ladder credit.
-      onAdvance: (cleared) => { if (cleared === runIdxs.length - 1) creditLeagueStages(attId, runIdxs.slice(0, -1), style); },
-      onWinAll: (m, lastParty) => recordLeagueRun(attId, runIdxs, m, label, lastParty, style),
-    });
+    const total = runIdxs.length;
+    const champKey = (LEAGUE[runIdxs[total - 1]] || {}).key;
+    // A run's opponents are built FROM ITS STYLE, not from whatever the phone's
+    // switch says right now — a resumed run keeps fighting the way it started.
+    function opponentsFor(style) {
+      const story = style === "story";
+      return runIdxs.map((i) => {
+        const st = LEAGUE[i];
+        // 📖 the Elite Four run the canon FIVE in True Story — front of the
+        // squad plus the ACE, exactly the cut a single chamber makes.
+        const size = (story && JS && JS.stageSize) ? Math.min(st.team.length, JS.stageSize(st.rank)) : st.team.length;
+        const squad = size < st.team.length ? st.team.slice(0, size - 1).concat([st.team[st.team.length - 1]]) : st.team.slice();
+        return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: squad, size: size, boost: st.boost,
+          level: story ? JS.stageLevel(i) : undefined,   // 📖 True Story climbs 50 → the throne
+          // ⚔ Challenge rounds fight by CHAMBER law — the saga-curve reference,
+          // the leader's widening edge, the bag SEALED. No more ~Lv50 open-bag
+          // freebies wearing a full crown.
+          refLevel: story ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(i) : undefined),
+          foeEdge: story ? undefined : (JS && JS.chalStageEdge ? JS.chalStageEdge(i) : undefined),
+          noItems: !story,
+          env: st.region || "",
+          // 👑 the chamber's league ctx — cartridge planning reads the stage's own
+          // curve from it, so a gauntlet round plans exactly like its chamber.
+          league: { idx: i, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: !!st.final, style: style },
+          // 🎪 the ace's regional gimmick — same rule as the single-chamber fights
+          gimmick: ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[st.region] || null,
+          outro: st.defeat ? { lose: st.defeat } : undefined };
+      });
+    }
+    const startRun = (mode, resume, style) => {
+      style = style || nowStyle;
+      // 🌏 decided BEFORE a punch is thrown: is this crown actually new? (Once
+      // the champion round lands, duel.js has already written the key.)
+      const champFresh = !hasBeat(attId, champKey);
+      gauntletRun(attId, mode, opponentsFor(style), {
+        title: regKey + " Gauntlet", modalTitle: "⚔ " + regKey + " Gauntlet",
+        wonTitle: "LEAGUE CONQUERED!", wonMsg: "You ran the whole " + regKey + " — all " + total + " — in one go!",
+        persist: regKey, resume: resume || null, style: style,   // 💾 phones sleep at parties
+        // Reaching the final stage = the whole Elite Four fell → ladder credit.
+        onAdvance: (cleared) => { if (cleared === total - 1) creditLeagueStages(attId, runIdxs.slice(0, -1), style); },
+        onWinAll: (m) => recordLeagueRun(attId, runIdxs, m, label, style, champFresh),
+      });
+    };
+    const freshPitch = "Face the " + regKey + " Elite Four then the Champion — " + total +
+      " in a row, healed between each. Clear it to conquer the region in a single run.";
     // 💾 a live save waits here — offer the round you left off on
-    const live = gsaveLive(attId, regKey, opponents.length);
+    const live = gsaveLive(attId, regKey, total);
     if (live) {
+      // ⚔/📖 the run remembers its own style. Resuming a Challenge run after
+      // flipping the switch to True Story used to hand STORY credit to stages
+      // that were only ever fought in Challenge — a region crown in a style
+      // you never played. The run finishes the way it started, and says so;
+      // want the other style? Start over, and earn all of it there.
+      const savedStyle = (live.save.style === "story" || live.save.style === "challenge") ? live.save.style : nowStyle;
+      const mismatch = savedStyle !== nowStyle;
       let ctrl;
       const body = el("div", { class: "modal-form" }, [
-        el("p", { class: "hint" }, "💾 You have a run in progress — " + (live.save.round - 1) + " of " + opponents.length +
+        el("p", { class: "hint" }, "💾 You have a run in progress — " + (live.save.round - 1) + " of " + total +
           " already beaten" + (live.mode === "fixed" ? ", one-squad style." : ", swapping squads.")),
+        mismatch ? el("p", { class: "hint" }, "⚠ That run is being fought in " + STYLE_LABEL[savedStyle] +
+          ", but this phone is set to " + STYLE_LABEL[nowStyle] + " now. Resuming finishes it in " + STYLE_LABEL[savedStyle] +
+          " — crowns and all. To climb it in " + STYLE_LABEL[nowStyle] + ", start over.") : null,
         el("div", { class: "gauntlet-modes" }, [
-          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); startRun(live.mode, live.save); } },
-            "▶ Resume — round " + live.save.round + " of " + opponents.length),
+          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); startRun(live.mode, live.save, savedStyle); } },
+            "▶ Resume — round " + live.save.round + " of " + total + (mismatch ? " (" + STYLE_LABEL[savedStyle] + ")" : "")),
           el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); gsaveClear(attId, regKey);
-            gauntletModePicker(attId, "Face the " + regKey + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.", (mode) => startRun(mode)); } }, "Start over"),
+            gauntletModePicker(attId, freshPitch, (mode) => startRun(mode, null, nowStyle)); } },
+            "Start over" + (mismatch ? " in " + STYLE_LABEL[nowStyle] : "")),
         ]),
       ]);
       ctrl = Modal.open("⚔ " + regKey + " Gauntlet — resume?", body, null, { noFooter: true });
       return;
     }
-    gauntletModePicker(attId,
-      "Face the " + regKey + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",
-      (mode) => startRun(mode));
+    gauntletModePicker(attId, freshPitch, (mode) => startRun(mode, null, nowStyle));
   }
 
   // The gate-style entry banner for a region's League Gauntlet.
@@ -729,6 +803,28 @@
     document.body.appendChild(lay);
     sfx("fanfare");
     requestAnimationFrame(() => lay.classList.add("go"));
+  }
+
+  // ⚔ What the chamber's foes ACTUALLY fight at. The card used to print
+  // refLevel + foeEdge — the FLOOR of the plan — while the real planner adds a
+  // per-slot fodder/ace edge on top of that, so a button promising "~Lv 60"
+  // opened onto a Lv 66 ace. Ask the LIVE planner and print its true spread
+  // (it is the same call duel.js makes, so a re-tuned curve retunes the label
+  // with it). Falls back to the old sum when cartridge planning is off.
+  function chalFoeBand(idx) {
+    const st = LEAGUE[idx], JS = window.JourneyStyle;
+    if (!st || !JS || !JS.chalStageLevel) return null;
+    const ref = JS.chalStageLevel(idx), edge = JS.chalStageEdge ? JS.chalStageEdge(idx) : 0;
+    let plan = null;
+    try {
+      if (window.CartridgeMode && CartridgeMode.on() && CartridgeMode.plan && window.DEX_STATS) {
+        plan = CartridgeMode.plan({ refLevel: ref, foeEdge: edge,
+          league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: !!st.final } },
+          { monIds: st.team.slice(), boost: st.boost, ai: true });
+      }
+    } catch (_) { plan = null; }
+    if (!plan || !plan.length || plan.some((n) => !(n > 0))) return { lo: ref + edge, hi: ref + edge };
+    return { lo: Math.min.apply(null, plan), hi: Math.max.apply(null, plan) };
   }
 
   // The leader's ace, silhouetted until this stage has been beaten by anyone.
@@ -793,13 +889,15 @@
           const story = !!(JS && JS.isStory(attId));
           // 📖 the button promises the REAL fight: story E4 run the canon FIVE
           const size = story && JS.stageSize ? Math.min(st.team.length, JS.stageSize(st.rank)) : st.team.length;
-          // ⚔ …and Challenge admits what the foes fight at: saga ref + edge
-          const chalLv = (!story && JS && JS.chalStageLevel) ? JS.chalStageLevel(idx) + (JS.chalStageEdge ? JS.chalStageEdge(idx) : 0) : 0;
+          // ⚔ …and Challenge admits what the foes ACTUALLY fight at — read
+          // straight off the live planner, ace included, never under-sold.
+          const band = story ? null : chalFoeBand(idx);
           // 🎭 a "???" card must not spill the name on its own button
           const who = (st.mystery && !anyBeat) ? "the Champion" : st.name;
           return el("button", { class: "btn " + (isNext ? "primary" : "subtle") + " sm", onClick: () => challengeLeague(idx, attId) },
             (isRed ? "🗻 Face what waits" : isFinal ? "🎹 Face the finale" : "⚔ Challenge " + who) + " (" + size + "v" + size +
-            (story ? " · Lv " + JS.stageLevel(idx) : (chalLv ? " · foes ~Lv " + chalLv : "")) + ")");
+            (story ? " · Lv " + JS.stageLevel(idx)
+                   : (band ? " · foes Lv " + (band.lo === band.hi ? band.lo : band.lo + "–" + band.hi) : "")) + ")");
         })() :
           el("button", { class: "btn subtle sm", onClick: () => challengeLeague(idx, attId) }, "🔁 Rematch (glory only)"),
       ]),
