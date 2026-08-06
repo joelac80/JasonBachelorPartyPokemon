@@ -1010,6 +1010,9 @@
       // style). phase: "select" (picking) | "resolve" (playing out) | "replace"
       // (sending out fainted slots at end of turn).
       phase: "select", orders: {}, sel: [], res: [], repl: [], turnDone: null,
+      // 🏆 the MVP ledger — the humans' highlight reel for the victory recap:
+      // hardest single hit, KO counts per player mon, and the turn count.
+      stats: { big: null, kos: {}, turns: 0 },
       megaSide: { a: false, b: false } };   // ✨ one Mega Evolution per side per battle
     if (!S.first) {
       // The faster lead goes first (real Gen-2 base Speed). Deterministic
@@ -1387,6 +1390,7 @@
     // ---- resolution phase: play out every order, fastest first ----
     function beginResolve() {
       S.phase = "resolve";
+      S.stats.turns++;   // 🏆 every resolved round counts toward the recap
       const list = [];
       Object.keys(S.orders).forEach((k) => {
         const i = k.indexOf(":"); const side = k.slice(0, i), unit = +k.slice(i + 1);
@@ -1894,6 +1898,15 @@
       done();
     }
 
+    // 🏆 Feed the MVP ledger — only HUMAN hits make the highlight reel (the
+    // recap celebrates the winning trainer, not the boss's best haymaker).
+    function trackHit(u, m, mv, dmg, ko) {
+      if (u.ai) return;
+      const st = S.stats;
+      if (dmg > 0 && (!st.big || dmg > st.big.dmg)) st.big = { who: m.name, mv: mv.name, dmg: dmg };
+      if (ko) st.kos[m.name] = (st.kos[m.name] || 0) + 1;
+    }
+
     // The KO'ing mon earns battle EXP (3 KOs = an evolution). Every screen
     // applies the same acts, so every phone increments identically — that
     // keeps the count safe under last-write-wins state sync.
@@ -1924,7 +1937,7 @@
       // A line the trainer FULLY owns doesn't tease an evolution — its KOs
       // bank straight into the veteran attack bonus instead (+1% a KO, cap +10%).
       const worth = !Store.evoWorthTargets || Store.evoWorthTargets(u.attId, m.id).length > 0;
-      if (!worth) return "⚔ " + m.name + " earned battle EXP — the veteran grows stronger! (" + total + " KOs banked)";
+      if (!worth) return "⚔ " + m.name + " earned battle EXP — the veteran grows stronger! (" + total + " KO" + (total === 1 ? "" : "s") + " banked)";
       return total >= need
         ? "⚡ " + m.name + " has enough battle EXP to EVOLVE after the battle!"
         : "⚔ " + m.name + " earned battle EXP! (" + total + "/" + need + " KOs to evolve)";
@@ -2012,6 +2025,7 @@
         const sm = mon(su);
         if (sp.eff === 0 || sm.hp <= 0) return;
         sm.hp = Math.max(0, sm.hp - sp.dmg);
+        trackHit(u, m, mv, sp.dmg, sm.hp <= 0);
         if (sm.hp <= 0) creditKO(u, m); else if (berryReady(su)) eatBerry(su);
       });
 
@@ -2021,7 +2035,7 @@
           // drain/recoil key off the HP the target ACTUALLY lost — overkill
           // damage doesn't heal (50 HP left + a 100 hit drains from 50).
           const hpLost = (!isStatus && tm) ? Math.min(act.dmg, tm.hp) : 0;
-          if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
+          if (!isStatus && tm) { tm.hp = Math.max(0, tm.hp - act.dmg); trackHit(u, m, mv, act.dmg, tm.hp <= 0); if (tm.hp <= 0) creditKO(u, m); else if (berryReady(tu)) eatBerry(tu); }
           applySpread();
           applyEffects(isStatus ? 0 : hpLost, function () {});
           if (act.recharge && m.hp > 0) m._recharge = true;
@@ -2055,6 +2069,7 @@
         steps.push([null, 500, () => {
           const before = tm.hp;
           tm.hp = Math.max(0, tm.hp - act.dmg);
+          trackHit(u, m, mv, act.dmg, tm.hp <= 0);
           if (tm.hp <= 0) act._exp = creditKO(u, m);
           // A crit gets ONLY the red flash — stacking it with the hurt blink
           // (opacity dip) made the whole scene look like it went transparent.
@@ -2082,6 +2097,7 @@
         steps.push([null, 450, () => {
           const sbefore = sm.hp;
           sm.hp = Math.max(0, sm.hp - sp.dmg);
+          trackHit(u, m, mv, sp.dmg, sm.hp <= 0);
           if (sm.hp <= 0) sp._exp = creditKO(u, m);
           su._monEl.classList.add("hurt");
           setTimeout(() => su._monEl.classList.remove("hurt"), 600);
@@ -2281,11 +2297,39 @@
         && sides[winSide].units.every((x) => x.ai || (x.potions === 2 && x.courage));
       const itemFree = record && itemFreeShown;
       const finishUp = () => { close(); if (opts.onResult) opts.onResult(winSide); setTimeout(() => (opts.nuzlocke ? offerRematch(wLabel, winSide) : promptEvolutions(() => offerRematch(wLabel, winSide))), 700); if (done) done(); };
+      // 🏆 THE VICTORY RECAP — the humans beat the AI outright (no card on a
+      // loss, and none for a forfeit): a compact highlight card — hardest hit,
+      // the MVP by KOs, and how many turns it took — held until Continue.
+      const recapPop = (next) => {
+        const st = S.stats || { big: null, kos: {}, turns: 0 };
+        const mvp = Object.keys(st.kos).sort((x, y) => st.kos[y] - st.kos[x])[0] || null;
+        if (!st.big && !mvp) { next(); return; }
+        const rows = [];
+        if (st.big) rows.push(["💥 Biggest hit", st.big.who + "'s " + st.big.mv + " — " + st.big.dmg + " dmg"]);
+        if (mvp) rows.push(["🏆 MVP", mvp + " — " + st.kos[mvp] + " KO" + (st.kos[mvp] === 1 ? "" : "s")]);
+        rows.push(["⏱ Turns", String(st.turns)]);
+        const lay = el("div", { class: "modal-overlay duel-outro-pop" }, [
+          el("div", { class: "modal duel-recap" }, [
+            el("div", { class: "duel-recap-title" }, "🏆 BATTLE RECAP"),
+            el("div", { class: "duel-recap-rows" }, rows.map((r) => el("div", { class: "duel-recap-row" }, [
+              el("span", { class: "duel-recap-k" }, r[0]),
+              el("span", { class: "duel-recap-v" }, r[1]),
+            ]))),
+            el("button", { class: "btn primary duel-outro-go", onClick: () => { lay.remove(); sfx("select"); next(); } }, "Continue ▸"),
+          ]),
+        ]);
+        document.body.appendChild(lay);
+        sfx("correct");
+      };
+      const showRecap = humansWon && how === "faint";
       beats([
         how === "forfeit" ? ["🏳️ " + lLabel + (lLabel.indexOf(" & ") >= 0 ? " give up!" : " gives up!"), 1200, () => sfx("error")] : [null, 250],
         ["🏆 " + wLabel + " win" + (wLabel.indexOf(" & ") >= 0 ? "" : "s") + " the duel!", 1700, () => sfx("fanfare")],
         itemFreeShown ? ["🏅 ITEM-FREE VICTORY — the bag stayed shut. Pure skill!", 1700, () => sfx("correct")] : null,
-      ].filter(Boolean), () => { if (outroInfo) outroPop(outroInfo, finishUp); else finishUp(); });
+      ].filter(Boolean), () => {
+        const afterRecap = () => { if (outroInfo) outroPop(outroInfo, finishUp); else finishUp(); };
+        if (showRecap) recapPop(afterRecap); else afterRecap();
+      });
       if (!record) return;
       // 🏅 bank the medal (counter feeds The Purist achievement); marquee boss
       // wins get a chronicle line too — gyms would flood it, so they just count.
@@ -2626,13 +2670,26 @@
       if (base) tags.push(base);
       return tags.join(" · ");
     }
-    function moveBtn(m, onPick) {
+    // 🎯 A tiny forecast beside a move's name: how it lands on its likely
+    // target (singles: the active foe; doubles: the first standing enemy).
+    // ▲ super effective (▲▲ a double weakness), ▼ resisted, ✕ flat immune —
+    // read off the target's CURRENT types, so a Terastallized foe forecasts
+    // as its crystal, not its birth certificate. Status moves and typeless
+    // Struggle stay quiet.
+    function effBadge(m, tgt) {
+      if (!tgt || !m.pow || m.cat === "status" || m.type === "none") return null;
+      const e = effFor(m.type, tgt.types || [], m);
+      if (e === 1) return null;
+      const cls = e === 0 ? "no" : e < 1 ? "down" : "up";
+      return el("sup", { class: "duel-move-eff eff-" + cls }, e === 0 ? "✕" : e < 1 ? "▼" : e >= 4 ? "▲▲" : "▲");
+    }
+    function moveBtn(m, onPick, tgt) {
       const catIcon = m.cat === "spec" ? "🌀" : m.cat === "status" ? "🌟" : "👊";
       const bits = [catIcon, m.cat === "status" ? "STATUS" : "POW " + m.pow, (m.acc >= 101 ? "—" : m.acc + "%")];
       if (m.pri > 0) bits.push("⚡1st");
       const fl = fxLabel(m);
       return el("button", { class: "duel-move", style: { "--mt": TYPE_COLOR[m.type] || "#a8a878" }, onClick: onPick }, [
-        el("span", { class: "duel-move-name" }, (TYPE_EMOJI[m.type] || "⭐") + " " + m.name),
+        el("span", { class: "duel-move-name" }, [(TYPE_EMOJI[m.type] || "⭐") + " " + m.name, effBadge(m, tgt)]),
         el("span", { class: "duel-move-sub" }, bits.join(" · ")),
         fl ? el("span", { class: "duel-move-fx" }, fl) : null,
       ]);
