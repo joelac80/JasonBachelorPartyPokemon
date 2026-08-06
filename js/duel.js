@@ -1081,6 +1081,20 @@
       if (u._faceEl) u._faceEl.classList.toggle("low", pct <= 0.35);   // the grimace
       paintStatus(u);
       paintParty(u._side);   // remaining-team balls track every faint/heal
+      paintSpeed();          // ⚡ the speed chip tracks switches, stages, paralysis
+    }
+    // ⚡ SPEED CHIP — singles only: a tiny bolt beside whichever active mon
+    // currently OUT-SPEEDS the opposing active (effective speed: stat stages
+    // and the paralysis cut included). A dead-even tie shows nothing, and
+    // doubles keep clean bars — four-way speed reads as noise, not signal.
+    function paintSpeed() {
+      if (doubles) return;
+      const ua = sides.a.units[0], ub = sides.b.units[0];
+      if (!ua || !ub || !ua._speEl || !ub._speEl) return;
+      const ma = mon(ua), mb = mon(ub);
+      const sa = effSpeed(ma), sb = effSpeed(mb);
+      ua._speEl.classList.toggle("hidden", !(ma.hp > 0 && mb.hp > 0 && sa > sb));
+      ub._speEl.classList.toggle("hidden", !(ma.hp > 0 && mb.hp > 0 && sb > sa));
     }
     // Every Pokémon on a side (shared-double slots point at one party, so we
     // dedupe by party reference — no double-counting).
@@ -1120,6 +1134,7 @@
         u._fill = el("div", { class: "battle-hp-fill" });
         u._num = el("span", { class: "duel-hp-num" });
         u._statusEl = el("span", { class: "duel-status hidden" });
+        u._speEl = el("span", { class: "duel-spe hidden", title: "outspeeds the foe" }, "⚡");   // ⚡ the speed chip (singles)
         // 🎬 A boss with a portrait (vsFace) stares you down BESIDE their HP
         // bars all battle — and grimaces once their mon drops into the red.
         const faceSrc = (u.ai && u.vsFace) ? frontSprite(u.vsFace, false) : "";
@@ -1129,7 +1144,7 @@
           // opts.level: a battle-wide display level (the Nuzlocke's run cap) \u2014
           // purely cosmetic, so a fresh run reads Lv14 instead of Lv50.
           el("div", { class: "battle-hp-name" }, [(m.shiny ? "\u2728" : "") + m.name + " ", el("span", { class: "duel-lv" }, "Lv" + (m.lvl || opts.level || opts.refLevel || 50)),
-            u.boss ? el("span", { class: "duel-boss-tag" }, "\ud83e\ude78 BOSS") : null, u._statusEl]),
+            u._speEl, u.boss ? el("span", { class: "duel-boss-tag" }, "\ud83e\ude78 BOSS") : null, u._statusEl]),
           el("div", { class: "battle-hp-row" }, [
             el("span", { class: "battle-hp-lbl" }, "HP"),
             el("div", { class: "battle-hp-track" + (u.boss ? " boss" : "") }, [u._fill]),
@@ -1422,6 +1437,9 @@
         out._dyna = 0; out._dynaBase = 0;
       }
       if (u._monEl) u._monEl.classList.remove("dyna", "tera", "z-charge");
+      // ☠️☠️ a badly-poisoned mon that retreats catches its breath: the Toxic
+      // ratchet winds back to 1/16 (the poison itself rides along, as ever).
+      if (out && out._tox) out._tox = 1;
       u.cur = to;
       const m = mon(u);
       m.stg = { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0 };
@@ -1494,7 +1512,7 @@
         // skips corpses) — revert it here or the revive would restore to the
         // inflated giant hpMax and bring the mon back still Dynamaxed.
         if (tgt._dyna) { tgt.hpMax = tgt._dynaBase || tgt.hpMax; tgt._dyna = 0; tgt._dynaBase = 0; }
-        tgt.hp = tgt.hpMax; tgt.status = null; tgt.slp = 0; tgt._confN = 0;
+        tgt.hp = tgt.hpMax; tgt.status = null; tgt.slp = 0; tgt._confN = 0; tgt._tox = 0;
         paintParty(u._side);
         // Shared-party doubles: the revived index may be a FIELDED slot (a
         // partner stuck on a benchless corpse) — repaint its sprite + bar so
@@ -1507,7 +1525,7 @@
       }
       // 🧪 FULL RESTORE: all the HP, status cured (was a flat +120).
       const m = mon(u); const gained = m.hpMax - m.hp;
-      m.hp = m.hpMax; m.status = null; m.slp = 0; m._confN = 0; paintHp(u);
+      m.hp = m.hpMax; m.status = null; m.slp = 0; m._confN = 0; m._tox = 0; paintHp(u);
       beats([["🧪 " + u.name + " uses a Full Restore — " + m.name + " is healthy again!" + (gained > 0 ? " (+" + gained + " HP)" : ""), 1200, () => sfx("coin")]], resolveNext);
     }
     // Status is checked HERE, at resolution — so a status just inflicted by a
@@ -1736,7 +1754,11 @@
           // Burn chips gently (1/16) — it ALSO halves physical attack, so a
           // 1/8 bite on top was punishing twice. Poison bites harder (1/10)
           // but no longer melts a mon in five turns.
-          const d = chip(m, m.status);
+          // ☠️☠️ BADLY poisoned (Toxic) is the ratchet instead: 1/16, then
+          // 2/16, 3/16… each tick tightens (switching out winds it back).
+          const tox = m.status === "psn" && m._tox;
+          const d = tox ? Math.max(1, Math.round(m.hpMax * m._tox / 16)) : chip(m, m.status);
+          if (tox) m._tox += 1;
           steps.push([(m.status === "brn" ? "🔥 " : "☠️ ") + m.name + (m.status === "brn" ? " is hurt by its burn!" : " is hurt by poison!") + " (−" + d + " HP)", 1000, () => {
             m.hp = Math.max(0, m.hp - d); paintHp(u); if (m.hp <= 0 && u._monEl) u._monEl.classList.add("fainted"); sfx("error");
           }]);
@@ -1947,7 +1969,13 @@
         if (fx.status && act.fxHit && tm && tm.hp > 0 && act.eff !== 0 && canStatus(tm, fx.status.id)) {
           tm.status = fx.status.id;
           if (fx.status.id === "slp") tm.slp = act.slpTurns || 1;
-          push("💤 " + tm.name + STATUS_GOT[fx.status.id], 1050, "error");
+          // ☠️☠️ TOXIC poisons BADLY: the residual tick starts at 1/16 max HP
+          // and climbs every turn (see endResidual). Ordinary poison — Sludge
+          // Bomb procs, Poison Sting — keeps its flat 1/10 bite.
+          if (fx.status.id === "psn" && mv.name === "Toxic") {
+            tm._tox = 1;
+            push("☠️ " + tm.name + " was BADLY poisoned!", 1050, "error");
+          } else push("💤 " + tm.name + STATUS_GOT[fx.status.id], 1050, "error");
         }
         if (fx.stat) {
           if (fx.stat.who === "self" && act.fxHit) push(applyStage(m, fx.stat.stat, fx.stat.stg), 900, "blip");
@@ -1964,7 +1992,7 @@
         }
         if (fx.heal) { const b = m.hp; m.hp = Math.min(m.hpMax, m.hp + Math.round(m.hpMax * fx.heal));
           push("💚 " + m.name + " regained health! (+" + (m.hp - b) + " HP)", 1000, "coin"); }
-        if (fx.rest) { m.hp = m.hpMax; m.status = "slp"; m.slp = 2;
+        if (fx.rest) { m.hp = m.hpMax; m.status = "slp"; m.slp = 2; m._tox = 0;
           push("😴 " + m.name + " slept and restored full HP!", 1100, "coin"); }
         if (fx.seed && tm && tm.hp > 0 && (tm.types || []).indexOf("grass") < 0 && !tm.seeded) {
           tm.seeded = true; push("🌱 " + tm.name + " was seeded!", 950, "blip"); }
