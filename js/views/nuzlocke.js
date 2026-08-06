@@ -15,8 +15,8 @@
        teams, EVERYTHING at Lv 100 (a curve over 114 battles was noise —
        this is the full-power marathon), permadeath the whole way.
     ⚡ BLITZ GAUNTLET — the one that SCALES: 27 seeded-random battles from
-       across the whole saga (12 gyms era-ascending, 2 Elite Four, a
-       Champion finale), the cap climbing 14 → 100 across the run.
+       across the whole saga (16 gyms era-ascending, 8 Elite Four, two
+       Champions, a VILLAIN finale), the cap climbing 14 → 100 across the run.
     🎬 MOVIE MARATHON — the attrition epic: no starter, no grass, no caps.
        A casting call drafts SIX non-legendaries at full power, then the
        entire filmography rolls in release order — every movie legend at
@@ -387,6 +387,10 @@
   let newRegion = "kanto";   // starter-lab region (classic/random structures)
 
   function view(root) {
+    // 🎬 A climax intro abandoned via back/nav leaves _skip stuck at 1 (only
+    // the two card buttons reset it) — which would silently skip the NEXT
+    // title card. Fresh render, fresh curtain.
+    battleMovie._skip = 0; battleStage._skip = 0;
     const meId = (window.Sync && Sync.getMe && Sync.getMe()) || "";
     if (!me && meId && Store.attendee(meId)) me = meId;
 
@@ -576,6 +580,7 @@
           lastRun.league.length + " league stage" + (lastRun.league.length === 1 ? "" : "s") + " · " +
           lastRun.catches + " caught · " + lastRun.deaths + " lost · " + alive + " survived"),
         el("div", { class: "nuz-box-grid" }, lastRun.box.map((m) => boxMon(m))),
+        graveyard(lastRun),                 // ⚰️ the run's fallen, on the record
         // 🕰 The retrospective: every retired generation's team, in order —
         // the payoff of the ages walk (tombstones stay honored too).
         retired.length ? el("div", { class: "nuz-lab-head", style: { marginTop: "10px" } }, "🕰 The teams of the ages") : null,
@@ -835,7 +840,7 @@
           b: { units: [{ npc: b.name, ai: true, monIds: b.team.slice(), glyphs: b.glyphs || null, boost: b.boost, shiny: b.shiny || false, vsFace: b.vsFace || null,
           reserve: b.reserve || 0, hpBoost: b.hpBoost || undefined, ace: b.ace || null, outro: b.outro || null, feral: b.feral }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || [], "movie");
+            recordDeaths(fainted, b.name, "movie");
             if (winSide === "a") { Store.nuzStage(me, b.key, "movie"); sfx("fanfare"); offerCostar(b); }
             renderKeepScroll();
           } } });
@@ -896,6 +901,7 @@
     host.appendChild(el("div", { class: "safari-card nuz-boxcard" }, [
       el("div", { class: "nuz-lab-head" }, (run.region === "movie" ? "🎭 The cast — " : "📦 The box — ") + alive.length + " standing"),
       el("div", { class: "nuz-box-grid" }, run.box.map((m) => boxMon(m, run))),
+      graveyard(run),                       // ⚰️ the fallen, name by name
     ]));
   }
 
@@ -1219,7 +1225,7 @@
     const R = REGIONS.find((x) => x.champKey === st.key);
     if (!R) return null;
     if (run.region === "blitz") return { flair: "⚡ THE CHAMPION FINALE", rank: st.rank, name: st.name, icon: "👑", face: st.team[st.team.length - 1],
-      quote: st.quote || "Fifteen roads led here — and they all end with me." };
+      quote: st.quote || "Every road in the gauntlet led here — and they all end with me." };
     return { flair: "🏆 THE " + R.name.toUpperCase() + " CHAMPIONSHIP", rank: st.rank, name: st.name, face: st.team[st.team.length - 1], icon: "👑", quote: st.quote };
   }
 
@@ -1234,6 +1240,106 @@
     if (!alive.length) return;
     Duel.pickParty({ attId: me, min: 1, max: Math.min(maxSize, alive.length), pool: alive,
       title: title, hint: hint, onDone: go });
+  }
+
+  // ── 🪦 TOMBSTONE MOMENTS — the emotional core of a nuzlocke ──────────────
+  // Every run battle reports its dead through here, so the run remembers WHO
+  // fell, to WHOM, and how far in — then the full-screen RIP card rises once
+  // the battle screen clears. `killer` is the name on the tombstone: the
+  // leader / stage boss for boss fights, the wild species for grass fights.
+  function recordDeaths(fainted, killer, sl) {
+    const ids = fainted || [];
+    sl = sl || slot;
+    if (!ids.length) return;
+    // Only mons standing BEFORE this report are NEW deaths (a re-report of
+    // an already-honored tombstone must never re-raise the card).
+    const alive = Store.nuzAlive(me, sl);
+    const fresh = ids.filter((id) => alive.indexOf(id) >= 0);
+    Store.nuzDeaths(me, ids, sl, killer);
+    if (fresh.length) ripCard(fresh, sl);
+  }
+  // How far in they made it — the era line on the stone.
+  function fellEra(fell) {
+    if (!fell || fell.badges == null) return "";
+    return fell.badges === 0 ? "before the first badge"
+      : fell.badges + " badge" + (fell.badges === 1 ? "" : "s") + " in";
+  }
+  // The full-screen tombstone card: dark veil, the fallen in gray, one line
+  // each ("NAME — fell to BROCK, 2 badges in"), an optional one-line eulogy
+  // that carves a chronicle entry. Tap anywhere to lay them to rest.
+  let ripVeil = null;
+  function closeRip() { if (ripVeil) { ripVeil.remove(); ripVeil = null; } }
+  // The veil must NEVER survive a route change — leaving the page buries it.
+  window.addEventListener("hashchange", closeRip);
+  function ripCard(ids, sl) {
+    let tries = 0;
+    (function whenClear() {
+      if (++tries > 30 || !/^#\/nuzlocke/.test(location.hash)) return;
+      // Wait out the battle screen, badge pops and title cards — a funeral
+      // doesn't share the stage.
+      if (document.querySelector(".battle, .modal-overlay, .league-intro")) { setTimeout(whenClear, 600); return; }
+      const run = Store.nuzRun(me, sl);
+      if (!run) return;
+      const fallen = ids.map((id) => run.box.find((m) => m.id === id && m.dead)).filter(Boolean);
+      if (!fallen.length) return;
+      closeRip();
+      const rows = fallen.map((m) => {
+        const src = Store.sprite(m.id);
+        const era = fellEra(m.fell);
+        const by = m.fell && m.fell.by ? "fell to " + m.fell.by : "fell in battle";
+        return el("div", { class: "nuz-rip-row" }, [
+          src ? el("img", { src: src, alt: monName(m.id) }) : el("span", { class: "tc-ball-fallback" }),
+          el("div", { class: "nuz-rip-line" }, [
+            monName(m.id) + (m.shiny ? " ✨" : ""),
+            el("span", { class: "nuz-rip-sub" }, by + (era ? ", " + era : "")),
+          ]),
+        ]);
+      });
+      const input = el("input", { class: "in", type: "text", maxlength: "120",
+        placeholder: "One line for the stone… (optional)" });
+      const names = fallen.map((m) => monName(m.id)).join(", ");
+      const carve = () => {
+        const txt = (input.value || "").trim();
+        if (txt) {
+          Store.update((s) => Store.chron(s, "🪦", "RIP " + names + " — “" + txt + "”"));
+          if (window.U && U.toast) U.toast("🪦 The eulogy is carved into the chronicle.");
+        }
+        closeRip();
+      };
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") carve(); });
+      ripVeil = el("div", { class: "modal-overlay nuz-rip-veil", onClick: closeRip }, [
+        el("div", { class: "nuz-rip-card", onClick: (e) => e.stopPropagation() }, [
+          el("div", { class: "nuz-rip-stone" }, "🪦"),
+          el("div", { class: "nuz-rip-title" }, fallen.length > 1 ? "THE FALLEN" : "GONE FOR THE RUN"),
+          el("div", { class: "nuz-rip-rows" }, rows),
+          el("div", { class: "nuz-rip-eulogy" }, [input,
+            el("button", { class: "btn subtle sm", onClick: carve }, "🪦 Carve it")]),
+          el("div", { class: "nuz-rip-hint" }, "tap anywhere to lay them to rest"),
+        ]),
+      ]);
+      document.body.appendChild(ripVeil);
+      sfx("error");
+      requestAnimationFrame(() => { if (ripVeil) ripVeil.classList.add("go"); });
+    })();
+  }
+  // ⚰️ The graveyard strip — every tombstone in one compact roll call: name,
+  // era, killer. Rides the active-run view AND the finished-run summary.
+  function graveyard(run) {
+    const rows = [];
+    // 🕰 retired generations keep their dead honored too (era = the region).
+    (run.retired || []).forEach((e) => (e.box || []).forEach((m) => { if (m.dead) rows.push({ m: m, where: e.region }); }));
+    run.box.forEach((m) => { if (m.dead) rows.push({ m: m, where: "" }); });
+    if (!rows.length) return null;
+    return el("div", { class: "nuz-graveyard" }, [
+      el("div", { class: "nuz-grave-head" }, "⚰️ The graveyard — " + rows.length + " fallen"),
+    ].concat(rows.map((r) => {
+      const era = fellEra(r.m.fell);
+      const by = r.m.fell && r.m.fell.by ? " — fell to " + r.m.fell.by : "";
+      return el("div", { class: "nuz-grave-row" }, [
+        "🪦 ", el("b", {}, monName(r.m.id) + (r.m.shiny ? " ✨" : "")),
+        by + (era ? " · " + era : "") + (r.where ? " · " + r.where : ""),
+      ]);
+    })));
   }
 
   function battleWild(run) {
@@ -1254,12 +1360,21 @@
             // attempt doesn't cost you the catcher in a permadeath run.
             chanceFn: (frac) => Math.min(1, base + (1 - frac) * 0.80),
             onOutcome: (outcome, fainted) => {
-              Store.nuzDeaths(me, fainted || [], slot);
+              recordDeaths(fainted, "a wild " + monName(id));
               if (outcome === "caught") { Store.nuzCatch(me, id, shiny, slot); sfx("fanfare"); }
               else sfx("error");
               wildId = 0; wildShiny = 0; renderKeepScroll();
             },
-          } });
+          },
+          // 🪦 The permadeath marker — same shape the run's boss battles pass.
+          // The wild outcome above still does ALL the reporting (duel.js routes
+          // wild endings first); this flag's job is engaging the covenant
+          // inside the engine: no Revive mid-catch, no KO EXP banked onto the
+          // trainer's REAL dex, no real-dex evolution prompt after the scrap.
+          nuzlocke: { onEnd: (fainted, winSide) => {
+            recordDeaths(fainted, "a wild " + monName(id));
+            renderKeepScroll();
+          } } });
       });
   }
 
@@ -1374,7 +1489,7 @@
             // 🗣 the badge-handover line — leaders concede in character here too
             outro: g.defeat ? { lose: g.defeat } : undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || [], slot);
+            recordDeaths(fainted, g.leader);
             if (winSide === "a") {
               Store.nuzBadge(me, idx, slot); sfx("fanfare");
               // 🪦 the badge animation only — a nuzlocke's badges are run-local,
@@ -1504,7 +1619,7 @@
           b: { units: [{ npc: t.name, ai: true, monIds: foeTeam(run, t.team, Math.min(t.team.length, hc.size), "ambush" + run.badges.length), boost: Math.min(1.1, hc.boost),
             gimmick: nuzGimmick(run, "ambush-" + t.name), outro: t.outro || undefined }] },
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || [], slot);
+            recordDeaths(fainted, t.name);
             if (isStory && winSide === "a") Store.nuzStoryWin(me, t.name, slot);
             Store.update((s) => Store.chron(s, isStory ? "📖" : "❗", aName(me) + (winSide === "a" ? (isStory ? " wrote the next chapter — beat " : " fought off ") : " survived ") + t.title + " " + t.name + (isStory ? " at the story's appointed hour!" : (winSide === "a" ? "'s Nuzlocke ambush!" : "'s Nuzlocke ambush — barely."))));
             renderKeepScroll();
@@ -1526,7 +1641,7 @@
             monIds: foeTeam(run, v.team, Math.min(v.team.length, hc.size), step.key), boost: hc.boost,
             gimmick: nuzGimmick(run, step.key) }] },   // 🎪 the finale villain rolls one too
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || [], slot);
+            recordDeaths(fainted, v.name);
             if (winSide === "a") {
               Store.nuzStage(me, step.key, slot);
               sfx("fanfare");
@@ -1553,7 +1668,7 @@
           b: { units: [{ npc: st.rank + " " + st.name, ai: true, monIds: foeTeam(run, st.team, st.team.length, "stage-" + st.key), boost: stageBoost(run, st),
             gimmick: nuzGimmick(run, "stage-" + st.key) }] },   // 🎪 randomized runs: the ace transforms
           nuzlocke: { onEnd: (fainted, winSide) => {
-            Store.nuzDeaths(me, fainted || [], slot);
+            recordDeaths(fainted, st.name);
             if (winSide === "a") {
               Store.nuzStage(me, st.key, slot); sfx("fanfare");
               if (run.region === "blitz") {

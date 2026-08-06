@@ -21,6 +21,11 @@
     // opts.keepScroll — rebuild the view WITHOUT jumping back to the top.
     // Used for live-sync refreshes (a roommate's catch/drink shouldn't yank
     // your scroll position). Real navigation scrolls to top as usual.
+    // The full hash last painted — tells a GENUINE navigation apart from a
+    // same-route re-render (live-sync refreshes call render({keepScroll:true})
+    // and must never disturb an open cinematic).
+    _lastHash: null,
+
     render(opts) {
       const root = document.getElementById("view");
       if (!root) return;
@@ -30,6 +35,16 @@
       // (a directly-removed .battle would otherwise leave the lock stuck).
       if (!document.querySelector(".battle"))
         document.documentElement.classList.remove("scroll-lock");
+      // 🎬 Curtain sweep: the cinematic title cards (league/movie/legend
+      // intros, nuzlocke climaxes, story-beat curtains) are appended to <body>
+      // and would otherwise survive navigation, sitting interactively on top
+      // of an unrelated page. On a GENUINE route change — the hash differs
+      // from the one last painted — clear the strays. A live .battle overlay
+      // (a duel in progress) is NOT a curtain and rides through untouched.
+      const hash = location.hash || "#/home";
+      if (this._lastHash !== null && hash !== this._lastHash)
+        document.querySelectorAll("body > .league-intro").forEach((n) => { try { n.remove(); } catch (_) {} });
+      this._lastHash = hash;
       // Each render rebuilds the view; the outgoing view's "hold remote
       // re-renders" request is void. Views that still want it re-set it.
       window.__deferRender = null;

@@ -2447,6 +2447,30 @@ html, body { overscroll-behavior-y: contain; }
 .beat-row { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25); border-radius: 10px;
   padding: 7px 10px; font-size: 13px; color: #fff; text-align: left; }
 
+/* 🪦 nuzlocke tombstone moments — the RIP veil + the graveyard strip */
+.nuz-rip-veil { z-index: 320; background: rgba(9, 10, 16, 0.96); cursor: pointer;
+  opacity: 0; transition: opacity 0.45s ease; }
+.nuz-rip-veil.go { opacity: 1; }
+.nuz-rip-card { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  max-width: 440px; width: 100%; cursor: auto; }
+.nuz-rip-stone { font-size: 56px; line-height: 1; filter: drop-shadow(0 0 16px rgba(207, 214, 228, 0.35)); }
+.nuz-rip-title { font-family: var(--pixel, monospace); font-size: 15px; font-weight: 900; letter-spacing: 3px; color: #cfd6e4; }
+.nuz-rip-rows { display: flex; flex-direction: column; gap: 8px; }
+.nuz-rip-row { display: flex; align-items: center; gap: 12px; }
+.nuz-rip-row img { width: 64px; height: 64px; image-rendering: pixelated; filter: grayscale(1) brightness(0.62); }
+.nuz-rip-line { color: #eef1f7; font-size: 15px; font-weight: 800; text-align: left; }
+.nuz-rip-sub { display: block; color: #94a0b4; font-size: 12px; font-weight: 500; margin-top: 2px; }
+.nuz-rip-eulogy { display: flex; gap: 6px; width: 100%; max-width: 360px; }
+.nuz-rip-eulogy .in { flex: 1; min-width: 0; background: rgba(255, 255, 255, 0.08); color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.28); border-radius: 10px; padding: 7px 10px; }
+.nuz-rip-eulogy .in::placeholder { color: #7f8aa0; }
+.nuz-rip-hint { color: #6b7488; font-size: 11px; font-family: var(--pixel, monospace); }
+.nuz-graveyard { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 7px; }
+.nuz-grave-head { font-family: var(--pixel, monospace); font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+  color: var(--muted, #8a97a8); margin-bottom: 3px; }
+.nuz-grave-row { font-size: 12px; color: var(--muted, #8a97a8); padding: 1.5px 0; line-height: 1.35; }
+.nuz-grave-row b { color: var(--ink, inherit); font-weight: 800; }
+
 /* 🔮 whispers + 🎴 identity lock */
 .whispers { border: 2px dashed var(--line); border-radius: 12px; padding: 8px 12px; margin: 4px 0 12px; background: var(--paper); }
 .whispers-head { font-family: var(--pixel, monospace); font-weight: 800; font-size: 12px; letter-spacing: 0.5px; margin-bottom: 4px; }

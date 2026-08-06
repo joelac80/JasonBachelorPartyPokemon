@@ -28,6 +28,10 @@
       ["legends", "🌌", "Legendary Challenge", "Every generation's gods once their Champion falls… and sealed story specials beyond"],
       ["nuzlocke", "🪦", "Nuzlocke", "Seven permadeath structures, one save each: Classic · Randomizer · Master · Through the Ages · The Long Walk · ⚡ Blitz · Movie Marathon"],
     ] },
+    { head: "🎉 Partying", rows: [
+      ["party", "🎉", "Party Central", "The one door to everything that isn't catching or battling — Game Corner, Honors Hall, the Summit and the Vault"],
+      ["victoryroad", "🏆", "Victory Road", "Beer Olympics — team events, live scoring and the party scoreboard"],
+    ] },
     { head: "🧭 The crew & the scoreboard", rows: [
       ["roster", "🎴", "Squad", "Everyone's trainer card and favorite Pokémon — tap for a full profile"],
       ["leaderboard", "🏆", "Leaderboard", "The whole squad ranked by trainer score — generations, catches, badges, Champions, crowns"],

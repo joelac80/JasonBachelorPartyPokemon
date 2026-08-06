@@ -99,7 +99,7 @@
     { leader: "KOFU",      badge: "Water",    type: "water",    region: "Paldea", team: [976, 961, 693, 740] , defeat: "WAHAHA! Fresh! You cooked this old chef in his own kitchen!" },
     { leader: "LARRY",     badge: "Normal",   type: "normal",   region: "Paldea", team: [775, 982, 765, 398] , defeat: "…It's just a job, and today I got outworked. Order whatever you like." },
     { leader: "RYME",      badge: "Ghost",    type: "ghost",    region: "Paldea", team: [354, 778, 426, 972] , defeat: "Yo — that beat DROPPED me! Mic's yours, champ!" },
-    { leader: "TULIP",     badge: "Psychic",  type: "psychic",  region: "Paldea", team: [981, 282, 956, 672] , defeat: "Flawless. Your technique needs no touch-up at all." },
+    { leader: "TULIP",     badge: "Psychic",  type: "psychic",  region: "Paldea", team: [981, 282, 956, 671] , defeat: "Flawless. Your technique needs no touch-up at all." },
     { leader: "GRUSHA",    badge: "Ice",      type: "ice",      region: "Paldea", team: [873, 614, 998, 975] , defeat: "…Cold. Precise. You'd do well on the mountain. Take it." },
   ];
   window.GYM_CIRCUIT = GYMS;   // profiles/tests can read the circuit
@@ -145,12 +145,18 @@
     // 📖 Story battles devolve the squad — but the ACE (last slot) is the
     // trainer's signature and always fights in its TRUE form (Misty's
     // STARMIE at Lv24, exactly like the games).
-    const foes = lvl ? t.team.map((id, i) => i === t.team.length - 1 ? id : JS.formAt(id, lvl)) : t.team.slice();
+    // 🎛️ Cartridge Mode gets the TRUE ids: duel.js runs the era law per slot
+    // (CartridgeMode.formFor) at each mon's OWN curve level, and its fodder
+    // power floor walks weak forms back UP the line — a walk it can only make
+    // from the true id. Pre-devolving here hands it a dead end. The legacy
+    // engine keeps the pre-devolve — it has no per-slot law of its own.
+    const cart = !!(window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS);
+    const foes = (lvl && !cart) ? t.team.map((id, i) => i === t.team.length - 1 ? id : JS.formAt(id, lvl)) : t.team.slice();
     // 👥 A DUO ambush (Jessie & James!) is a real DOUBLE battle — two foes
     // step out of the bushes at once, and you lead two of your own.
     if (t.duo) {
       if (Duel.poolFor(attId).length < 2) return;
-      const dv = (ids2) => lvl ? ids2.map((id, i) => i === ids2.length - 1 ? id : JS.formAt(id, lvl)) : ids2.slice();
+      const dv = (ids2) => (lvl && !cart) ? ids2.map((id, i) => i === ids2.length - 1 ? id : JS.formAt(id, lvl)) : ids2.slice();
       Duel.pickParty({ attId: attId, min: 2, max: size, level: lvl || undefined,
         title: "vs ??? & ??? — pick 2 or more",
         hint: "⚔⚔ A DOUBLE ambush! Two voices in the bushes… your first two picks step out together. Bragging rights only." +
@@ -330,6 +336,11 @@
       // region's last badges 6v6; ⚔ Challenge keeps the full rematch squad.
       const JS0 = window.JourneyStyle;
       const story0 = !!(JS0 && JS0.isStory(attId));
+      // 🎛️ Cartridge Mode: the FOE team ships in TRUE form — duel.js applies
+      // the era law per slot (CartridgeMode.formFor) at each mon's own curve
+      // level, and its fodder power floor can only walk back up from the true
+      // id. Legacy engine (cartridge off) keeps the pre-devolve below.
+      const cart = !!(window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS);
       // ⚔ CHALLENGE RULES: the leader brings a FULL SIX (short canon rosters
       // are filled out by doubling up, the way a real gym pads its bench) and
       // your bag is sealed — no Full Restores, no Dire Hit. You still bring as
@@ -337,8 +348,10 @@
       // not a stat wall. 📖 True Story is untouched: era-true levels, trimmed
       // rosters, items in hand, and the ace towering over the field.
       const CHAL_SIZE = 6;
-      const padTo6 = (t) => { const o = t.slice(); let i = 0;
-        while (o.length < CHAL_SIZE && t.length) { o.splice(o.length - 1, 0, t[i % t.length]); i++; }
+      // the bench pads from the SUPPORTING cast only — the ACE (last slot) is
+      // the leader's one signature mon, never photocopied (no twin Alakazam)
+      const padTo6 = (t) => { const o = t.slice(), bench = t.length > 1 ? t.slice(0, -1) : t; let i = 0;
+        while (o.length < CHAL_SIZE && bench.length) { o.splice(o.length - 1, 0, bench[i % bench.length]); i++; }
         return o.slice(0, CHAL_SIZE); };
       const size = story0 && JS0.gymSize ? Math.min(gym.team.length, JS0.gymSize(idx)) : Math.min(6, Duel.poolFor(attId).length);
       const why = gymLockedWhy(idx, attId);
@@ -354,7 +367,8 @@
         }
         const lvl2 = (JS0 && JS0.isStory(attId)) ? JS0.gymLevel(idx) : 0;
         // 📖 story devolve, ace (last slot) TRUE — same law as singles
-        const dv = (ids) => lvl2 ? ids.map((id, i) => i === ids.length - 1 ? id : JS0.formAt(id, lvl2)) : ids.slice();
+        // (cartridge hands duel.js the true ids; the per-slot law lives there)
+        const dv = (ids) => (lvl2 && !cart) ? ids.map((id, i) => i === ids.length - 1 ? id : JS0.formAt(id, lvl2)) : ids.slice();
         const gim = ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[gym.region];
         Duel.pickParty({ attId: attId, min: total, max: total, level: lvl2 || undefined,
           title: "vs " + gym.leader + " — pick EXACTLY " + total,
@@ -363,6 +377,11 @@
           onDone: (ids, meta) => {
             const mine = lvl2 ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS0.formAt(id, lvl2)) : ids;
             Duel.start({ mode: "local", title: "the " + gym.badge + " Badge Gym — DOUBLES",
+              noItems: !lvl2,                              // ⚔ Challenge seals the bag here too
+              // ⚔ the same SAGA CURVE the singles ladder rides — a double gym
+              // is not a day off from Challenge rules (Tate & Liza, Raihan).
+              refLevel: lvl2 ? undefined : (JS0 && JS0.chalGymLevel ? JS0.chalGymLevel(idx) : undefined),
+              foeEdge: lvl2 ? undefined : (JS0 && JS0.chalGymEdge ? JS0.chalGymEdge(idx) : undefined),
               gym: { idx: idx, leader: gym.leader, badge: gym.badge, style: lvl2 ? "story" : "challenge" },
               env: gym.type, level: lvl2 || undefined,
               a: { shared: true, units: [{ attId: attId, defy: meta && meta.defiant, monIds: mine },
@@ -388,7 +407,8 @@
       // the story cut keeps the front of the squad plus the ACE (last slot)
       const squad = size < gym.team.length ? gym.team.slice(0, size - 1).concat([gym.team[gym.team.length - 1]]) : gym.team.slice();
       // 📖 devolve the squad, but the leader's ACE (last slot) stays TRUE
-      const foes = lvl ? squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl)) : padTo6(gym.team);
+      // (cartridge ships TRUE ids — duel.js devolves per slot with the floor)
+      const foes = lvl ? (cart ? squad.slice() : squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl))) : padTo6(gym.team);
       // 📖 story is an even N-vs-N; ⚔ challenge lets you bring everything you own
       Duel.pickParty({ attId: attId, min: lvl ? size : 1, max: size, level: lvl || undefined,
         title: "vs Leader " + gym.leader + " — pick " + (lvl ? "EXACTLY " : "up to ") + size,
@@ -430,7 +450,9 @@
     const g = GYMS[idx];
     const holders = Store.gymHolders(idx);
     const ico = U.energyIcon(g.type);
-    const why = gymLockedWhy(idx, attId || (window.Sync && Sync.getMe && Sync.getMe()) || "");
+    const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
+    const story = !!(window.JourneyStyle && me && JourneyStyle.isStory(me));
+    const why = gymLockedWhy(idx, me);
     return el("div", { class: "gymc-card" + (holders.length ? " earned" : "") + (why ? " locked" : "") }, [
       el("div", { class: "gymc-head" }, [
         ico ? el("img", { class: "gymc-ico", src: ico, alt: g.type }) : null,
@@ -439,12 +461,12 @@
           // 🕴 GIOVANNI vanishes wordlessly once YOU hold the Earth Badge —
           // exactly like the cartridge. (Others can still find him there.)
           el("div", { class: "gymc-leader" },
-            (g.leader === "GIOVANNI" && (function () {
-              const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
-              return me && holders.indexOf(me) >= 0;
-            })())
+            (g.leader === "GIOVANNI" && me && holders.indexOf(me) >= 0)
               ? "…the room stands empty. He was gone by morning."
-              : "Leader " + g.leader + " · team of " + g.team.length + " (hidden)"),
+              // ⚔ Challenge really pads the bench to a FULL SIX — say so.
+              // (double gyms keep their true doubles roster; story keeps its own)
+              : "Leader " + g.leader + " · " + (story || g.duo || g.duoShared
+                  ? "team of " + g.team.length : "a full six") + " (hidden)"),
         ]),
       ]),
       holders.length
@@ -455,18 +477,23 @@
         : el("div", { class: "gymc-holders none" }, "No badge holders yet"),
       why ? el("div", { class: "gymc-lock" }, "🔒 " + why)
           : el("button", { class: "btn primary sm", onClick: () => challengeGym(idx) }, (function () {
-              const me = attId || (window.Sync && Sync.getMe && Sync.getMe()) || "";
-              const story = !!(window.JourneyStyle && me && JourneyStyle.isStory(me));
-              // 👥 canon double gyms announce themselves up front
+              const JSx = window.JourneyStyle;
+              // ⚔ Challenge is honest up front: the target level is the saga
+              // ref PLUS the leader's edge — the number the HP bars will show.
+              const tgt = (!story && JSx && JSx.chalGymLevel)
+                ? " · foes ~Lv " + (JSx.chalGymLevel(idx) + (JSx.chalGymEdge ? JSx.chalGymEdge(idx) : 0)) : "";
+              // 👥 canon double gyms announce their TRUE doubles shape up front
               if (g.duo || g.duoShared) {
                 return "⚔⚔ Double Battle (" + g.team.length + "v" + g.team.length +
-                  (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
+                  (story ? " · Lv " + JSx.gymLevel(idx) : tgt) + ")";
               }
-              // 📖 True Story shows the era-true roster size AND level up front
-              const n = story && JourneyStyle.gymSize ? Math.min(g.team.length, JourneyStyle.gymSize(idx)) : g.team.length;
+              // 📖 True Story shows the era-true roster size AND level up front;
+              // ⚔ Challenge pads every bench to a full six and says so.
+              const n = story && JSx.gymSize ? Math.min(g.team.length, JSx.gymSize(idx)) : 6;
               // 🔁 Badge already won → say so, like every other ladder card does.
               const held = me && holders.indexOf(me) >= 0;
-              return (held ? "🔁 Rematch (badge kept · " : "⚔ Challenge (") + n + "v" + n + (story ? " · Lv " + JourneyStyle.gymLevel(idx) : "") + ")";
+              return (held ? "🔁 Rematch (badge kept · " : "⚔ Challenge (") + n + "v" + n +
+                (story ? " · Lv " + JSx.gymLevel(idx) : tgt) + ")";
             })()),
     ]);
   }
@@ -478,8 +505,13 @@
     ]));
 
     const totalBadges = (Store.state.attendees || []).reduce((n, a) => n + Store.gymBadgeCount(a.id), 0);
+    // the closing line matches YOUR style — "even match" is only True Story's law
+    const meHint = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
+    const storyHint = !!(window.JourneyStyle && meHint && JourneyStyle.isStory(meHint));
     root.appendChild(el("p", { class: "hint" },
-      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. Even match: bring EXACTLY as many Pokémon as the leader runs." +
+      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. " +
+      (storyHint ? "Even match: bring EXACTLY as many Pokémon as the leader runs."
+                 : "⚔ Challenge: every leader pads their bench to a FULL SIX and your bag is sealed — bring up to six of your own.") +
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
 
     // ⚔/📖 The style switch — how the whole circuit (and the League) fights you.

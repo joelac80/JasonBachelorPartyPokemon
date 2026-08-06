@@ -111,9 +111,14 @@
           // clues and reopen the board.
           const saved = parsed.jeopardy || {};
           const merged = Object.assign(base.jeopardy, saved);
-          const seedVer = (base.jeopardy.board && base.jeopardy.board.version) || 0;
+          // ⚠ Compare against the SEED deck itself — `base.jeopardy` was just
+          // overwritten by the save above, and freshState's `seed` local isn't
+          // in scope here (referencing it threw, and the catch treated the
+          // whole save as corrupt — a full wipe on the first bumped deck).
+          const seedBoard = (window.SEED || {}).jeopardyBoard || { rounds: [], final: {} };
+          const seedVer = seedBoard.version || 0;
           const savedVer = (saved.board && saved.board.version) || 0;
-          if (savedVer < seedVer) { merged.board = clone(seed.jeopardyBoard); merged.used = {}; merged.finalDone = false; merged.round = 0; }
+          if (savedVer < seedVer) { merged.board = clone(seedBoard); merged.used = {}; merged.finalDone = false; merged.round = 0; }
           return merged;
         })(),
         brackets: parsed.brackets || [],
@@ -492,9 +497,9 @@
       const bird = this._topAttendee((id) => this.logsInHours(id, 5, 10));
       if (bird) out.push({ emoji: "🌅", title: "Early Bird", holder: bird.a.name, sub: bird.n + " early logs" });
       const doc = this._topAttendee((id) => this.photosOf(id));
-      if (doc) out.push({ emoji: "🌟", title: "Most Documented", holder: doc.a.name, sub: doc.n + " photos of them" });
+      if (doc) out.push({ emoji: "🌟", title: "Most Documented", holder: doc.a.name, sub: doc.n + (doc.n === 1 ? " photo" : " photos") + " of them" });
       const shutter = this._topAttendee((id) => this.photosTakenBy(id));
-      if (shutter) out.push({ emoji: "📷", title: "Shutterbug", holder: shutter.a.name, sub: shutter.n + " photos taken" });
+      if (shutter) out.push({ emoji: "📷", title: "Shutterbug", holder: shutter.a.name, sub: shutter.n + (shutter.n === 1 ? " photo" : " photos") + " taken" });
       const riv = this.rivalries()[0];
       if (riv && riv.n >= 2) out.push({ emoji: "😈", title: "Rivalry", holder: riv.winner, sub: "beat " + riv.loser + " ×" + riv.n });
       return out;
@@ -1279,14 +1284,22 @@
     },
     // Permadeath: every own mon that fainted in a nuzlocke battle dies for the
     // run. If the whole box is gone, the run is OVER.
-    nuzDeaths(attId, ids, slot) {
+    // 🪦 `killer` (optional) carves the tombstone: each new death remembers
+    // WHO took them (the leader / stage boss / wild species), how many badges
+    // the run held, and when. Old saves without `fell` still render fine —
+    // the graveyard simply shows a plainer stone.
+    nuzDeaths(attId, ids, slot, killer) {
       if (!ids || !ids.length) return;
       this._nuzEdit(attId, (r, s) => {
         if (r.over) return;
         const fallen = [];
         ids.forEach((id) => {
           const m = r.box.find((x) => x.id === id && !x.dead);
-          if (m) { m.dead = 1; r.deaths += 1; fallen.push(((window.DEX || {})[id] || {}).n || "#" + id); }
+          if (m) {
+            m.dead = 1; r.deaths += 1;
+            m.fell = { by: killer || "", badges: r.badges.length, ts: Date.now() };
+            fallen.push(((window.DEX || {})[id] || {}).n || "#" + id);
+          }
         });
         if (!fallen.length) return;
         Store.chron(s, "🪦", "RIP — " + this._nuzName(attId) + "'s " + fallen.join(", ") + " fainted in the Nuzlocke. Gone for the run.");
@@ -1336,7 +1349,7 @@
         const REG = window.NUZ_REGIONS || [];
         let n = r.badges.length, total = 8, where = "";
         if (r.region === "master") { total = 68; }
-        else if (r.region === "blitz") { total = 12; }
+        else if (r.region === "blitz") { total = 16; }        // ⚡ 16 gym slots on the 27-battle reel
         else if (r.region === "ages" || r.region === "trek") {
           // Region-reset walks — count within THIS region.
           const R = REG.find((x) => idx >= x.gym0 && idx < x.gym0 + x.gymN);
@@ -1370,7 +1383,7 @@
         };
         const REG = window.NUZ_REGIONS || [];
         if (r.region === "blitz") {                            // ⚡ the blitz gauntlet
-          Store.chron(s, "⚡", nm + " took a blitz-gauntlet battle — " + (r.badges.length + r.league.length) + "/15 down, the cap climbs again!");
+          Store.chron(s, "⚡", nm + " took a blitz-gauntlet battle — " + (r.badges.length + r.league.length) + "/27 down, the cap climbs again!");
           return;
         }
         if (r.region === "movie") {                            // 🎬 the movie marathon
@@ -1469,18 +1482,20 @@
         if (r.story.indexOf(name) < 0) r.story.push(name);
       }, slot);
     },
-    // ⚡ The blitz ends when its seeded 15-battle reel is empty — the view
-    // calls this after the Champion finale falls.
+    // ⚡ The blitz ends when its seeded 27-battle reel is empty — the view
+    // calls this after the villain finale falls.
     nuzBlitzCrown(attId) {
       this._nuzEdit(attId, (r, s) => {
         if (r.over || r.region !== "blitz") return;
         const alive = r.box.filter((m) => !m.dead).map((m) => m.id);
+        // ⚡ the reel is 27: 16 gyms + 8 Elite Four + 2 Champions + the villain.
+        const reelN = r.badges.length + r.league.length || 27;
         r.over = "blitz"; r.doneTs = Date.now();
         s.nuzlockeHof = s.nuzlockeHof || [];
-        s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "blitz", mode: r.mode || "", region: "15 battles" });
+        s.nuzlockeHof.push({ att: attId, catches: r.catches, deaths: r.deaths, box: r.box.map((m) => m.id), ts: r.doneTs, tier: "blitz", mode: r.mode || "", region: reelN + " battles" });
         s.hof = s.hof || [];
-        s.hof.push({ attId: attId, ts: r.doneTs, party: alive.slice(0, 6), key: "nuzlocke-blitz", champ: "THE GAUNTLET", rank: "Blitz Gauntlet", region: "15 battles" });
-        Store.chron(s, "⚡", "BLITZ COMPLETE!!! " + this._nuzName(attId) + " ran the 15-battle gauntlet from Lv 14 to Lv 100 — a surprise Champion and all — with permadeath on. " + r.catches + " caught, " + r.deaths + " lost.");
+        s.hof.push({ attId: attId, ts: r.doneTs, party: alive.slice(0, 6), key: "nuzlocke-blitz", champ: "THE GAUNTLET", rank: "Blitz Gauntlet", region: reelN + " battles" });
+        Store.chron(s, "⚡", "BLITZ COMPLETE!!! " + this._nuzName(attId) + " ran the " + reelN + "-battle gauntlet from Lv 14 to Lv 100 — a surprise Champion, a villain finale and all — with permadeath on. " + r.catches + " caught, " + r.deaths + " lost.");
       }, "blitz");
     },
     // Bank the crown and stop — a champion who walks away stays a champion.

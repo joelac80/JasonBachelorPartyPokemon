@@ -691,9 +691,70 @@
     sfx("fanfare");
     requestAnimationFrame(() => lay.classList.add("go"));
   }
+  // 💾 CHAIN RUN SAVES — a marathon six Frontier Brains deep is far too much
+  // progress to trust to closure state: one reload, one stray nav, one
+  // mis-tapped "Not yet" used to torch the whole run in silence. Every chain
+  // victory now writes {step, ids, upd} per trainer+chain to localStorage
+  // (device-local, like the last-party memory); the card offers "▶ Continue"
+  // while a run lives, and the save burns only on defeat or the finale.
+  const RUN_KEY = "jasonBachHub.chainRun.v1";
+  function runsAll() { try { return JSON.parse(localStorage.getItem(RUN_KEY)) || {}; } catch (_) { return {}; } }
+  function runsPut(m) { try { localStorage.setItem(RUN_KEY, JSON.stringify(m)); } catch (_) {} }
+  function runSave(attId, key, step, ids) { const m = runsAll(); m[attId + "|" + key] = { step: step, ids: ids.slice(), upd: Date.now() }; runsPut(m); }
+  function runClear(attId, key) { const m = runsAll(); if (m[attId + "|" + key]) { delete m[attId + "|" + key]; runsPut(m); } }
+  // A save is only live if it points mid-run AND the squad is still real
+  // (six ids the trainer can actually field) — anything stale melts away.
+  function runLoad(sp, attId) {
+    const r = runsAll()[attId + "|" + sp.key];
+    if (!r || !Array.isArray(r.ids) || r.ids.length !== 6) return null;
+    const total = (sp.chain || []).length + 1;
+    if (!(r.step >= 1 && r.step < total)) return null;
+    const pool = Duel.poolFor(attId);
+    if (r.ids.some((id) => pool.indexOf(id) < 0)) return null;
+    return r;
+  }
+  // 💾 A live save turns the card into a crossroads: pick the run back up
+  // exactly where it stood, or torch it and start clean — and torching asks
+  // ONCE, because a mis-tap must never eat six Frontier Brains.
+  function resumeIntro(sp, attId, run) {
+    const total = (sp.chain || []).length + 1;
+    const next = run.step < (sp.chain || []).length ? sp.chain[run.step] : (sp.finale || { name: sp.name, face: sp.face });
+    const src = next.face ? (SP[next.face] || Store.sprite(next.face)) : null;
+    const lay = el("div", { class: "league-intro final legend-intro" }, [
+      el("div", { class: "league-intro-inner" }, [
+        src ? el("img", { class: "league-intro-ico legend-boss-ico", src: src, alt: "" }) : el("div", { class: "league-intro-mt" }, sp.icon),
+        el("div", { class: "league-intro-flair" }, sp.icon + " " + sp.flair + " · RUN IN PROGRESS"),
+        el("div", { class: "league-intro-rank" }, sp.name),
+        el("div", { class: "league-intro-name" }, "⚔ " + run.step + " of " + total + " battles won"),
+        el("div", { class: "league-intro-quote" }, "“Your six held through " + run.step + (run.step === 1 ? " battle" : " battles") + " — and " + (next.name || sp.name) + " still waits. Fully healed, same squad. Finish it.”"),
+        el("div", { class: "toolbar", style: { justifyContent: "center", flexWrap: "wrap" } }, [
+          el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); runChainBattle(sp, attId, run.ids, run.step); } },
+            "▶ Continue — battle " + (run.step + 1) + " of " + total),
+          (function () {
+            let armed = false;
+            const b = el("button", { class: "btn subtle", onClick: () => {
+              if (!armed) { armed = true; b.textContent = "⚠ Toss " + run.step + (run.step === 1 ? " win" : " wins") + "? Tap again"; return; }
+              runClear(attId, sp.key); lay.remove(); freshChain(sp, attId);
+            } }, "Start over");
+            return b;
+          })(),
+          el("button", { class: "btn subtle", onClick: () => lay.remove() }, "Not yet"),
+        ]),
+      ]),
+    ]);
+    document.body.appendChild(lay);
+    sfx("fanfare");
+    requestAnimationFrame(() => lay.classList.add("go"));
+  }
   function challengeChain(sp, attId) {
     const total = (sp.chain || []).length + 1;
     if (Duel.poolFor(attId).length < 6) { U.toast(sp.name + " runs one squad of 6 through " + total + " battles — catch 6 of your own first (Safari Zone)."); return; }
+    const run = runLoad(sp, attId);   // 💾 a live run resumes; it never silently restarts
+    if (run) { resumeIntro(sp, attId, run); return; }
+    freshChain(sp, attId);
+  }
+  function freshChain(sp, attId) {
+    const total = (sp.chain || []).length + 1;
     specialIntro(sp, () => {
       Duel.pickParty({ attId: attId, min: 6, max: 6,
         title: sp.name + " — pick your ONE squad of 6",
@@ -704,6 +765,7 @@
   function runChainBattle(sp, attId, ids, i) {
     const total = (sp.chain || []).length + 1;
     const fell = () => {
+      runClear(attId, sp.key);   // 💾 defeat ends the run — the save goes with it
       try { Store.update((s) => Store.chron(s, sp.icon, ((Store.attendee(attId) || {}).name || attId) + " — " + sp.loseChron + " (battle " + (i + 1) + "/" + total + ").")); } catch (_) {}
       Router.render();
     };
@@ -728,7 +790,7 @@
             ? { shared: true, units: [{ attId: attId, monIds: leadIds }, { attId: attId, monIds: leadIds }] }
             : { units: [{ attId: attId, monIds: leadIds }] },
           b: foeSide,
-          onResult: (w) => { if (w === "a") runChainBattle(sp, attId, ids, i + 1); else fell(); } });
+          onResult: (w) => { if (w === "a") { runSave(attId, sp.key, i + 1, ids); runChainBattle(sp, attId, ids, i + 1); } else fell(); } });   // 💾 each victory checkpoints the run
         if (i === 0) { go(ids); return; }
         Duel.pickLead({ attId: attId, ids: ids, title: "Battle " + (i + 1) + "/" + total + " — " + t.name,
           hint: (t.icon || sp.icon) + " Healed and ready. Choose your lead.", onDone: go });
@@ -747,7 +809,7 @@
           b: { units: [{ npc: fin.npc || sp.name, ai: true, monIds: sp.team.slice(), boost: sp.boost, vsFace: fin.face || sp.face,
             hpBoost: sp.hpBoost || undefined, shiny: sp.shiny || undefined, gimmick: sp.gimmick || null,
             reserve: sp.reserve || 0, speak: sp.speak || null, outro: sp.outro || null, feral: sp.feral }] },
-          onResult: () => Router.render() });
+          onResult: () => { runClear(attId, sp.key); Router.render(); } });   // 💾 the finale settles it either way — win records, loss ends; the save burns
         if (!(sp.chain || []).length) { start(ids); return; }
         Duel.pickLead({ attId: attId, ids: ids, title: "The finale — " + (fin.npc || sp.name),
           hint: (fin.icon || sp.icon) + " The last battle. Choose your lead.", onDone: start });
@@ -757,6 +819,7 @@
 
   function specialCard(sp, attId) {
     const open = specialOpen(sp, attId);
+    const run = (open && sp.chain) ? runLoad(sp, attId) : null;   // 💾 a live chain run owns the button
     const beaten = !!(Store.secretWins && Store.secretWins(attId).indexOf(sp.key) >= 0);
     const beatenBy = Store.state.attendees.filter((a) => Store.secretWins && Store.secretWins(a.id).indexOf(sp.key) >= 0);
     const aceSrc = SP[sp.face] || Store.sprite(sp.face);
@@ -776,9 +839,10 @@
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, sp.icon + " " + a.name))) : null,
         open
-          ? el("button", { class: "btn " + (beaten ? "subtle" : "primary") + " sm",
+          ? el("button", { class: "btn " + ((beaten && !run) ? "subtle" : "primary") + " sm",
               onClick: () => (sp.chain ? challengeChain(sp, attId) : challengeSpecial(sp, attId)) },
-              (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + (sp.chain ? " (" + (sp.chain.length + 1) + " battles)" : " (" + n + "v" + n + ")"))
+              run ? "▶ Continue " + sp.name + " — battle " + (run.step + 1) + " of " + ((sp.chain || []).length + 1)
+                : (beaten ? "🔁 Rematch " : sp.icon + " Face ") + sp.name + (sp.chain ? " (" + (sp.chain.length + 1) + " battles)" : " (" + n + "v" + n + ")"))
           : el("div", { class: "legend-lock" }, "🔒 " + specialLockText(sp)),
       ]),
     ]);

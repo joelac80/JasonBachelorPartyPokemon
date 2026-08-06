@@ -119,7 +119,7 @@
     const duelHost = el("div", { class: "duel-setup" });
     root.appendChild(el("h2", { class: "section-title" }, "🎮 Pokémon Duel"));
     root.appendChild(el("p", { class: "hint" },
-      "Turn-based, every Pokémon at Lv50. 🧪 Potion = heal 120 (2 per battle) · 🎯 Dire Hit = unleash a can't-miss guaranteed crit that same turn (once per battle). Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
+      "Turn-based, every Pokémon at Lv50. 🧪 Full Restore = full heal + status cure — or revive a fallen teammate (2 per battle) · 🎯 Dire Hit = unleash a can't-miss guaranteed crit that same turn (once per battle). Synced to a room? Challenge someone below and they'll play their turns on their own phone."));
     // Champion's Belt — win a singles duel to claim it, beat the holder to take it.
     const belt = (Store.state.battles && Store.state.battles.belt) || null;
     root.appendChild(el("div", { class: "duel-belt" + (belt ? "" : " open"), onClick: () => { if (belt && window.Profile) Profile.open(belt.attId); } }, belt
@@ -164,11 +164,17 @@
         } }, "⚡ Use my team"));
         if (u.party.length) {
           const lead = Duel.statsFor(u.party[0]);
+          // 🎛️ Cartridge Mode fights at REAL Lv50 stats — the card must show
+          // the HP the launched battle's bar actually opens with, not the
+          // legacy engine's compressed number.
+          const hp = (window.CartridgeMode && CartridgeMode.on())
+            ? CartridgeMode.statsAt(u.party[0], 50).hp : lead.hpMax;
           const kos = ((Store.state.pokedex.trainers || {})[u.attId] || { caught: {} }).caught[u.party[0]];
-          const vet = kos && kos.kos ? Math.min(20, 2 * kos.kos) : 0;
+          // ⚔ mirrors the engine: +1% ATK per banked KO, capped at +10%.
+          const vet = kos && kos.kos ? Math.min(10, kos.kos) : 0;
           kids.push(el("div", { class: "duel-pick-meta" }, (maxParty > 1
             ? "Party of " + u.party.length + " — lead: " : "") +
-            lead.name + " · Lv50 · " + lead.hpMax + " HP" + (vet ? " · ⚔ veteran +" + vet + "% ATK" : "") + " · " + lead.moves.map((m) => m.name).join(" / ")));
+            lead.name + " · Lv50 · " + hp + " HP" + (vet ? " · ⚔ veteran +" + vet + "% ATK" : "") + " · " + lead.moves.map((m) => m.name).join(" / ")));
         }
       }
       return el("div", { class: "duel-unit" }, kids);

@@ -252,10 +252,15 @@
     // Linear climb: the previous stage (st.needs) must be beaten.
     if (st.needs && !beaten[st.needs]) {
       const prev = stageByKey(st.needs);
-      if (st.key === "red") return "…the summit is silent. (Beat Champion " + prev.name + " first.)";
-      if (st.rank === "Champion") return "Champion " + st.name + " only faces trainers who've toppled all four of the Elite Four.";
-      if (prev.rank === "Champion") return "A new region's Elite Four — first defeat Champion " + prev.name + " to earn the invitation.";
-      return "The Elite Four fall IN ORDER — beat " + prev.name + " first.";
+      // 🎭 a mystery champion's card says "???" — the lock line must not rat
+      // them out either. "the Champion" until somebody's actually beaten them.
+      // (RED keeps his own silent-summit line — he never speaks a name anyway.)
+      const sealed = (x) => x.mystery && x.key !== "red" && !Store.state.attendees.some((a) => hasBeat(a.id, x.key));
+      const prevName = sealed(prev) ? "the Champion" : "Champion " + prev.name;
+      if (st.key === "red") return "…the summit is silent. (Beat " + prevName + " first.)";
+      if (st.rank === "Champion") return (sealed(st) ? "The Champion" : "Champion " + st.name) + " only faces trainers who've toppled all four of the Elite Four.";
+      if (prev.rank === "Champion") return "A new region's Elite Four — first defeat " + prevName + " to earn the invitation.";
+      return "The Elite Four fall IN ORDER — beat " + (sealed(prev) ? "the Champion" : prev.name) + " first.";
     }
     return "";
   }
@@ -330,10 +335,15 @@
         Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
           title: "vs " + foeName + " — pick EXACTLY " + size,
           hint: "⚔⚔ DOUBLE BATTLE — the Blueberry League fights two at a time (your first two picks lead). The lineup is hidden." +
-            (lvl ? " 📖 True Story: fought at Lv " + lvl + "." : ""),
+            (lvl ? " 📖 True Story: fought at Lv " + lvl + "."
+                 : " ⚔ CHALLENGE: your bag is SEALED — no Full Restores, no Dire Hit."),
           onDone: (ids, meta) => {
             const mine = lvl ? ids.map((id) => (meta && meta.defiant && meta.defiant[id]) ? id : JS.formAt(id, lvl)) : ids;
             Duel.start({ mode: "local", title: "the Blueberry League — DOUBLES",
+              noItems: !lvl,                 // ⚔ Challenge seals the bag under the sea too
+              // ⚔ the SAGA CURVE — the terarium's chambers sit above Paldea's crown
+              refLevel: lvl ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(idx) : undefined),
+              foeEdge: lvl ? undefined : (JS && JS.chalStageEdge ? JS.chalStageEdge(idx) : undefined),
               level: lvl || undefined, env: "bg-sea",
               league: { idx: idx, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: isFinal,
                 style: lvl ? "story" : "challenge" },
@@ -390,6 +400,30 @@
 
   const nowTs = () => (Date.now ? Date.now() : 0);
 
+  // 💾 Mid-gauntlet saves — phones sleep at parties. One live run per
+  // attendee+region+mode: win a round and the save advances; clear the run
+  // (or fall) and it's gone. A reload lands you back on the same round with
+  // the same squad instead of round 1 with a sigh.
+  const GSAVE_KEY = "jasonBachHub.gauntletRun.v1";
+  function gsaves() { try { return JSON.parse(localStorage.getItem(GSAVE_KEY) || "{}"); } catch (_) { return {}; } }
+  function gsaveWrite(m) { try { localStorage.setItem(GSAVE_KEY, JSON.stringify(m)); } catch (_) {} }
+  const gsaveId = (attId, label, mode) => attId + "|" + (label || "League") + "|" + mode;
+  function gsavePut(attId, label, mode, data) { const m = gsaves(); m[gsaveId(attId, label, mode)] = data; gsaveWrite(m); }
+  function gsaveClear(attId, label) {
+    const m = gsaves(); let dirty = false;
+    ["fixed", "fresh"].forEach((md) => { const k = gsaveId(attId, label, md); if (m[k]) { delete m[k]; dirty = true; } });
+    if (dirty) gsaveWrite(m);
+  }
+  // The live save for this attendee+region, if any round was actually won.
+  function gsaveLive(attId, label, total) {
+    const m = gsaves();
+    for (let j = 0; j < 2; j++) {
+      const md = ["fixed", "fresh"][j], sv = m[gsaveId(attId, label, md)];
+      if (sv && sv.round >= 2 && sv.round <= total) return { mode: md, save: sv };
+    }
+    return null;
+  }
+
   // ---- Gauntlet engine: fight a list of opponents back-to-back. Two modes:
   // pick a fresh six each battle, or bring one squad for the whole run (healed
   // between). opponents: [{ name, monIds, boost }]. opts: { title, modalTitle,
@@ -403,6 +437,8 @@
     let fixed = null, lastParty = null;
 
     const finishRun = (cleared, won) => {
+      // 💾 the run is over either way — the couch save burns with it
+      if (opts.persist) gsaveClear(attId, opts.persist);
       if (won) { try { if (opts.onWinAll) opts.onWinAll(mode, lastParty); } catch (_) {} sfx("fanfare"); }
       let ctrl;
       const body = el("div", { class: "league-intro-inner", style: { textAlign: "center", padding: "8px", gap: "10px" } }, [
@@ -434,12 +470,27 @@
         const foes = (o.level && JS) ? ml.map((id, i) => i === ml.length - 1 ? id : JS.formAt(id, o.level)) : ml.slice();
         Duel.start({ mode: "local", title: (opts.title || "Gauntlet") + " (" + (i + 1) + "/" + total + ")",
           gauntlet: true, level: o.level || undefined,
+          // ⚔ CHAMBER RULES ride each round: the saga-curve reference, the
+          // leader's widening edge, a SEALED bag — a gauntlet round is the
+          // same fight its single chamber is, just back-to-back.
+          noItems: o.noItems || undefined,
+          refLevel: o.refLevel || undefined, foeEdge: o.foeEdge || undefined,
+          env: o.env || undefined,
+          // 👑 the chamber's league ctx — cartridge planning reads the stage's
+          // own curve from it, and the round's win lands on the real ladder.
+          league: o.league || undefined,
           a: { units: [{ attId: attId, defy: Object.keys(defy).length ? defy : null, monIds: fielded }] },
           b: { units: [{ npc: o.name, ai: true, monIds: foes, boost: o.boost || undefined,
             gimmick: o.gimmick || null,   // the ace's regional transform — single chambers had it, the gauntlet dropped it
             outro: o.outro || undefined }] },
           onResult: (winSide) => {
-            if (winSide === "a") { try { if (opts.onAdvance) opts.onAdvance(i + 1); } catch (_) {} runAt(i + 1); }
+            if (winSide === "a") {
+              // 💾 round won → the save advances to the next foe
+              if (opts.persist && i + 1 < total) gsavePut(attId, opts.persist, mode,
+                { round: i + 2, squad: (fixed || lastParty || []).slice(), beaten: opponents.slice(0, i + 1).map((x) => x.name), upd: nowTs() });
+              try { if (opts.onAdvance) opts.onAdvance(i + 1); } catch (_) {}
+              runAt(i + 1);
+            }
             else finishRun(i, false);
           } });
       };
@@ -458,16 +509,26 @@
         Duel.pickParty({ attId: attId, min: size, max: size, level: o.level || undefined,
           title: "Your ONE gauntlet squad — pick 6",
           hint: "🛡 ONE team for the whole run (fully healed between). No swaps — pick a versatile six! First up: " + o.name + "." +
-            (o.level ? " 📖 True Story: fought at Lv " + o.level + "+." : ""),
+            (o.level ? " 📖 True Story: fought at Lv " + o.level + "+."
+                     : (o.noItems ? " ⚔ CHALLENGE: your bag is SEALED — no Full Restores, no Dire Hit." : "")),
           onDone: (ids, meta) => { fixed = ids; fixedMeta = meta; go(ids, meta); } });
       } else {
         Duel.pickParty({ attId: attId, min: size, max: size, level: o.level || undefined,
           title: "Round " + (i + 1) + "/" + total + " — vs " + o.name,
           hint: "🔄 Fresh 6 for THIS battle. Win to advance to the next." +
-            (o.level ? " 📖 True Story: fought at Lv " + o.level + "." : ""),
+            (o.level ? " 📖 True Story: fought at Lv " + o.level + "."
+                     : (o.noItems ? " ⚔ CHALLENGE: your bag is SEALED — no Full Restores, no Dire Hit." : "")),
           onDone: go });
       }
     };
+    // 💾 a live save re-arms the same squad and drops you at its round
+    const rz = opts.resume;
+    if (rz && rz.round >= 2 && rz.round <= total) {
+      if (mode === "fixed" && rz.squad && rz.squad.length >= size) fixed = rz.squad.slice(0, size);
+      lastParty = rz.squad ? rz.squad.slice() : null;
+      runAt(rz.round - 1);
+      return;
+    }
     runAt(0);
   }
 
@@ -514,7 +575,7 @@
   function leagueStagesForRun(stageIdxs) {
     return (stageIdxs || []).filter((i) => LEAGUE[i] && LEAGUE[i].key !== "red");
   }
-  function recordLeagueRun(attId, runIdxs, mode, label, championParty) {
+  function recordLeagueRun(attId, runIdxs, mode, label, championParty, style) {
     try { Store.update((s) => {
       s.league = s.league || {};
       const w = s.league[attId] = s.league[attId] || [];
@@ -524,6 +585,10 @@
       let champFresh = false;
       stages.forEach((st) => {
         if (w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); if (st === champStage) champFresh = true; }
+        // ⚔/📖 the crown remembers HOW it was won — the same per-style ledger
+        // the single chambers write (feeds Conqueror/Storyteller + region
+        // style crowns; append-only, so double credit is a no-op).
+        if (style && Store.styleWin) Store.styleWin(s, attId, st.key, style);
       });
       if (champFresh && champStage && championParty && championParty.length) {
         s.hof = s.hof || [];
@@ -534,20 +599,25 @@
       if (g[key] !== "fixed") g[key] = mode;
       Store.chron(s, "⚔", ((Store.attendee(attId) || {}).name || attId) + " conquered the entire " + (label || "League") +
         " Elite Four & Champion in ONE gauntlet run" + (mode === "fixed" ? " — with a single squad!" : "!"));
-      if (champFresh && window.StoryBeats) setTimeout(() => StoryBeats.afterChampion(attId, champStage), 400);
+      // (afterChampion self-guards — once per crown per phone, wins only — so
+      // it fires even when the round itself already put the key on the ladder)
+      if (champStage && window.StoryBeats) setTimeout(() => StoryBeats.afterChampion(attId, champStage), 400);
     }); } catch (_) {}
   }
   // Partial gauntlet credit: reaching the Champion PROVES the Elite Four fell
   // this run — record those wins on the regular ladder even if the Champion
   // then holds. (No HOF enshrine — that's still the Champion's to give.)
-  function creditLeagueStages(attId, idxs) {
+  function creditLeagueStages(attId, idxs, style) {
     try { Store.update((s) => {
       s.league = s.league || {};
       const w = s.league[attId] = s.league[attId] || [];
       const teamId = (Store.attendee(attId) || {}).team || "";
       let fresh = 0;
       idxs.forEach((i) => { const st = LEAGUE[i];
-        if (st && w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); fresh++; } });
+        if (!st) return;
+        if (w.indexOf(st.key) < 0) { w.push(st.key); Store.grantPoints(s, "battle", teamId, st.pts || 6); fresh++; }
+        // ⚔/📖 style credit rides the partial sweep too
+        if (style && Store.styleWin) Store.styleWin(s, attId, st.key, style); });
       if (fresh) Store.chron(s, "⚔", ((Store.attendee(attId) || {}).name || attId) +
         " swept the Elite Four in a gauntlet run — " + fresh + " ladder win" + (fresh > 1 ? "s" : "") + " recorded. Only the Champion remains…");
     }); } catch (_) {}

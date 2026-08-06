@@ -194,6 +194,13 @@
       { r: "nuzlocke", e: "🪦", t: "Nuzlocke Run",  d: "Seven permadeath epics" },
     ].map(tile)));
 
+    // 🎉 THE THIRD PILLAR — the menu reads Catch, Battle, Party: everything
+    // that isn't catching or battling lives behind this one door.
+    root.appendChild(el("h2", { class: "section-title" }, "🎉 Party 'em"));
+    root.appendChild(el("div", { class: "home-quick" }, [
+      { r: "party", e: "🎉", t: "Party Central", d: "Game Corner, honors, the weekend record & the Vault" },
+    ].map(tile)));
+
     // Quiet doors — the crew, the full mode guide, and Settings. A title breaks
     // them off from the Battle tiles so the row reads as its own group.
     // (The old "Every way to play" directory is now its own page at #/guide.)
