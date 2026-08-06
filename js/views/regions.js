@@ -10,13 +10,15 @@
   // the Johto era (their gate: Champion LANCE).
   const TABS = [
     { key: "kanto", name: "Kanto", emoji: "🗾", gen: "Gen 1", gym: ["Kanto"], lg: ["Kanto"],
-      note: "Where it all began — the 8 Kanto gyms, the ORIGINAL Elite Four, and Champion BLUE. Beat him to unlock Gen 2 and the road to Johto." },
+      note: "Where it all began — the 8 Kanto gyms, the ORIGINAL Elite Four, and Champion BLUE. Beat him to unlock Gen 2 and the road to Johto.",
+      noteSealed: "Where it all began — the 8 Kanto gyms, the ORIGINAL Elite Four, and a Champion this region won't name yet. Beat them to unlock Gen 2 and the road to Johto." },
     { key: "johto", name: "Johto", emoji: "🌸", gen: "Gen 2", gym: ["Johto"], lg: ["Johto"], gate: true, movies: true, needs: { champ: "blue", name: "BLUE", prev: "Kanto" },
       note: "The Gen 2 era — 8 Johto gyms (16 badges in all), the Elite Four, Champion LANCE, the silent summit of Mt. Silver, and the Movie Legends." },
     { key: "hoenn", name: "Hoenn", emoji: "🌊", gen: "Gen 3", gym: ["Hoenn"], lg: ["Hoenn"], needs: { champ: "lance", name: "LANCE", prev: "Johto" },
       note: "Eight gyms, then the Elite Four and Champion STEVEN." },
     { key: "sinnoh", name: "Sinnoh", emoji: "🏔", gen: "Gen 4", gym: ["Sinnoh"], lg: ["Sinnoh"], needs: { champ: "steven", name: "STEVEN", prev: "Hoenn" },
-      note: "Eight gyms, the Elite Four, and CYNTHIA's final battle." },
+      note: "Eight gyms, the Elite Four, and CYNTHIA's final battle.",
+      noteSealed: "Eight gyms, the Elite Four, and a final battle nobody here has survived yet." },
     { key: "unova", name: "Unova", emoji: "🏙", gen: "Gen 5", gym: ["Unova"], lg: ["Unova"], needs: { champ: "cynthia", name: "CYNTHIA", prev: "Sinnoh" },
       note: "Eight gyms, the Elite Four, and Champion ALDER." },
     { key: "kalos", name: "Kalos", emoji: "🗼", gen: "Gen 6", gym: ["Kalos"], lg: ["Kalos"], needs: { champ: "alder", name: "ALDER", prev: "Unova" },
@@ -26,9 +28,11 @@
     { key: "galar", name: "Galar", emoji: "⚽", gen: "Gen 8", gym: ["Galar"], lg: ["Galar"], needs: { champ: "kukui", name: "PROF. KUKUI", prev: "Alola" },
       note: "Eight gyms, the Champion Cup, and Champion LEON." },
     { key: "paldea", name: "Paldea", emoji: "🍊", gen: "Gen 9", gym: ["Paldea"], lg: ["Paldea"], needs: { champ: "leon", name: "LEON", prev: "Galar" },
-      note: "Eight gyms, the Elite Four, and Top Champion GEETA." },
+      note: "Eight gyms, the Elite Four, and Top Champion GEETA.",
+      noteSealed: "Eight gyms, the Elite Four, and whoever sits at the very top." },
     { key: "cup", name: "Champions Cup", emoji: "🏆", gen: "Endgame", cup: true, needs: { champ: "geeta", name: "GEETA", prev: "Paldea" },
-      note: "Beyond every region — a 16-legend single-elimination bracket. Every Elite Four, every Champion, RED and BLUE, drawn fresh into one tournament." },
+      note: "Beyond every region — a 16-legend single-elimination bracket. Every Elite Four, every Champion, RED and BLUE, drawn fresh into one tournament.",
+      noteSealed: "Beyond every region — a 16-legend single-elimination bracket. Every Elite Four, every Champion, and the ones who don't announce themselves, drawn fresh into one tournament." },
   ];
   // Locked for this trainer until the gating Champion falls (Gen Ladder). The
   // check rides the LADDER CAP (which climbs strictly in order), so a stray
@@ -39,6 +43,14 @@
     if (t.cup) return Store.leagueWins(attId).indexOf("geeta") < 0;
     const min = TAB_MIN_GEN[t.key];
     return min ? (Store.genCapFor ? Store.genCapFor(attId) : 9) < min : false;
+  }
+
+  // 🎭 Which mystery Champions each tab's note would name — while any of them
+  // is still sealed (U.champSealed), the spoiler-free wording runs instead.
+  const NOTE_SEAL = { kanto: ["blue"], sinnoh: ["cynthia"], paldea: ["geeta"], cup: ["red", "blue"] };
+  function noteFor(t) {
+    const keys = NOTE_SEAL[t.key] || [];
+    return (t.noteSealed && keys.some(U.champSealed)) ? t.noteSealed : t.note;
   }
 
   function view(root) {
@@ -87,7 +99,7 @@
       const t = TABS[curTab] || TABS[0];
       host.appendChild(el("div", { class: "rg-region-head" }, [
         el("h2", { class: "section-title" }, t.emoji + " " + t.name + " · " + t.gen),
-        el("p", { class: "hint", style: { marginTop: "-4px" } }, t.note),
+        el("p", { class: "hint", style: { marginTop: "-4px" } }, noteFor(t)),
       ]));
 
       // 🧭 Gen Ladder gate: this region hasn't opened for this trainer yet.
@@ -95,7 +107,8 @@
         host.appendChild(el("div", { class: "unown-seal" }, [
           el("div", { class: "unown-seal-ico" }, "🔒" + t.emoji),
           el("div", { class: "unown-seal-txt" }, "The road to " + t.name + " is closed. Beat " +
-            (t.needs.champ === "geeta" ? "Top Champion" : "Champion") + " " + t.needs.name +
+            (U.champSealed(t.needs.champ) ? "the Champion"
+              : (t.needs.champ === "geeta" ? "Top Champion" : "Champion") + " " + t.needs.name) +
             " to finish " + t.needs.prev + " — then " + t.name + (t.cup ? "" : " and its generation of Pokémon") + " open up."),
         ]));
         return;

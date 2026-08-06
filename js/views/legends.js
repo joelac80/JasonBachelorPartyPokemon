@@ -613,6 +613,7 @@
     if (sp.after === "az") return "Meet AZ first — Lumiose's rebirth begins where his three thousand years end.";
     if (sp.after === "aether") return "Break the spell of AETHER PARADISE first — the rift only opens for the one who freed Lusamine.";
     if (sp.after) return "Another trial stands before this one.";
+    if (U.champSealed(sp.needs)) return "Beat the Champion to disturb the balance.";
     return "Beat " + (sp.needs === "geeta" ? "Top Champion" : "Champion") + " " + sp.champ + " to disturb the balance.";
   }
 
@@ -918,7 +919,8 @@
         open
           ? el("button", { class: "btn " + (mineBeat ? "subtle" : "primary") + " sm", onClick: () => challenge(lg, attId) },
               (mineBeat ? "🔁 Rematch the " : lg.emoji + " Challenge the ") + lg.name + " (6v6)")
-          : el("div", { class: "legend-lock" }, "🔒 Beat " + (lg.needs === "geeta" ? "Top Champion " : "Champion ") + lg.champ + " to summon the " + lg.name + "."),
+          : el("div", { class: "legend-lock" }, "🔒 Beat " + (U.champSealed(lg.needs) ? "the Champion"
+              : (lg.needs === "geeta" ? "Top Champion " : "Champion ") + lg.champ) + " to summon the " + lg.name + "."),
       ]),
     ]);
   }

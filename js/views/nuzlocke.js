@@ -1308,11 +1308,13 @@
       };
       input.addEventListener("keydown", (e) => { if (e.key === "Enter") carve(); });
       ripVeil = el("div", { class: "modal-overlay nuz-rip-veil", onClick: closeRip }, [
-        el("div", { class: "nuz-rip-card", onClick: (e) => e.stopPropagation() }, [
+        // tap ANYWHERE lays them to rest — only the eulogy row holds the tap
+        // (typing a line must never bury the card mid-word).
+        el("div", { class: "nuz-rip-card" }, [
           el("div", { class: "nuz-rip-stone" }, "🪦"),
           el("div", { class: "nuz-rip-title" }, fallen.length > 1 ? "THE FALLEN" : "GONE FOR THE RUN"),
           el("div", { class: "nuz-rip-rows" }, rows),
-          el("div", { class: "nuz-rip-eulogy" }, [input,
+          el("div", { class: "nuz-rip-eulogy", onClick: (e) => e.stopPropagation() }, [input,
             el("button", { class: "btn subtle sm", onClick: carve }, "🪦 Carve it")]),
           el("div", { class: "nuz-rip-hint" }, "tap anywhere to lay them to rest"),
         ]),

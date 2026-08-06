@@ -182,5 +182,17 @@
     ctrl = Modal.open("👑 Owner PIN", body, null, { noFooter: true });
     setTimeout(() => { try { pinIn.focus(); } catch (_) {} }, 60);
   }
-  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow, ownerGate, ask };
+  // 🎭 A mystery Champion's NAME is the reveal. The League holds them at "???"
+  // until somebody topples them — so every OTHER page that names them as a gate
+  // (region notes, legend locks, movie locks) has to keep the same secret, or
+  // the surprise is spent before you ever walk into the chamber. Sealed until
+  // the ROOM has beaten them, matching the League's own un-fog rule.
+  function champSealed(key) {
+    const st = (window.LEAGUE_STAGES || []).find((s) => s.key === key);
+    if (!st || !st.mystery) return false;
+    const atts = (window.Store && Store.state && Store.state.attendees) || [];
+    return !atts.some((a) => ((Store.leagueWins && Store.leagueWins(a.id)) || []).indexOf(key) >= 0);
+  }
+
+  window.U = { esc, el, $, $$, contrast, uid, typeColor, TYPE_COLORS, energyIcon, teamEnergyIcon, teamIcon, toast, lockedTrainerRow, ownerGate, ask, champSealed };
 })();

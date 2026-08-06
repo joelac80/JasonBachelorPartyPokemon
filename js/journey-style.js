@@ -85,7 +85,7 @@
       ]),
       el("p", { class: "hint jstyle-note" }, cur === "story"
         ? "📖 TRUE STORY: every badge and chamber fights at its story level — your whole squad steps down to era-true forms (your Golem opens as a Geodude), and movesets shrink to what that level would know. But the leader's ACE never devolves: a Lv 14 gym still closes with its real signature Pokémon, towering over the field. That makes this the STEEPER climb of the two — the boss moment is the whole fight."
-        : "⚔ CHALLENGE: every leader and Champion brings the BEST team they possibly can — full evolution, a full six, no era rules — and so do you. Your bag is SEALED (no Full Restores, no Dire Hit), and the ladder climbs the whole saga: Johto opens around Lv 50 and Paldea closes near Lv 72, with the leader pulling further ahead of you every region. Falkner is an even fight; GRUSHA and GEETA are not."),
+        : "⚔ CHALLENGE: every leader and Champion brings the BEST team they possibly can — full evolution, a full six, no era rules — and so do you. Your bag is SEALED (no Full Restores, no Dire Hit), and the ladder climbs the whole saga: Johto opens around Lv 50 and Paldea closes near Lv 72, with the leader pulling further ahead of you every region. Falkner is an even fight; GRUSHA and the Top Champion are not."),
     ]);
   }
 

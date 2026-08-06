@@ -371,6 +371,7 @@
         const dv = (ids) => (lvl2 && !cart) ? ids.map((id, i) => i === ids.length - 1 ? id : JS0.formAt(id, lvl2)) : ids.slice();
         const gim = ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[gym.region];
         Duel.pickParty({ attId: attId, min: total, max: total, level: lvl2 || undefined,
+          refLevel: lvl2 ? undefined : (JS0 && JS0.chalGymLevel ? JS0.chalGymLevel(idx) : undefined),
           title: "vs " + gym.leader + " — pick EXACTLY " + total,
           hint: "⚔⚔ DOUBLE BATTLE — two of yours on the field at once (first two picks lead)." +
             (lvl2 ? " 📖 True Story: fought at Lv " + lvl2 + "." : ""),
@@ -410,7 +411,10 @@
       // (cartridge ships TRUE ids — duel.js devolves per slot with the floor)
       const foes = lvl ? (cart ? squad.slice() : squad.map((id, i) => i === squad.length - 1 ? id : JS.formAt(id, lvl))) : padTo6(gym.team);
       // 📖 story is an even N-vs-N; ⚔ challenge lets you bring everything you own
+      // 🔍 refLevel rides along so the hold-to-peek card reads the SAME move kit
+      // the fight will actually use — a peek that lies is worse than no peek.
       Duel.pickParty({ attId: attId, min: lvl ? size : 1, max: size, level: lvl || undefined,
+        refLevel: lvl ? undefined : (JS0 && JS0.chalGymLevel ? JS0.chalGymLevel(idx) : undefined),
         title: "vs Leader " + gym.leader + " — pick " + (lvl ? "EXACTLY " : "up to ") + size,
         hint: (lvl
           ? "Even match: " + size + " vs " + size + ". 📖 True Story: fought at Lv " + lvl +
@@ -509,7 +513,9 @@
     const meHint = (window.Sync && Sync.getMe && Sync.getMe()) || (Store.state.attendees[0] || {}).id || "";
     const storyHint = !!(window.JourneyStyle && meHint && JourneyStyle.isStory(meHint));
     root.appendChild(el("p", { class: "hint" },
-      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat Champion BLUE to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. " +
+      "🧭 THE GEN LADDER: start in KANTO with Gen 1 in the wild. Beat " +
+      (U.champSealed("blue") ? "Kanto's Champion" : "Champion BLUE") +
+      " to open Johto and spill Gen 2 into the Safari; from there each region opens when you beat the PREVIOUS region's Champion in The Journey — and its generation of Pokémon comes with it. " +
       (storyHint ? "Even match: bring EXACTLY as many Pokémon as the leader runs."
                  : "⚔ Challenge: every leader pads their bench to a FULL SIX and your bag is sealed — bring up to six of your own.") +
       (totalBadges ? " (" + totalBadges + " badge" + (totalBadges > 1 ? "s" : "") + " earned so far.)" : "")));
@@ -522,8 +528,11 @@
 
     // Group the circuit by region so 32 gyms stay readable.
     const REGIONS = [
-      { name: "Kanto", emoji: "🗾", note: "Where it all began — 8 badges open the door to the KANTO Elite Four and Champion BLUE." },
-      { name: "Johto", emoji: "🌸", note: "The Gen 2 era — opens once Champion BLUE falls. All 16 badges = CHAMPION crusher (and RED demands the full sweep)." },
+      // 🎭 Kanto's Champion and the Mt. Silver summit are REVEALS — the League
+      // holds both at "???" until somebody topples them, so these notes keep
+      // the secret too and only name them once the room has earned it.
+      { name: "Kanto", emoji: "🗾", note: "Where it all began — 8 badges open the door to the KANTO Elite Four and " + (U.champSealed("blue") ? "the Champion who waits behind them." : "Champion BLUE.") },
+      { name: "Johto", emoji: "🌸", note: "The Gen 2 era — opens once " + (U.champSealed("blue") ? "Kanto's Champion" : "Champion BLUE") + " falls. All 16 badges = CHAMPION crusher (and " + (U.champSealed("red") ? "what waits on Mt. Silver demands" : "RED demands") + " the full sweep)." },
       { name: "Hoenn", emoji: "🌊", note: "Earn all 8 to face the Hoenn Elite Four." },
       { name: "Sinnoh", emoji: "🏔", note: "Earn all 8 to face the Sinnoh Elite Four." },
       { name: "Unova", emoji: "🏙", note: "Earn all 8 to face the Unova Elite Four." },

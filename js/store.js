@@ -1835,7 +1835,7 @@
         if (nz.some((r) => r.tier === "ages")) out.push({ emoji: "🕰", title: "Trainer of the Ages", sub: "nine generations, a fresh team each era, one unbroken journey — permadeath on" });
         if (nz.some((r) => r.tier === "movie")) out.push({ emoji: "🎬", title: "Marathon Premiere", sub: "survived the entire filmography — every movie legend at full power, permadeath on" });
         if (nz.some((r) => r.tier === "trek")) out.push({ emoji: "🎒", title: "The Long Walk", sub: "one team through all nine regions, the curve resetting at every border — permadeath all the way" });
-        if (nz.some((r) => r.tier === "blitz")) out.push({ emoji: "⚡", title: "Blitz Gauntlet", sub: "15 battles, Lv 14 to 100, a surprise Champion — a whole nuzlocke in one sitting" });
+        if (nz.some((r) => r.tier === "blitz")) out.push({ emoji: "⚡", title: "Blitz Gauntlet", sub: "27 battles, Lv 14 to 100, a villain finale — a whole nuzlocke in one sitting" });
         if (nz.some((r) => r.tier === "legend")) out.push({ emoji: "🗻", title: "Nuzlocke Legend", sub: "took the run past the Champion — and RED still fell" });
         out.push({ emoji: "🪦", title: "Nuzlocke Champion", sub: "conquered " + (best.region || "Kanto") + " with permadeath on — " + best.catches + " Pokémon caught" });
         if (best.catches <= 6) out.push({ emoji: "🎖", title: "Minimalist", sub: "Nuzlocke champion with only " + best.catches + " Pokémon all run" });

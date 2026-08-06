@@ -232,7 +232,7 @@
   }
 
   function challenge(b, attId) {
-    if (moviesLocked(b, attId)) { U.toast("🔒 The big screen waits — beat Champion " + (b.needsName || "LANCE") + " in The Journey first."); return; }
+    if (moviesLocked(b, attId)) { U.toast("🔒 The big screen waits — beat " + (U.champSealed(b.needs) ? "the Champion" : "Champion " + (b.needsName || "LANCE")) + " in The Journey first."); return; }
     const size = b.team.length;
     const startWith = (ids) => {
       Duel.start({ mode: "local", title: b.name + " — " + b.film,
@@ -282,7 +282,7 @@
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, "🎬 " + a.name))) : null,
         locked
-          ? el("div", { class: "legend-lock" }, "🔒 The big screen waits for a Champion — beat " + (b.needsName || "LANCE") + " in The Journey first.")
+          ? el("div", { class: "legend-lock" }, "🔒 The big screen waits for a Champion — beat " + (U.champSealed(b.needs) ? "the Champion" : (b.needsName || "LANCE")) + " in The Journey first.")
           : el("button", { class: "btn " + (mineBeat ? "subtle" : "primary") + " sm", onClick: () => challenge(b, attId) },
               (mineBeat ? "🔁 Rematch " : b.icon + " Challenge " + b.name + " ") + "(" + vs + ")"),
       ]),

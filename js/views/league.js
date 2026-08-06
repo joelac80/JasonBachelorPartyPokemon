@@ -333,6 +333,7 @@
     if (st.doubles) {
       chamberIntro(idx, () => {
         Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
+          refLevel: lvl ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(idx) : undefined),
           title: "vs " + foeName + " — pick EXACTLY " + size,
           hint: "⚔⚔ DOUBLE BATTLE — the Blueberry League fights two at a time (your first two picks lead). The lineup is hidden." +
             (lvl ? " 📖 True Story: fought at Lv " + lvl + "."
@@ -361,7 +362,9 @@
       return;
     }
     chamberIntro(idx, () => {
+      // 🔍 refLevel rides along so the peek card shows the kit the fight uses.
       Duel.pickParty({ attId: attId, min: size, max: size, level: lvl || undefined,
+        refLevel: lvl ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(idx) : undefined),
         title: "vs " + foeName + " — pick EXACTLY " + size,
         hint: (isRed ? "The silent trainer. " + size + " vs " + size + "."
           : isFinal ? "The final battle. " + size + " vs " + size + " — the lineup is hidden."
