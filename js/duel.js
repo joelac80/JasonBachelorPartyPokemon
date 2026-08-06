@@ -3110,20 +3110,25 @@
         return;
       }
       const walled = m.moves.every((mv) => foes.every((f) => effFor(mv.type, mon(f.u).types, mv) === 0));
+      // 🎯 the badge's forecast target: the mon this move will most likely
+      // hit — singles has exactly one; doubles previews the first standing
+      // enemy (the real pick comes on the target screen).
+      const tgtF = foes.find((f) => mon(f.u).hp > 0) || foes[0];
+      const tgtM = tgtF ? mon(tgtF.u) : null;
       // Dire Hit armed: Z-move style — it's active, now unleash
       // a move on THIS same turn (can't miss, guaranteed crit).
       if (S.zmove) {
         menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
           "🎯💥 DIRE HIT — " + u.name + ", unleash a move!"));
-        const zEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i, true)));
-        if (walled) zEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99, true)));
+        const zEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i, true), tgtM));
+        if (walled) zEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99, true), tgtM));
         menu.appendChild(el("div", { class: "duel-moves zmove" }, zEls));
         return;
       }
       menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
         "🎮 " + u.name + " — what will " + m.name + " do?"));
-      const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i)));
-      if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99)));
+      const moveEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i), tgtM));
+      if (walled) moveEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99), tgtM));
       menu.appendChild(el("div", { class: "duel-moves" }, moveEls));
       // ✨ Mega Evolve + the era gimmicks — offered to this slot's own phone
       // when the side's spectacle slot is free. Against the AI they unlock

@@ -1640,6 +1640,15 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .duel-move-sub { font-size: 10px; color: #6b6b52; }
 .duel-move-fx { font-size: 9px; font-weight: 700; color: #7a5cc0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 🎯 effectiveness forecast on a move button — a tiny superscript vs the
+   current target: ▲/▲▲ super effective, ▼ resisted, ✕ immune */
+.duel-move-eff { font-size: 9px; font-weight: 800; margin-left: 3px; vertical-align: super; letter-spacing: 0; }
+.duel-move-eff.eff-up { color: #2e9e4f; }
+.duel-move-eff.eff-down { color: #d84028; }
+.duel-move-eff.eff-no { color: #8a8a7a; }
+/* ⚡ speed chip — marks whichever active mon outspeeds the other (singles) */
+.duel-spe { font-size: 10px; margin-left: 2px; vertical-align: middle; }
+.duel-spe.hidden { display: none; }
 /* status badge next to a battler's name */
 .duel-status { display: inline-block; font-family: var(--pixel, monospace); font-size: 9px; font-weight: 800;
   color: #fff; border-radius: 4px; padding: 1px 4px; margin-left: 4px; vertical-align: middle; letter-spacing: .03em; }
@@ -2594,6 +2603,15 @@ html, body { overscroll-behavior-y: contain; }
 .duel-outro-name { font-weight: 800; font-size: 1.05em; margin: 6px 0 4px; }
 .duel-outro-quote { font-style: italic; line-height: 1.5; margin-bottom: 14px; }
 .duel-outro-go { min-width: 60%; }
+/* 🏆 The victory recap — the humans' highlight card (biggest hit, MVP,
+   turn count) held on screen after a win until Continue is tapped. */
+.duel-recap { text-align: center; padding: 18px 16px; max-width: 380px; }
+.duel-recap-title { font-family: var(--pixel, monospace); font-weight: 800; letter-spacing: .05em; margin-bottom: 10px; }
+.duel-recap-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.duel-recap-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13px;
+  border-bottom: 1px dashed rgba(120, 120, 120, .35); padding-bottom: 4px; }
+.duel-recap-k { font-weight: 800; white-space: nowrap; }
+.duel-recap-v { text-align: right; min-width: 0; }
 
 /* 👁 HOLD TO PEEK — press-and-hold a mon in the party picker and its
    battle kit pops up and STAYS, parked toward the top so a thumb never
