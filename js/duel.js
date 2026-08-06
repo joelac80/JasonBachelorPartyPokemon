@@ -3000,8 +3000,12 @@
       const m = mon(u);
       // level-capped battles (True Story, Stadium cups) mega WITHIN the cap —
       // the form swaps, the HP pool and curve do not escape the level.
-      // (🎒 kit parity: a free-duel mega knows its whole kit, like everyone.)
-      const meg = statsFor(megaId, CART ? kitLevel(m.lvl || 50) : opts.level);
+      // 🎒 kit parity, same rule makeUnit uses: a mega in an UNLEVELED battle
+      // (wild, arena, movie, legend…) knows its whole kit like everyone else
+      // there; anywhere a level or a curve applies, the cap still bites.
+      const megLvl = m.lvl || FREE_LVL;
+      const megUncapped = !opts.level && !opts.refLevel && megLvl === FREE_LVL;
+      const meg = statsFor(megaId, CART ? (megUncapped ? 0 : megLvl) : opts.level);
       const ratio = m.hpMax ? (m.hp / m.hpMax) : 1;
       const was = m.name;
       const baseAtk = m.atk, baseHpMax = m.hpMax;   // pre-mega power (carries boost + KO bonus)
