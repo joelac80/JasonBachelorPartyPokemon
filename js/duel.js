@@ -388,6 +388,7 @@
       // ---- live battle state (reset on switch-in where noted) ----
       status: null,        // major status: par | brn | psn | slp | frz
       slp: 0,              // remaining sleep turns
+      _tox: 0,             // ☠️☠️ Toxic ratchet: tick = hpMax × n/16, n climbs; reset to 1 on switch-out
       seeded: false,       // Leech Seed drain each turn
       _flinch: false,      // flinched this turn (volatile)
       _confN: 0,           // 💫 confused for N more actions (volatile)
@@ -410,8 +411,11 @@
   }
 
   // Last resort when every move is nullified by immunity (e.g. a mono-Normal
-  // mon staring down a Ghost): typeless, always usable, never great.
-  const STRUGGLE = { name: "Struggle", type: "none", cat: "phys", pow: 50, acc: 100, pri: 0, fx: null };
+  // mon staring down a Ghost): typeless, always usable, never great — and it
+  // BITES BACK: ¼ of the damage dealt recoils onto the user (min 1), the
+  // cartridge way. The recoil rides the standard fx.recoil rails, so a
+  // desperate Struggle can absolutely KO its own user.
+  const STRUGGLE = { name: "Struggle", type: "none", cat: "phys", pow: 50, acc: 100, pri: 0, fx: { recoil: 0.25 } };
 
   // 🔴 Species with a canon GIGANTAMAX form: their Dynamax changes SHAPE,
   // not just size (Gengar, Machamp, Drednaw, Coalossal, Centiskorch,
@@ -529,12 +533,16 @@
   let peekPop = null;
   function peekShow(id, opts, act) {
     peekHide();
-    const st = statsFor(id, opts.level);
+    // 👁 the peek must promise the kit the battle will USE: the same
+    // effective knowledge level (a story `level` OR a ⚔ Challenge
+    // `refLevel`) — never a full-power mirage over a capped fight.
+    const kLvl = opts.level || opts.refLevel || 0;
+    const st = statsFor(id, kLvl || undefined);
     const shiny = opts.attId ? isShinyFor(opts.attId, id) : false;
     const src = frontSprite(id, shiny);
     const card = el("div", { class: "duel-peek-card" }, [
       src ? el("img", { class: "duel-peek-img", src: src, alt: st.name }) : null,
-      el("div", { class: "duel-peek-name" }, (shiny ? "✨ " : "") + st.name + (opts.level ? " · Lv " + opts.level : "")),
+      el("div", { class: "duel-peek-name" }, (shiny ? "✨ " : "") + st.name + (kLvl ? " · Lv " + kLvl : "")),
       el("div", { class: "duel-peek-types" }, st.types.map((t) =>
         el("span", { class: "duel-peek-type", style: { background: U.typeColor(t) } }, t))),
       el("div", { class: "duel-peek-moves" }, st.moves.map((m) => el("div", { class: "duel-peek-move" }, [
@@ -805,6 +813,16 @@
     const CART = !!(opts.cartridge != null ? opts.cartridge
       : (window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS));
 
+    // 🎒 KIT PARITY — the move-kit knowledge level for a mon standing at
+    // battle level `lvl`. A FREE arena duel (no story `level`, no ⚔ Challenge
+    // `refLevel`, and no curve plan bending this mon off the default 50)
+    // fights at Lv50 STATS but KNOWS its full moveset: the hold-to-peek
+    // preview promises Hyper Beam, so the battle must deliver it. Every
+    // leveled path (story, challenge, nuzlocke, tower floors, cups) — and
+    // any planned foe whose curve actually moved its level — caps as before.
+    function kitLevel(lvl) {
+      return (opts.level || opts.refLevel || lvl !== 50) ? lvl : 0;
+    }
     function makeUnit(u) {
       // NPC units (gym leaders) have no attendee — just a name and an AI flag.
       const at = u.npc ? { name: u.npc, team: "" } : (Store.attendee(u.attId) || { name: "Trainer", team: "" });
@@ -823,7 +841,7 @@
             mid = CartridgeMode.formFor(opts, id, mLvl, i === (u.monIds || []).length - 1);
           }
         }
-        const m = statsFor(mid, CART ? mLvl : opts.level); m.hp = m.hpMax;
+        const m = statsFor(mid, CART ? kitLevel(mLvl) : opts.level); m.hp = m.hpMax;
         // 🎵 SIGNATURE MOVE: the attack the story remembers is guaranteed on
         // the ace's kit, whatever the level curve trimmed (Whitney's Body
         // Slam, Cynthia's Draco Meteor, RED's Volt Tackle…).
@@ -973,6 +991,17 @@
     function unitAlive(u) { return mon(u).hp > 0 || bench(u).length > 0; }
     function firstLiving(s) { const us = sides[s].units; for (let i = 0; i < us.length; i++) if (unitAlive(us[i])) return i; return 0; }
     function livingEnemies(s) { return sides[other(s)].units.map((u, i) => ({ u: u, i: i })).filter((x) => unitAlive(x.u)); }
+    // 🧭 THE HUMAN SIDE — result handlers must credit the TRAINER. The player
+    // side is the one holding at least one NON-AI unit (an AI ally fighting
+    // beside you — the finale's 2-v-1 legendary wolves on side a — must never
+    // flip the record), and the player is that side's first human unit, never
+    // a wolf that happens to sit in slot 0. Remote PvP (both sides human)
+    // and everyday human-on-a battles read exactly as they always did.
+    function playerInfo() {
+      const side = sides.a.units.some((x) => !x.ai) ? "a" : "b";
+      const us = sides[side].units;
+      return { side: side, unit: us.find((x) => !x.ai) || us[0] };
+    }
 
     const S = { seq: 0, queue: [], busy: false, done: false, moved: 0, pending: null, zmove: false,
       first: opts.first === "b" ? "b" : (opts.first === "a" ? "a" : null), actor: null,
@@ -2275,8 +2304,8 @@
       // Off the leaderboards, like gyms — glory (and points) only.
       if (opts.league) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const lg = opts.league;
           Store.update((s) => {
             if (winSide === playerSide) {
@@ -2316,8 +2345,8 @@
       // the duel leaderboard, Elo, or the Champion's Belt.
       if (opts.gym) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           Store.update((s) => {
             if (winSide === playerSide) {
               // Everyone can hold every badge — a win just adds you.
@@ -2359,8 +2388,8 @@
       // Pure exhibition — no leaderboard, no Elo, no belt. Glory only.
       if (opts.hof) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const ghost = opts.hof;
           const ownGhost = player.attId === ghost.attId;
           Store.update((s) => {
@@ -2382,8 +2411,8 @@
       // No Elo, no belt, no leaderboard — the bracket advances via onResult.
       if (opts.tournament) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const foe = opts.tournament.foe || "a legend";
           Store.update((s) => {
             if (winSide === playerSide) {
@@ -2401,8 +2430,8 @@
       // sync-unioned) for a ✅ on the wall; no Elo, no belt, glory only.
       if (opts.movie) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const mvb = opts.movie;
           Store.update((s) => {
             if (winSide === playerSide) {
@@ -2424,8 +2453,8 @@
       // (append-only, sync-unioned) for the wall + a ceremony honor.
       if (opts.legend) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const lg = opts.legend;
           Store.update((s) => {
             if (winSide === playerSide) {
@@ -2446,8 +2475,8 @@
       // Win recorded per trainer per key (append-only) for a ceremony honor.
       if (opts.secret) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const sc = opts.secret;
           Store.update((s) => {
             if (winSide === playerSide) {
@@ -2472,8 +2501,8 @@
       // no Elo, no belt, no badge. Bragging rights.
       if (opts.encounter) {
         try {
-          const playerSide = sides.a.units.some((x) => x.ai) ? "b" : "a";
-          const player = sides[playerSide].units[0];
+          const pv = playerInfo();
+          const playerSide = pv.side, player = pv.unit;
           const foe = opts.encounter.foe || "a mysterious challenger";
           Store.update((s) => {
             if (winSide === playerSide) {
@@ -2826,7 +2855,8 @@
       const m = mon(u);
       // level-capped battles (True Story, Stadium cups) mega WITHIN the cap —
       // the form swaps, the HP pool and curve do not escape the level.
-      const meg = statsFor(megaId, CART ? (m.lvl || 50) : opts.level);
+      // (🎒 kit parity: a free-duel mega knows its whole kit, like everyone.)
+      const meg = statsFor(megaId, CART ? kitLevel(m.lvl || 50) : opts.level);
       const ratio = m.hpMax ? (m.hp / m.hpMax) : 1;
       const was = m.name;
       const baseAtk = m.atk, baseHpMax = m.hpMax;   // pre-mega power (carries boost + KO bonus)

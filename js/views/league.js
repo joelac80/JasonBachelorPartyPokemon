@@ -625,21 +625,53 @@
   function leagueGauntlet(attId, stageIdxs, label) {
     const runIdxs = leagueStagesForRun(stageIdxs);
     if (!runIdxs.length) return;
-    const story = window.JourneyStyle && JourneyStyle.isStory(attId);
+    const JS = window.JourneyStyle;
+    const story = JS && JS.isStory(attId);
+    const style = story ? "story" : "challenge";
+    const regKey = label || "League";
     const opponents = runIdxs.map((i) => { const st = LEAGUE[i]; return { name: (st.rank || "").toUpperCase() + " " + st.name, monIds: st.team, boost: st.boost,
-      level: story ? JourneyStyle.stageLevel(i) : undefined,   // 📖 True Story climbs 50 → the throne
+      level: story ? JS.stageLevel(i) : undefined,   // 📖 True Story climbs 50 → the throne
+      // ⚔ Challenge rounds fight by CHAMBER law — the saga-curve reference,
+      // the leader's widening edge, the bag SEALED. No more ~Lv50 open-bag
+      // freebies wearing a full crown.
+      refLevel: story ? undefined : (JS && JS.chalStageLevel ? JS.chalStageLevel(i) : undefined),
+      foeEdge: story ? undefined : (JS && JS.chalStageEdge ? JS.chalStageEdge(i) : undefined),
+      noItems: !story,
+      env: st.region || "",
+      // 👑 the chamber's league ctx — cartridge planning reads the stage's own
+      // curve from it, so a gauntlet round plans exactly like its chamber.
+      league: { idx: i, key: st.key, name: st.name, rank: st.rank, region: st.region || "", pts: st.pts, final: !!st.final, style: style },
       // 🎪 the ace's regional gimmick — same rule as the single-chamber fights
       gimmick: ({ Kalos: "mega", Alola: "z", Galar: "dyna", Paldea: "tera" })[st.region] || null,
       outro: st.defeat ? { lose: st.defeat } : undefined }; });
+    const startRun = (mode, resume) => gauntletRun(attId, mode, opponents, {
+      title: regKey + " Gauntlet", modalTitle: "⚔ " + regKey + " Gauntlet",
+      wonTitle: "LEAGUE CONQUERED!", wonMsg: "You ran the whole " + regKey + " — all " + opponents.length + " — in one go!",
+      persist: regKey, resume: resume || null,   // 💾 phones sleep at parties
+      // Reaching the final stage = the whole Elite Four fell → ladder credit.
+      onAdvance: (cleared) => { if (cleared === runIdxs.length - 1) creditLeagueStages(attId, runIdxs.slice(0, -1), style); },
+      onWinAll: (m, lastParty) => recordLeagueRun(attId, runIdxs, m, label, lastParty, style),
+    });
+    // 💾 a live save waits here — offer the round you left off on
+    const live = gsaveLive(attId, regKey, opponents.length);
+    if (live) {
+      let ctrl;
+      const body = el("div", { class: "modal-form" }, [
+        el("p", { class: "hint" }, "💾 You have a run in progress — " + (live.save.round - 1) + " of " + opponents.length +
+          " already beaten" + (live.mode === "fixed" ? ", one-squad style." : ", swapping squads.")),
+        el("div", { class: "gauntlet-modes" }, [
+          el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); startRun(live.mode, live.save); } },
+            "▶ Resume — round " + live.save.round + " of " + opponents.length),
+          el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); gsaveClear(attId, regKey);
+            gauntletModePicker(attId, "Face the " + regKey + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.", (mode) => startRun(mode)); } }, "Start over"),
+        ]),
+      ]);
+      ctrl = Modal.open("⚔ " + regKey + " Gauntlet — resume?", body, null, { noFooter: true });
+      return;
+    }
     gauntletModePicker(attId,
-      "Face the " + (label || "League") + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",
-      (mode) => gauntletRun(attId, mode, opponents, {
-        title: (label || "League") + " Gauntlet", modalTitle: "⚔ " + (label || "League") + " Gauntlet",
-        wonTitle: "LEAGUE CONQUERED!", wonMsg: "You ran the whole " + (label || "League") + " — all " + opponents.length + " — in one go!",
-        // Reaching the final stage = the whole Elite Four fell → ladder credit.
-        onAdvance: (cleared) => { if (cleared === runIdxs.length - 1) creditLeagueStages(attId, runIdxs.slice(0, -1)); },
-        onWinAll: (m, lastParty) => recordLeagueRun(attId, runIdxs, m, label, lastParty),
-      }));
+      "Face the " + regKey + " Elite Four then the Champion — " + opponents.length + " in a row, healed between each. Clear it to conquer the region in a single run.",
+      (mode) => startRun(mode));
   }
 
   // The gate-style entry banner for a region's League Gauntlet.
@@ -753,9 +785,19 @@
         (!mineBeat && blocked) ? el("div", { class: "league-lock" }, blocked) : null,
         beatenBy.length ? el("div", { class: "gymc-holders" }, beatenBy.map((a) =>
           el("span", { class: "gymc-holder", onClick: () => window.Profile && Profile.open(a.id) }, ((isRed || isFinal) ? "🗻 " : "👑 ") + a.name))) : null,
-        (!mineBeat) ? el("button", { class: "btn " + (isNext ? "primary" : "subtle") + " sm", onClick: () => challengeLeague(idx, attId) },
-          (isRed ? "🗻 Face what waits" : isFinal ? "🎹 Face the finale" : "⚔ Challenge " + st.name) + " (" + st.team.length + "v" + st.team.length +
-          ((window.JourneyStyle && JourneyStyle.isStory(attId)) ? " · Lv " + JourneyStyle.stageLevel(idx) : "") + ")") :
+        (!mineBeat) ? (() => {
+          const JS = window.JourneyStyle;
+          const story = !!(JS && JS.isStory(attId));
+          // 📖 the button promises the REAL fight: story E4 run the canon FIVE
+          const size = story && JS.stageSize ? Math.min(st.team.length, JS.stageSize(st.rank)) : st.team.length;
+          // ⚔ …and Challenge admits what the foes fight at: saga ref + edge
+          const chalLv = (!story && JS && JS.chalStageLevel) ? JS.chalStageLevel(idx) + (JS.chalStageEdge ? JS.chalStageEdge(idx) : 0) : 0;
+          // 🎭 a "???" card must not spill the name on its own button
+          const who = (st.mystery && !anyBeat) ? "the Champion" : st.name;
+          return el("button", { class: "btn " + (isNext ? "primary" : "subtle") + " sm", onClick: () => challengeLeague(idx, attId) },
+            (isRed ? "🗻 Face what waits" : isFinal ? "🎹 Face the finale" : "⚔ Challenge " + who) + " (" + size + "v" + size +
+            (story ? " · Lv " + JS.stageLevel(idx) : (chalLv ? " · foes ~Lv " + chalLv : "")) + ")");
+        })() :
           el("button", { class: "btn subtle sm", onClick: () => challengeLeague(idx, attId) }, "🔁 Rematch (glory only)"),
       ]),
     ]);
