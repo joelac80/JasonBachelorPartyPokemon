@@ -232,8 +232,9 @@
   // 🎚 THE LEVEL BELONGS TO THE MON THAT ACTUALLY FIGHTS. plan() budgets a
   // level from a species' BST — but 📖 True Story then DEVOLVES the slot, so a
   // fat true id normalized its level DOWN (clamped E−5) and the little form
-  // took the field at that discount: Falkner opened with a Lv 11 Hoothoot
-  // against a Lv 14 challenger, and 48 of 68 story gyms were quietly softened.
+  // took the field at that discount: badge 1 opened Doduo Lv 10 / Pidgeotto
+  // Lv 13 against a Lv 14 challenger — EVERY foe under the player, and
+  // Brock/Roark/Roxanne fighting at ~78% of their position's power budget.
   // Fix: resolve the FORM first, re-budget on the form, repeat until the pair
   // stops moving. `lvls` is ALWAYS the plan for the ids we hand back, so the
   // level matches the mon on the field by construction.

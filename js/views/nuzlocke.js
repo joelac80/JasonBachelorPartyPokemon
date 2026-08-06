@@ -1223,19 +1223,24 @@
     ]);
     ctrl = Modal.open("🎉 Evolution check!", body, null, { noFooter: true, onClose: settle });
   }
-  // Auto-run the evolution check — never over a battle or modal; if one's up
-  // (the gym win is still playing out), keep checking until the screen
-  // clears, then pop the moment. Only mons that haven't declined count.
+  // Auto-run the evolution check — on the SAME stage queue as the tombstone,
+  // so a 🎉 party never barges in front of a 🪦 funeral (its own poller used
+  // to ignore .league-intro entirely and open right over the badge pop, then
+  // hold the screen until dismissed — with the tombstone stuck behind it).
+  // Every render re-offers it, so one queued act at a time is plenty.
+  let evoQueued = false;
+  const evoDue = (r) => !!(r && !r.over && r.box.some((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length));
   function checkEvolutions(run, tries) {
-    if (evoOpen || !/^#\/nuzlocke/.test(location.hash)) return;
-    if (document.querySelector(".battle, .modal-overlay, .evo-stage")) {
-      if ((tries || 0) < 40) setTimeout(() => checkEvolutions(null, (tries || 0) + 1), 700);
-      return;
-    }
-    const r = Store.nuzRun(me, slot);
-    if (!r || r.over) return;
-    const fresh = r.box.some((x) => !x.dead && !x.noEvo && evoTargetsFor(x, r).length);
-    if (fresh) promptEvolve(r);
+    if (evoOpen || evoQueued || !/^#\/nuzlocke/.test(location.hash)) return;
+    if (!evoDue(Store.nuzRun(me, slot))) return;
+    evoQueued = true;
+    const who = me, sl = slot;
+    cineQueue(() => {
+      evoQueued = false;
+      if (evoOpen || who !== me || sl !== slot) return;
+      const r = Store.nuzRun(me, slot);
+      if (evoDue(r)) promptEvolve(r);
+    });
   }
 
   // ── 🎬 CINEMA — the drama layer ────────────────────────────────────────────

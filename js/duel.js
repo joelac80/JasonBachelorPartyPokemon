@@ -536,14 +536,6 @@
     return { list: cards, defiant: defiant };
   }
 
-  // Ordered party picker (modal) — used to challenge someone to a remote
-  // duel and to accept one. onDone receives the picked mon ids, lead first.
-  // 👁 HOLD TO PEEK — press-and-hold a mon in a picker and its exact battle
-  // kit (level trims, ladder rungs and all) pops up and STAYS — parked high
-  // so a thumb never covers it. From the card you can add/remove the mon or
-  // close it; a fresh tap anywhere off the card also puts it away. The
-  // long-press never selects (the follow-through click is eaten via the
-  // shared `state.held` flag).
   // 🎛️ ONE reading of the Cartridge Mode switch, shared by everything that
   // has to agree with the battle (the peek card, the engine itself). A remote
   // setup pins the flag for BOTH phones via opts.cartridge so the engines
@@ -552,6 +544,15 @@
     return !!((opts && opts.cartridge != null) ? opts.cartridge
       : (window.CartridgeMode && CartridgeMode.on() && window.DEX_STATS));
   }
+
+  // Ordered party picker (modal) — used to challenge someone to a remote
+  // duel and to accept one. onDone receives the picked mon ids, lead first.
+  // 👁 HOLD TO PEEK — press-and-hold a mon in a picker and its exact battle
+  // kit (level trims, ladder rungs and all) pops up and STAYS — parked high
+  // so a thumb never covers it. From the card you can add/remove the mon or
+  // close it; a fresh tap anywhere off the card also puts it away. The
+  // long-press never selects (the follow-through click is eaten via the
+  // shared `state.held` flag).
   let peekPop = null;
   function peekShow(id, opts, act) {
     peekHide();

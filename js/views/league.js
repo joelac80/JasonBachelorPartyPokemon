@@ -575,13 +575,17 @@
     runAt(0);
   }
 
-  function gauntletModePicker(attId, note, onPick) {
+  // `sizes` = { txt, max } so the buttons promise the REAL team size — 📖 True
+  // Story's Elite Four chambers are 5v5, and a run that says "6" then asks for
+  // five is the kind of small lie that makes people distrust the big numbers.
+  function gauntletModePicker(attId, note, onPick, sizes) {
     let ctrl;
+    const txt = (sizes && sizes.txt) || "6", mx = (sizes && sizes.max) || 6;
     const body = el("div", { class: "modal-form" }, [
       el("p", { class: "hint" }, note),
       el("div", { class: "gauntlet-modes" }, [
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); onPick("fresh"); } }, "🔄 Swap squads — pick a fresh 6 every battle"),
-        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); onPick("fixed"); } }, "🏆 One squad — same 6 all the way (harder!)"),
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); onPick("fresh"); } }, "🔄 Swap squads — pick a fresh " + txt + " every battle"),
+        el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); onPick("fixed"); } }, "🏆 One squad — same " + mx + " all the way (harder!)"),
       ]),
     ]);
     ctrl = Modal.open("⚔ Gauntlet — choose your style", body, null, { noFooter: true });
@@ -720,6 +724,9 @@
     };
     const freshPitch = "Face the " + regKey + " Elite Four then the Champion — " + total +
       " in a row, healed between each. Clear it to conquer the region in a single run.";
+    const nowSizes = opponentsFor(nowStyle).map((o) => o.size || 6);
+    const sizeLo = Math.min.apply(null, nowSizes), sizeHi = Math.max.apply(null, nowSizes);
+    const sizeInfo = { txt: sizeLo === sizeHi ? String(sizeHi) : sizeLo + "–" + sizeHi, max: sizeHi };
     // 💾 a live save waits here — offer the round you left off on
     const live = gsaveLive(attId, regKey, total);
     if (live) {
@@ -741,14 +748,14 @@
           el("button", { class: "btn primary", onClick: () => { if (ctrl) ctrl.close(); startRun(live.mode, live.save, savedStyle); } },
             "▶ Resume — round " + live.save.round + " of " + total + (mismatch ? " (" + STYLE_LABEL[savedStyle] + ")" : "")),
           el("button", { class: "btn subtle", onClick: () => { if (ctrl) ctrl.close(); gsaveClear(attId, regKey);
-            gauntletModePicker(attId, freshPitch, (mode) => startRun(mode, null, nowStyle)); } },
+            gauntletModePicker(attId, freshPitch, (mode) => startRun(mode, null, nowStyle), sizeInfo); } },
             "Start over" + (mismatch ? " in " + STYLE_LABEL[nowStyle] : "")),
         ]),
       ]);
       ctrl = Modal.open("⚔ " + regKey + " Gauntlet — resume?", body, null, { noFooter: true });
       return;
     }
-    gauntletModePicker(attId, freshPitch, (mode) => startRun(mode, null, nowStyle));
+    gauntletModePicker(attId, freshPitch, (mode) => startRun(mode, null, nowStyle), sizeInfo);
   }
 
   // The gate-style entry banner for a region's League Gauntlet.

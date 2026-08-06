@@ -247,6 +247,11 @@
         ]),
       ]);
       document.body.appendChild(lay);
+      // 👀 …and TURN THE LIGHTS ON. `.league-intro` ships at opacity 0 and fades
+      // in on the `.go` class (the League intro, the story beats and the VS card
+      // all flip it) — without this the award stood there fully built, fully
+      // clickable and completely invisible, then deleted itself 4.6s later.
+      requestAnimationFrame(() => lay.classList.add("go"));
       if (window.SFX && SFX.fanfare) SFX.fanfare();
       setTimeout(closePop, 4600);
       // 🏆 The LAST badge of a region swings the League gate open, queued AFTER
@@ -328,19 +333,30 @@
   // 🧭 The Gen Ladder: a region's gyms open only after the PREVIOUS region's
   // Champion falls, in order (Johto & Kanto are the free starting block).
   // Checked via the ladder cap so out-of-order wins can never skip a region.
+  // 🎭 Each gate carries its champion's league KEY as well as the name, because
+  // two of these are REVEALS: the League holds BLUE and CYNTHIA at "???" until
+  // somebody topples them, and a lock line that names them anyway spoils the
+  // room from the one page you can't beat them on.
   const REGION_NEEDS = { Kanto: null,
-    Johto: { gen: 2, name: "BLUE" },
-    Hoenn: { gen: 3, name: "LANCE" }, Sinnoh: { gen: 4, name: "STEVEN" },
-    Unova: { gen: 5, name: "CYNTHIA" }, Kalos: { gen: 6, name: "ALDER" },
-    Alola: { gen: 7, name: "DIANTHA" }, Galar: { gen: 8, name: "PROF. KUKUI" },
-    Paldea: { gen: 9, name: "LEON" } };
+    Johto: { gen: 2, key: "blue", name: "BLUE", from: "Kanto" },
+    Hoenn: { gen: 3, key: "lance", name: "LANCE", from: "Johto" },
+    Sinnoh: { gen: 4, key: "steven", name: "STEVEN", from: "Hoenn" },
+    Unova: { gen: 5, key: "cynthia", name: "CYNTHIA", from: "Sinnoh" },
+    Kalos: { gen: 6, key: "alder", name: "ALDER", from: "Unova" },
+    Alola: { gen: 7, key: "diantha", name: "DIANTHA", from: "Kalos" },
+    Galar: { gen: 8, key: "kukui", name: "PROF. KUKUI", from: "Alola" },
+    Paldea: { gen: 9, key: "leon", name: "LEON", from: "Galar" } };
   // The reason this trainer can't fight here yet, or "" when open.
   function gymLockedWhy(idx, attId) {
     const need = REGION_NEEDS[GYMS[idx].region];
     if (!need || !attId) return "";
     const cap = (Store.genCapFor ? Store.genCapFor(attId) : 9);
+    // 🎭 a sealed champion is named by their THRONE, not their name — the same
+    // coy voice the region notes and the closing hint already use.
+    const who = (U.champSealed && U.champSealed(need.key))
+      ? need.from + "'s Champion" : "Champion " + need.name;
     return cap >= need.gen ? ""
-      : "The road to " + GYMS[idx].region + " opens when you beat Champion " + need.name + " (The Journey).";
+      : "The road to " + GYMS[idx].region + " opens when you beat " + who + " (The Journey).";
   }
 
   // ⚔ CHALLENGE RULES: the leader brings a FULL SIX (short canon rosters are
