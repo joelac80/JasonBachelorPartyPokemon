@@ -437,6 +437,51 @@
     ]));
     root.appendChild(appearanceSection());
     root.appendChild(syncSection());
+  // 📦 BUILD — which copy of the app this phone is actually running. A PWA
+  // caches itself to work in a cabin with no bars, which means a phone can
+  // happily keep playing a build from hours ago while a fix sits on the
+  // server — and there was no way to tell from the inside. The version is
+  // read from the live cache (the service worker names it), and the button
+  // forces the worker to re-check and hand over.
+  function buildSection() {
+    const host = el("section", { class: "settings-block" });
+    host.appendChild(el("h2", { class: "section-title" }, "📦 App build"));
+    const line = el("p", { class: "hint" }, "Checking…");
+    host.appendChild(line);
+    const paint = () => {
+      if (!window.caches || !caches.keys) { line.textContent = "This browser doesn't cache the app — you're always on the latest."; return; }
+      caches.keys().then((ks) => {
+        const mine = ks.filter((k) => /^bachhub-/.test(k));
+        line.textContent = mine.length
+          ? "Running " + mine.join(", ") + (navigator.onLine ? "" : " · offline")
+          : "No cached build yet — served straight from the network.";
+      }).catch(() => { line.textContent = "Couldn't read the build."; });
+    };
+    paint();
+    host.appendChild(el("div", { class: "toolbar" }, [
+      el("button", { class: "btn primary sm", onClick: () => {
+        toast("Checking for a newer build…");
+        const done = () => setTimeout(() => { try { location.reload(); } catch (_) {} }, 400);
+        if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistration) { done(); return; }
+        navigator.serviceWorker.getRegistration()
+          .then((reg) => (reg && reg.update ? reg.update() : null))
+          .then(done).catch(done);
+      } }, "🔄 Check for update"),
+      el("button", { class: "btn subtle sm", onClick: () => {
+        // 🧨 The heavy hammer: drop every cached build and re-fetch. Progress
+        // lives in localStorage, not the cache, so nothing you've earned goes
+        // with it — this only throws away copies of the app's own files.
+        U.ask("Clear the cached app files and reload? Your trainers, catches and badges are stored separately and stay put.",
+          { icon: "🧨", ok: "🧨 Clear & reload", back: "↩ Leave it" }, () => {
+          const wipe = window.caches && caches.keys
+            ? caches.keys().then((ks) => Promise.all(ks.map((k) => caches.delete(k)))) : Promise.resolve();
+          wipe.catch(() => {}).then(() => { try { location.reload(); } catch (_) {} });
+        });
+      } }, "🧨 Clear cache & reload"),
+    ]));
+    return host;
+  }
+
     // 🎉 PARTY SETTINGS — everything about the PARTY rather than the app:
     // the title on the home hero, drinking-game teams, Victory Road events.
     // Collapsed by default: one organizer touches these, everyone else never.
@@ -448,6 +493,7 @@
       eventsSection(),
     ]));
     root.appendChild(dataSection());
+    root.appendChild(buildSection());
 
     // While you're actively editing a field here, hold off any live-sync
     // re-render — otherwise an incoming update from another phone would rebuild
