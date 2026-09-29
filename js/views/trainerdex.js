@@ -25,6 +25,17 @@
     if (!src) return el("span", { class: "tdex-noimg" }, "◓");
     return el("img", { class: "tdex-ace" + (lit ? " lit" : ""), src: src, alt: "" });
   }
+  // 🎓 A Pokédex for the PEOPLE shows the PERSON: their official portrait
+  // (data/trainer-art.js), under the exact same lit/silhouette rule as the
+  // ace it replaces. `who` is the REAL name even on a "???" card — it only
+  // picks the image; alt stays "" so a sealed Champion never names itself.
+  // No sprite on file → the ace, as before.
+  const faceSrc = (who) => (window.trainerArt ? trainerArt(who) : "");
+  function faceImg(who, aceId, lit) {
+    const src = faceSrc(who);
+    if (!src) return aceImg(aceId, lit);
+    return el("img", { class: "tdex-ace tdex-face" + (lit ? " lit" : ""), src: src, alt: "" });
+  }
 
   // 📜 THE QUOTE BOOK — every line a trainer speaks anywhere in the app,
   // keyed by their name so dual-role people (KOGA the leader AND the Elite
@@ -65,6 +76,8 @@
     const quotes = d.lit ? ((BOOK && BOOK[d.name]) || d.quotes || []) : [];
     const body = el("div", { class: "modal-form" }, [
       el("div", { class: "tdexm-hero" }, [
+        // the person AND their ace, side by side — the ace keeps its charm here
+        faceSrc(d.art || d.name) ? faceImg(d.art || d.name, 0, d.lit) : null,
         aceImg(aceOf(team), d.lit),
         el("div", {}, [
           el("div", { class: "enc-name" }, masked ? "???" : d.name),
@@ -96,7 +109,7 @@
       if (window.SFX && SFX.select) SFX.select();
       openTrainer(Object.assign({ lit: lit, name: name, sub: sub, chip: chip }, detail || {}));
     } }, [
-      aceImg(aceId, lit),
+      faceImg((detail && detail.art) || name, aceId, lit),
       el("div", { class: "tdex-name" }, lit ? name : (name === "???" ? "???" : name)),
       el("div", { class: "tdex-sub" }, sub || ""),
       chip ? el("div", { class: "tdex-chip" + (lit ? " lit" : "") }, chip) : null,
@@ -183,7 +196,9 @@
       if (lit) lgGot++;
       const anyBeat = Store.state.attendees.some((a) => Store.leagueWins(a.id).indexOf(st.key) >= 0);
       const nm = st.mystery && !lit && !anyBeat ? "???" : st.name;
-      return card(lit, aceOf(st.team), nm, st.rank, st.region, { team: st.team });
+      // 🎭 belt and braces: a champion the ROOM hasn't beaten never lights up
+      const litFace = lit && !(U.champSealed && U.champSealed(st.key));
+      return card(litFace, aceOf(st.team), nm, st.rank, st.region, { team: st.team, art: st.name });
     });
     got += section(host, "👑", "The League", lgGot, LEAGUE.length,
       "The Elite Four, the Champions — and whatever waits on the mountain.", lgCards);

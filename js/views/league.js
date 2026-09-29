@@ -281,6 +281,17 @@
     return Store.state.attendees.some((a) => hasBeat(a.id, st.reveal));
   }
 
+  // 🎓 The trainer's OFFICIAL portrait (data/trainer-art.js), or null when
+  // there's no sprite (the caller keeps its old icon). 🎭 A sealed mystery
+  // Champion paints as a pure silhouette — and alt stays "" so the name can't
+  // leak through the DOM either (same seal as U.champSealed everywhere else).
+  function portrait(st, cls) {
+    const src = window.trainerArt ? trainerArt(st.name) : "";
+    if (!src) return null;
+    const sealed = !!(U.champSealed && U.champSealed(st.key));
+    return el("img", { class: cls + " is-face" + (sealed ? " sealed" : ""), src: src, alt: "" });
+  }
+
   // Cinematic chamber entrance: doors part, the quote lands, then you choose
   // to step in. RED's chamber is snow and silence.
   function chamberIntro(idx, onGo) {
@@ -293,7 +304,7 @@
       el("div", { class: "league-intro-inner" }, [
         isRed ? el("div", { class: "league-intro-mt" }, "🗻") :
           isFinal ? el("div", { class: "league-intro-mt" }, "🎹") :
-          (ico ? el("img", { class: "league-intro-ico", src: ico, alt: "" }) : null),
+          (portrait(st, "league-intro-ico") || (ico ? el("img", { class: "league-intro-ico", src: ico, alt: "" }) : null)),
         // Cynthia's cue: the famous theme's piano swells before the battle.
         st.intro ? el("div", { class: "league-intro-flair" }, st.intro) : null,
         el("div", { class: "league-intro-rank" }, rankLabel),
@@ -873,9 +884,11 @@
     const beatenBy = Store.state.attendees.filter((a) => hasBeat(a.id, st.key));
     const nameLabel = st.mystery ? ((anyBeat || mineBeat) ? st.name : "???") : st.rank + " " + st.name;
     const sub = isRed ? "the summit" : isFinal ? "the finale" : (st.rank === "Champion" ? "the Champion's hall" : "an Elite chamber");
-    const headIco = isRed ? el("span", { class: "league-mt" }, "🗻")
+    // 🎓 the leader's own portrait where the type icon used to stand. RED's
+    // summit keeps its 🗻 until somebody has actually beaten him.
+    const headIco = isRed ? ((U.champSealed && U.champSealed("red")) ? null : portrait(st, "league-face")) || el("span", { class: "league-mt" }, "🗻")
       : isFinal ? el("span", { class: "league-mt" }, "🎹")
-      : (ico ? el("img", { class: "gymc-ico", src: ico, alt: "" }) : null);
+      : (portrait(st, "league-face") || (ico ? el("img", { class: "gymc-ico", src: ico, alt: "" }) : null));
     return el("div", { class: "league-stage" + (mineBeat ? " cleared" : "") + (isNext ? " next" : "") + (isRed ? " red" : "") + (isFinal ? " final" : "") + (!mineBeat && blocked ? " locked" : "") }, [
       el("div", { class: "league-stage-rail" }, [el("span", { class: "league-dot" }, mineBeat ? "✅" : (isNext ? "⚔" : "🔒"))]),
       el("div", { class: "league-stage-card" }, [

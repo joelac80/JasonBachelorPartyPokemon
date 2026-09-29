@@ -115,7 +115,25 @@
     return BALLS.poke;
   }
   function ballByKey(k) { return BALLS[k] || BALLS.poke; }
-  function ballIcon(tier) { return el("span", { class: "ball-ico " + tier.key, style: { "--ball-top": tier.top } }); }
+  // 🎒 Official item sprites (data/item-art.js), read lazily — the CSS ball /
+  // emoji stays as the fallback (and the Partner "ball" isn't a real item).
+  const BALL_ART = { poke: "poke-ball", great: "great-ball", ultra: "ultra-ball", master: "master-ball" };
+  function itemArt(key) { return (window.ITEM_ART || {})[key] || ""; }
+  function itemIco(key, emoji, alt) {
+    const src = itemArt(key);
+    return src ? el("img", { class: "item-ico", src: src, alt: alt, draggable: "false" }) : emoji;
+  }
+  function ballIcon(tier) {
+    const src = itemArt(BALL_ART[tier.key]);
+    if (src) return el("img", { class: "ball-spr", src: src, alt: tier.name, draggable: "false" });
+    return el("span", { class: "ball-ico " + tier.key, style: { "--ball-top": tier.top } });
+  }
+  // the ball that arcs into the scene and wobbles — same sprite, same tier
+  function throwBallEl(tier) {
+    const src = itemArt(BALL_ART[tier.key]);
+    return el("div", { class: "safari-ball-throw" + (src ? " item-spr" : ""),
+      style: src ? { "--ball-top": tier.top, backgroundImage: "url(" + src + ")" } : { "--ball-top": tier.top } });
+  }
 
   // Near-flat encounter odds — cool Pokémon show up almost as often as commons;
   // the drama lives in the catch rate, not the sighting. Legendaries are the
@@ -623,7 +641,7 @@
       const sparkle = shiny ? el("div", { class: "safari-sparkles" }, ["✨", "✨", "✨"].map((s, i) =>
         el("span", { class: "s" + i }, s))) : null;
       const scene = el("div", { class: "safari-scene" + (firstShow ? " rustle" : "") }, [
-        el("div", { class: "safari-scene-platform" }), wild, sparkle, el("div", { class: "safari-ball-throw", style: { "--ball-top": ball.top } }), grass,
+        el("div", { class: "safari-scene-platform" }), wild, sparkle, throwBallEl(ball), grass,
       ]);
 
       // ---- controls (name/odds/etc. hidden until the silhouette focuses in) ----
@@ -659,24 +677,24 @@
       ]);
       // Active-boost chips (berries / rocks), showing the DIMINISHED totals.
       const activeChips = [];
-      if (masterArmed) activeChips.push(el("span", { class: "safari-boost-chip master" }, "🟣 Master Ball armed"));
-      if (berries) activeChips.push(el("span", { class: "safari-boost-chip berry" }, "🍓×" + berries + " +" + Math.round(berryBonus * 100) + "%"));
+      if (masterArmed) activeChips.push(el("span", { class: "safari-boost-chip master" }, [itemIco("master-ball", "🟣", "Master Ball"), " Master Ball armed"]));
+      if (berries) activeChips.push(el("span", { class: "safari-boost-chip berry" }, [itemIco("razz-berry", "🍓", "Berry"), "×" + berries + " +" + Math.round(berryBonus * 100) + "%"]));
       if (rocks) activeChips.push(el("span", { class: "safari-boost-chip rally" }, "🪨×" + rocks + " +" + Math.round(rockBonus * 100) + "%"));
 
       const mleft = (window.Store && Store.mballLeft && Store.mballLeft(active())) || 0;
       let challengeArea;
       if (masterArmed) {
         challengeArea = el("div", { class: "safari-actions safari-boosts" }, [
-          el("span", { class: "hint" }, "🟣 Master Ball armed — the next throw cannot miss."),
+          el("span", { class: "hint" }, [itemIco("master-ball", "🟣", "Master Ball"), " Master Ball armed — the next throw cannot miss."]),
           el("button", { class: "btn subtle sm", onClick: toggleMaster }, "Disarm (keep the ball)"),
         ]);
       } else {
         const btns = [
-          el("button", { class: "btn subtle sm", onClick: () => throwAid("berry") }, "🍓 Toss a Berry (+" + pctTxt(aidGain("berry")) + " · " + pctTxt(aidFlee("berry")) + " flee)"),
+          el("button", { class: "btn subtle sm", onClick: () => throwAid("berry") }, [itemIco("razz-berry", "🍓", "Berry"), " Toss a Berry (+" + pctTxt(aidGain("berry")) + " · " + pctTxt(aidFlee("berry")) + " flee)"]),
           el("button", { class: "btn subtle sm", onClick: () => throwAid("rock") }, "🪨 Throw a Rock (+" + pctTxt(aidGain("rock")) + " · " + pctTxt(aidFlee("rock")) + " flee)"),
         ];
-        if (mleft > 0) btns.push(el("button", { class: "btn subtle sm safari-master-btn", onClick: toggleMaster }, "🟣 Master Ball ×" + mleft + " — sure catch"));
-        else btns.push(el("span", { class: "hint safari-mball-hint" }, "🟣 Master Balls ×0 — beat a Champion for 5, nuzlocke crowns pay 3 (ultimates 5)"));
+        if (mleft > 0) btns.push(el("button", { class: "btn subtle sm safari-master-btn", onClick: toggleMaster }, [itemIco("master-ball", "🟣", "Master Ball"), " Master Ball ×" + mleft + " — sure catch"]));
+        else btns.push(el("span", { class: "hint safari-mball-hint" }, [itemIco("master-ball", "🟣", "Master Ball"), " Master Balls ×0 — beat a Champion for 5, nuzlocke crowns pay 3 (ultimates 5)"]));
         challengeArea = el("div", { class: "safari-actions safari-boosts" }, btns);
       }
       const suspense = el("div", { class: "safari-suspense" });
@@ -903,15 +921,15 @@
         .filter((r) => r.n > 0)
         .sort((x, y) => y.n - x.n);
       if (masters.length) {
-        boardHost.appendChild(el("h2", { class: "section-title" }, "🟣 Master Catchers"));
+        boardHost.appendChild(el("h2", { class: "section-title" }, [itemIco("master-ball", "🟣", "Master Ball"), " Master Catchers"]));
         boardHost.appendChild(el("div", { class: "safari-board" }, masters.map((r, i) =>
           el("div", { class: "safari-board-row master clickable" + (i === 0 ? " lead" : ""), title: "View profile",
             onClick: () => window.Profile && Profile.open(r.a.id) }, [
-            el("span", { class: "safari-board-rank" }, i === 0 ? "🟣" : "#" + (i + 1)),
+            el("span", { class: "safari-board-rank" }, i === 0 ? itemIco("master-ball", "🟣", "Master Ball") : "#" + (i + 1)),
             el("span", { class: "safari-board-name" }, r.a.name),
             el("span", { class: "safari-board-n" }, r.n + " master catch" + (r.n > 1 ? "es" : "")),
           ]))));
-        boardHost.appendChild(el("p", { class: "hint" }, "🟣 = Master Catcher — most Pokémon caught with a Master Ball."));
+        boardHost.appendChild(el("p", { class: "hint" }, [itemIco("master-ball", "🟣", "Master Ball"), " = Master Catcher — most Pokémon caught with a Master Ball."]));
       }
     }
     function helpsOf(id) { return rec(id).helps || 0; }
@@ -965,7 +983,10 @@
       teamHost.innerHTML = "";
       if (!active()) return;
       const bag = rec(active()).berries || 0;
-      teamHost.appendChild(el("h2", { class: "section-title" }, attendeeName(active()) + "'s Team of 6" + (bag ? " · 🍓×" + bag : "")));
+      // 🎒 the bag's Sitrus Berries wear the real sprite (one span, so the
+      // flex title keeps "· [berry]×N" together)
+      teamHost.appendChild(el("h2", { class: "section-title" }, [attendeeName(active()) + "'s Team of 6",
+        bag ? el("span", { class: "item-count" }, ["· ", itemIco("sitrus-berry", "🍓", "Sitrus Berry"), "×" + bag]) : null]));
       const team = rec(active()).team || [];
       const slots = el("div", { class: "safari-team" });
       for (let i = 0; i < 6; i++) {

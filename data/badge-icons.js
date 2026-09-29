@@ -1,7 +1,7 @@
 /*
- * badge-icons.js — original vector gym-badge icons (offline data URIs).
- * Keyed by gym-badge id. Drop a file at assets/badges/<id>.png and set the
- * badge icon field to override with your own art.
+ * badge-icons.js — icons for the PARTY badge case (badges.js, poster.js,
+ * profile.js), keyed by party-badge id (offline data URIs). A badge's own
+ * `icon` field still overrides whatever is here.
  */
 window.BADGE_ICONS = {
   "boulder": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHBvbHlnb24gcG9pbnRzPSI1Ni45LDIyLjcgNTYuOSw0My4zIDQyLjMsNTcuOSAyMS43LDU3LjkgNy4xLDQzLjMgNy4xLDIyLjcgMjEuNyw4LjEgNDIuMyw4LjEiIGZpbGw9IiNjOWJkOGYiIHN0cm9rZT0iIzFmMjMzMCIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PGVsbGlwc2UgY3g9IjI2IiBjeT0iMjEiIHJ4PSIxMSIgcnk9IjYiIGZpbGw9IiNmZmZmZmYiIG9wYWNpdHk9IjAuMzAiLz48L3N2Zz4=",
@@ -13,3 +13,13 @@ window.BADGE_ICONS = {
   "volcano": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHBhdGggZD0iTTMyIDQgQyA0MSAxNyAzMSAyMyAzNSAzMiBDIDQzIDI3IDQxIDE3IDQ3IDIzIEMgNTcgMzUgNTAgNTkgMzIgNjAgQyAxNSA1OSAxMCA0MSAyMiAyOSBDIDI0IDM1IDI4IDMxIDI2IDIyIEMgMzEgMTYgMjggMTEgMzIgNCBaIiBmaWxsPSIjZjU3MzJmIiBzdHJva2U9IiMxZjIzMzAiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxlbGxpcHNlIGN4PSIyNiIgY3k9IjIxIiByeD0iMTEiIHJ5PSI2IiBmaWxsPSIjZmZmZmZmIiBvcGFjaXR5PSIwLjMwIi8+PC9zdmc+",
   "earth": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHBhdGggZD0iTTE0IDUyIEMgMTIgMjQgMzMgOSA1NSAxMiBDIDU3IDM1IDQxIDU1IDE0IDUyIFoiIGZpbGw9IiNjOWEyMjciIHN0cm9rZT0iIzFmMjMzMCIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTIwIDQ4IEMgMzIgNDAgNDIgMzAgNTAgMTgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFmMjMzMCIgc3Ryb2tlLXdpZHRoPSIyLjUiIG9wYWNpdHk9IjAuNTUiLz48ZWxsaXBzZSBjeD0iMjYiIGN5PSIyMSIgcng9IjExIiByeT0iNiIgZmlsbD0iI2ZmZmZmZiIgb3BhY2l0eT0iMC4zMCIvPjwvc3ZnPg=="
 };
+
+// 🏅 The seed crew's eight (boulder…earth) ARE Kanto's gym badges, so they wear
+// the OFFICIAL art from data/badge-art.js. That file loads AFTER this one, so
+// each id is a getter read at render time — the vector above is only the
+// fallback if the art file never arrived. Custom party badges are untouched.
+["boulder", "cascade", "thunder", "rainbow", "soul", "marsh", "volcano", "earth"].forEach(function (id) {
+  var vec = window.BADGE_ICONS[id];
+  Object.defineProperty(window.BADGE_ICONS, id, { enumerable: true, configurable: true,
+    get: function () { return (window.BADGE_ART && window.BADGE_ART["kanto-" + id]) || vec; } });
+});

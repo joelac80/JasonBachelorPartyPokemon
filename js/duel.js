@@ -34,6 +34,14 @@
   function backSprite(id, shiny) { return (shiny && BACKS_S[id]) || BACKS[id] || BACK[id] || ""; }
   function sfx(n) { if (window.SFX && SFX[n]) SFX[n](); }
   function now() { try { return Date.now(); } catch (_) { return 0; } }
+  // 🎒 The REAL item sprite (data/item-art.js) where a button stands for a
+  // real item — the old emoji stays as the fallback if a sprite is missing.
+  // Read lazily so load order can never blank a button.
+  function itemArt(key) { return (window.ITEM_ART || {})[key] || ""; }
+  function itemIco(key, emoji, alt) {
+    const src = itemArt(key);
+    return src ? el("img", { class: "item-ico", src: src, alt: alt, draggable: "false" }) : emoji;
+  }
 
   const TYPE_EMOJI = { normal: "⭐", fire: "🔥", water: "💧", electric: "⚡", grass: "🌿", ice: "❄️", fighting: "🥊", poison: "☠️", ground: "⛰️", flying: "🪽", psychic: "🔮", bug: "🐛", rock: "🪨", ghost: "👻", dragon: "🐉", dark: "🌑", steel: "⚙️", fairy: "✨" };
   const TYPE_COLOR = { normal: "#a8a878", fire: "#f08030", water: "#6890f0", electric: "#e0b400", grass: "#78c850", ice: "#58b8c8", fighting: "#c03028", poison: "#a040a0", ground: "#c8a850", flying: "#a890f0", psychic: "#f85888", bug: "#a8b820", rock: "#b8a038", ghost: "#705898", dragon: "#7038f8", dark: "#705848", steel: "#9898b0", fairy: "#e87898" };
@@ -1157,7 +1165,11 @@
       if (mons.length <= 1) { row.style.display = "none"; return; }
       row.style.display = "";
       const alive = mons.filter((m) => m.hp > 0).length;
-      mons.forEach((m) => row.appendChild(el("div", { class: "pball" + (m.hp > 0 ? "" : " down"), title: m.name })));
+      // 🎒 a real Poké Ball sprite in each slot (greyed + × once fainted);
+      // the CSS-drawn ball stays as the fallback
+      const pb = itemArt("poke-ball");
+      mons.forEach((m) => row.appendChild(el("div", { class: "pball" + (pb ? " item-spr" : "") + (m.hp > 0 ? "" : " down"), title: m.name },
+        pb ? el("img", { src: pb, alt: m.hp > 0 ? "Poké Ball" : "Poké Ball (fainted)", draggable: "false" }) : null)));
       row.appendChild(el("span", { class: "pball-count" }, alive + "/" + mons.length));
     }
     // The little PAR/BRN/PSN/SLP/FRZ badge next to a mon's name.
@@ -1507,7 +1519,8 @@
       const caught = (o.roll != null ? o.roll : 1) < chance;
       menu.innerHTML = "";
       const img = foe._monEl && foe._monEl.querySelector(".battle-sprite-img");
-      const ballEl = el("div", { class: "duel-catch-ball" });
+      const pb = itemArt("poke-ball");   // 🎒 the real Poké Ball sprite does the wobbling
+      const ballEl = el("div", { class: "duel-catch-ball" + (pb ? " item-spr" : ""), style: pb ? { backgroundImage: "url(" + pb + ")" } : null });
       // A catch always rocks 3 times then clicks; a miss breaks out after 1–2.
       const shakes = caught ? 3 : 1 + (Math.floor((o.roll || 0) * 977) % 2);
       const steps = [["🔴 " + u.name + " threw a Poké Ball! (" + Math.round(chance * 100) + "%)", 950, () => {
@@ -2775,18 +2788,18 @@
         order: rev == null ? { kind: "potion" } : { kind: "potion", revive: rev } });
       const fainted = opts.nuzlocke ? [] : u.party.map((x, i) => ({ m: x, i: i })).filter((x) => x.m.hp <= 0);
       if (!fainted.length) {
-        confirmPanel("🧪 Full Restore — " + m.name + " returns to FULL health, status cured. (Takes this turn; " + u.potions + " left this battle.)",
-          "🧪 Use Full Restore", () => order(null));
+        confirmPanel([itemIco("full-restore", "🧪", "Full Restore"), " Full Restore — " + m.name + " returns to FULL health, status cured. (Takes this turn; " + u.potions + " left this battle.)"],
+          [itemIco("full-restore", "🧪", "Full Restore"), " Use Full Restore"], () => order(null));
         return;
       }
       menu.innerHTML = "";
       menu.appendChild(el("div", { class: "duel-confirm" }, [
-        el("div", { class: "duel-confirm-txt" }, "🧪 One charge (" + u.potions + " left) — restore the fighter, or revive a fallen teammate?"),
+        el("div", { class: "duel-confirm-txt" }, [itemIco("full-restore", "🧪", "Full Restore"), " One charge (" + u.potions + " left) — restore the fighter, or revive a fallen teammate?"]),
         el("div", { class: "battle-menu-row", style: { flexWrap: "wrap" } },
           [el("button", { class: "btn primary sm", onClick: () => order(null) },
-            "🧪 Full Restore " + m.name + (m.hp < m.hpMax ? "" : " (already full)"))]
+            [itemIco("full-restore", "🧪", "Full Restore"), " Full Restore " + m.name + (m.hp < m.hpMax ? "" : " (already full)")])]
           .concat(fainted.map((x) => el("button", { class: "btn primary sm", onClick: () => order(x.i) },
-            "💫 Revive " + x.m.name)))
+            [itemIco("revive", "💫", "Revive"), " Revive " + x.m.name])))
           .concat([el("button", { class: "btn subtle sm", onClick: renderMenu }, "↩ Back")])),
       ]));
     }
@@ -3183,7 +3196,7 @@
       // a move on THIS same turn (can't miss, guaranteed crit).
       if (S.zmove) {
         menu.appendChild(el("div", { class: "duel-turn " + (posOf(ptr.side)) },
-          "🎯💥 DIRE HIT — " + u.name + ", unleash a move!"));
+          [itemIco("dire-hit", "🎯", "Dire Hit"), "💥 DIRE HIT — " + u.name + ", unleash a move!"]));
         const zEls = m.moves.map((mv, i) => moveBtn(mv, () => pickTarget(u, ptr, i, true), tgtM));
         if (walled) zEls.push(moveBtn(STRUGGLE, () => pickTarget(u, ptr, 99, true), tgtM));
         menu.appendChild(el("div", { class: "duel-moves zmove" }, zEls));
@@ -3214,9 +3227,9 @@
         const gims = [];
         if (megaOpen && megaIds && megaIds.length) megaIds.forEach((mid) => gims.push(
           el("button", { class: "btn mega-btn", onClick: () => fireGimmick(u, ptr, "mega", { megaId: mid }) },
-            "✨ Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : ""))));
+            [itemIco("key-stone", "✨", "Key Stone"), " Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : "")])));
         // 🎪 the era gimmicks unlock down the Gen Ladder, like megas do
-        if (can("z", pvp || cap >= 7)) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => fireGimmick(u, ptr, "z") }, "🌀 Z-Move"));
+        if (can("z", pvp || cap >= 7)) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => fireGimmick(u, ptr, "z") }, [itemIco("z-ring", "🌀", "Z-Ring"), " Z-Move"]));
         if (can("dyna", pvp || cap >= 8) && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => fireGimmick(u, ptr, "dyna") }, "🔴 Dynamax"));
         if (can("tera", pvp || cap >= 9) && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraPicker(u, ptr) }, "💎 Terastallize"));
         if (gims.length) menu.appendChild(el("div", { class: "battle-menu-row mega-row" }, gims));
@@ -3228,15 +3241,15 @@
         const pct = Math.round(ballChance(mon(sides[other(ptr.side)].units[0])) * 100);
         row.push(el("button", { class: "btn primary sm", onClick: () => {
           sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "ball", roll: Math.random() } });
-        } }, "🔴 Throw Ball · " + pct + "%"));
+        } }, [itemIco("poke-ball", "🔴", "Poké Ball"), " Throw Ball · " + pct + "%"]));
       }
       row.push(
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => restorePanel(u, ptr) },
-          "🧪 Restore ×" + u.potions),
+          [itemIco("full-restore", "🧪", "Full Restore"), " Restore ×" + u.potions]),
         el("button", { class: "btn subtle sm", disabled: u.courage ? null : "true", onClick: () => {
-          confirmPanel("🎯 Dire Hit — " + u.name + " UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT. (Once per battle.)",
-            "🎯 Dire Hit — power up!", () => { S.zmove = true; sfx("correct"); renderMenu(); });
-        } }, "🎯 Dire Hit"));
+          confirmPanel([itemIco("dire-hit", "🎯", "Dire Hit"), " Dire Hit — " + u.name + " UNLEASHES a move this same turn: it can't miss and lands a guaranteed CRITICAL HIT. (Once per battle.)"],
+            [itemIco("dire-hit", "🎯", "Dire Hit"), " Dire Hit — power up!"], () => { S.zmove = true; sfx("correct"); renderMenu(); });
+        } }, [itemIco("dire-hit", "🎯", "Dire Hit"), " Dire Hit"]));
       if (bench(u).length) row.push(el("button", { class: "btn subtle sm", onClick: () => partyPanel(u, ptr, "switch", true) }, "🔄 Switch"));
       row.push(el("button", { class: "btn subtle sm", onClick: () => {
         if (!S.moved) {                           // nothing happened yet — just walk away (hot-seat only)
@@ -3278,7 +3291,11 @@
           // Gym leaders keep their team in the balls — one ball per mon,
           // identities hidden until they're sent out. (Hidden reserves don't
           // even get a ball — you're not supposed to know they exist.)
-          u.party.slice(0, u.party.length - (u.reserve || 0)).forEach(() => mons.push(el("div", { class: "battle-ball-inner vs-mon" })));
+          // 🎒 …real Poké Ball sprites when we have them.
+          const vpb = itemArt("poke-ball");
+          u.party.slice(0, u.party.length - (u.reserve || 0)).forEach(() => mons.push(vpb
+            ? el("img", { class: "vs-mon vs-ball", src: vpb, alt: "Poké Ball", draggable: "false" })
+            : el("div", { class: "battle-ball-inner vs-mon" })));
           return;
         }
         const m = mon(u);

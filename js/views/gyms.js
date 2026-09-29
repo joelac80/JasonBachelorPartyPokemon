@@ -197,26 +197,22 @@
   }
 
   // 🏅 THE BADGE MOMENT — a full-screen award the instant a gym falls.
-  // Art resolves in three steps: your own drop-in file at
-  // assets/badges/<key>.png (key = badge name, lowercased, e.g. boulder.png,
-  // zephyr.png, ulaula.png) → the built-in vector icon (data/badge-icons.js)
-  // → the gym's type energy. Drop real art in and every surface upgrades.
+  // Art: the OFFICIAL badge embedded in data/badge-art.js (works with no
+  // signal) → the gym's type energy if a key is ever missing. Alola mints no
+  // badges — each kahuna hands over their Z-Crystal, so that's the art there.
   function badgeKey(g) { return (g.badge || "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+  // 🗝 ALWAYS region-qualified ("kalos-psychic", "alola-ulaula"): badge NAMES
+  // repeat across regions (Kalos + Paldea both mint a Psychic Badge; Galar +
+  // Paldea share Grass/Water/Ghost…) and they're different badges.
+  function badgeSrc(g) {
+    return (window.BADGE_ART && BADGE_ART[(g.region || "").toLowerCase() + "-" + badgeKey(g)]) || "";
+  }
   function badgeArt(g, cls) {
-    const key = badgeKey(g);
-    // badge NAMES repeat across regions (Kalos + Paldea both mint a Psychic
-    // Badge; Galar + Paldea share Grass/Water/Fire…), so the region-qualified
-    // file wins, the bare name serves the unique ones, then the vector icon.
-    const chain = [
-      "assets/badges/" + (g.region || "").toLowerCase() + "-" + key + ".png",
-      "assets/badges/" + key + ".png",
-      (window.BADGE_ICONS && BADGE_ICONS[key]) || "",
-      U.energyIcon(g.type) || "",
-    ].filter(Boolean);
-    let at = 0;
-    const img = el("img", { class: cls || "", src: chain[0], alt: g.badge + " Badge" });
-    img.addEventListener("error", () => { if (++at < chain.length) img.src = chain[at]; });
-    return img;
+    const art = badgeSrc(g);
+    // 🎨 .is-art: badges are smooth illustrations, never pixelated — except
+    // Alola's Z-Crystals, which are pixel sprites and stay crisp (.is-pix).
+    const tag = art ? " is-art" + (g.region === "Alola" ? " is-pix" : "") : "";
+    return el("img", { class: (cls || "") + tag, src: art || U.energyIcon(g.type) || "", alt: g.badge + " Badge" });
   }
   function badgePop(idx, attId, opts) {
     const g = GYMS[idx]; if (!g) return;
@@ -543,9 +539,13 @@
     const why = gymLockedWhy(idx, me);
     return el("div", { class: "gymc-card" + (holders.length ? " earned" : "") + (why ? " locked" : "") }, [
       el("div", { class: "gymc-head" }, [
-        ico ? el("img", { class: "gymc-ico", src: ico, alt: g.type }) : null,
+        // 🏅 BADGE CASE: the official badge, lit once YOU hold it and a grey
+        // ghost until then (keyed to the real identity, like GIOVANNI below)
+        badgeArt(g, "gymc-ico" + (me && holders.indexOf(me) >= 0 ? " held" : "")),
         el("div", { class: "gymc-names" }, [
-          el("div", { class: "gymc-badge" }, g.badge + " Badge"),
+          // the badge took the energy icon's seat — the gym's TYPE rides here now
+          el("div", { class: "gymc-badge" }, [g.badge + " Badge",
+            ico ? el("img", { class: "energy-ico gymc-type", src: ico, alt: g.type, title: g.type }) : null]),
           // 🕴 GIOVANNI vanishes wordlessly once YOU hold the Earth Badge —
           // exactly like the cartridge. (Others can still find him there.)
           el("div", { class: "gymc-leader" },

@@ -1902,6 +1902,14 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .league-stage.final .league-stage-card { background: linear-gradient(rgba(24,16,40,.92), rgba(48,30,78,.92)); border-color: #9a6cff; }
 .league-stage.final .gymc-badge { color: #e7dbff; }
 .league-intro.fame .league-intro-mt { filter: drop-shadow(0 0 22px rgba(255,208,64,.65)); }
+/* 🎓 OFFICIAL TRAINER PORTRAITS (data/trainer-art.js) — league card head +
+   chamber intro; the Trainer Dex rides .tdex-ace's own lit/silhouette rules.
+   Pixel art, so kept crisp. 🎭 .sealed = a mystery Champion nobody in the room
+   has beaten: pure black silhouette (the intro keeps its glow so it reads). */
+.league-face { width: 44px; height: 44px; flex: 0 0 auto; image-rendering: pixelated; }
+.league-face.sealed { filter: brightness(0); }
+.league-intro-ico.is-face { width: 112px; height: 112px; image-rendering: pixelated; }
+.league-intro-ico.is-face.sealed { filter: brightness(0) drop-shadow(0 0 18px rgba(255,255,255,.35)); }
 /* 🎬 Movie Legends: cinematic boss battles (Mewtwo / the Collector) */
 .movie-intro { background: radial-gradient(circle at 50% 35%, rgba(28,20,54,.97), rgba(6,6,14,.99)); }
 .movie-boss-ico { width: 108px; height: 108px; image-rendering: pixelated;
@@ -2200,6 +2208,14 @@ html, body { overscroll-behavior-y: contain; }
 @keyframes badgeSpin { 0% { transform: scale(.1) rotate(-540deg); opacity: 0; }
   70% { transform: scale(1.15) rotate(12deg); opacity: 1; } 100% { transform: scale(1) rotate(0); } }
 @keyframes badgeTa { 0% { transform: translateY(-18px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+/* 🏅 OFFICIAL BADGE ART (data/badge-art.js) — smooth illustrations, so the
+   pop's pixelated rendering is lifted (it made them jaggy on a phone); Alola's
+   Z-Crystals are pixel sprites and keep it. On a gym card the badge is a
+   badge-case slot: full colour once you hold it, a dim grey ghost until then. */
+.badge-pop-img.is-art { image-rendering: auto; }
+.badge-pop-img.is-art.is-pix, .gymc-ico.is-art.is-pix { image-rendering: pixelated; }
+.gymc-ico.is-art:not(.held) { filter: grayscale(1); opacity: .4; }
+.gymc-type { width: 14px; height: 14px; margin-left: 5px; vertical-align: -2px; }
 
 /* ⚠ borrowed power — a capped picker card whose form was never caught */
 .duel-pick.is-defiant { border-color: #d9822b; }
@@ -2281,6 +2297,35 @@ html, body { overscroll-behavior-y: contain; }
 .duel-catch-ball.click { box-shadow: 0 0 14px 4px rgba(255,226,122,.9); filter: brightness(1.15); }
 @keyframes duel-ball-open { to { transform: scale(1.6); opacity: 0; } }
 .duel-catch-ball.open { animation: duel-ball-open .45s ease-out forwards; }
+
+/* 🎒 OFFICIAL ITEM SPRITES (data/item-art.js) — 30×30 pixel art standing in
+   where emoji / CSS circles used to. Drawn at whole-pixel scales (1×, 2×, 3×)
+   so they stay crisp, and cropped / negatively margined to their painted
+   area so every button keeps the exact size it had with the emoji. */
+.item-ico { width: 24px; height: 24px; object-fit: none; image-rendering: pixelated;
+  vertical-align: middle; margin: -6px -2px -6px -7px; pointer-events: none; }
+.mega-btn .item-ico { margin: -6px 0 -6px -6.5px; }   /* 14px label: the emoji there was 17.5px wide */
+.safari-boost-chip .item-ico { margin-right: -1px; }   /* "×N" hugs the icon — keep a pixel clear */
+/* outside a button there's no padding to lean into — sit on the text edge */
+.hint .item-ico, .section-title .item-ico, .safari-board-rank .item-ico { margin: -6px -3px; }
+.duel-turn .item-ico { margin: -6px -1px -6px -3px; }   /* clear of the pill's rounded corner */
+/* Safari ball tiers: the 18px ball itself, in the old 17px slot */
+.ball-spr { width: 18px; height: 18px; object-fit: none; image-rendering: pixelated; vertical-align: middle; margin: -0.5px; pointer-events: none; }
+.safari-dex-cell .ball-spr { width: 20px; height: 20px; object-fit: fill; margin: -4px; display: block; }   /* ⅔ scale = the old 12px corner mark */
+.item-count { display: inline-flex; align-items: center; gap: 4px; }
+/* party-ball row: a real Poké Ball per mon at ⅔ scale (same 12-13px footprint
+   as the old drawn ball); a fainted one goes grey and keeps its × */
+.pball.item-spr { width: 12px; height: 12px; background: none; border: 0; box-shadow: none; }
+.pball.item-spr img { display: block; width: 20px; height: 20px; margin: -4px; image-rendering: pixelated; }
+.pball.item-spr.down img { filter: grayscale(1) brightness(.85); opacity: .45; }
+/* the gym leader's hidden team in the VS intro — 3× Poké Balls, 60px footprint */
+.vs-mon.vs-ball { width: 90px; height: 90px; margin: -15px; }
+/* the balls that wobble (wild battle + Safari scene) — 2× sprite, box = the ball */
+.duel-catch-ball.item-spr { width: 36px; height: 36px; margin-left: -18px; border: 0;
+  background: transparent no-repeat center / 60px 60px; image-rendering: pixelated; }
+.duel-catch-ball.item-spr::after { content: none; }
+.safari-ball-throw.item-spr { width: 36px; height: 36px; border: 0;
+  background: transparent no-repeat center / 60px 60px; image-rendering: pixelated; }
 
 /* 📕 Unified Pokédex page */
 .dex-tabbar { margin-top: 2px; }
