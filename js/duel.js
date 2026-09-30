@@ -38,6 +38,12 @@
   // real item — the old emoji stays as the fallback if a sprite is missing.
   // Read lazily so load order can never blank a button.
   function itemArt(key) { return (window.ITEM_ART || {})[key] || ""; }
+  // 💎 what this gym hands over — "Boulder Badge", or a kahuna's Z-Crystal
+  function gymAward(gym) {
+    const g = window.GymCircuit && GymCircuit.GYMS && GymCircuit.GYMS[gym && gym.idx];
+    if (g && GymCircuit.awardName) return GymCircuit.awardName(g);
+    return ((gym && gym.badge) || "Gym") + " Badge";
+  }
   function itemIco(key, emoji, alt) {
     const src = itemArt(key);
     return src ? el("img", { class: "item-ico", src: src, alt: alt, draggable: "false" }) : emoji;
@@ -1340,7 +1346,7 @@
       liveLocal = true;
       try {
         const lg = opts.league;
-        const stakes = opts.gym ? "🏅 " + ((opts.gym.badge || "Gym") + " Badge") + " on the line"
+        const stakes = opts.gym ? "🏅 " + gymAward(opts.gym) + " on the line"
           : lg ? (lg.key === "red" ? "🗻 Mt. Silver — facing RED" : "👑 " + ((lg.rank || "League") + " " + (lg.name || "")).trim())
           : opts.hof ? "🏛 Battle of Fame" : "";
         // `shared` MUST travel with the setup: without it a watcher rebuilds a
@@ -2501,7 +2507,7 @@
               if (fresh) hs.push(player.attId);
               if (opts.gym.style && Store.styleWin) Store.styleWin(s, player.attId, "gym:" + opts.gym.idx, opts.gym.style);
               if (fresh) Store.grantPoints(s, "battle", player.teamId, 5);
-              Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + (opts.gym.badge || "gym") + " Badge!" + (fresh ? "" : " (rematch flex)"));
+              Store.chron(s, "🏅", player.name + " defeated Leader " + opts.gym.leader + " and earned the " + gymAward(opts.gym) + "!" + (fresh ? "" : " (rematch flex)"));
               if (fresh && opts.gym.idx < 16 && Store.gymBadgesInRange(player.attId, 0, 16) >= 16)
                 Store.chron(s, "🏆", "ALL 16 BADGES — " + player.name + " has conquered Johto AND Kanto. CHAMPION!!");
               else if (fresh) {
@@ -3225,13 +3231,24 @@
       if (!u.ai && !S.megaSide[ptr.side] && !m.megaId) {
         const F = window.MEGA_FORMS || {};
         const gims = [];
-        if (megaOpen && megaIds && megaIds.length) megaIds.forEach((mid) => gims.push(
-          el("button", { class: "btn mega-btn", onClick: () => fireGimmick(u, ptr, "mega", { megaId: mid }) },
-            [itemIco("key-stone", "✨", "Key Stone"), " Mega Evolve" + (megaIds.length > 1 ? " → " + ((F[mid] || {}).n || "Mega").replace(/^Mega /, "") : "")])));
+        // 📏 A crowded row speaks in short labels. Charizard + every era gimmick
+        // is FIVE buttons — at full length they stacked three rows deep and
+        // shoved Restore/Forfeit below a phone's fold. Full names ride the title.
+        const zOn = can("z", pvp || cap >= 7), dyOn = can("dyna", pvp || cap >= 8) && !m._dyna,
+          teOn = can("tera", pvp || cap >= 9) && !m._tera;
+        const nMega = megaOpen && megaIds ? megaIds.length : 0;
+        const tight = nMega + (zOn ? 1 : 0) + (dyOn ? 1 : 0) + (teOn ? 1 : 0) >= 3;
+        if (nMega) megaIds.forEach((mid) => {
+          const full = ((F[mid] || {}).n || "Mega");
+          const tail = full.replace(/^Mega /, "");
+          const lbl = nMega > 1 ? (tight ? " Mega " + tail.split(" ").pop() : " Mega Evolve → " + tail) : " Mega Evolve";
+          gims.push(el("button", { class: "btn mega-btn", title: "Mega Evolve → " + full, onClick: () => fireGimmick(u, ptr, "mega", { megaId: mid }) },
+            [itemIco("key-stone", "✨", "Key Stone"), lbl]));
+        });
         // 🎪 the era gimmicks unlock down the Gen Ladder, like megas do
-        if (can("z", pvp || cap >= 7)) gims.push(el("button", { class: "btn mega-btn gim-z", onClick: () => fireGimmick(u, ptr, "z") }, [itemIco("z-ring", "🌀", "Z-Ring"), " Z-Move"]));
-        if (can("dyna", pvp || cap >= 8) && !m._dyna) gims.push(el("button", { class: "btn mega-btn gim-dyna", onClick: () => fireGimmick(u, ptr, "dyna") }, "🔴 Dynamax"));
-        if (can("tera", pvp || cap >= 9) && !m._tera) gims.push(el("button", { class: "btn mega-btn gim-tera", onClick: () => teraPicker(u, ptr) }, "💎 Terastallize"));
+        if (zOn) gims.push(el("button", { class: "btn mega-btn gim-z", title: "Z-Move", onClick: () => fireGimmick(u, ptr, "z") }, [itemIco("z-ring", "🌀", "Z-Ring"), " Z-Move"]));
+        if (dyOn) gims.push(el("button", { class: "btn mega-btn gim-dyna", title: "Dynamax", onClick: () => fireGimmick(u, ptr, "dyna") }, tight ? "🔴 Dyna" : "🔴 Dynamax"));
+        if (teOn) gims.push(el("button", { class: "btn mega-btn gim-tera", title: "Terastallize", onClick: () => teraPicker(u, ptr) }, tight ? "💎 Tera" : "💎 Terastallize"));
         if (gims.length) menu.appendChild(el("div", { class: "battle-menu-row mega-row" }, gims));
       }
       const row = [];

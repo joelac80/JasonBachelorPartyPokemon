@@ -797,6 +797,11 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .mega-btn { background: linear-gradient(90deg, #7a5aa0, #b46cff, #6cc6ff); color: #fff; font-weight: 900;
   border: none; box-shadow: 0 0 10px rgba(180,108,255,.5); }
 .mega-btn:hover { filter: brightness(1.08); }
+/* 📏 the gimmick row sits between the moves and the items — keep it ONE line
+   (like the item row) so Restore/Forfeit stay above a phone's fold */
+.mega-row { width: 100%; gap: 6px; flex-wrap: nowrap; }
+.mega-row .mega-btn { flex: 0 1 auto; min-width: 0; padding: 7px 11px; font-size: 13px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .battle-mon.mega-go { animation: megaGo .9s ease; }
 @keyframes megaGo { 0% { filter: brightness(3) saturate(0); transform: scale(1.15); }
   40% { filter: brightness(2) drop-shadow(0 0 14px #b46cff); } 100% { filter: none; transform: scale(1); } }
@@ -1915,6 +1920,8 @@ html.scroll-lock, html.scroll-lock body { overflow: hidden !important; height: 1
 .league-intro-name.unveiled { animation: introUnveil .7s ease; }
 @keyframes introUnveil { from { opacity: 0; transform: scale(.86); letter-spacing: .3em; } to { opacity: 1; transform: none; } }
 .league-intro-ico.is-face.sealed { filter: brightness(0) drop-shadow(0 0 18px rgba(255,255,255,.35)); }
+/* the reveal FADES only if both filter lists match function-for-function */
+.league-intro-ico.is-face:not(.sealed) { filter: brightness(1) drop-shadow(0 0 18px rgba(255,255,255,.35)); }
 /* 🎬 Movie Legends: cinematic boss battles (Mewtwo / the Collector) */
 .movie-intro { background: radial-gradient(circle at 50% 35%, rgba(28,20,54,.97), rgba(6,6,14,.99)); }
 .movie-boss-ico { width: 108px; height: 108px; image-rendering: pixelated;

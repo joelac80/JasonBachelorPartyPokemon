@@ -680,6 +680,7 @@
     card: circuitCard,
     idxsForRegion: function (name) { return GYMS.map(function (g, i) { return i; }).filter(function (i) { return GYMS[i].region === name; }); },
     badgePop: badgePop,                // 🏅 shared award moment (nuzlocke runs use it too)
+    awardName: awardName,              // 💎 "Boulder Badge" — or a kahuna's Z-Crystal
     _maybeEncounter: maybeEncounter,   // test seam
   };
 })();

@@ -19,6 +19,8 @@
   let me = "";
 
   const aceOf = (team) => (team && team.length ? team[team.length - 1] : 0);
+  // 💎 the circuit's own word for what a leader hands over (a kahuna's is a Z-Crystal)
+  const award = (g) => (window.GymCircuit && GymCircuit.awardName ? GymCircuit.awardName(g) : g.badge + " Badge");
   const nmOf = (id) => (window.DEX && DEX[id] && DEX[id].n) || ("#" + id);
   function aceImg(id, lit) {
     const src = SP[id] || (window.Store && Store.sprite(id)) || "";
@@ -43,7 +45,7 @@
   function quoteBook() {
     const book = {};
     const add = (name, k, v) => { if (!v) return; const l = (book[name] = book[name] || []); if (!l.some((q) => q.v === v)) l.push({ k: k, v: v }); };
-    ((window.GymCircuit && GymCircuit.GYMS) || []).forEach((g) => add(g.leader, "🏳 " + g.badge + " Badge, when beaten", g.defeat));
+    ((window.GymCircuit && GymCircuit.GYMS) || []).forEach((g) => add(g.leader, "🏳 " + award(g) + ", when beaten", g.defeat));
     (window.LEAGUE_STAGES || []).forEach((s) => {
       add(s.name, "⚔ " + s.rank + ", the challenge", s.quote);
       add(s.name, "🏳 " + s.rank + ", when beaten", s.defeat);
@@ -180,7 +182,7 @@
       gymsByRegion[region].forEach(([g, i]) => {
         const lit = Store.gymHolders(i).indexOf(me) >= 0;
         if (lit) gymGot++;
-        gymCards.push(card(lit, aceOf(g.team), g.leader, g.badge + " Badge", region, { team: g.team }));
+        gymCards.push(card(lit, aceOf(g.team), g.leader, award(g), region, { team: g.team }));
       });
     });
     got += section(host, "🏅", "Gym Leaders", gymGot, GYMS.length,
