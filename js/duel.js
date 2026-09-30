@@ -3238,10 +3238,13 @@
       if (opts.wild && mode === "local" && !u.ai) {
         // Live odds ON the button — recomputed every turn from the wild
         // mon's remaining HP, so "weaken it" is a number, not a vibe.
+        // 🔴 It gets its OWN row: it's the whole point of a wild battle, and
+        // as a fifth button it shoved the item row 9px past a phone's edge,
+        // clipping Forfeit to "Forfei" (the same bug v188 fixed for gyms).
         const pct = Math.round(ballChance(mon(sides[other(ptr.side)].units[0])) * 100);
-        row.push(el("button", { class: "btn primary sm", onClick: () => {
+        menu.appendChild(el("div", { class: "battle-menu-row duel-throw" }, [el("button", { class: "btn primary sm", onClick: () => {
           sendAct({ seq: S.seq + 1, kind: "order", side: ptr.side, unit: ptr.unit, order: { kind: "ball", roll: Math.random() } });
-        } }, [itemIco("poke-ball", "🔴", "Poké Ball"), " Throw Ball · " + pct + "%"]));
+        } }, [itemIco("poke-ball", "🔴", "Poké Ball"), " Throw Ball · " + pct + "%"])]));
       }
       row.push(
         el("button", { class: "btn subtle sm", disabled: u.potions > 0 ? null : "true", onClick: () => restorePanel(u, ptr) },

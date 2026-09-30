@@ -300,15 +300,22 @@
     const isFinal = !!st.final;
     const ico = energyIcon(st.type);
     const rankLabel = isRed ? "MT. SILVER" : isFinal ? "THE FINAL BATTLE" : st.rank.toUpperCase();
+    // 🎭 WHO'S THAT TRAINER? Stepping into a sealed Champion's chamber IS the
+    // reveal — the battle names them one tap later anyway. So the silhouette
+    // holds under "???", then floods into colour as the real name lands. Back
+    // out with "Not yet" before it resolves and the secret survives.
+    const unveil = !isRed && !!(U.champSealed && U.champSealed(st.key));
+    const face = isRed || isFinal ? null : portrait(st, "league-intro-ico");
+    const nameEl = el("div", { class: "league-intro-name" }, isRed ? "…" : unveil ? "???" : st.name);
     const lay = el("div", { class: "league-intro" + (isRed ? " red" : "") + (isFinal ? " final" : "") }, [
       el("div", { class: "league-intro-inner" }, [
         isRed ? el("div", { class: "league-intro-mt" }, "🗻") :
           isFinal ? el("div", { class: "league-intro-mt" }, "🎹") :
-          (portrait(st, "league-intro-ico") || (ico ? el("img", { class: "league-intro-ico", src: ico, alt: "" }) : null)),
+          (face || (ico ? el("img", { class: "league-intro-ico", src: ico, alt: "" }) : null)),
         // Cynthia's cue: the famous theme's piano swells before the battle.
         st.intro ? el("div", { class: "league-intro-flair" }, st.intro) : null,
         el("div", { class: "league-intro-rank" }, rankLabel),
-        el("div", { class: "league-intro-name" }, isRed ? "…" : st.name),
+        nameEl,
         el("div", { class: "league-intro-quote" }, "“" + st.quote + "”"),
         el("div", { class: "toolbar", style: { justifyContent: "center" } }, [
           el("button", { class: "btn spin-btn", onClick: () => { lay.remove(); onGo(); } },
@@ -320,6 +327,12 @@
     document.body.appendChild(lay);
     sfx(isRed ? "error" : "fanfare");
     requestAnimationFrame(() => lay.classList.add("go"));
+    if (unveil) setTimeout(() => {
+      if (!lay.isConnected) return;                // "Not yet" beat the reveal
+      nameEl.textContent = st.name;
+      nameEl.classList.add("unveiled");
+      if (face) face.classList.remove("sealed");
+    }, 1400);
   }
 
   function challengeLeague(idx, attId) {

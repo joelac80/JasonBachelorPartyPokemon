@@ -207,12 +207,17 @@
   function badgeSrc(g) {
     return (window.BADGE_ART && BADGE_ART[(g.region || "").toLowerCase() + "-" + badgeKey(g)]) || "";
   }
+  // 💎 What the leader actually hands over. Everywhere it's "<name> Badge" —
+  // but a kahuna's Grand Trial awards their Z-CRYSTAL, so the words match the
+  // crystal on screen instead of promising an island badge that never existed.
+  const ALOLA_Z = { HALA: "Fightinium Z", OLIVIA: "Rockium Z", NANU: "Darkinium Z", HAPU: "Groundium Z" };
+  function awardName(g) { return (g.region === "Alola" && ALOLA_Z[g.leader]) || (g.badge + " Badge"); }
   function badgeArt(g, cls) {
     const art = badgeSrc(g);
     // 🎨 .is-art: badges are smooth illustrations, never pixelated — except
     // Alola's Z-Crystals, which are pixel sprites and stay crisp (.is-pix).
     const tag = art ? " is-art" + (g.region === "Alola" ? " is-pix" : "") : "";
-    return el("img", { class: (cls || "") + tag, src: art || U.energyIcon(g.type) || "", alt: g.badge + " Badge" });
+    return el("img", { class: (cls || "") + tag, src: art || U.energyIcon(g.type) || "", alt: awardName(g) });
   }
   function badgePop(idx, attId, opts) {
     const g = GYMS[idx]; if (!g) return;
@@ -237,8 +242,10 @@
         el("div", { class: "league-intro-inner" }, [
           el("div", { class: "badge-pop-ta" }, "TA-DA!"),
           el("div", { class: "badge-pop-ring" }, [badgeArt(g, "badge-pop-img")]),
-          el("div", { class: "league-intro-name" }, "The " + g.badge + " Badge"),
-          el("div", { class: "league-intro-quote" }, nm + " defeated Leader " + g.leader + " — " + g.region + "'s " + g.badge + " Badge is theirs, forever."),
+          el("div", { class: "league-intro-name" }, "The " + awardName(g)),
+          el("div", { class: "league-intro-quote" }, g.region === "Alola"
+            ? nm + " cleared " + g.badge + "'s Grand Trial — Kahuna " + g.leader + " hands over the " + awardName(g) + "."
+            : nm + " defeated Leader " + g.leader + " — " + g.region + "'s " + awardName(g) + " is theirs, forever."),
           el("div", { class: "hint", style: { opacity: 0.7 } }, "tap to continue"),
         ]),
       ]);
@@ -544,7 +551,7 @@
         badgeArt(g, "gymc-ico" + (me && holders.indexOf(me) >= 0 ? " held" : "")),
         el("div", { class: "gymc-names" }, [
           // the badge took the energy icon's seat — the gym's TYPE rides here now
-          el("div", { class: "gymc-badge" }, [g.badge + " Badge",
+          el("div", { class: "gymc-badge" }, [awardName(g),
             ico ? el("img", { class: "energy-ico gymc-type", src: ico, alt: g.type, title: g.type }) : null]),
           // 🕴 GIOVANNI vanishes wordlessly once YOU hold the Earth Badge —
           // exactly like the cartridge. (Others can still find him there.)
