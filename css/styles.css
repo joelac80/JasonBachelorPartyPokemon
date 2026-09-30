@@ -797,11 +797,11 @@ textarea.in.mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-s
 .mega-btn { background: linear-gradient(90deg, #7a5aa0, #b46cff, #6cc6ff); color: #fff; font-weight: 900;
   border: none; box-shadow: 0 0 10px rgba(180,108,255,.5); }
 .mega-btn:hover { filter: brightness(1.08); }
-/* 📏 the gimmick row sits between the moves and the items — keep it ONE line
-   (like the item row) so Restore/Forfeit stay above a phone's fold */
-.mega-row { width: 100%; gap: 6px; flex-wrap: nowrap; }
-.mega-row .mega-btn { flex: 0 1 auto; min-width: 0; padding: 7px 11px; font-size: 13px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 📏 the gimmick row sits between the moves and the items: compact buttons
+   and short labels so it stays one line (two with every gimmick unlocked),
+   keeping Restore/Forfeit above a phone's fold */
+.battle-menu-row.mega-row { width: 100%; gap: 6px; }
+.mega-row .mega-btn { padding: 6px 10px; font-size: 12px; white-space: nowrap; }
 .battle-mon.mega-go { animation: megaGo .9s ease; }
 @keyframes megaGo { 0% { filter: brightness(3) saturate(0); transform: scale(1.15); }
   40% { filter: brightness(2) drop-shadow(0 0 14px #b46cff); } 100% { filter: none; transform: scale(1); } }

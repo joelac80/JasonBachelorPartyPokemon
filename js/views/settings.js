@@ -448,6 +448,8 @@
     host.appendChild(el("h2", { class: "section-title" }, "📦 App build"));
     const line = el("p", { class: "hint" }, "Checking…");
     host.appendChild(line);
+    // 🙏 Credit where it's due — this is a fan app made for the love of the game.
+    host.appendChild(el("p", { class: "hint" }, "Pokémon art © The Pokémon Company, Nintendo & Game Freak. Badges and items via PokeAPI, trainer sprites via Pokémon Showdown. A free fan app for friends — never sold."));
     const paint = () => {
       if (!window.caches || !caches.keys) { line.textContent = "This browser doesn't cache the app — you're always on the latest."; return; }
       caches.keys().then((ks) => {
